@@ -1,0 +1,19 @@
+{
+  "name": "csv-spectrum",
+  "version": "1.0.0",
+  "description": "csv test data for writing robust csv parsers",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maxogden/csv-spectrum.git"
+  },
+  "scripts": {
+    "test": "node test.js"
+  },
+  "author": "max ogden",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/maxogden/csv-spectrum/issues"
+  },
+  "homepage": "https://github.com/maxogden/csv-spectrum"
+}
