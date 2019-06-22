@@ -19,14 +19,18 @@ import cats._
 import cats.data._
 import cats.implicits._
 
-class CsvRow[Header: Eq](val columns: NonEmptyList[String], val headers: Option[NonEmptyList[Header]]) {
+class CsvRow[Header](val values: NonEmptyList[String], headers: Option[NonEmptyList[Header]]) {
 
-  private lazy val byHeader = headers.map(_.toList.zipAll(columns.toList, "", "").toMap)
+  private lazy val byHeader: Option[Map[Header, String]] =
+    headers.map(_.toList.zip(values.toList).toMap)
 
   def apply(idx: Int): Option[String] =
-    columns.get(idx)
+    values.get(idx)
 
   def apply(header: Header): Option[String] =
     byHeader.flatMap(_.get(header))
+
+  def toMap: Option[Map[Header, String]] =
+    byHeader
 
 }

@@ -29,6 +29,10 @@ object ParseableHeader {
   def apply[Header: ParseableHeader]: ParseableHeader[Header] =
     implicitly[ParseableHeader[Header]]
 
+  implicit object NothingParseableHeader extends ParseableHeader[Nothing] {
+    def parse(name: String): Nothing = throw new CsvException("no headers are expected")
+  }
+
   implicit object StringParseableHeader extends ParseableHeader[String] {
     def parse(name: String) = name
   }

@@ -7,14 +7,31 @@ import $ivy.`com.lihaoyi::mill-contrib-bloop:0.4.1`
 val scala212 = "2.12.8"
 val scala213 = "2.13.0"
 
+val fs2Version = "1.1.0-M1"
+
 trait Fs2DataModule extends ScalaModule with ScalafmtModule {
 
   def scalacOptions = Seq("-feature", "-deprecation", "-unchecked")
 
-  def ivyDeps = Agg(ivy"co.fs2::fs2-core:1.1.0-M1")
+  val scala212Deps = T {
+    val v = scalaVersion()
+    if (v.startsWith("2.12"))
+      Nil
+    else
+      List(ivy"org.scala-lang.modules::scala-collection-compat:2.0.0")
+  }
+
+  def ivyDeps =
+    Agg(ivy"co.fs2::fs2-core:$fs2Version") ++ scala212Deps()
 
   trait Fs2DataTests extends Tests {
-    def ivyDeps = Agg(ivy"org.scalatest::scalatest:3.0.8")
+    def ivyDeps =
+      Agg(
+        ivy"org.scalatest::scalatest:3.0.8",
+        ivy"com.github.pathikrit::better-files-akka:3.8.0",
+        ivy"io.circe::circe-parser:0.12.0-M3",
+        ivy"co.fs2::fs2-io:$fs2Version"
+      )
     def testFrameworks = Seq("org.scalatest.tools.Framework")
   }
 
