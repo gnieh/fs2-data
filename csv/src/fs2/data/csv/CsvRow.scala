@@ -19,7 +19,7 @@ import cats._
 import cats.data._
 import cats.implicits._
 
-class CsvRow[Header](val values: NonEmptyList[String], headers: Option[NonEmptyList[Header]]) {
+class CsvRow[Header](val values: NonEmptyList[String], val headers: Option[NonEmptyList[Header]]) {
 
   private lazy val byHeader: Option[Map[Header, String]] =
     headers.map(_.toList.zip(values.toList).toMap)
