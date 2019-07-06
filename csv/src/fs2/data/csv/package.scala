@@ -19,9 +19,6 @@ import fs2._
 
 import cats._
 import cats.data._
-import cats.implicits._
-
-import scala.annotation.tailrec
 
 import scala.language.higherKinds
 

@@ -16,9 +16,6 @@
 package fs2.data.csv
 
 import cats._
-import cats.data.NonEmptyList
-
-import scala.annotation.tailrec
 
 import fs2._
 
@@ -46,6 +43,8 @@ class ToStringCsvPipe[F[_]] private[csv] (val separator: Char) extends AnyVal {
 
 private object CsvParser {
 
+  import Headers._
+
   def fromBytes[F[_], Header](withHeaders: Boolean, separator: Char)(
       implicit F: MonadError[F, Throwable],
       H: ParseableHeader[Header]): Pipe[F, Byte, CsvRow[Header]] =
@@ -56,14 +55,14 @@ private object CsvParser {
       implicit F: MonadError[F, Throwable],
       H: ParseableHeader[Header]): Pipe[F, String, CsvRow[Header]] = {
     _.through(rows[F](separator))
-      .mapAccumulate(Headers.Uninitialized[Header]: Headers[Header]) {
-        case (Headers.Uninitialized(), fields) if withHeaders =>
+      .mapAccumulate(Uninitialized[Header]: Headers[Header]) {
+        case (Uninitialized(), fields) if withHeaders =>
           // headers have not been seen yet (first row)
-          (Headers.Initialized(Some(fields.map(ParseableHeader[Header].parse(_)))), None)
-        case (Headers.Uninitialized(), fields) =>
+          (Initialized(Some(fields.map(ParseableHeader[Header].parse(_)))), None)
+        case (Uninitialized(), fields) =>
           // no header are to be parsed
-          (Headers.Initialized(None), Some(new CsvRow[Header](fields, None)))
-        case (initialized @ Headers.Initialized(headers), fields) =>
+          (Initialized(None), Some(new CsvRow[Header](fields, None)))
+        case (initialized @ Initialized(headers), fields) =>
           // otherwise, headers are already initialized properly, just pass them to the row
           (initialized, Some(new CsvRow[Header](fields, headers)))
       }

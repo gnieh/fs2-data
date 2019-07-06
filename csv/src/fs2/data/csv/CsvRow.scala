@@ -15,7 +15,6 @@
  */
 package fs2.data.csv
 
-import cats._
 import cats.data._
 import cats.implicits._
 

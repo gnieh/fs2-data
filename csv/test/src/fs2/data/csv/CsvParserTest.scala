@@ -17,15 +17,12 @@ package fs2.data.csv
 
 import io.circe.parser._
 
-import fs2._
 import fs2.io._
 
 import cats.effect._
-import cats.implicits._
 
 import org.scalatest._
 
-import scala.jdk.CollectionConverters._
 import scala.concurrent._
 
 import better.files.{Resource => _, _}
