@@ -1,0 +1,21 @@
+language: scala
+dist: xenial
+
+scala:
+  - 2.12.8
+  - 2.13.0
+
+script:
+  - ./millw _[$TRAVIS_SCALA_VERSION].test
+
+cache:
+  directories:
+    - $HOME/.coursier
+    - $HOME/.mill/download
+
+jdk:
+  - openjdk8
+
+branches:
+  only:
+  - master

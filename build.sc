@@ -2,7 +2,10 @@ import mill._
 import scalalib._
 import scalafmt._
 
-import $ivy.`com.lihaoyi::mill-contrib-bloop:0.4.2`
+val millVersion = System.getProperty("MILL_VERSION")
+interp.load.ivy("com.lihaoyi" %% "mill-contrib-bloop" % millVersion)
+
+@
 
 val scala212 = "2.12.8"
 val scala213 = "2.13.0"
