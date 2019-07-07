@@ -31,6 +31,16 @@ class ToByteCsvPipe[F[_]] private[csv] (val separator: Char) extends AnyVal {
 
 }
 
+class ToCharCsvPipe[F[_]] private[csv] (val separator: Char) extends AnyVal {
+
+  def withHeaders[Header: ParseableHeader](implicit F: MonadError[F, Throwable]): Pipe[F, Char, CsvRow[Header]] =
+    CsvParser.fromChars[F, Header](true, separator)
+
+  def noHeaders(implicit F: MonadError[F, Throwable]): Pipe[F, Char, CsvRow[Nothing]] =
+    CsvParser.fromChars[F, Nothing](false, separator)
+
+}
+
 class ToStringCsvPipe[F[_]] private[csv] (val separator: Char) extends AnyVal {
 
   def withHeaders[Header: ParseableHeader](implicit F: MonadError[F, Throwable]): Pipe[F, String, CsvRow[Header]] =
@@ -49,11 +59,12 @@ private object CsvParser {
       implicit F: MonadError[F, Throwable],
       H: ParseableHeader[Header]): Pipe[F, Byte, CsvRow[Header]] =
     _.through(text.utf8Decode)
-      .through(fromString[F, Header](withHeaders, separator))
+      .flatMap(Stream.emits(_))
+      .through(fromChars[F, Header](withHeaders, separator))
 
-  def fromString[F[_], Header](withHeaders: Boolean, separator: Char)(
+  def fromChars[F[_], Header](withHeaders: Boolean, separator: Char)(
       implicit F: MonadError[F, Throwable],
-      H: ParseableHeader[Header]): Pipe[F, String, CsvRow[Header]] = {
+      H: ParseableHeader[Header]): Pipe[F, Char, CsvRow[Header]] =
     _.through(rows[F](separator))
       .mapAccumulate(Uninitialized[Header]: Headers[Header]) {
         case (Uninitialized(), fields) if withHeaders =>
@@ -68,6 +79,10 @@ private object CsvParser {
       }
       .map(_._2)
       .unNone
-  }
+
+  def fromString[F[_], Header](withHeaders: Boolean, separator: Char)(
+      implicit F: MonadError[F, Throwable],
+      H: ParseableHeader[Header]): Pipe[F, String, CsvRow[Header]] =
+    _.flatMap(Stream.emits(_)).through(fromChars[F, Header](withHeaders, separator))
 
 }

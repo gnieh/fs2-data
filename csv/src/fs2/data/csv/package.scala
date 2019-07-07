@@ -36,7 +36,7 @@ package object csv {
 
   private case class ParseEnv(currentField: StringBuilder, tail: List[String], state: State, idx: Int)
 
-  def rows[F[_]](separator: Char = ',')(implicit F: MonadError[F, Throwable]): Pipe[F, String, NonEmptyList[String]] = {
+  def rows[F[_]](separator: Char = ',')(implicit F: MonadError[F, Throwable]): Pipe[F, Char, NonEmptyList[String]] = {
 
     def row(chunk: Chunk[Char],
             currentField: StringBuilder,
@@ -180,11 +180,14 @@ package object csv {
           }
       }
 
-    s => go(s.flatMap(Stream.emits(_)), ParseEnv(new StringBuilder, Nil, State.BeginningOfField, 0)).stream
+    s => go(s, ParseEnv(new StringBuilder, Nil, State.BeginningOfField, 0)).stream
   }
 
   def fromBytes[F[_]](separator: Char = ',')(implicit F: MonadError[F, Throwable]): ToByteCsvPipe[F] =
     new ToByteCsvPipe[F](separator)
+
+  def fromChars[F[_]](separator: Char = ',')(implicit F: MonadError[F, Throwable]): ToCharCsvPipe[F] =
+    new ToCharCsvPipe[F](separator)
 
   def fromString[F[_]](separator: Char = ',')(implicit F: MonadError[F, Throwable]): ToStringCsvPipe[F] =
     new ToStringCsvPipe[F](separator)
