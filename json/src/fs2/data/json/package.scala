@@ -28,7 +28,7 @@ import scala.language.higherKinds
   */
 package object json {
 
-  private val hexa = "0123456789abcdefABCDEF"
+  private val hexa = "0123456789abcdef"
 
   /** Transforms a stream of characters into a stream of Json tokens.
     * Emitted tokens are guaranteed to be valid up to that point.
@@ -37,44 +37,64 @@ package object json {
     */
   def tokens[F[_]](implicit F: MonadError[F, Throwable]): Pipe[F, Char, Token] = {
     // the opening quote has already been read
-    def string(s: Stream[F, Char], key: Boolean): Pull[F, Token, Stream[F, Char]] = {
-      def loop(s: Stream[F, Char], acc: StringBuilder): Pull[F, Token, Stream[F, Char]] =
-        s.pull.uncons1.flatMap {
-          case Some(('"', rest)) =>
-            // end of string
-            Pull.output1(if (key) Token.Key(acc.result) else Token.StringValue(acc.result)) >> Pull.pure(rest)
-          case Some(('\\', rest)) =>
-            // escaped character
-            rest.pull.uncons1.flatMap {
-              case Some(('"', rest))  => loop(rest, acc.append('"'))
-              case Some(('\\', rest)) => loop(rest, acc.append('\\'))
-              case Some(('/', rest))  => loop(rest, acc.append('/'))
-              case Some(('b', rest))  => loop(rest, acc.append('\b'))
-              case Some(('f', rest))  => loop(rest, acc.append('\f'))
-              case Some(('n', rest))  => loop(rest, acc.append('\n'))
-              case Some(('r', rest))  => loop(rest, acc.append('\r'))
-              case Some(('t', rest))  => loop(rest, acc.append('\t'))
-              case Some(('u', rest)) =>
-                rest.pull.unconsN(4, false).flatMap {
-                  case Some((chunk, rest)) if chunk.forall(hexa.contains(_)) =>
-                    loop(rest, acc.appendAll(Character.toChars(Integer.parseInt(chunk.mkString_(""), 16))))
-                  case Some((chunk, _)) =>
-                    Pull.raiseError[F](
-                      new JsonException(s"malformed escaped unicode sequence ${chunk.mkString_("\\u", "", "")}"))
-                  case None => Pull.raiseError[F](new JsonException("unexpected end of input"))
-                }
-              case Some((c, _)) => Pull.raiseError[F](new JsonException(s"unknown escaped character '$c'"))
-              case None         => Pull.raiseError[F](new JsonException("unexpected end of input"))
+    def string_(chunk: Chunk[Char],
+                idx: Int,
+                rest: Stream[F, Char],
+                key: Boolean,
+                state: StringState,
+                unicode: Int,
+                acc: StringBuilder): Pull[F, Token, Option[(Chunk[Char], Int, Stream[F, Char])]] = {
+      if (idx >= chunk.size)
+        rest.pull.uncons.flatMap {
+          case Some((chunk, rest)) => string_(chunk, 0, rest, key, state, unicode, acc)
+          case None                => Pull.raiseError[F](new JsonException("unexpected end of input"))
+        } else {
+        val c = chunk(idx)
+        state match {
+          case StringState.SeenBackslash =>
+            (c: @switch) match {
+              case '"'  => string_(chunk, idx + 1, rest, key, StringState.Normal, 0, acc.append('"'))
+              case '\\' => string_(chunk, idx + 1, rest, key, StringState.Normal, 0, acc.append('\\'))
+              case '/'  => string_(chunk, idx + 1, rest, key, StringState.Normal, 0, acc.append('/'))
+              case 'b'  => string_(chunk, idx + 1, rest, key, StringState.Normal, 0, acc.append('\b'))
+              case 'f'  => string_(chunk, idx + 1, rest, key, StringState.Normal, 0, acc.append('\f'))
+              case 'n'  => string_(chunk, idx + 1, rest, key, StringState.Normal, 0, acc.append('\n'))
+              case 'r'  => string_(chunk, idx + 1, rest, key, StringState.Normal, 0, acc.append('\r'))
+              case 't'  => string_(chunk, idx + 1, rest, key, StringState.Normal, 0, acc.append('\t'))
+              case 'u'  => string_(chunk, idx + 1, rest, key, StringState.Expect4Unicode, 0, acc)
+              case _    => Pull.raiseError[F](new JsonException(s"unknown escaped character '$c'"))
             }
-          case Some((c, rest)) if c >= 0x20 && c <= 0x10ffff =>
-            loop(rest, acc.append(c))
-          case Some((c, _)) =>
-            Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
+          case StringState.ExpectUnicode(n) =>
+            val cidx = hexa.indexOf(c.toLower)
+            if (cidx >= 0) {
+              val unicode1 = (unicode << 4) | (0x0000000f & cidx)
+              if (n == 1) {
+                string_(chunk, idx + 1, rest, key, StringState.Normal, 0, acc.appendAll(Character.toChars(unicode1)))
+              } else {
+                string_(chunk, idx + 1, rest, key, StringState.ExpectUnicode(n - 1), unicode1, acc)
+              }
+            } else {
+              Pull.raiseError[F](new JsonException("malformed escaped unicode sequence"))
+            }
+          case StringState.Normal =>
+            if (c == '"')
+              Pull.output1(if (key) Token.Key(acc.result) else Token.StringValue(acc.result)) >> Pull.pure(
+                Some((chunk, idx + 1, rest)))
+            else if (c == '\\')
+              string_(chunk, idx + 1, rest, key, StringState.SeenBackslash, 0, acc)
+            else if (c >= 0x20 && c <= 0x10ffff)
+              string_(chunk, idx + 1, rest, key, StringState.Normal, 0, acc.append(c))
+            else
+              Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
         }
-      loop(s, new StringBuilder)
+      }
     }
 
-    def number(fst: Char, rest: Stream[F, Char]): Pull[F, Token, Stream[F, Char]] = {
+    def number_(chunk: Chunk[Char],
+                idx: Int,
+                rest: Stream[F, Char],
+                state: NumberState,
+                acc: StringBuilder): Pull[F, Token, Option[(Chunk[Char], Int, Stream[F, Char])]] = {
       def step(c: Char, state: NumberState): NumberState =
         (c, state) match {
           case ('-', NumberState.NumberStart) =>
@@ -102,137 +122,182 @@ package object json {
             NumberState.Invalid
         }
 
-      def loop(s: Stream[F, Char], state: NumberState, acc: StringBuilder): Pull[F, Token, Stream[F, Char]] =
-        s.pull.peek1.flatMap {
-          case Some((c, rest)) =>
-            step(c, state) match {
-              case NumberState.Invalid =>
-                if (state.isFinal)
-                  Pull.output1(Token.NumberValue(acc.result)) >> Pull.pure(rest)
-                else
-                  Pull.raiseError[F](new JsonException(s"invalid number character '$c'"))
-              case state =>
-                acc.append(c)
-                loop(rest.tail, state, acc)
-            }
+      if (idx >= chunk.size)
+        rest.pull.uncons.flatMap {
+          case Some((chunk, rest)) => number_(chunk, 0, rest, state, acc)
           case None =>
             if (state.isFinal)
-              Pull.output1(Token.NumberValue(acc.result)) >> Pull.pure(Stream.empty)
+              Pull.output1(Token.NumberValue(acc.result)) >> Pull.pure(None)
             else
               Pull.raiseError[F](new JsonException("unexpected end of input"))
+        } else {
+        val c = chunk(idx)
+        step(c, state) match {
+          case NumberState.Invalid =>
+            if (state.isFinal)
+              Pull.output1(Token.NumberValue(acc.result)) >> Pull.pure(Some((chunk, idx, rest)))
+            else
+              Pull.raiseError[F](new JsonException(s"invalid number character '$c'"))
+          case state =>
+            number_(chunk, idx + 1, rest, state, acc.append(c))
         }
-      val builder = new StringBuilder
-      builder.append(fst)
-      loop(rest, step(fst, NumberState.NumberStart), builder)
+      }
     }
 
-    def keyword(fst: Char, value: String, token: Token, s: Stream[F, Char]): Pull[F, Token, Stream[F, Char]] = {
-      def loop(s: Stream[F, Char], acc: StringBuilder): Pull[F, Token, Stream[F, Char]] =
-        s.pull.peek1.flatMap {
-          case Some((c, rest)) if c.isLetter => loop(rest.tail, acc.append(c))
-          case Some((c, rest)) =>
-            if (acc.result == value)
-              Pull.output1(token) >> Pull.pure(rest)
-            else
-              Pull.raiseError[F](new JsonException(s"unknown keyword '$fst${acc.result}' (expected $fst$value)"))
-          case None =>
-            if (acc.result == value)
-              Pull.output1(token) >> Pull.pure(Stream.empty)
-            else
-              Pull.raiseError[F](new JsonException("unexpected end of input"))
+    def keyword_(chunk: Chunk[Char],
+                 idx: Int,
+                 rest: Stream[F, Char],
+                 expected: String,
+                 eidx: Int,
+                 token: Token): Pull[F, Token, Option[(Chunk[Char], Int, Stream[F, Char])]] = {
+      if (idx >= chunk.size)
+        rest.pull.uncons.flatMap {
+          case Some((chunk, rest)) => keyword_(chunk, 0, rest, expected, eidx, token)
+          case None                => Pull.raiseError[F](new JsonException("unexpected end of input"))
+        } else {
+        val c = chunk(idx)
+        if (c == expected.charAt(eidx)) {
+          if (eidx == expected.length - 1)
+            Pull.output1(token) >> Pull.pure(Some((chunk, idx + 1, rest)))
+          else
+            keyword_(chunk, idx + 1, rest, expected, eidx + 1, token)
+        } else {
+          Pull.raiseError[F](new JsonException(s"unexpected character '$c' (expected $expected)"))
         }
-      loop(s, new StringBuilder)
+      }
     }
 
-    def value(fst: Char, rest: Stream[F, Char], state: State): Pull[F, Token, Stream[F, Char]] =
-      (fst: @switch) match {
-        case '{'                                                             => Pull.output1(Token.StartObject) >> go(rest, State.BeforeObjectKey, Nil)
-        case '['                                                             => Pull.output1(Token.StartArray) >> go(rest, State.BeforeArrayValue, Nil)
-        case 't'                                                             => keyword(fst, "rue", Token.TrueValue, rest)
-        case 'f'                                                             => keyword(fst, "alse", Token.FalseValue, rest)
-        case 'n'                                                             => keyword(fst, "ull", Token.NullValue, rest)
-        case '"'                                                             => string(rest, false)
-        case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => number(fst, rest)
-        case c                                                               => Pull.raiseError[F](new JsonException(s"unexpected '$c'"))
+    def value_(chunk: Chunk[Char],
+               idx: Int,
+               rest: Stream[F, Char],
+               state: State): Pull[F, Token, Option[(Chunk[Char], Int, Stream[F, Char])]] =
+      if (idx >= chunk.size)
+        rest.pull.uncons.flatMap {
+          case Some((chunk, rest)) => value_(chunk, 0, rest, state)
+          case None                => Pull.raiseError[F](new JsonException("unexpected end of input"))
+        } else {
+        val c = chunk(idx)
+        (c: @switch) match {
+          case '{' => Pull.output1(Token.StartObject) >> go_(chunk, idx + 1, rest, State.BeforeObjectKey, Nil)
+          case '[' => Pull.output1(Token.StartArray) >> go_(chunk, idx + 1, rest, State.BeforeArrayValue, Nil)
+          case 't' => keyword_(chunk, idx, rest, "true", 0, Token.TrueValue)
+          case 'f' => keyword_(chunk, idx, rest, "false", 0, Token.FalseValue)
+          case 'n' => keyword_(chunk, idx, rest, "null", 0, Token.NullValue)
+          case '"' => string_(chunk, idx + 1, rest, false, StringState.Normal, 0, new StringBuilder)
+          case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
+            number_(chunk, idx, rest, NumberState.NumberStart, new StringBuilder)
+          case c => Pull.raiseError[F](new JsonException(s"unexpected '$c'"))
+        }
       }
 
     def isWhitespace(c: Char): Boolean =
       "\u0020\u000d\u000a\u0009".contains(c)
 
-    def go(s: Stream[F, Char], state: State, history: List[State]): Pull[F, Token, Stream[F, Char]] =
-      s.dropWhile(isWhitespace(_)).pull.uncons1.flatMap {
-        case Some((c, rest)) =>
-          state match {
-            case State.BeforeValue =>
-              value(c, rest, state).flatMap(go(_, State.BeforeValue, history))
-            case State.BeforeObjectKey =>
-              (c: @switch) match {
-                case '"' => string(rest, true).flatMap(go(_, State.AfterObjectKey, history))
-                case '}' =>
-                  Pull.output1(Token.EndObject) >>
-                    (history match {
-                      case prev :: tail => go(rest, prev, tail)
-                      case Nil          => Pull.pure(rest)
-                    })
-                case c => Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
-              }
-            case State.ExpectObjectKey =>
-              (c: @switch) match {
-                case '"' => string(rest, true).flatMap(go(_, State.AfterObjectKey, history))
-                case c   => Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
-              }
-            case State.AfterObjectKey =>
-              (c: @switch) match {
-                case ':' => go(rest, State.BeforeObjectValue, history)
-                case c   => Pull.raiseError[F](new JsonException(s"unexpected '$c' after object key"))
-              }
-            case State.BeforeObjectValue =>
-              value(c, rest, State.AfterObjectValue).flatMap(go(_, State.AfterObjectValue, history))
-            case State.AfterObjectValue =>
-              (c: @switch) match {
-                case ',' =>
-                  go(rest, State.ExpectObjectKey, history)
-                case '}' =>
-                  Pull.output1(Token.EndObject) >>
-                    (history match {
-                      case prev :: tail => go(rest, prev, tail)
-                      case Nil          => Pull.pure(rest)
-                    })
-                case c => Pull.raiseError[F](new JsonException(s"unexpected '$c' after object value"))
-              }
-            case State.ExpectArrayValue =>
-              value(c, rest, State.AfterArrayValue).flatMap(go(_, State.AfterArrayValue, history))
-            case State.BeforeArrayValue =>
-              (c: @switch) match {
-                case ']' =>
-                  Pull.output1(Token.EndArray) >>
-                    (history match {
-                      case prev :: tail => go(rest, prev, tail)
-                      case Nil          => Pull.pure(rest)
-                    })
-                case c => value(c, rest, State.AfterArrayValue).flatMap(go(_, State.AfterArrayValue, history))
-              }
-            case State.AfterArrayValue =>
-              (c: @switch) match {
-                case ']' =>
-                  Pull.output1(Token.EndArray) >>
-                    (history match {
-                      case prev :: tail => go(rest, prev, tail)
-                      case Nil          => Pull.pure(rest)
-                    })
-                case ',' =>
-                  go(rest, State.ExpectArrayValue, history)
-                case c => Pull.raiseError[F](new JsonException(s"unexpected '$c' after array value"))
-              }
-          }
+    def eatWhitespaces(idx: Int, chunk: Chunk[Char]): Int =
+      if (idx < chunk.size && isWhitespace(chunk(idx)))
+        eatWhitespaces(idx + 1, chunk)
+      else
+        idx
+
+    def continue(state: State, history: List[State])(result: Option[(Chunk[Char], Int, Stream[F, Char])]) =
+      result match {
+        case Some((chunk, idx, rest)) =>
+          go_(chunk, idx, rest, state, history)
         case None =>
           if (history.isEmpty)
-            Pull.pure(Stream.empty)
+            Pull.pure(None)
           else
             Pull.raiseError[F](new JsonException("unexpected end of input"))
       }
 
-    s => go(s, State.BeforeValue, Nil).stream
+    def go_(chunk: Chunk[Char],
+            idx: Int,
+            rest: Stream[F, Char],
+            state: State,
+            history: List[State]): Pull[F, Token, Option[(Chunk[Char], Int, Stream[F, Char])]] = {
+      val idx1 = eatWhitespaces(idx, chunk)
+      if (idx1 >= chunk.size)
+        rest.pull.uncons.flatMap {
+          case Some((chunk, rest)) => go_(chunk, 0, rest, state, history)
+          case None =>
+            if (history.isEmpty)
+              Pull.pure(None)
+            else
+              Pull.raiseError[F](new JsonException("unexpected end of input"))
+        } else {
+        val c = chunk(idx1)
+        state match {
+          case State.BeforeValue =>
+            value_(chunk, idx1, rest, state).flatMap(continue(State.BeforeValue, history))
+          case State.BeforeObjectKey =>
+            (c: @switch) match {
+              case '"' =>
+                string_(chunk, idx1 + 1, rest, true, StringState.Normal, 0, new StringBuilder)
+                  .flatMap(continue(State.AfterObjectKey, history))
+              case '}' =>
+                Pull.output1(Token.EndObject) >>
+                  (history match {
+                    case prev :: tail => go_(chunk, idx1 + 1, rest, prev, tail)
+                    case Nil          => Pull.pure(Some((chunk, idx1 + 1, rest)))
+                  })
+              case _ => Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
+            }
+          case State.ExpectObjectKey =>
+            (c: @switch) match {
+              case '"' =>
+                string_(chunk, idx1 + 1, rest, true, StringState.Normal, 0, new StringBuilder)
+                  .flatMap(continue(State.AfterObjectKey, history))
+              case _ => Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
+            }
+          case State.AfterObjectKey =>
+            (c: @switch) match {
+              case ':' => go_(chunk, idx1 + 1, rest, State.BeforeObjectValue, history)
+              case c   => Pull.raiseError[F](new JsonException(s"unexpected '$c' after object key"))
+            }
+          case State.BeforeObjectValue =>
+            value_(chunk, idx1, rest, State.AfterObjectValue).flatMap(continue(State.AfterObjectValue, history))
+          case State.AfterObjectValue =>
+            (c: @switch) match {
+              case ',' =>
+                go_(chunk, idx1 + 1, rest, State.ExpectObjectKey, history)
+              case '}' =>
+                Pull.output1(Token.EndObject) >>
+                  (history match {
+                    case prev :: tail => go_(chunk, idx1 + 1, rest, prev, tail)
+                    case Nil          => Pull.pure(Some((chunk, idx1 + 1, rest)))
+                  })
+              case c => Pull.raiseError[F](new JsonException(s"unexpected '$c' after object value"))
+            }
+          case State.ExpectArrayValue =>
+            value_(chunk, idx1, rest, State.AfterArrayValue).flatMap(continue(State.AfterArrayValue, history))
+          case State.BeforeArrayValue =>
+            (c: @switch) match {
+              case ']' =>
+                Pull.output1(Token.EndArray) >>
+                  (history match {
+                    case prev :: tail => go_(chunk, idx1 + 1, rest, prev, tail)
+                    case Nil          => Pull.pure(Some((chunk, idx1 + 1, rest)))
+                  })
+              case c =>
+                value_(chunk, idx1, rest, State.AfterArrayValue).flatMap(continue(State.AfterArrayValue, history))
+            }
+          case State.AfterArrayValue =>
+            (c: @switch) match {
+              case ']' =>
+                Pull.output1(Token.EndArray) >>
+                  (history match {
+                    case prev :: tail => go_(chunk, idx1 + 1, rest, prev, tail)
+                    case Nil          => Pull.pure(Some((chunk, idx1 + 1, rest)))
+                  })
+              case ',' =>
+                go_(chunk, idx1 + 1, rest, State.ExpectArrayValue, history)
+              case c => Pull.raiseError[F](new JsonException(s"unexpected '$c' after array value"))
+            }
+        }
+      }
+    }
+
+    s => go_(Chunk.empty, 0, s, State.BeforeValue, Nil).stream
   }
 
   private sealed trait Expect
