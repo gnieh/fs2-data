@@ -3,4 +3,10 @@
 
 A set of streaming data parsers based on [fs2][fs2].
 
+Following modules are available:
+ - [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv_2.13.svg)](https://mvnrepository.com/artifact/org.gneh/fs2-data-csv_2.13) A CSV parser
+ - [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json_2.13.svg)](https://mvnrepository.com/artifact/org.gneh/fs2-data-json_2.13) A JSON parser and manipulation library
+ - [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-circe_2.13.svg)](https://mvnrepository.com/artifact/org.gneh/fs2-data-json-circe_2.13) [circe][circe] support for parsed JSON.
+
 [fs2]: https://fs2.io/
+[circe]: https://circe.github.io/circe/
