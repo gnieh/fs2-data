@@ -1,6 +1,7 @@
 import mill._
 import scalalib._
 import scalafmt._
+import publish._
 
 val millVersion = System.getProperty("MILL_VERSION")
 interp.load.ivy("com.lihaoyi" %% "mill-contrib-bloop" % millVersion)
@@ -12,6 +13,14 @@ val scala213 = "2.13.0"
 
 val fs2Version = "1.1.0-M1"
 val circeVersion = "0.12.0-M4"
+
+val fs2DataVersion = "0.1.0"
+
+val fs2DataLicense = License.`Apache-2.0`
+
+val fs2DataUrl = "https://github.com/satabin/fs2-data"
+
+val fs2DataDeveloper = Developer("satabin", "Lucas Satabin", "https://github.com/satabin")
 
 trait Fs2DataModule extends ScalaModule with ScalafmtModule {
 
@@ -37,7 +46,21 @@ trait Fs2DataModule extends ScalaModule with ScalafmtModule {
 
 object csv extends Cross[CsvModule](scala212, scala213)
 
-class CsvModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule {
+class CsvModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule with PublishModule {
+
+  def publishVersion = fs2DataVersion
+
+  def artifactName = "fs2-data-csv"
+
+  def pomSettings =
+    PomSettings(
+      description = "Streaming CSV manipulation library",
+      organization = "org.gnieh",
+      url = fs2DataUrl,
+      licenses = Seq(fs2DataLicense),
+      versionControl = VersionControl.github("satabin", "fs2-data"),
+      developers = Seq(fs2DataDeveloper)
+    )
 
   object test extends Fs2DataTests
 
@@ -45,17 +68,46 @@ class CsvModule(val crossScalaVersion: String) extends Fs2DataModule with CrossS
 
 object json extends Cross[JsonModule](scala212, scala213)
 
-class JsonModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule {
+class JsonModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule with PublishModule {
   outer =>
+
+  def publishVersion = fs2DataVersion
+
+  def artifactName = "fs2-data-json"
+
+  def pomSettings =
+    PomSettings(
+      description = "Streaming JSON manipulation library",
+      organization = "org.gnieh",
+      url = fs2DataUrl,
+      licenses = Seq(fs2DataLicense),
+      versionControl = VersionControl.github("satabin", "fs2-data"),
+      developers = Seq(fs2DataDeveloper)
+    )
 
     object test extends Fs2DataTests {
       def moduleDeps = Seq(circe)
     }
 
-  object circe extends Fs2DataModule {
+  object circe extends Fs2DataModule with PublishModule {
     def scalaVersion = outer.scalaVersion
     def moduleDeps = Seq(outer)
     def ivyDeps = Agg(ivy"io.circe::circe-core:$circeVersion")
+
+    def publishVersion = fs2DataVersion
+
+    def artifactName = "fs2-data-json-circe"
+
+    def pomSettings =
+      PomSettings(
+        description = "Streaming JSON library with support for circe ASTs",
+        organization = "org.gnieh",
+        url = fs2DataUrl,
+        licenses = Seq(fs2DataLicense),
+        versionControl = VersionControl.github("satabin", "fs2-data"),
+        developers = Seq(fs2DataDeveloper)
+      )
+
   }
 
 }
