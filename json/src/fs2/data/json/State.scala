@@ -15,16 +15,14 @@
  */
 package fs2.data.json
 
-private sealed trait State
-
 private object State {
-  case object BeforeValue extends State
-  case object BeforeObjectKey extends State
-  case object ExpectObjectKey extends State
-  case object AfterObjectKey extends State
-  case object BeforeObjectValue extends State
-  case object AfterObjectValue extends State
-  case object BeforeArrayValue extends State
-  case object ExpectArrayValue extends State
-  case object AfterArrayValue extends State
+  final val BeforeValue = 0
+  final val BeforeObjectKey = 1
+  final val ExpectObjectKey = 2
+  final val AfterObjectKey = 3
+  final val BeforeObjectValue = 4
+  final val AfterObjectValue = 5
+  final val BeforeArrayValue = 6
+  final val ExpectArrayValue = 7
+  final val AfterArrayValue = 8
 }

@@ -15,27 +15,11 @@
  */
 package fs2.data.json
 
-import scala.annotation.switch
-
-private sealed trait StringState
-
 private object StringState {
-  case object Normal extends StringState
-  case object SeenBackslash extends StringState
-
-  sealed abstract class ExpectUnicode(val n: Int) extends StringState
-  object ExpectUnicode {
-    def apply(n: Int): ExpectUnicode =
-      (n: @switch) match {
-        case 1 => Expect1Unicode
-        case 2 => Expect2Unicode
-        case 3 => Expect3Unicode
-      }
-    def unapply(eu: ExpectUnicode): Option[Int] =
-      Some(eu.n)
-  }
-  case object Expect4Unicode extends ExpectUnicode(4)
-  case object Expect3Unicode extends ExpectUnicode(3)
-  case object Expect2Unicode extends ExpectUnicode(2)
-  case object Expect1Unicode extends ExpectUnicode(1)
+  final val Normal = 6
+  final val SeenBackslash = 5
+  final val Expect4Unicode = 4
+  final val Expect3Unicode = 3
+  final val Expect2Unicode = 2
+  final val Expect1Unicode = 1
 }

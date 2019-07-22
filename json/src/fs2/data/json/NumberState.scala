@@ -15,38 +15,22 @@
  */
 package fs2.data.json
 
-private sealed trait NumberState {
-  val isFinal: Boolean
-}
+import scala.annotation.switch
+
 private object NumberState {
-  case object NumberStart extends NumberState {
-    val isFinal: Boolean = false
-  }
-  case object IntegerStart extends NumberState {
-    val isFinal: Boolean = false
-  }
-  case object IntegerBody extends NumberState {
-    val isFinal: Boolean = true
-  }
-  case object FractionStart extends NumberState {
-    val isFinal: Boolean = true
-  }
-  case object FractionOne extends NumberState {
-    val isFinal: Boolean = false
-  }
-  case object FractionBody extends NumberState {
-    val isFinal: Boolean = true
-  }
-  case object ExponentSign extends NumberState {
-    val isFinal: Boolean = false
-  }
-  case object ExponentOne extends NumberState {
-    val isFinal: Boolean = false
-  }
-  case object ExponentBody extends NumberState {
-    val isFinal: Boolean = true
-  }
-  case object Invalid extends NumberState {
-    val isFinal: Boolean = false
-  }
+  final val NumberStart = 0
+  final val IntegerStart = 1
+  final val IntegerBody = 2
+  final val FractionStart = 3
+  final val FractionOne = 4
+  final val FractionBody = 5
+  final val ExponentSign = 6
+  final val ExponentOne = 7
+  final val ExponentBody = 8
+  final val Invalid = 9
+  def isFinal(state: Int): Boolean =
+    (state: @switch) match {
+      case 2 | 3 | 5 | 8 => true
+      case _             => false
+    }
 }
