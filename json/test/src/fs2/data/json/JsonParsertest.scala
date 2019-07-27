@@ -72,9 +72,11 @@ class JsonParserTest extends FlatSpec with Matchers with BeforeAndAfterAll {
           .readAll[IO](path.path, blocker, 1024)
           .through(fs2.text.utf8Decode)
           .flatMap(Stream.emits(_))
-          .through(tokens[IO])
+          .through(tokens)
+          .through(values)
           .compile
-          .toJson
+          .toList
+          .map(l => if (l.size == 1) l.head else throw new Exception("a single value is expected"))
           .attempt
           .unsafeRunSync()
 
