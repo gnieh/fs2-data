@@ -39,6 +39,14 @@ package object json {
   def tokens[F[_]](implicit F: ApplicativeError[F, Throwable]): Pipe[F, Char, Token] =
     TokenParser.pipe[F]
 
+  /** Filters the tokens according to the given selector sequence.
+    * if `wrap` is set to `true` then values selected by array selector are wrapped into
+    * an array, and values selected by object selector are wrapped into an object with original
+    * key maintained.
+    */
+  def filter[F[_]](selector: Selector, wrap: Boolean = false)(implicit F: ApplicativeError[F, Throwable]): Pipe[F, Token, Token] =
+    TokenSelector.pipe[F](selector, wrap)
+
   /** Transforms a stream of Json tokens into a stream of json values.
     */
   def values[F[_], Json](implicit F: ApplicativeError[F, Throwable], builder: Builder[Json]): Pipe[F, Token, Json] =

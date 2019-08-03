@@ -26,14 +26,15 @@ import scala.language.higherKinds
 
 private[json] object TokenParser {
   // the opening quote has already been read
-  def string_[F[_]](chunk: Chunk[Char],
-                    idx: Int,
-                    rest: Stream[F, Char],
-                    key: Boolean,
-                    state: Int,
-                    unicode: Int,
-                    acc: StringBuilder,
-                    chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F]] = {
+  def string_[F[_]](
+      chunk: Chunk[Char],
+      idx: Int,
+      rest: Stream[F, Char],
+      key: Boolean,
+      state: Int,
+      unicode: Int,
+      acc: StringBuilder,
+      chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Char]] = {
     if (idx >= chunk.size)
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((chunk, rest)) => string_(chunk, 0, rest, key, state, unicode, acc, Nil)
@@ -87,12 +88,13 @@ private[json] object TokenParser {
     }
   }
 
-  def number_[F[_]](chunk: Chunk[Char],
-                    idx: Int,
-                    rest: Stream[F, Char],
-                    state: Int,
-                    acc: StringBuilder,
-                    chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F]] = {
+  def number_[F[_]](
+      chunk: Chunk[Char],
+      idx: Int,
+      rest: Stream[F, Char],
+      state: Int,
+      acc: StringBuilder,
+      chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Char]] = {
     def step(c: Char, state: Int): Int =
       (c: @switch) match {
         case '-' =>
@@ -175,13 +177,14 @@ private[json] object TokenParser {
     }
   }
 
-  def keyword_[F[_]](chunk: Chunk[Char],
-                     idx: Int,
-                     rest: Stream[F, Char],
-                     expected: String,
-                     eidx: Int,
-                     token: Token,
-                     chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F]] = {
+  def keyword_[F[_]](
+      chunk: Chunk[Char],
+      idx: Int,
+      rest: Stream[F, Char],
+      expected: String,
+      eidx: Int,
+      token: Token,
+      chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Char]] = {
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((chunk, rest)) => keyword_(chunk, 0, rest, expected, eidx, token, Nil)
@@ -201,7 +204,7 @@ private[json] object TokenParser {
   }
 
   def value_[F[_]](chunk: Chunk[Char], idx: Int, rest: Stream[F, Char], state: Int, chunkAcc: List[Token])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F]] =
+      implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Char]] =
     if (idx >= chunk.size)
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((chunk, rest)) => value_(chunk, 0, rest, state, Nil)
@@ -223,7 +226,8 @@ private[json] object TokenParser {
       }
     }
 
-  def continue[F[_]](state: Int, history: List[Int])(result: Result[F])(implicit F: ApplicativeError[F, Throwable]) =
+  def continue[F[_]](state: Int, history: List[Int])(result: Result[F, Char])(
+      implicit F: ApplicativeError[F, Throwable]) =
     result match {
       case Some((chunk, idx, rest, chunkAcc)) =>
         go_(chunk, idx, rest, state, history, chunkAcc)
@@ -235,11 +239,11 @@ private[json] object TokenParser {
     }
 
   def go_[F[_]](chunk: Chunk[Char],
-          idx: Int,
-          rest: Stream[F, Char],
-          state: Int,
-          history: List[Int],
-          chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F]] = {
+                idx: Int,
+                rest: Stream[F, Char],
+                state: Int,
+                history: List[Int],
+                chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Char]] = {
     val idx1 = idx //eatWhitespaces(idx, chunk)
     if (idx1 >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
