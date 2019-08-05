@@ -33,6 +33,12 @@ object Selector {
   object NameSelector {
     def apply(name: String, strict: Boolean) =
       new NameSelector(NamePredicate.Single(name), strict)
+    def apply(names: Seq[String], strict: Boolean) =
+      names match {
+        case Seq(name) => new NameSelector(NamePredicate.Single(name), strict)
+        case Seq()     => new NameSelector(NamePredicate.None, strict)
+        case _         => new NameSelector(NamePredicate.Several(names.toSet), strict)
+      }
   }
 
   /** Selects the value in the array for which the index respects the predicate.

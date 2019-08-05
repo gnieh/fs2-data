@@ -20,12 +20,14 @@ import json.ast._
 import json.internals._
 
 import cats._
+import cats.effect._
 import cats.data.NonEmptyList
 import cats.implicits._
 
 import scala.annotation.switch
 import scala.collection.compat._
-import scala.language.higherKinds
+
+import scala.language.{higherKinds, implicitConversions}
 
 /** Handles stream parsing and traversing of json documents.
   */
@@ -44,12 +46,18 @@ package object json {
     * an array, and values selected by object selector are wrapped into an object with original
     * key maintained.
     */
-  def filter[F[_]](selector: Selector, wrap: Boolean = false)(implicit F: ApplicativeError[F, Throwable]): Pipe[F, Token, Token] =
+  def filter[F[_]](selector: Selector, wrap: Boolean = false)(
+      implicit F: ApplicativeError[F, Throwable]): Pipe[F, Token, Token] =
     TokenSelector.pipe[F](selector, wrap)
 
   /** Transforms a stream of Json tokens into a stream of json values.
     */
   def values[F[_], Json](implicit F: ApplicativeError[F, Throwable], builder: Builder[Json]): Pipe[F, Token, Json] =
     ValueParser.pipe[F, Json]
+
+  implicit class StringOps(val s: String) extends AnyVal {
+    def parseSelector[F[_]](implicit F: MonadError[F, Throwable]): F[Selector] =
+      new SelectorParser[F](s).parse()
+  }
 
 }
