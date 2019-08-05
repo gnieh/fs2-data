@@ -17,22 +17,22 @@ package fs2
 package data
 package json
 
-sealed trait Token
+sealed abstract class Token(val kind: String)
 object Token {
 
-  case object StartObject extends Token
-  case object EndObject extends Token
+  case object StartObject extends Token("object")
+  case object EndObject extends Token("<none>")
 
-  case object StartArray extends Token
-  case object EndArray extends Token
+  case object StartArray extends Token("array")
+  case object EndArray extends Token("<none>")
 
-  case class Key(value: String) extends Token
+  case class Key(value: String) extends Token("key")
 
-  case object NullValue extends Token
+  case object NullValue extends Token("null")
 
-  case object TrueValue extends Token
-  case object FalseValue extends Token
-  case class NumberValue(value: String) extends Token
-  case class StringValue(value: String) extends Token
+  case object TrueValue extends Token("boolean")
+  case object FalseValue extends Token("boolean")
+  case class NumberValue(value: String) extends Token("number")
+  case class StringValue(value: String) extends Token("string")
 
 }
