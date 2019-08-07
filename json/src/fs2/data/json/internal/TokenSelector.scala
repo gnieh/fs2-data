@@ -27,7 +27,7 @@ import scala.language.higherKinds
 private[json] object TokenSelector {
 
   private def emitValue[F[_]](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], depth: Int, chunkAcc: List[Token])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Token]] =
+      implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Token, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >>
         rest.pull.uncons.flatMap {
@@ -58,7 +58,7 @@ private[json] object TokenSelector {
       }
 
   private def skipValue[F[_]](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], depth: Int, chunkAcc: List[Token])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Token]] =
+      implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Token, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >>
         rest.pull.uncons.flatMap {
@@ -92,8 +92,8 @@ private[json] object TokenSelector {
       rest: Stream[F, Token],
       wrap: Boolean,
       toSelect: String => Boolean,
-      onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, Token]],
-      chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Token]] =
+      onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, Token, List[Token]]],
+      chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Token, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >>
         rest.pull.uncons.flatMap {
@@ -132,8 +132,8 @@ private[json] object TokenSelector {
       wrap: Boolean,
       arrIdx: Int,
       toSelect: Int => Boolean,
-      onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, Token]],
-      chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Token]] =
+      onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, Token, List[Token]]],
+      chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Token, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >>
         rest.pull.uncons.flatMap {
@@ -170,8 +170,8 @@ private[json] object TokenSelector {
       rest: Stream[F, Token],
       selector: Selector,
       wrap: Boolean,
-      onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, Token]],
-      chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Token]] =
+      onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, Token, List[Token]]],
+      chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Token, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >>
         rest.pull.uncons.flatMap {
@@ -234,7 +234,7 @@ private[json] object TokenSelector {
                        rest: Stream[F, Token],
                        selector: Selector,
                        wrap: Boolean,
-                       onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, Token]],
+                       onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, Token, List[Token]]],
                        chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Unit] =
     filterChunk(chunk, idx, rest, selector, wrap: Boolean, onSelect, chunkAcc).flatMap {
       case Some((chunk, idx, rest, chunkAcc)) =>
@@ -247,7 +247,7 @@ private[json] object TokenSelector {
     s => go(Chunk.empty, 0, s, selector, wrap, emit[F](0), Nil).stream
 
   private def emit[F[_]](depth: Int)(chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], chunkAcc: List[Token])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Token]] =
+      implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Token, List[Token]]] =
     emitValue[F](chunk, idx, rest, 0, chunkAcc)
 
 }

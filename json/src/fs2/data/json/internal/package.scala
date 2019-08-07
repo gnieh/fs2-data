@@ -23,6 +23,6 @@ package object internals {
 
   private[internals] val hexa = "0123456789abcdef"
 
-  private[internals] type Result[F[_], T] = Option[(Chunk[T], Int, Stream[F, T], List[Token])]
+  private[internals] type Result[F[_], In, Out] = Option[(Chunk[In], Int, Stream[F, In], Out)]
 
 }
