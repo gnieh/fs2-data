@@ -74,7 +74,7 @@ private[json] object ValueParser {
       }
     }
 
-  private def pullValue[F[_], Json](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token])(
+  def pullValue[F[_], Json](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token])(
       implicit F: ApplicativeError[F, Throwable],
       builder: Builder[Json]): Pull[F, INothing, Result[F, Token, Json]] =
     if (idx >= chunk.size) {
