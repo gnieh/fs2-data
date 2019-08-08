@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2
-package data
-package json
+package fs2.data.json
+package ast
 
-import scala.language.higherKinds
+import cats.data.NonEmptyList
 
-package object internals {
+/** Transforms a parsed json value into tokens.
+  * This is intended to be used to generate token stream
+  * out of a value.
+  */
+trait Tokenizer[Json] {
 
-  private[internals] val hexa = "0123456789abcdef"
-
-  private[internals] type Result[F[_], In, Out] = Option[(Chunk[In], Int, Stream[F, In], Out)]
+  def tokenize(json: Json): NonEmptyList[Token]
 
 }

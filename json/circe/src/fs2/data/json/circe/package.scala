@@ -17,9 +17,12 @@ package fs2
 package data
 package json
 
-import ast.Builder
+import ast._
+
+import cats.data.NonEmptyList
 
 import io.circe._
+import io.circe.syntax._
 
 package object circe {
 
@@ -31,6 +34,25 @@ package object circe {
     def makeNumber(s: String): Json = Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe(s))
     def makeObject(fields: Iterable[(String, Json)]): Json = Json.fromFields(fields)
     def makeArray(values: Iterable[Json]): Json = Json.fromValues(values)
+  }
+
+  implicit object CirceTokenizer extends Tokenizer[Json] {
+    private def one(token: Token) = NonEmptyList.one(token)
+    private def tokenizeArray(values: Vector[Json]) =
+      NonEmptyList(Token.StartArray, values.toList.flatMap(tokenize(_).toList)).append(Token.EndArray)
+    private def tokenizeObject(fields: List[(String, Json)]) =
+      NonEmptyList(Token.StartObject, fields.flatMap {
+        case (k, v) => Token.Key(k) :: tokenize(v).toList
+      }).append(Token.EndObject)
+    def tokenize(json: Json): NonEmptyList[Token] =
+      json.fold(
+        one(Token.NullValue),
+        b => one(if (b) Token.TrueValue else Token.FalseValue),
+        n => one(Token.NumberValue(n.asJson.noSpaces)),
+        s => one(Token.StringValue(s)),
+        a => tokenizeArray(a),
+        o => tokenizeObject(o.toList)
+      )
   }
 
 }

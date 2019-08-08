@@ -50,6 +50,18 @@ package object json {
       implicit F: ApplicativeError[F, Throwable]): Pipe[F, Token, Token] =
     TokenSelector.pipe[F](selector, wrap)
 
+  /** Transforms a stream of token into another one. The transformation function `f` is
+    * called on every selected value from upstream, and the resulting value replaces it.
+    * The rest of the stream is left unchanged.
+    *
+    * This operator locally creates Json AST values using the [[Builder]], and
+    * returns tokens as emitted by the [[Tokenizer]] on the resulting value.
+    */
+  def transform[F[_], Json](selector: Selector, f: Json => Json)(implicit F: ApplicativeError[F, Throwable],
+                                                                 builder: Builder[Json],
+                                                                 tokenizer: Tokenizer[Json]): Pipe[F, Token, Token] =
+    TokenSelector.transformPipe[F, Json](selector, f)
+
   /** Transforms a stream of Json tokens into a stream of json values.
     */
   def values[F[_], Json](implicit F: ApplicativeError[F, Throwable], builder: Builder[Json]): Pipe[F, Token, Json] =
