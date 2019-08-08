@@ -28,14 +28,14 @@ case class JsonSelectorException(msg: String, idx: Int) extends Exception(msg)
 
 /** Parses a filter string. Syntax is as follows:
   * {{{
-  * Selector ::= Selector Selector*
-  *
   * Selector ::= `.`
-  *            | `.` Name `?`?
-  *            | `.` `[` String (`,` String)* `]` `?`?
-  *            | `.` `[` Integer (`,` Integer)* `]` `?`?
-  *            | `.` `[` Integer `:` Integer `]` `?`?
-  *            | `.` `[` `]` `?`?
+  *            | Sel Sel*
+  *
+  * Sel ::= `.` Name `?`?
+  *       | `.` `[` String (`,` String)* `]` `?`?
+  *       | `.` `[` Integer (`,` Integer)* `]` `?`?
+  *       | `.` `[` Integer `:` Integer `]` `?`?
+  *       | `.` `[` `]` `?`?
   *
   * Name ::= [a-zA-Z_][a-zA-Z0-9_]*
   *
@@ -135,7 +135,7 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
         F.raiseError(new JsonSelectorException("unexpected end of input", idx))
     }
 
-  private def parseSelector(idx: Int): F[(Selector, Int)] =
+  private def parseSelector(idx: Int, fst: Boolean): F[(Selector, Int)] =
     next(idx).flatMap {
       case Some((Dot(_), idx)) =>
         val maker =
@@ -147,7 +147,10 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
             case Some((token, _)) =>
               F.raiseError(new JsonSelectorException(s"invalid selector token '$token'", token.idx))
             case None =>
-              F.raiseError(new JsonSelectorException("unexpected end of input", input.length))
+              if (fst)
+                F.pure((_ => Selector.ThisSelector, input.length))
+              else
+                F.raiseError(new JsonSelectorException("unexpected end of input", input.length))
           }
         maker.flatMap {
           case (maker, idx) =>
@@ -165,7 +168,7 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
   private def parseTail(idx: Int, left: Selector): F[(Selector, Int)] =
     next(idx).flatMap {
       case Some((_, _)) =>
-        parseSelector(idx).flatMap {
+        parseSelector(idx, false).flatMap {
           case (s, idx) =>
             parseTail(idx, s).map {
               case (tail, idx) => (Selector.PipeSelector(left, tail), idx)
@@ -176,7 +179,7 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
     }
 
   def parse(): F[Selector] =
-    parseSelector(0)
+    parseSelector(0, true)
       .flatMap {
         case (f, idx) => parseTail(idx, f)
       }
