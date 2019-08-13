@@ -31,6 +31,8 @@ trait Fs2DataModule extends ScalaModule with ScalafmtModule {
       ivy"co.fs2::fs2-core:$fs2Version",
       ivy"org.scala-lang.modules::scala-collection-compat:2.1.1")
 
+  def scalacPluginIvyDeps = Agg(ivy"com.olegpy::better-monadic-for:0.3.1")
+
   trait Fs2DataTests extends Tests {
     def ivyDeps =
       Agg(
@@ -109,5 +111,26 @@ class JsonModule(val crossScalaVersion: String) extends Fs2DataModule with Cross
       )
 
   }
+
+}
+
+object xml extends Cross[XmlModule](scala212, scala213)
+
+class XmlModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule with PublishModule {
+  outer =>
+
+  def publishVersion = fs2DataVersion
+
+  def artifactName = "fs2-data-xml"
+
+  def pomSettings =
+    PomSettings(
+      description = "Streaming XML manipulation library",
+      organization = "org.gnieh",
+      url = fs2DataUrl,
+      licenses = Seq(fs2DataLicense),
+      versionControl = VersionControl.github("satabin", "fs2-data"),
+      developers = Seq(fs2DataDeveloper)
+    )
 
 }
