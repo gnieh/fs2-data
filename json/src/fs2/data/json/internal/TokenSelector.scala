@@ -22,8 +22,6 @@ import ast._
 
 import cats._
 
-import scala.annotation.switch
-
 import scala.language.higherKinds
 
 private[json] object TokenSelector {

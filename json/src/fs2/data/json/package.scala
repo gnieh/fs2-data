@@ -20,14 +20,8 @@ import json.ast._
 import json.internals._
 
 import cats._
-import cats.effect._
-import cats.data.NonEmptyList
-import cats.implicits._
 
-import scala.annotation.switch
-import scala.collection.compat._
-
-import scala.language.{higherKinds, implicitConversions}
+import scala.language.higherKinds
 
 /** Handles stream parsing and traversing of json documents.
   */

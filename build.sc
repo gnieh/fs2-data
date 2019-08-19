@@ -24,7 +24,7 @@ val fs2DataDeveloper = Developer("satabin", "Lucas Satabin", "https://github.com
 
 trait Fs2DataModule extends ScalaModule with ScalafmtModule {
 
-  def scalacOptions = Seq("-feature", "-deprecation", "-unchecked", "-Ypatmat-exhaust-depth", "off")
+  def scalacOptions = Seq("-feature", "-deprecation", "-unchecked", "-Ypatmat-exhaust-depth", "off", "-Ywarn-unused:imports")
 
   def ivyDeps =
     Agg(
@@ -133,4 +133,5 @@ class XmlModule(val crossScalaVersion: String) extends Fs2DataModule with CrossS
       developers = Seq(fs2DataDeveloper)
     )
 
+  object test extends Fs2DataTests
 }

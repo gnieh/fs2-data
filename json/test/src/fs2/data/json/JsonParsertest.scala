@@ -17,14 +17,12 @@ package fs2.data.json
 
 import circe._
 
-import io.circe._
 import io.circe.parser._
 
 import fs2._
 import fs2.io._
 
 import cats.effect._
-import cats.implicits._
 
 import org.scalatest._
 
@@ -33,7 +31,6 @@ import scala.concurrent._
 import better.files.{Resource => _, _}
 
 import java.util.concurrent._
-import scala.util.Try
 
 sealed trait Expectation
 object Expectation {
