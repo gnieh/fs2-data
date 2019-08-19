@@ -14,7 +14,7 @@ val scala213 = "2.13.0"
 val fs2Version = "1.1.0-M1"
 val circeVersion = "0.12.0-M4"
 
-val fs2DataVersion = "0.3.0-SNAPSHOT"
+val fs2DataVersion = "0.4.0-SNAPSHOT"
 
 val fs2DataLicense = License.`Apache-2.0`
 
@@ -24,12 +24,14 @@ val fs2DataDeveloper = Developer("satabin", "Lucas Satabin", "https://github.com
 
 trait Fs2DataModule extends ScalaModule with ScalafmtModule {
 
-  def scalacOptions = Seq("-feature", "-deprecation", "-unchecked", "-Ypatmat-exhaust-depth", "off")
+  def scalacOptions = Seq("-feature", "-deprecation", "-unchecked", "-Ypatmat-exhaust-depth", "off", "-Ywarn-unused:imports")
 
   def ivyDeps =
     Agg(
       ivy"co.fs2::fs2-core:$fs2Version",
       ivy"org.scala-lang.modules::scala-collection-compat:2.1.1")
+
+  def scalacPluginIvyDeps = Agg(ivy"com.olegpy::better-monadic-for:0.3.1")
 
   trait Fs2DataTests extends Tests {
     def ivyDeps =
@@ -110,4 +112,26 @@ class JsonModule(val crossScalaVersion: String) extends Fs2DataModule with Cross
 
   }
 
+}
+
+object xml extends Cross[XmlModule](scala212, scala213)
+
+class XmlModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule with PublishModule {
+  outer =>
+
+  def publishVersion = fs2DataVersion
+
+  def artifactName = "fs2-data-xml"
+
+  def pomSettings =
+    PomSettings(
+      description = "Streaming XML manipulation library",
+      organization = "org.gnieh",
+      url = fs2DataUrl,
+      licenses = Seq(fs2DataLicense),
+      versionControl = VersionControl.github("satabin", "fs2-data"),
+      developers = Seq(fs2DataDeveloper)
+    )
+
+  object test extends Fs2DataTests
 }

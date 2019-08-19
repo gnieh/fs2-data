@@ -23,7 +23,6 @@ import ast._
 import cats._
 
 import scala.collection.immutable.VectorBuilder
-import scala.collection.compat._
 
 import scala.language.higherKinds
 
