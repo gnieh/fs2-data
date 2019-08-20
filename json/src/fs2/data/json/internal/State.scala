@@ -13,24 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.json
+package fs2.data.json.internals
 
-import scala.annotation.switch
-
-private object NumberState {
-  final val NumberStart = 0
-  final val IntegerStart = 1
-  final val IntegerBody = 2
-  final val FractionStart = 3
-  final val FractionOne = 4
-  final val FractionBody = 5
-  final val ExponentSign = 6
-  final val ExponentOne = 7
-  final val ExponentBody = 8
-  final val Invalid = 9
-  def isFinal(state: Int): Boolean =
-    (state: @switch) match {
-      case 2 | 3 | 5 | 8 => true
-      case _             => false
-    }
+private[internals] object State {
+  final val BeforeValue = 0
+  final val BeforeObjectKey = 1
+  final val ExpectObjectKey = 2
+  final val AfterObjectKey = 3
+  final val BeforeObjectValue = 4
+  final val AfterObjectValue = 5
+  final val BeforeArrayValue = 6
+  final val ExpectArrayValue = 7
+  final val AfterArrayValue = 8
 }

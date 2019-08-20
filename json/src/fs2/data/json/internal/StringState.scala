@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.json
+package fs2.data.json.internals
 
-private object StringState {
+private[internals] object StringState {
   final val Normal = 6
   final val SeenBackslash = 5
   final val Expect4Unicode = 4
