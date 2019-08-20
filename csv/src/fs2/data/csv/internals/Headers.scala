@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.csv
+package fs2
+package data
+package csv
+package internals
 
 import cats.data._
 
 private sealed trait Headers[Header]
 
-private object Headers {
+private[internals] object Headers {
 
   case class Uninitialized[Header]() extends Headers[Header]
 

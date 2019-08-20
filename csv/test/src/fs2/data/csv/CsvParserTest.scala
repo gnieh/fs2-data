@@ -17,6 +17,7 @@ package fs2.data.csv
 
 import io.circe.parser._
 
+import fs2._
 import fs2.io._
 
 import cats.effect._
@@ -55,7 +56,10 @@ class CsvParserTest extends FlatSpec with Matchers with BeforeAndAfterAll {
       val actual =
         file
           .readAll[IO](path.path, blocker, 1024)
-          .through(fromBytes[IO]().withHeaders[String])
+          .through(fs2.text.utf8Decode)
+          .flatMap(Stream.emits(_))
+          .through(rows[IO]())
+          .through(headers[IO, String])
           .compile
           .toList
           .unsafeRunSync()
