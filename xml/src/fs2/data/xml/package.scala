@@ -24,6 +24,10 @@ import scala.language.higherKinds
 
 package object xml {
 
+  /** The predefined XML character entities
+    */
+  val xmlEntities = Map("quot" -> "\"", "amp" -> "&", "apos" -> "'", "lt" -> "<", "gt" -> ">")
+
   /** Transforms a stream of characters into a stream of XML events.
     * Emitted tokens are guaranteed to be valid up to that point.
     * If the streams ends without failure, the sequence of tokens is sensured
@@ -31,5 +35,19 @@ package object xml {
     */
   def events[F[_]](implicit F: ApplicativeError[F, Throwable]): Pipe[F, Char, XmlEvent] =
     EventParser.pipe[F]
+
+  /** Resolves the character and entity references in the XML stream.
+    */
+  def referenceResolver[F[_]](entities: Map[String, String] = xmlEntities)(
+      implicit F: MonadError[F, Throwable]): Pipe[F, XmlEvent, XmlEvent] =
+    ReferenceResolver[F](entities).pipe
+
+  /** Resolves all prefixes in [[QName]]s.
+    * Assumes that entity and character references have been resolved
+    * already. Make stream go through [[referenceResolver]] first if you
+    * need it (not needed if you xml doesn't contain any such reference).
+    */
+  def namespaceResolver[F[_]](implicit F: MonadError[F, Throwable]): Pipe[F, XmlEvent, XmlEvent] =
+    NamespaceResolver[F].pipe
 
 }

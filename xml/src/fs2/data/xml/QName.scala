@@ -20,7 +20,7 @@ package xml
 case class QName(prefix: Option[String], local: String) {
 
   def render: String = prefix match {
-    case Some(prefix) => f"$prefix:$local"
+    case Some(prefix) => f"${prefix}:$local"
     case None         => local
   }
 

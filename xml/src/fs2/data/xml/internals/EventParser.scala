@@ -69,7 +69,7 @@ private[xml] object EventParser {
     import java.lang.Character._
     getType(c).toByte match {
       case LOWERCASE_LETTER | UPPERCASE_LETTER | OTHER_LETTER | TITLECASE_LETTER | LETTER_NUMBER => true
-      case _                                                                                     => c == '_' || c == ':'
+      case _                                                                                     => c == '_'
     }
   }
 
@@ -459,14 +459,14 @@ private[xml] object EventParser {
                                        delim: Option[Char],
                                        current: StringBuilder,
                                        builder: VectorBuilder[XmlEvent.XmlTexty])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, Seq[XmlEvent.XmlTexty]]] = {
+      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, List[XmlEvent.XmlTexty]]] = {
     val delimiters = delim.fold(valueDelimiters)(valueDelimiters + _)
     untilChar(ctx, delimiters.contains(_), current).flatMap { ctx =>
       nextChar(ctx).flatMap {
         case (ctx, c) if Some(c) == delim =>
           if (!current.isEmpty)
             builder += XmlEvent.XmlString(current.toString, false)
-          Pull.pure((ctx, builder.result))
+          Pull.pure((ctx, builder.result.toList))
         case (ctx, '\r') =>
           nextChar(ctx).flatMap {
             case (ctx, '\n') =>
@@ -492,10 +492,10 @@ private[xml] object EventParser {
                   readAttributeValue(ctx, is11, delim, new StringBuilder, builder)
               }
             case None =>
-              fail[F, Result[F, Seq[XmlEvent.XmlTexty]]]("1", "unexpected end of input")
+              fail[F, Result[F, List[XmlEvent.XmlTexty]]]("1", "unexpected end of input")
           }
         case (_, c) =>
-          fail[F, Result[F, Seq[XmlEvent.XmlTexty]]]("10", s"unexpected character '$c'")
+          fail[F, Result[F, List[XmlEvent.XmlTexty]]]("10", s"unexpected character '$c'")
       }
     }
   }
