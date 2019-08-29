@@ -37,6 +37,8 @@ package object xml {
     EventParser.pipe[F]
 
   /** Resolves the character and entity references in the XML stream.
+    * Entities are already defined and validated (especially no recursion),
+    * hence the `entities` map contains the resolved text to replace the entity by.
     */
   def referenceResolver[F[_]](entities: Map[String, String] = xmlEntities)(
       implicit F: MonadError[F, Throwable]): Pipe[F, XmlEvent, XmlEvent] =
@@ -49,5 +51,14 @@ package object xml {
     */
   def namespaceResolver[F[_]](implicit F: MonadError[F, Throwable]): Pipe[F, XmlEvent, XmlEvent] =
     NamespaceResolver[F].pipe
+
+  /** Performs some event normalizations:
+    *  - group consecutive non CDATA [[XmlEvent.XmlString]]s
+    * This can be useful to merge texts once references have been resolved.
+    * Attribute values are also normalized, so that they will end up being
+    * one single string after normalization if references have been replaced.
+    */
+  def normalize[F[_]]: Pipe[F, XmlEvent, XmlEvent] =
+    Normalizer.pipe[F]
 
 }
