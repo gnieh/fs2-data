@@ -26,3 +26,15 @@ abstract class XmlError(val name: String)
 
 /** Represents a syntax error according to an XML production rule. */
 case class XmlSyntax(id: String) extends XmlError(f"XML [$id]")
+
+/** Represents a namespace constraint as defined in the XML namespaces recommendation. */
+sealed abstract class NSError(name: String) extends XmlError(name)
+case object NSCPrefixDeclared extends NSError("[NSC: Prefix Declared]")
+case object NSCNoPrefixUndeclaring extends NSError("[NSC: No Prefix Undeclaring]")
+case object NSCAttributesUnique extends NSError("[NSC: Attributes Unique]")
+
+/** Represents a Well-formedness constraint as defined in the XML specification. */
+sealed abstract class WFError(name: String) extends XmlError(name)
+case object WFCElementTypeMatch extends WFError("[WFC: Element Type Match]")
+case object WFCEntityDeclared extends WFError("[WFC: Entity Declared]")
+case object WFCNoRecursion extends WFError("[WFC: No Recursion]")

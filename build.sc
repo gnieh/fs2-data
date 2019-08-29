@@ -24,14 +24,21 @@ val fs2DataDeveloper = Developer("satabin", "Lucas Satabin", "https://github.com
 
 trait Fs2DataModule extends ScalaModule with ScalafmtModule {
 
-  def scalacOptions = Seq("-feature", "-deprecation", "-unchecked", "-Ypatmat-exhaust-depth", "off", "-Ywarn-unused:imports")
+  def scalacOptions =
+	 Seq("-feature", "-deprecation", "-unchecked", "-Ypatmat-exhaust-depth", "off", "-Ywarn-unused:imports") ++
+	 (if(scalaVersion().startsWith("2.13"))
+     Seq()
+   else
+     Seq("-Ypartial-unification"))
 
   def ivyDeps =
     Agg(
       ivy"co.fs2::fs2-core:$fs2Version",
       ivy"org.scala-lang.modules::scala-collection-compat:2.1.1")
 
-  def scalacPluginIvyDeps = Agg(ivy"com.olegpy::better-monadic-for:0.3.1")
+  def scalacPluginIvyDeps = Agg(
+    ivy"org.typelevel::kind-projector:0.10.3",
+    ivy"com.olegpy::better-monadic-for:0.3.1")
 
   trait Fs2DataTests extends Tests {
     def ivyDeps =
@@ -114,14 +121,41 @@ class JsonModule(val crossScalaVersion: String) extends Fs2DataModule with Cross
 
 }
 
+object tree extends Cross[TreeModule](scala212, scala213)
+
+class TreeModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule with PublishModule {
+  outer =>
+
+  def scalacPluginIvyDeps = Agg(ivy"org.typelevel::kind-projector:0.10.3")
+
+  def publishVersion = fs2DataVersion
+
+  def artifactName = "fs2-data-tree"
+
+  def pomSettings =
+    PomSettings(
+      description = "Generic tree manipulation library",
+      organization = "org.gnieh",
+      url = fs2DataUrl,
+      licenses = Seq(fs2DataLicense),
+      versionControl = VersionControl.github("satabin", "fs2-data"),
+      developers = Seq(fs2DataDeveloper)
+    )
+
+}
+
 object xml extends Cross[XmlModule](scala212, scala213)
 
 class XmlModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule with PublishModule {
   outer =>
 
+  def scalacPluginIvyDeps = Agg(ivy"com.olegpy::better-monadic-for:0.3.1")
+
   def publishVersion = fs2DataVersion
 
   def artifactName = "fs2-data-xml"
+
+  def moduleDeps = Seq(tree())
 
   def pomSettings =
     PomSettings(

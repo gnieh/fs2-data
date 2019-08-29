@@ -1,5 +1,8 @@
+<!--
+According to the XML Names specification, empty prefixes are not allowed
 <!DOCTYPE doc [
 <!ELEMENT doc (#PCDATA)>
 <!ATTLIST doc : CDATA #IMPLIED>
 ]>
 <doc :="v1"></doc>
+-->

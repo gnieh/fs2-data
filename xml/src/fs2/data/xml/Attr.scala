@@ -17,4 +17,4 @@ package fs2
 package data
 package xml
 
-case class Attr(name: QName, value: Seq[XmlEvent.XmlTexty])
+case class Attr(name: QName, value: List[XmlEvent.XmlTexty])

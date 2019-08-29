@@ -21,19 +21,27 @@ sealed trait XmlEvent
 
 object XmlEvent {
 
-  sealed trait XmlTexty extends XmlEvent
+  sealed trait XmlTexty extends XmlEvent {
+    def render: String
+  }
 
   case object StartDocument extends XmlEvent
 
   case class XmlDecl(version: String, encoding: Option[String], standalone: Option[Boolean]) extends XmlEvent
 
-  case class StartTag(name: QName, attributes: Seq[Attr], isEmpty: Boolean) extends XmlEvent
+  case class StartTag(name: QName, attributes: List[Attr], isEmpty: Boolean) extends XmlEvent
 
-  case class XmlCharRef(value: Int) extends XmlTexty
+  case class XmlCharRef(value: Int) extends XmlTexty {
+    def render = f"&#x$value%04x;"
+  }
 
-  case class XmlEntityRef(name: String) extends XmlTexty
+  case class XmlEntityRef(name: String) extends XmlTexty {
+    def render = s"&$name;"
+  }
 
-  case class XmlString(s: String, isCDATA: Boolean) extends XmlTexty
+  case class XmlString(s: String, isCDATA: Boolean) extends XmlTexty {
+    def render = s
+  }
 
   case class XmlPI(target: String, content: String) extends XmlEvent
 
