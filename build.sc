@@ -11,7 +11,7 @@ val scala213 = "2.13.1"
 val fs2Version = "2.0.0"
 val circeVersion = "0.12.1"
 
-val fs2DataVersion = "0.4.0-SNAPSHOT"
+val fs2DataVersion = "0.4.0"
 
 val fs2DataLicense = License.`Apache-2.0`
 
