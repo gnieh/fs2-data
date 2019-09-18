@@ -3,16 +3,13 @@ import scalalib._
 import scalafmt._
 import publish._
 
-val millVersion = System.getProperty("MILL_VERSION")
-interp.load.ivy("com.lihaoyi" %% "mill-contrib-bloop" % millVersion)
-
-@
+import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 
 val scala212 = "2.12.8"
 val scala213 = "2.13.0"
 
-val fs2Version = "1.1.0-M1"
-val circeVersion = "0.12.0-M4"
+val fs2Version = "2.0.0"
+val circeVersion = "0.12.1"
 
 val fs2DataVersion = "0.4.0-SNAPSHOT"
 
@@ -34,7 +31,7 @@ trait Fs2DataModule extends ScalaModule with ScalafmtModule {
   def ivyDeps =
     Agg(
       ivy"co.fs2::fs2-core:$fs2Version",
-      ivy"org.scala-lang.modules::scala-collection-compat:2.1.1")
+      ivy"org.scala-lang.modules::scala-collection-compat:2.1.2")
 
   def scalacPluginIvyDeps = Agg(
     ivy"org.typelevel::kind-projector:0.10.3",

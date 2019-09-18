@@ -331,5 +331,5 @@ private[json] object TokenParser {
   }
 
   def pipe[F[_]](implicit F: ApplicativeError[F, Throwable]): Pipe[F, Char, Token] =
-    s => go_(Chunk.empty, 0, s, State.BeforeValue, Nil, Nil).stream
+    s => go_(Chunk.empty, 0, s, State.BeforeValue, Nil, Nil).void.stream
 }
