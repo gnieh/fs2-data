@@ -23,8 +23,7 @@ import cats.implicits._
 
 import scala.language.higherKinds
 
-private[xml] class ReferenceResolver[F[_]](entities: Map[String, String])(
-    implicit F: MonadError[F, Throwable]) {
+private[xml] class ReferenceResolver[F[_]](entities: Map[String, String])(implicit F: MonadError[F, Throwable]) {
 
   def pipe: Pipe[F, XmlEvent, XmlEvent] =
     _.evalMap[F, XmlEvent] {

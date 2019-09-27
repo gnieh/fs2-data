@@ -39,7 +39,7 @@ object ParseableHeader {
 
   implicit object NonEmptyStringParseableHeader extends ParseableHeader[Option[String]] {
     def parse(name: String) =
-      if(name.isEmpty)
+      if (name.isEmpty)
         None
       else
         Some(name)

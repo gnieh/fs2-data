@@ -367,7 +367,7 @@ private[xml] object EventParser {
             case (_, t)                               => fail[F, Option[Result[F, MarkupToken]]]("22", s"unexpected token '$t'")
           }
         case Some((_, c)) => fail[F, Option[Result[F, MarkupToken]]]("22", s"unexpected character '$c'")
-        case None    => Pull.pure(None)
+        case None         => Pull.pure(None)
       }
     }
 
