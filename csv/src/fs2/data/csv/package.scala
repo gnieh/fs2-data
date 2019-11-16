@@ -20,10 +20,13 @@ import csv.internals._
 
 import cats._
 import cats.data._
+import cats.implicits._
 
 import scala.language.higherKinds
 
 package object csv {
+
+  type DecoderResult[T] = Either[DecoderError, T]
 
   /** Transforms a stream of characters into a stream of CSV rows.
     */
@@ -39,5 +42,17 @@ package object csv {
   /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
   def noHeaders[F[_]](implicit F: ApplicativeError[F, Throwable]): Pipe[F, NonEmptyList[String], CsvRow[Nothing]] =
     CsvRowParser.pipe[F, Nothing](false)
+
+  def decode[F[_], R](implicit F: ApplicativeError[F, Throwable], R: RowDecoder[R]): Pipe[F, NonEmptyList[String], R] =
+    _.evalMap(R(_).liftTo[F])
+
+  def attemptDecode[F[_], R](implicit F: Applicative[F], R: RowDecoder[R]): Pipe[F, NonEmptyList[String], DecoderResult[R]] =
+    _.map(R(_))
+
+  def decodeRow[F[_], Header, R](implicit F: ApplicativeError[F, Throwable], R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], R] =
+    _.evalMap(R(_).liftTo[F])
+
+  def attemptDecodeRow[F[_], Header, R](implicit F: Applicative[F], R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], DecoderResult[R]] =
+    _.map(R(_))
 
 }

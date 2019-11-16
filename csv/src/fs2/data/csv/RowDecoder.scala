@@ -15,4 +15,22 @@
  */
 package fs2.data.csv
 
-class CsvException(msg: String) extends Exception(msg)
+import cats._
+import cats.data.NonEmptyList
+
+/** Describes how a row can be decoded to the given type.
+  */
+trait RowDecoder[T] {
+  def apply(cells: NonEmptyList[String]): DecoderResult[T]
+}
+
+object RowDecoder {
+
+  implicit object RowDecoderFunctor extends Functor[RowDecoder] {
+    def map[A, B](fa: RowDecoder[A])(f: A => B): RowDecoder[B] =
+      cells => fa(cells).map(f)
+  }
+
+  def apply[T: RowDecoder]: RowDecoder[T] = implicitly[RowDecoder[T]]
+
+}
