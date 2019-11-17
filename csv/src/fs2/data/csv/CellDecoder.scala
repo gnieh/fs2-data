@@ -19,6 +19,7 @@ import cats._
 import cats.implicits._
 
 import scala.util.Try
+import scala.annotation.tailrec
 
 /** Describes how a cell can be decoded to the given type.
   */
@@ -28,9 +29,30 @@ trait CellDecoder[T] {
 
 object CellDecoder {
 
-  implicit object CellDecoderFunctor extends Functor[CellDecoder] {
-    def map[A, B](fa: CellDecoder[A])(f: A => B): CellDecoder[B] =
-      s => fa(s).map(f)
+  implicit object CellDecoderMonadError extends MonadError[CellDecoder, DecoderError] {
+    def flatMap[A, B](fa: CellDecoder[A])(f: A => CellDecoder[B]): CellDecoder[B] =
+      s => fa(s).flatMap(f(_)(s))
+
+    def handleErrorWith[A](fa: CellDecoder[A])(f: DecoderError => CellDecoder[A]): CellDecoder[A] =
+      s => fa(s).leftFlatMap(f(_)(s))
+
+    def pure[A](x: A): CellDecoder[A] =
+      s => Right(x)
+
+    def raiseError[A](e: DecoderError): CellDecoder[A] =
+      s => Left(e)
+
+    def tailRecM[A, B](a: A)(f: A => CellDecoder[Either[A, B]]): CellDecoder[B] = {
+      @tailrec
+      def step(s: String, a: A): DecoderResult[B] =
+        f(a)(s) match {
+          case left @ Left(_)          => left.rightCast[B]
+          case Right(Left(a))          => step(s, a)
+          case Right(right @ Right(_)) => right.leftCast[DecoderError]
+        }
+      s => step(s, a)
+    }
+
   }
 
   def apply[T: CellDecoder]: CellDecoder[T] = implicitly[CellDecoder[T]]

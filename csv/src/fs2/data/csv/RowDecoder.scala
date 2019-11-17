@@ -16,7 +16,10 @@
 package fs2.data.csv
 
 import cats._
+import cats.implicits._
 import cats.data.NonEmptyList
+
+import scala.annotation.tailrec
 
 /** Describes how a row can be decoded to the given type.
   */
@@ -26,9 +29,30 @@ trait RowDecoder[T] {
 
 object RowDecoder {
 
-  implicit object RowDecoderFunctor extends Functor[RowDecoder] {
-    def map[A, B](fa: RowDecoder[A])(f: A => B): RowDecoder[B] =
-      cells => fa(cells).map(f)
+  implicit object RowDecoderMonadError extends MonadError[RowDecoder, DecoderError] {
+    def flatMap[A, B](fa: RowDecoder[A])(f: A => RowDecoder[B]): RowDecoder[B] =
+      cells => fa(cells).flatMap(f(_)(cells))
+
+    def handleErrorWith[A](fa: RowDecoder[A])(f: DecoderError => RowDecoder[A]): RowDecoder[A] =
+      cells => fa(cells).leftFlatMap(f(_)(cells))
+
+    def pure[A](x: A): RowDecoder[A] =
+      _ => Right(x)
+
+    def raiseError[A](e: DecoderError): RowDecoder[A] =
+      _ => Left(e)
+
+    def tailRecM[A, B](a: A)(f: A => RowDecoder[Either[A, B]]): RowDecoder[B] = {
+      @tailrec
+      def step(cells: NonEmptyList[String], a: A): DecoderResult[B] =
+        f(a)(cells) match {
+          case left @ Left(_)          => left.rightCast[B]
+          case Right(Left(a))          => step(cells, a)
+          case Right(right @ Right(_)) => right.leftCast[DecoderError]
+        }
+      cells => step(cells, a)
+    }
+
   }
 
   def apply[T: RowDecoder]: RowDecoder[T] = implicitly[RowDecoder[T]]

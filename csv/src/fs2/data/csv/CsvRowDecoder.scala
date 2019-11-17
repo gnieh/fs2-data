@@ -16,6 +16,9 @@
 package fs2.data.csv
 
 import cats._
+import cats.implicits._
+
+import scala.annotation.tailrec
 
 /** Describes how a row can be decoded to the given type.
   */
@@ -25,10 +28,31 @@ trait CsvRowDecoder[T, Header] {
 
 object CsvRowDecoder {
 
-  implicit def CsvRowDecoderFunctor[Header]: Functor[CsvRowDecoder[*, Header]] =
-    new Functor[CsvRowDecoder[*, Header]] {
-      def map[A, B](fa: CsvRowDecoder[A, Header])(f: A => B): CsvRowDecoder[B, Header] =
-        row => fa(row).map(f)
+  implicit def CsvRowDecoderMonadError[Header]: MonadError[CsvRowDecoder[*, Header], DecoderError] =
+    new MonadError[CsvRowDecoder[*, Header], DecoderError] {
+      def flatMap[A, B](fa: CsvRowDecoder[A, Header])(f: A => CsvRowDecoder[B, Header]): CsvRowDecoder[B, Header] =
+        row => fa(row).flatMap(f(_)(row))
+
+      def handleErrorWith[A](fa: CsvRowDecoder[A, Header])(
+          f: DecoderError => CsvRowDecoder[A, Header]): CsvRowDecoder[A, Header] =
+        row => fa(row).leftFlatMap(f(_)(row))
+
+      def pure[A](x: A): CsvRowDecoder[A, Header] =
+        _ => Right(x)
+
+      def raiseError[A](e: DecoderError): CsvRowDecoder[A, Header] =
+        _ => Left(e)
+
+      def tailRecM[A, B](a: A)(f: A => CsvRowDecoder[Either[A, B], Header]): CsvRowDecoder[B, Header] = {
+        @tailrec
+        def step(row: CsvRow[Header], a: A): DecoderResult[B] =
+          f(a)(row) match {
+            case left @ Left(_)          => left.rightCast[B]
+            case Right(Left(a))          => step(row, a)
+            case Right(right @ Right(_)) => right.leftCast[DecoderError]
+          }
+        row => step(row, a)
+      }
     }
 
   implicit def RowDecoderCsvRowDecoder[T](implicit T: RowDecoder[T]): CsvRowDecoder[T, Nothing] =

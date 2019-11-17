@@ -46,13 +46,16 @@ package object csv {
   def decode[F[_], R](implicit F: ApplicativeError[F, Throwable], R: RowDecoder[R]): Pipe[F, NonEmptyList[String], R] =
     _.evalMap(R(_).liftTo[F])
 
-  def attemptDecode[F[_], R](implicit F: Applicative[F], R: RowDecoder[R]): Pipe[F, NonEmptyList[String], DecoderResult[R]] =
+  def attemptDecode[F[_], R](implicit F: Applicative[F],
+                             R: RowDecoder[R]): Pipe[F, NonEmptyList[String], DecoderResult[R]] =
     _.map(R(_))
 
-  def decodeRow[F[_], Header, R](implicit F: ApplicativeError[F, Throwable], R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], R] =
+  def decodeRow[F[_], Header, R](implicit F: ApplicativeError[F, Throwable],
+                                 R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], R] =
     _.evalMap(R(_).liftTo[F])
 
-  def attemptDecodeRow[F[_], Header, R](implicit F: Applicative[F], R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], DecoderResult[R]] =
+  def attemptDecodeRow[F[_], Header, R](implicit F: Applicative[F],
+                                        R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], DecoderResult[R]] =
     _.map(R(_))
 
 }
