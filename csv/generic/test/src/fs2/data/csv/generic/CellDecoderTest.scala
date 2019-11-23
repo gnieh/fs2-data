@@ -48,7 +48,7 @@ class CellDecoderTest extends FlatSpec with Matchers with EitherValues {
     complexDecoder("foo") shouldBe Right(Unknown("foo"))
   }
 
-  it should "respect @CsvName annotations" in {
+  it should "respect @CsvValue annotations" in {
     val alphabetDecoder: CellDecoder[Alphabet] = semiauto.deriveCellDecoder
 
     Annotation[CsvValue, Alpha.type].apply().value shouldBe "A"

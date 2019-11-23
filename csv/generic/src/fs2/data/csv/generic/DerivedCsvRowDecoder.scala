@@ -24,14 +24,15 @@ trait DerivedCsvRowDecoder[T] extends CsvRowDecoder[T, String]
 
 object DerivedCsvRowDecoder {
 
-  final implicit def productReader[T, Repr <: HList, DefaultRepr <: HList](
+  final implicit def productReader[T, Repr <: HList, DefaultRepr <: HList, AnnoRepr <: HList](
       implicit
       gen: LabelledGeneric.Aux[T, Repr],
       defaults: Default.AsOptions.Aux[T, DefaultRepr],
-      cc: Lazy[MapShapedCsvRowDecoder.WithDefaults[T, Repr, DefaultRepr]]): DerivedCsvRowDecoder[T] =
+      annotations: Annotations.Aux[CsvName, T, AnnoRepr],
+      cc: Lazy[MapShapedCsvRowDecoder.WithDefaults[T, Repr, DefaultRepr, AnnoRepr]]): DerivedCsvRowDecoder[T] =
     new DerivedCsvRowDecoder[T] {
       def apply(row: CsvRow[String]): DecoderResult[T] =
-        cc.value.fromWithDefault(row, defaults()).map(gen.from(_))
+        cc.value.fromWithDefault(row, defaults(), annotations()).map(gen.from(_))
     }
 
 }
