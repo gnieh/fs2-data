@@ -115,13 +115,14 @@ class JsonModule(val crossScalaVersion: String) extends Fs2DataModule with Cross
       developers = Seq(fs2DataDeveloper)
     )
 
-    object test extends Fs2DataTests {
-      def moduleDeps = Seq(circe)
-    }
+  object test extends Fs2DataTests {
+    def moduleDeps = Seq(circe(outer.crossScalaVersion))
+  }
 
-  object circe extends Fs2DataModule with PublishModule {
+  object circe extends Cross[CirceModule](scala212, scala213)
+
+  class CirceModule(val crossScalaVersion: String) extends Fs2DataModule with PublishModule {
     def scalaVersion = outer.scalaVersion
-    def crossScalaVersion = outer.crossScalaVersion
     def moduleDeps = Seq(outer)
     def ivyDeps = Agg(ivy"io.circe::circe-core:$circeVersion")
 
