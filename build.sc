@@ -12,7 +12,7 @@ val fs2Version = "2.1.0"
 val circeVersion = "0.12.3"
 val shapelessVersion = "2.3.3"
 
-val fs2DataVersion = "0.4.0"
+val fs2DataVersion = "0.5.0"
 
 val fs2DataLicense = License.`Apache-2.0`
 
