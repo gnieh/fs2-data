@@ -28,4 +28,7 @@ object semiauto {
   def deriveCsvRowDecoder[T](implicit T: Lazy[DerivedCsvRowDecoder[T]]): CsvRowDecoder[T, String] =
     T.value
 
+  def deriveCellDecoder[T](implicit T: Lazy[DerivedCellDecoder[T]]): CellDecoder[T] =
+    T.value
+
 }
