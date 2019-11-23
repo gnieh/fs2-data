@@ -16,7 +16,7 @@
 package fs2.data.csv
 
 import java.net.{MalformedURLException, URL}
-import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, OffsetTime, Period, ZonedDateTime}
+import java.time._
 import java.time.format.DateTimeParseException
 import java.util.UUID
 
@@ -106,7 +106,7 @@ object CellDecoder extends CellDecoderInstances1 with LiteralCellDecoders {
   def fromString[T](f: String => T): CellDecoder[T] = s => f(s).asRight
 
   def enumerationDecoder[E <: Enumeration](enum: E): CellDecoder[E#Value] = s =>
-    Either.catchNonFatal(enum.withName(s)).leftMap(new DecoderError(s"unable to decode '$s' as a ${enum.toString()} value", _))
+    enum.values.find(_.toString === s).toRight(new DecoderError(s"unable to decode '$s' as a ${enum.toString()} value"))
 
   // Primitives
   implicit val unitDecoder: CellDecoder[Unit] = s =>
