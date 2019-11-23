@@ -13,6 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.csv
+package fs2
+package data
+package csv
+package generic
 
-class CsvException(msg: String) extends Exception(msg)
+import shapeless._
+
+object semiauto {
+
+  def deriveRowDecoder[T](implicit T: Lazy[DerivedRowDecoder[T]]): RowDecoder[T] =
+    T.value
+
+  def deriveCsvRowDecoder[T](implicit T: Lazy[DerivedCsvRowDecoder[T]]): CsvRowDecoder[T, String] =
+    T.value
+
+}

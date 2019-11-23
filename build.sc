@@ -8,8 +8,9 @@ import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 val scala212 = "2.12.10"
 val scala213 = "2.13.1"
 
-val fs2Version = "2.0.0"
-val circeVersion = "0.12.1"
+val fs2Version = "2.1.0"
+val circeVersion = "0.12.3"
+val shapelessVersion = "2.3.3"
 
 val fs2DataVersion = "0.4.0"
 
@@ -53,6 +54,7 @@ trait Fs2DataModule extends ScalaModule with ScalafmtModule {
 object csv extends Cross[CsvModule](scala212, scala213)
 
 class CsvModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule with PublishModule {
+  outer =>
 
   def publishVersion = fs2DataVersion
 
@@ -67,6 +69,27 @@ class CsvModule(val crossScalaVersion: String) extends Fs2DataModule with CrossS
       versionControl = VersionControl.github("satabin", "fs2-data"),
       developers = Seq(fs2DataDeveloper)
     )
+
+  object generic extends Fs2DataModule with PublishModule {
+    def scalaVersion = outer.scalaVersion
+    def moduleDeps = Seq(outer)
+    def ivyDeps = Agg(ivy"com.chuusai::shapeless:$shapelessVersion")
+
+    def publishVersion = fs2DataVersion
+
+    def artifactName = "fs2-data-csv-generic"
+
+    def pomSettings =
+      PomSettings(
+        description = "Generic CSV row decoder generation",
+        organization = "org.gnieh",
+        url = fs2DataUrl,
+        licenses = Seq(fs2DataLicense),
+        versionControl = VersionControl.github("satabin", "fs2-data"),
+        developers = Seq(fs2DataDeveloper)
+      )
+
+  }
 
   object test extends Fs2DataTests
 
