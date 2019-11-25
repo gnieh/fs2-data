@@ -6,7 +6,7 @@ scala:
   - 2.13.1
 
 script:
-  - ./millw _[$TRAVIS_SCALA_VERSION].test
+  - ./millw _[$TRAVIS_SCALA_VERSION]._.test
 
 cache:
   directories:

@@ -89,6 +89,8 @@ class CsvModule(val crossScalaVersion: String) extends Fs2DataModule with CrossS
         developers = Seq(fs2DataDeveloper)
       )
 
+    object test extends Fs2DataTests
+
   }
 
   object test extends Fs2DataTests
