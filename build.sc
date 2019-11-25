@@ -72,7 +72,6 @@ class CsvModule(val crossScalaVersion: String) extends Fs2DataModule with CrossS
 
   object generic extends Fs2DataModule with PublishModule {
     def scalaVersion = outer.scalaVersion
-    def crossScalaVersion = outer.crossScalaVersion
     def moduleDeps = Seq(outer)
     def ivyDeps = Agg(ivy"com.chuusai::shapeless:$shapelessVersion")
 
