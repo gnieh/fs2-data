@@ -20,7 +20,7 @@ val fs2DataUrl = "https://github.com/satabin/fs2-data"
 
 val fs2DataDeveloper = Developer("satabin", "Lucas Satabin", "https://github.com/satabin")
 
-trait Fs2DataModule extends CrossScalaModule with ScalafmtModule {
+trait Fs2DataModule extends ScalaModule with ScalafmtModule {
 
   def scalacOptions =
 	 Seq("-feature", "-deprecation", "-unchecked", "-Ypatmat-exhaust-depth", "off", "-Ywarn-unused:imports") ++
@@ -121,7 +121,7 @@ class JsonModule(val crossScalaVersion: String) extends Fs2DataModule with Cross
 
   object circe extends Cross[CirceModule](scala212, scala213)
 
-  class CirceModule(val crossScalaVersion: String) extends Fs2DataModule with PublishModule {
+  class CirceModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule with PublishModule {
     def scalaVersion = outer.scalaVersion
     def moduleDeps = Seq(outer)
     def ivyDeps = Agg(ivy"io.circe::circe-core:$circeVersion")
