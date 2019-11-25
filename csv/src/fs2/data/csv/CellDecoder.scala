@@ -33,40 +33,43 @@ trait CellDecoder[T] {
   def apply(cell: String): DecoderResult[T]
 
   /**
-   * Map the parsed value, potentially failing.
-   * @param f the mapping function
-   * @tparam T2 the result type
-   * @return a cell decoder reading the mapped type
-   */
+    * Map the parsed value, potentially failing.
+    * @param f the mapping function
+    * @tparam T2 the result type
+    * @return a cell decoder reading the mapped type
+    */
   def emap[T2](f: T => Either[DecoderError, T2]): CellDecoder[T2] = s => apply(s).flatMap(f)
 
   /**
-   * Fail-over. If this decoder fails, try the supplied other decoder.
-   * @param cd the fail-over decoder
-   * @tparam TT the return type
-   * @return a decoder combining this and the other decoder
-   */
-  def or[TT >: T](cd: => CellDecoder[TT]): CellDecoder[TT] = s =>
-    apply(s) match {
-      case Left(_) => cd(s)
-      case Right(value) => value.asRight
-    }
+    * Fail-over. If this decoder fails, try the supplied other decoder.
+    * @param cd the fail-over decoder
+    * @tparam TT the return type
+    * @return a decoder combining this and the other decoder
+    */
+  def or[TT >: T](cd: => CellDecoder[TT]): CellDecoder[TT] =
+    s =>
+      apply(s) match {
+        case Left(_)      => cd(s)
+        case r @ Right(_) => r.leftCast[DecoderError]
+      }
 
   /**
-   * Similar to [[or]], but return the result as an Either signaling which cell decoder succeeded. Allows for parsing
-   * an unrelated type in case of failure.
-   * @param cd the alternative decoder
-   * @tparam B the type the alternative decoder returns
-   * @return a decoder combining both decoders
-   */
-  def either[B](cd: CellDecoder[B]): CellDecoder[Either[T, B]] = s =>
-    apply(s) match {
-      case Left(_) => cd(s) match {
-        case l @ Left(_) => l.rightCast[Either[T, B]]
-        case r @ Right(_) => r.leftCast[T].asRight
+    * Similar to [[or]], but return the result as an Either signaling which cell decoder succeeded. Allows for parsing
+    * an unrelated type in case of failure.
+    * @param cd the alternative decoder
+    * @tparam B the type the alternative decoder returns
+    * @return a decoder combining both decoders
+    */
+  def either[B](cd: CellDecoder[B]): CellDecoder[Either[T, B]] =
+    s =>
+      apply(s) match {
+        case Left(_) =>
+          cd(s) match {
+            case l @ Left(_)  => l.rightCast[Either[T, B]]
+            case r @ Right(_) => r.leftCast[T].asRight
+          }
+        case Right(value) => Right(Left(value))
       }
-      case Right(value) => Right(Left(value))
-    }
 }
 
 object CellDecoder extends CellDecoderInstances1 with LiteralCellDecoders {
@@ -105,8 +108,11 @@ object CellDecoder extends CellDecoderInstances1 with LiteralCellDecoders {
   @inline
   def fromString[T](f: String => T): CellDecoder[T] = s => f(s).asRight
 
-  def enumerationDecoder[E <: Enumeration](enum: E): CellDecoder[E#Value] = s =>
-    enum.values.find(_.toString === s).toRight(new DecoderError(s"unable to decode '$s' as a ${enum.toString()} value"))
+  def enumerationDecoder[E <: Enumeration](enum: E): CellDecoder[E#Value] =
+    s =>
+      enum.values
+        .find(_.toString === s)
+        .toRight(new DecoderError(s"unable to decode '$s' as a ${enum.toString()} value"))
 
   // Primitives
   implicit val unitDecoder: CellDecoder[Unit] = s =>
@@ -141,30 +147,26 @@ object CellDecoder extends CellDecoderInstances1 with LiteralCellDecoders {
   implicit val charArrayDecoder: CellDecoder[Array[Char]] = s => Right(s.toCharArray)
 
   // Containers
-  implicit def decoderResultDecoder[T](implicit ev: CellDecoder[T]): CellDecoder[DecoderResult[T]] = s =>
-    ev(s).asRight
-  implicit def rawOrResultDecoder[T](implicit ev: CellDecoder[T]): CellDecoder[Either[String, T]] = s =>
-    ev(s).leftMap(_ => s).asRight
-  implicit def optionDecoder[T](implicit ev: CellDecoder[T]): CellDecoder[Option[T]] = s =>
-    if (s.isEmpty)
-      Right(None)
-    else
-      ev(s).map(Some(_))
+  implicit def decoderResultDecoder[T](implicit ev: CellDecoder[T]): CellDecoder[DecoderResult[T]] = s => ev(s).asRight
+  implicit def rawOrResultDecoder[T](implicit ev: CellDecoder[T]): CellDecoder[Either[String, T]] =
+    s => ev(s).leftMap(_ => s).asRight
 
   // Standard Library types
   implicit val finiteDurationDecoder: CellDecoder[FiniteDuration] =
     durationDecoder.emap {
       case fd: FiniteDuration => fd.asRight
-      case d => new DecoderError(s"Parsed duration isn't finite: $d").asLeft
+      case d                  => new DecoderError(s"parsed duration isn't finite: $d").asLeft
     }
 
   implicit val javaUrlDecoder: CellDecoder[URL] = s =>
-    Either.catchOnly[MalformedURLException](new URL(s))
-      .leftMap(t => new DecoderError(s"Couldn't parse URL: ${t.getMessage}", t))
+    Either
+      .catchOnly[MalformedURLException](new URL(s))
+      .leftMap(t => new DecoderError(s"couldn't parse URL", t))
 
   implicit val uuidDecoder: CellDecoder[UUID] = s =>
-    Either.catchOnly[IllegalArgumentException](UUID.fromString(s))
-      .leftMap(t => new DecoderError(s"Couldn't parse UUID: ${t.getMessage}", t))
+    Either
+      .catchOnly[IllegalArgumentException](UUID.fromString(s))
+      .leftMap(t => new DecoderError(s"couldn't parse UUID", t))
 
   // Java Time
   implicit val instantDecoder: CellDecoder[Instant] = javaTimeDecoder("Instant", Instant.parse)
@@ -172,17 +174,21 @@ object CellDecoder extends CellDecoderInstances1 with LiteralCellDecoders {
   implicit val localDateDecoder: CellDecoder[LocalDate] = javaTimeDecoder("LocalDate", LocalDate.parse)
   implicit val localDateTimeDecoder: CellDecoder[LocalDateTime] = javaTimeDecoder("LocalDateTime", LocalDateTime.parse)
   implicit val localTimeDecoder: CellDecoder[LocalTime] = javaTimeDecoder("LocalTime", LocalTime.parse)
-  implicit val offsetDateTimeDecoder: CellDecoder[OffsetDateTime] = javaTimeDecoder("OffsetDateTime", OffsetDateTime.parse)
+  implicit val offsetDateTimeDecoder: CellDecoder[OffsetDateTime] =
+    javaTimeDecoder("OffsetDateTime", OffsetDateTime.parse)
   implicit val offsetTimeDecoder: CellDecoder[OffsetTime] = javaTimeDecoder("OffsetTime", OffsetTime.parse)
   implicit val zonedDateTimeDecoder: CellDecoder[ZonedDateTime] = javaTimeDecoder("ZonedDateTime", ZonedDateTime.parse)
 
-  private def javaTimeDecoder[T](name: String, t: String => T): CellDecoder[T] = s =>
-    Either.catchOnly[DateTimeParseException](t(s))
-      .leftMap(t => new DecoderError(s"Couldn't parse $name: ${t.getMessage}", t))
+  private def javaTimeDecoder[T](name: String, t: String => T): CellDecoder[T] =
+    s =>
+      Either
+        .catchOnly[DateTimeParseException](t(s))
+        .leftMap(t => new DecoderError(s"couldn't parse $name", t))
 }
 
 trait CellDecoderInstances1 {
   implicit val durationDecoder: CellDecoder[Duration] = s =>
-    Either.catchNonFatal(Duration(s))
-      .leftMap(t => new DecoderError(s"Couldn't parse Duration: ${t.getMessage}", t))
+    Either
+      .catchNonFatal(Duration(s))
+      .leftMap(t => new DecoderError(s"couldn't parse Duration", t))
 }

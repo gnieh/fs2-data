@@ -21,7 +21,6 @@ class CellDecoderTest extends FlatSpec with Matchers with EitherValues {
     CellDecoder[java.time.LocalTime]
     CellDecoder[java.time.ZonedDateTime]
 
-    CellDecoder[Option[Int]]
     CellDecoder[DecoderResult[Char]]
     CellDecoder[Either[String, Char]]
   }
@@ -42,8 +41,6 @@ class CellDecoderTest extends FlatSpec with Matchers with EitherValues {
   }
 
   it should "handle container types properly" in {
-    CellDecoder[Option[Int]].apply("45") shouldBe Right(Some(45))
-    CellDecoder[Option[Int]].apply("") shouldBe Right(None)
     CellDecoder[DecoderResult[Char]].apply("G") shouldBe Right(Right('G'))
     CellDecoder[DecoderResult[Char]].apply("").map(_.isLeft) shouldBe Right(true)
     CellDecoder[Either[String, Char]].apply("F") shouldBe Right(Right('F'))
