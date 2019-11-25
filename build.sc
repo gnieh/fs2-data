@@ -116,9 +116,9 @@ class JsonModule(val crossScalaVersion: String) extends Fs2DataModule with Cross
       developers = Seq(fs2DataDeveloper)
     )
 
-    object test extends Fs2DataTests {
-      def moduleDeps = Seq(circe)
-    }
+  object test extends Fs2DataTests {
+    def moduleDeps = Seq(circe)
+  }
 
   object circe extends Fs2DataModule with PublishModule {
     def scalaVersion = outer.scalaVersion
