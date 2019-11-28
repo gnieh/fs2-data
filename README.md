@@ -172,7 +172,7 @@ println(normalized.compile.toList.unsafeRunSync())
 
 ### Stream parser
 
-To create a stream of CSV roes from an input stream, use the `rows` pipe in `fs2.data.csv` package. The default column separator is `,` but this can be overridden by providing the `separator` parameter.
+To create a stream of CSV rows from an input stream, use the `rows` pipe in `fs2.data.csv` package. The default column separator is `,` but this can be overridden by providing the `separator` parameter.
 
 ```scala
 import cats.effect._
@@ -191,7 +191,7 @@ println(stream.compile.toList.unsafeRunSync())
 
 ### CSV Rows with headers
 
-Rows can be converted to a `CsvRow[Header]` for some `Header` type. This class provides higher-level utilies to manipulate rows.
+Rows can be converted to a `CsvRow[Header]` for some `Header` type. This class provides higher-level utilities to manipulate rows.
 
 If your CSV file doesn't have headers, you can use the `noHeaders` pipe, which creates `CsvRow[Nothing]`
 
@@ -207,7 +207,7 @@ val withh = stream.through(headers[IO, String])
 println(withh.map(_.toMap).compile.toList.unsafeRunSync())
 ```
 
-To support your own type of `Header` you must provide an implicit `ParseableHeader[Header]`. For instance if you have a fix set of headers reprenseted as [enumeratum][enumeratum] enum values, you can provide an instance of `ParseableHeader` as follows:
+To support your own type of `Header` you must provide an implicit `ParseableHeader[Header]`. For instance if you have a fix set of headers represented as [enumeratum][enumeratum] enum values, you can provide an instance of `ParseableHeader` as follows:
 
 ```scala
 import enumeratum._
@@ -246,7 +246,36 @@ val decodedH = stream.tail.through(decode[IO, Option[Int] :: String :: Int :: HN
 println(decodedH.compile.toList.unsafeRunSync())
 ```
 
-Cell types (`Int`, `String`, ...) can be decoded by providing implicit instances of `CellDecoder`. Primitive types and `String` are supported by default.
+Cell types (`Int`, `String`, ...) can be decoded by providing implicit instances of `CellDecoder`. Instances for primitives and common types are defined already. You can easily define your own or use generic derivation for coproducts:
+
+```scala
+import fs2.data.csv.generic.semiauto._
+
+sealed trait State
+case object On extends State
+object Off extends State
+
+implicit val stateDecoder = deriveCellDecoder[State]
+// use stateDecoder to derive decoders for rows...or just test:
+println(stateDecoder("On"))
+println(stateDecoder("Off"))
+```
+
+The generic derivation for cell decoders also supports renaming and deriving instances for unary product types (case classes with one field):
+
+```scala
+import fs2.data.csv.generic.semiauto._
+
+sealed trait Advanced
+@CsvName("Active") case object On extends Advanced
+case class Unknown(name: String) extends Advanced
+
+implicit val unknownDecoder = deriveCellDecoder[Unknown] // works as we have an implicit CellDecoder[String]
+implicit val advancedDecoder = deriveCellDecoder[Advanced]
+
+println(advancedDecoder("Active")) // prints Right(On)
+println(advancedDecoder("Off")) // prints Right(Unknown(Off))
+``` 
 
 You can also decode rows to case classes automatically.
 
