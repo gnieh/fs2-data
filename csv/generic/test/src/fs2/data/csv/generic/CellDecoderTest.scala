@@ -16,8 +16,8 @@ case class Numbered(n: Int) extends Complex
 case class Unknown(state: String) extends Complex
 
 sealed trait Alphabet
-@CsvName("A") case object Alpha extends Alphabet
-@CsvName("B") case object Beta extends Alphabet
+@CsvValue("A") case object Alpha extends Alphabet
+@CsvValue("B") case object Beta extends Alphabet
 case object Gamma extends Alphabet
 
 case class IntWrapper(value: Int)
@@ -51,7 +51,7 @@ class CellDecoderTest extends FlatSpec with Matchers with EitherValues {
   it should "respect @CsvName annotations" in {
     val alphabetDecoder: CellDecoder[Alphabet] = semiauto.deriveCellDecoder
 
-    Annotation[CsvName, Alpha.type].apply().name shouldBe "A"
+    Annotation[CsvValue, Alpha.type].apply().value shouldBe "A"
 
     alphabetDecoder("A") shouldBe Right(Alpha)
     alphabetDecoder("B") shouldBe Right(Beta)

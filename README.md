@@ -267,7 +267,7 @@ The generic derivation for cell decoders also supports renaming and deriving ins
 import fs2.data.csv.generic.semiauto._
 
 sealed trait Advanced
-@CsvName("Active") case object On extends Advanced
+@CsvValue("Active") case object On extends Advanced
 case class Unknown(name: String) extends Advanced
 
 implicit val unknownDecoder = deriveCellDecoder[Unknown] // works as we have an implicit CellDecoder[String]

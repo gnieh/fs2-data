@@ -57,13 +57,13 @@ object DerivedCellDecoder extends DerivedCellDecoderInstances0 {
 
 trait DerivedCellDecoderInstances0 extends DerivedCellDecoderInstances1 {
   final implicit def decodeCConsObjAnnotated[K <: Symbol, L, R <: Coproduct](implicit
-                                                                    witK: Witness.Aux[K],
-                                                                    witL: Witness.Aux[L],
-                                                                    annotation: Annotation[CsvName, L],
-                                                                    gen: Generic.Aux[L, HNil],
-                                                                    decodeR: Lazy[DerivedCellDecoder[R]]
+                                                                             witK: Witness.Aux[K],
+                                                                             witL: Witness.Aux[L],
+                                                                             annotation: Annotation[CsvValue, L],
+                                                                             gen: Generic.Aux[L, HNil],
+                                                                             decodeR: Lazy[DerivedCellDecoder[R]]
                                                                    ): DerivedCellDecoder[FieldType[K, L] :+: R] = s =>
-    if (annotation().name == s) Inl(field[K](witL.value)).asRight
+    if (annotation().value == s) Inl(field[K](witL.value)).asRight
     else decodeR.value(s).map(Inr(_))
 }
 
