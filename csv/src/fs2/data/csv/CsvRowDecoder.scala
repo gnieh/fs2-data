@@ -26,7 +26,7 @@ trait CsvRowDecoder[T, Header] {
   def apply(row: CsvRow[Header]): DecoderResult[T]
 }
 
-object CsvRowDecoder {
+object CsvRowDecoder extends ExportedCsvRowDecoders {
 
   implicit def CsvRowDecoderMonadError[Header]: MonadError[CsvRowDecoder[*, Header], DecoderError] =
     new MonadError[CsvRowDecoder[*, Header], DecoderError] {
@@ -61,6 +61,10 @@ object CsvRowDecoder {
         T(row.values)
     }
 
-  def apply[Header, T: CsvRowDecoder[*, Header]]: CsvRowDecoder[T, Header] = implicitly[CsvRowDecoder[T, Header]]
+  def apply[T: CsvRowDecoder[*, Header], Header]: CsvRowDecoder[T, Header] = implicitly[CsvRowDecoder[T, Header]]
 
+}
+
+trait ExportedCsvRowDecoders {
+  implicit def exportedCsvRowDecoders[A](implicit exported: Exported[CsvRowDecoder[A, String]]): CsvRowDecoder[A, String] = exported.instance
 }

@@ -73,7 +73,24 @@ class CsvModule(val crossScalaVersion: String) extends Fs2DataModule with CrossS
   object generic extends Fs2DataModule with PublishModule {
     def scalaVersion = outer.scalaVersion
     def moduleDeps = Seq(outer)
-    def ivyDeps = Agg(ivy"com.chuusai::shapeless:$shapelessVersion")
+    def ivyDeps = Agg(
+      ivy"com.chuusai::shapeless:$shapelessVersion",
+      ivy"org.scala-lang:scala-reflect:${scalaVersion()}"
+    )
+
+    override def scalacOptions = T {
+      if (scalaVersion().startsWith("2.13"))
+        Seq("-Ymacro-annotations")
+      else
+        Seq()
+    }
+
+    override def scalacPluginIvyDeps = T {
+      if (scalaVersion().startsWith("2.13"))
+        super.scalacPluginIvyDeps()
+      else
+        super.scalacPluginIvyDeps() ++ Agg(ivy"org.scalamacros:::paradise:2.1.1")
+    }
 
     def publishVersion = fs2DataVersion
 
