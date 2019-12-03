@@ -54,9 +54,8 @@ class JsonParserTest extends FlatSpec with Matchers with BeforeAndAfterAll {
     executor.shutdown()
   }
 
-  private val testFileDir: File = File("json/test/resources/test-parsing/")
-  for (path <- testFileDir.list) {
-    s"File ${testFileDir.relativize(path).toString}" should "be parsed correctly" in {
+  for (path <- File("json/test/resources/test-parsing/").list) {
+    s"File ${path.toString}" should "be parsed correctly" in {
       val expectation =
         if (path.name.startsWith("y_"))
           Expectation.Valid

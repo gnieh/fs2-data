@@ -27,7 +27,7 @@ trait RowDecoder[T] {
   def apply(cells: NonEmptyList[String]): DecoderResult[T]
 }
 
-object RowDecoder extends ExportedRowDecoders {
+object RowDecoder {
 
   implicit object RowDecoderMonadError extends MonadError[RowDecoder, DecoderError] {
     def flatMap[A, B](fa: RowDecoder[A])(f: A => RowDecoder[B]): RowDecoder[B] =
@@ -57,8 +57,4 @@ object RowDecoder extends ExportedRowDecoders {
 
   def apply[T: RowDecoder]: RowDecoder[T] = implicitly[RowDecoder[T]]
 
-}
-
-trait ExportedRowDecoders {
-  implicit def exportedRowDecoders[A](implicit exported: Exported[RowDecoder[A]]): RowDecoder[A] = exported.instance
 }
