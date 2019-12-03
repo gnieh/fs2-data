@@ -160,29 +160,6 @@ class JsonModule(val crossScalaVersion: String) extends Fs2DataModule with Cross
 
 }
 
-object tree extends Cross[TreeModule](scala212, scala213)
-
-class TreeModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule with PublishModule {
-  outer =>
-
-  def scalacPluginIvyDeps = Agg(ivy"org.typelevel::kind-projector:0.10.3")
-
-  def publishVersion = fs2DataVersion
-
-  def artifactName = "fs2-data-tree"
-
-  def pomSettings =
-    PomSettings(
-      description = "Generic tree manipulation library",
-      organization = "org.gnieh",
-      url = fs2DataUrl,
-      licenses = Seq(fs2DataLicense),
-      versionControl = VersionControl.github("satabin", "fs2-data"),
-      developers = Seq(fs2DataDeveloper)
-    )
-
-}
-
 object xml extends Cross[XmlModule](scala212, scala213)
 
 class XmlModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule with PublishModule {
@@ -193,8 +170,6 @@ class XmlModule(val crossScalaVersion: String) extends Fs2DataModule with CrossS
   def publishVersion = fs2DataVersion
 
   def artifactName = "fs2-data-xml"
-
-  def moduleDeps = Seq(tree())
 
   def pomSettings =
     PomSettings(
