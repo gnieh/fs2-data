@@ -51,7 +51,7 @@ object DerivedCellDecoder extends DerivedCellDecoderInstances0 {
                                                                 ): DerivedCellDecoder[FieldType[K, L] :+: R] = s =>
     decodeL(s)
       .map[FieldType[K, L] :+: R](v => Inl(field[K](v)))
-      .handleErrorWith(_ => decodeR.value(s).map(Inr(_)))
+      .recoverWith { case _ => decodeR.value(s).map(Inr(_)) }
 
 }
 
