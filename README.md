@@ -303,6 +303,8 @@ val rows = withh.through(decodeRow[IO, String, Row])
 println(rows.compile.toList.unsafeRunSync())
 ```
 
+There's also support for full auto-derivation, just `import fs2.data.csv.generic.auto._` for everything, `import fs2.data.csv.generic.auto.row._` for `RowDecoder` support only or `import fs2.data.csv.generic.auto.csvrow._` for `CsvRowDecoder` support.
+
 [fs2]: https://fs2.io/
 [circe]: https://circe.github.io/circe/
 [shapeless]: https://github.com/milessabin/shapeless

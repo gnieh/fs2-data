@@ -44,10 +44,10 @@ class EventParserTest extends FlatSpec with Matchers with EitherValues with Befo
     executor.shutdown()
   }
 
+  val testFileDir = File("xml/test/resources/xmlconf")
   // valid tests
-  for (path <- File("xml/test/resources/xmlconf/xmltest/valid/").list(_.name.endsWith(".xml")) ++ File(
-         "xml/test/resources/xmlconf/sun/valid/").list) {
-    s"File ${path.toString}" should "be parsed correctly" in {
+  for (path <- File(testFileDir, "xmltest/valid/").list(_.name.endsWith(".xml")) ++ File(testFileDir, "sun/valid/").list) {
+    s"File ${testFileDir.relativize(path).toString}" should "be parsed correctly" in {
       file
         .readAll[IO](path.path, blocker, 1024)
         .through(fs2.text.utf8Decode)

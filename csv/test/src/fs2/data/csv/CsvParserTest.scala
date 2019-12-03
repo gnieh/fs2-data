@@ -46,8 +46,9 @@ class CsvParserTest extends FlatSpec with Matchers with BeforeAndAfterAll {
     executor.shutdown()
   }
 
-  for (path <- File("csv/test/resources/csv-spectrum/csvs/").list) {
-    s"File ${path.toString}" should "be parsed correctly" in {
+  private val testFileDir: File = File("csv/test/resources/csv-spectrum/csvs/")
+  for (path <- testFileDir.list) {
+    s"File ${testFileDir.relativize(path).toString}" should "be parsed correctly" in {
       val expected =
         parse((File(s"csv/test/resources/csv-spectrum/json/${path.nameWithoutExtension}.json")).contentAsString)
           .flatMap(_.as[List[Map[String, String]]])
