@@ -72,7 +72,7 @@ trait CellDecoder[T] {
       }
 }
 
-object CellDecoder extends CellDecoderInstances1 with LiteralCellDecoders {
+object CellDecoder extends CellDecoderInstances1 with LiteralCellDecoders with ExportedCellDecoders {
 
   implicit object CellDecoderInstances extends MonadError[CellDecoder, DecoderError] with SemigroupK[CellDecoder] {
     def flatMap[A, B](fa: CellDecoder[A])(f: A => CellDecoder[B]): CellDecoder[B] =
@@ -191,4 +191,8 @@ trait CellDecoderInstances1 {
     Either
       .catchNonFatal(Duration(s))
       .leftMap(t => new DecoderError(s"couldn't parse Duration", t))
+}
+
+trait ExportedCellDecoders {
+  implicit def exportedCellDecoders[A](implicit exported: Exported[CellDecoder[A]]): CellDecoder[A] = exported.instance
 }

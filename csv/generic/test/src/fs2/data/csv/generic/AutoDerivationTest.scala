@@ -16,7 +16,7 @@
 package fs2.data.csv.generic
 
 import cats.data.NonEmptyList
-import fs2.data.csv.{CsvRow, CsvRowDecoder, RowDecoder}
+import fs2.data.csv.{CellDecoder, CsvRow, CsvRowDecoder, RowDecoder}
 import org.scalatest._
 
 class AutoDerivationTest extends FlatSpec with Matchers {
@@ -25,6 +25,10 @@ class AutoDerivationTest extends FlatSpec with Matchers {
   val plainRow = CsvRow.fromNel(NonEmptyList.of("1", "test", "42"))
 
   case class Test(i: Int, s: String, j: Int)
+
+  sealed trait Simple
+  case object On extends Simple
+  case object Off extends Simple
 
   "auto derivation for CsvRowDecoder" should "work properly for a simple case class (importing auto._)" in {
     import auto._
@@ -56,6 +60,22 @@ class AutoDerivationTest extends FlatSpec with Matchers {
     import auto._
     implicit val custom: RowDecoder[Test] = _ => Right(Test(0, "", 0))
     RowDecoder[Test].apply(plainRow.values) shouldBe Right(Test(0, "", 0))
+  }
+
+  "auto derivation for coproduct cells" should "work out of the box for enum-style sealed traits" in {
+    import auto._
+
+    CellDecoder[Simple].apply("On") shouldBe Right(On)
+    CellDecoder[Simple].apply("Off") shouldBe Right(Off)
+    CellDecoder[Simple].apply("foo").isLeft shouldBe true
+  }
+
+  "auto derivation for coproduct cells" should "work out of the box for enum-style sealed traits (importing auto.cell._)" in {
+    import auto.cell._
+
+    CellDecoder[Simple].apply("On") shouldBe Right(On)
+    CellDecoder[Simple].apply("Off") shouldBe Right(Off)
+    CellDecoder[Simple].apply("foo").isLeft shouldBe true
   }
 
 }

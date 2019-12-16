@@ -15,7 +15,7 @@
  */
 package fs2.data.csv.generic
 
-import fs2.data.csv.{CsvRowDecoder, Exported, RowDecoder}
+import fs2.data.csv.{CellDecoder, CsvRowDecoder, Exported, RowDecoder}
 
 import scala.language.experimental.macros
 
@@ -27,7 +27,12 @@ trait AutoDerivedCsvRowDecoders {
   implicit def exportCsvRowDecoder[A]: Exported[CsvRowDecoder[A, String]] = macro ExportMacros.exportCsvRowDecoder[A]
 }
 
-object auto extends AutoDerivedRowDecoders with AutoDerivedCsvRowDecoders {
+trait AutoDerivedCellDecoders {
+  implicit def exportCellDecoder[A]: Exported[CellDecoder[A]] = macro ExportMacros.exportCellDecoder[A]
+}
+
+object auto extends AutoDerivedRowDecoders with AutoDerivedCsvRowDecoders with AutoDerivedCellDecoders {
   object row extends AutoDerivedRowDecoders
   object csvrow extends AutoDerivedCsvRowDecoders
+  object cell extends AutoDerivedCellDecoders
 }
