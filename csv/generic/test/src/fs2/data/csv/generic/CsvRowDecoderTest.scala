@@ -33,9 +33,11 @@ class CsvRowDecoderTest extends FlatSpec with Matchers {
 
   case class Test(i: Int = 0, s: String, j: Option[Int])
   case class TestOrder(s: String, j: Int, i: Int)
+  case class TestRename(s: String, @CsvName("j") k: Int, i: Int)
 
   val testDecoder = deriveCsvRowDecoder[Test]
   val testOrderDecoder = deriveCsvRowDecoder[TestOrder]
+  val testRenameDecoder = deriveCsvRowDecoder[TestRename]
 
   "case classes" should "be decoded properly by header name and not position" in {
     testDecoder(csvRow) shouldBe Right(Test(1, "test", Some(42)))
@@ -57,6 +59,10 @@ class CsvRowDecoderTest extends FlatSpec with Matchers {
 
   it should "be handled properly with optional value and missing column" in {
     testDecoder(csvRowNoJ) shouldBe Right(Test(1, "test", None))
+  }
+
+  it should "be decoded according to their field renames" in {
+    testRenameDecoder(csvRow) shouldBe Right(TestRename("test", 42, 1))
   }
 
 }
