@@ -9,7 +9,7 @@ val scala212 = "2.12.10"
 val scala213 = "2.13.1"
 
 val fs2Version = "2.2.2"
-val circeVersion = "0.12.3"
+val circeVersion = "0.13.0"
 val shapelessVersion = "2.3.3"
 
 val fs2DataVersion = "0.6.0-SNAPSHOT"
