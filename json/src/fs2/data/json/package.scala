@@ -21,8 +21,6 @@ import json.internals._
 
 import cats._
 
-import scala.language.higherKinds
-
 /** Handles stream parsing and traversing of json documents.
   */
 package object json {

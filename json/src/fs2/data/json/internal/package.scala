@@ -17,8 +17,6 @@ package fs2
 package data
 package json
 
-import scala.language.higherKinds
-
 package object internals {
 
   private[internals] val hexa = "0123456789abcdef"

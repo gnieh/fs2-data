@@ -22,8 +22,6 @@ import cats.implicits._
 
 import scala.annotation.switch
 
-import scala.language.higherKinds
-
 case class JsonSelectorException(msg: String, idx: Int) extends Exception(msg)
 
 /** Parses a filter string. Syntax is as follows:

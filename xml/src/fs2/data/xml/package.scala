@@ -20,8 +20,6 @@ import xml.internals._
 
 import cats._
 
-import scala.language.higherKinds
-
 package object xml {
 
   /** The predefined XML character entities

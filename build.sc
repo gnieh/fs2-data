@@ -27,7 +27,7 @@ trait Fs2DataModule extends ScalaModule with ScalafmtModule {
 	 (if(scalaVersion().startsWith("2.13"))
      Seq()
    else
-     Seq("-Ypartial-unification"))
+     Seq("-Ypartial-unification", "-language:higherKinds"))
 
   def ivyDeps =
     Agg(

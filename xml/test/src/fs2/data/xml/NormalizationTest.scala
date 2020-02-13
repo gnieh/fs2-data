@@ -19,9 +19,10 @@ package xml
 
 import fs2._
 
-import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class NormalizationTest extends FlatSpec with Matchers {
+class NormalizationTest extends AnyFlatSpec with Matchers {
 
   def start(name: String) = XmlEvent.StartTag(QName(name), Nil, false)
   def text(s: String) = XmlEvent.XmlString(s, false)

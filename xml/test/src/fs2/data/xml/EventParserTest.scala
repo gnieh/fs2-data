@@ -20,7 +20,9 @@ import cats.effect._
 import fs2._
 import fs2.io._
 
-import org.scalatest.{events => _, _}
+import org.scalatest.{BeforeAndAfterAll, EitherValues}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent._
 
@@ -28,7 +30,7 @@ import better.files.{Resource => _, _}
 
 import java.util.concurrent._
 
-class EventParserTest extends FlatSpec with Matchers with EitherValues with BeforeAndAfterAll {
+class EventParserTest extends AnyFlatSpec with Matchers with EitherValues with BeforeAndAfterAll {
 
   private var executor: ExecutorService = _
   private var blocker: Blocker = _

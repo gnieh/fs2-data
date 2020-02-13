@@ -22,8 +22,6 @@ import ast._
 
 import cats._
 
-import scala.language.higherKinds
-
 private[json] object TokenSelector {
 
   private def emitValue[F[_]](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], depth: Int, chunkAcc: List[Token])(
@@ -283,13 +281,13 @@ private[json] object TokenSelector {
     }
 
   def pipe[F[_]](selector: Selector, wrap: Boolean)(implicit F: ApplicativeError[F, Throwable]): Pipe[F, Token, Token] =
-    s => go(Chunk.empty, 0, s, selector, false, wrap, emit[F](0), Nil).stream
+    s => go(Chunk.empty, 0, s, selector, false, wrap, emit[F], Nil).stream
 
   def transformPipe[F[_], Json: Builder: Tokenizer](selector: Selector, f: Json => Json)(
       implicit F: ApplicativeError[F, Throwable]): Pipe[F, Token, Token] =
     s => go(Chunk.empty, 0, s, selector, true, true, transform[F, Json](f), Nil).stream
 
-  private def emit[F[_]](depth: Int)(chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], chunkAcc: List[Token])(
+  private def emit[F[_]](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], chunkAcc: List[Token])(
       implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Token, List[Token]]] =
     emitValue[F](chunk, idx, rest, 0, chunkAcc)
 

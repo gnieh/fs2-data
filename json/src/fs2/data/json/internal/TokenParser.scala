@@ -22,8 +22,6 @@ import cats._
 
 import scala.annotation.switch
 
-import scala.language.higherKinds
-
 private[json] object TokenParser {
   // the opening quote has already been read
   def string_[F[_]](chunk: Chunk[Char],

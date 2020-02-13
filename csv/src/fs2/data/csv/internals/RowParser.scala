@@ -21,8 +21,6 @@ package internals
 import cats._
 import cats.data.{State => _, _}
 
-import scala.language.higherKinds
-
 private[csv] object RowParser {
 
   def pipe[F[_]](separator: Char)(implicit F: ApplicativeError[F, Throwable]): Pipe[F, Char, NonEmptyList[String]] = {

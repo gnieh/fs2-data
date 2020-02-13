@@ -24,8 +24,6 @@ import cats._
 
 import scala.collection.immutable.VectorBuilder
 
-import scala.language.higherKinds
-
 private[json] object ValueParser {
 
   private def pullArray[F[_], Json](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], acc: VectorBuilder[Json])(

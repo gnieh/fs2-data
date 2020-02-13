@@ -24,7 +24,9 @@ import fs2.io._
 
 import cats.effect._
 
-import org.scalatest._
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent._
 
@@ -38,7 +40,7 @@ object Expectation {
   case object Invalid extends Expectation
   case object ImplementationDefined extends Expectation
 }
-class JsonParserTest extends FlatSpec with Matchers with BeforeAndAfterAll {
+class JsonParserTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
 
   private var executor: ExecutorService = _
   private var blocker: Blocker = _

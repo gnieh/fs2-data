@@ -22,8 +22,6 @@ import cats.implicits._
 
 import fs2._
 
-import scala.language.higherKinds
-
 private[xml] object Normalizer {
 
   def pipe[F[_]]: Pipe[F, XmlEvent, XmlEvent] =

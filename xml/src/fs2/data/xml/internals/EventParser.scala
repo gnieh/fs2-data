@@ -24,8 +24,6 @@ import fs2._
 
 import scala.collection.immutable.VectorBuilder
 
-import scala.language.higherKinds
-
 private[xml] object EventParser {
 
   // ==== utils ====

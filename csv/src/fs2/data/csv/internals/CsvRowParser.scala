@@ -21,8 +21,6 @@ package internals
 import cats._
 import cats.data._
 
-import scala.language.higherKinds
-
 private[csv] object CsvRowParser {
 
   def pipe[F[_], Header](withHeaders: Boolean)(

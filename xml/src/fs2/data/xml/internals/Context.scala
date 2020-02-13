@@ -18,8 +18,6 @@ package data
 package xml
 package internals
 
-import scala.language.higherKinds
-
 private[internals] case class Context[F[_]](chunk: Chunk[Char],
                                             idx: Int,
                                             rest: Stream[F, Char],

@@ -17,8 +17,6 @@ package fs2
 package data
 package xml
 
-import scala.language.higherKinds
-
 package object internals {
 
   private[internals] type Result[F[_], O] = (Context[F], O)

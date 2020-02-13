@@ -22,8 +22,6 @@ import cats._
 import cats.data._
 import cats.implicits._
 
-import scala.language.higherKinds
-
 package object csv {
 
   type DecoderResult[T] = Either[DecoderError, T]

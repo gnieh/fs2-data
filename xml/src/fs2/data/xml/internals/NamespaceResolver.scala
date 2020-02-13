@@ -21,8 +21,6 @@ package internals
 import cats._
 import cats.implicits._
 
-import scala.language.higherKinds
-
 private case class ResolverEnv(parent: Option[ResolverEnv], nss: Map[String, String], depth: Int) {
   def resolve(prefix: String): Option[String] =
     nss.get(prefix).orElse(parent.flatMap(_.resolve(prefix)))
