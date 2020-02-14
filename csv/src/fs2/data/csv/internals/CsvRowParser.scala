@@ -19,6 +19,7 @@ package csv
 package internals
 
 import cats._
+import cats.implicits._
 import cats.data._
 
 import scala.language.higherKinds
@@ -28,16 +29,19 @@ private[csv] object CsvRowParser {
   def pipe[F[_], Header](withHeaders: Boolean)(
       implicit F: ApplicativeError[F, Throwable],
       Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
-    _.mapAccumulate(Headers.Uninitialized[Header]: Headers[Header]) {
+    _.evalMapAccumulate[F, Headers[Header], Option[CsvRow[Header]]](Headers.Uninitialized[Header]()) {
       case (Headers.Uninitialized(), fields) if withHeaders =>
         // headers have not been seen yet (first row)
-        (Headers.Initialized(Some(fields.map(Header.parse(_)))), None)
+        val headerResult = fields.traverse(Header.apply)
+        F.fromEither(headerResult).map { headers =>
+          Headers.Initialized(Some(headers)) ->  None
+        }
       case (Headers.Uninitialized(), fields) =>
         // no header are to be parsed
-        (Headers.Initialized(None), Some(new CsvRow[Header](fields, None)))
+        F.pure(Headers.Initialized[Header](None) -> Some(new CsvRow[Header](fields, None)))
       case (initialized @ Headers.Initialized(headers), fields) =>
         // otherwise, headers are already initialized properly, just pass them to the row
-        (initialized, Some(new CsvRow[Header](fields, headers)))
+        F.pure(initialized -> Some(new CsvRow[Header](fields, headers)))
     }.map(_._2).unNone
 
 }

@@ -18,7 +18,7 @@ package fs2.data.csv
 import cats.data._
 import cats.implicits._
 
-class CsvRow[Header](val values: NonEmptyList[String], val headers: Option[NonEmptyList[Header]]) {
+case class CsvRow[Header](values: NonEmptyList[String], headers: Option[NonEmptyList[Header]]) {
 
   private lazy val byHeader: Option[Map[Header, String]] =
     headers.map(_.toList.zip(values.toList).toMap)
