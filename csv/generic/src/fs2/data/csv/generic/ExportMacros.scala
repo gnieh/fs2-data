@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.csv.generic
-
-import fs2.data.csv.{CellDecoder, CsvRowDecoder, Exported, RowDecoder}
+package fs2.data.csv
+package generic
 
 import scala.reflect.macros.blackbox
 
@@ -34,12 +33,12 @@ class ExportMacros(val c: blackbox.Context) {
     }
   }
 
-  final def exportCsvRowDecoder[A](implicit a: c.WeakTypeTag[A]): c.Expr[Exported[CsvRowDecoder[A, String]]] = {
+  final def exportCsvRowDecoder[A](implicit a: c.WeakTypeTag[A]): c.Expr[Exported[CsvNelRowDecoder[A, String]]] = {
     c.typecheck(q"_root_.shapeless.lazily[_root_.fs2.data.csv.generic.DerivedCsvRowDecoder[$a]]", silent = true) match {
       case EmptyTree => c.abort(c.enclosingPosition, s"Unable to infer value of type $a")
       case t =>
-        c.Expr[Exported[CsvRowDecoder[A, String]]](
-          q"new _root_.fs2.data.csv.Exported($t: _root_.fs2.data.csv.CsvRowDecoder[$a, ${weakTypeTag[String]}])")
+        c.Expr[Exported[CsvNelRowDecoder[A, String]]](
+          q"new _root_.fs2.data.csv.Exported($t: _root_.fs2.data.csv.CsvNelRowDecoder[$a, ${weakTypeTag[String]}])")
     }
   }
 

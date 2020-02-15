@@ -18,10 +18,9 @@ package data
 package csv
 package generic
 
-import cats.data.NonEmptyList
 import shapeless._
 
-trait DerivedCsvRowDecoder[T] extends CsvRowDecoder[T, NonEmptyList[String]]
+trait DerivedCsvRowDecoder[T] extends CsvNelRowDecoder[T, String]
 
 object DerivedCsvRowDecoder {
 

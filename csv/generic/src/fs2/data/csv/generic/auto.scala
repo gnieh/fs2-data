@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.csv.generic
+package fs2.data.csv
+package generic
 
-import fs2.data.csv.{CellDecoder, CsvRowDecoder, Exported, RowDecoder}
 
 import scala.language.experimental.macros
 
@@ -24,7 +24,7 @@ trait AutoDerivedRowDecoders {
 }
 
 trait AutoDerivedCsvRowDecoders {
-  implicit def exportCsvRowDecoder[A]: Exported[CsvRowDecoder[A, String]] = macro ExportMacros.exportCsvRowDecoder[A]
+  implicit def exportCsvRowDecoder[A]: Exported[CsvNelRowDecoder[A, String]] = macro ExportMacros.exportCsvRowDecoder[A]
 }
 
 trait AutoDerivedCellDecoders {

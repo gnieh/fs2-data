@@ -71,5 +71,5 @@ object CsvRowDecoder extends ExportedCsvRowDecoders {
 }
 
 trait ExportedCsvRowDecoders {
-  implicit def exportedCsvRowDecoders[A](implicit exported: Exported[CsvRowDecoder[A, String]]): CsvRowDecoder[A, String] = exported.instance
+  implicit def exportedCsvRowDecoders[A](implicit exported: Exported[CsvNelRowDecoder[A, String]]): CsvNelRowDecoder[A, String] = exported.instance
 }

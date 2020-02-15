@@ -19,7 +19,6 @@ package data
 import java.nio.{CharBuffer => JCharBuffer}
 
 import csv.internals._
-
 import cats._
 import cats.data._
 import cats.implicits._
@@ -34,7 +33,17 @@ package object csv {
 
   type CsvNelRow[HeadElem] = CsvRow[NonEmptyList[HeadElem]]
 
+  type CsvNelRowDecoder[T, HeadElem] = CsvRowDecoder[T, NonEmptyList[HeadElem]]
+
+  object CsvNelRowDecoder {
+    def apply[T, HeadElem](implicit dec: CsvNelRowDecoder[T, HeadElem]): CsvNelRowDecoder[T, HeadElem] = dec
+  }
+
   type ParseableNelHeader[HeadElem] = ParseableHeader[NonEmptyList[HeadElem]]
+
+  object ParseableNelHeader {
+    def apply[HeadElem](implicit dec: ParseableNelHeader[HeadElem]): ParseableNelHeader[HeadElem] = dec
+  }
 
   /** Transforms a stream of characters into a stream of CSV rows.
     */
