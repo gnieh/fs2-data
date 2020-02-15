@@ -34,6 +34,8 @@ package object csv {
 
   type CsvNelRow[HeadElem] = CsvRow[NonEmptyList[HeadElem]]
 
+  type ParseableNelHeader[HeadElem] = ParseableHeader[NonEmptyList[HeadElem]]
+
   /** Transforms a stream of characters into a stream of CSV rows.
     */
   def rows[F[_]](separator: Char = ',')(
@@ -54,7 +56,7 @@ package object csv {
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with a NonEmptyList of independent headers. */
   def nelHeaders[F[_], HeadElem](implicit F: ApplicativeError[F, Throwable],
-                                 Header: ParseableHeader[NonEmptyList[HeadElem]]): Pipe[F, NonEmptyList[String], CsvNelRow[HeadElem]] =
+                                 Header: ParseableNelHeader[HeadElem]): Pipe[F, NonEmptyList[String], CsvNelRow[HeadElem]] =
     CsvRowParser.pipe[F, NonEmptyList[HeadElem]](true)
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */

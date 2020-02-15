@@ -35,18 +35,18 @@ object ParseableHeader {
   def apply[Header: ParseableHeader]: ParseableHeader[Header] =
     implicitly[ParseableHeader[Header]]
 
-  def parseIndependently[HeadElem](parse: String => HeaderResult[HeadElem]): ParseableHeader[NonEmptyList[HeadElem]] =
+  def parseNel[HeadElem](parse: String => HeaderResult[HeadElem]): ParseableNelHeader[HeadElem] =
     (names: NonEmptyList[String]) => names.traverse(parse)
 
   implicit object NothingParseableHeader extends ParseableHeader[Nothing] {
     def apply(names: NonEmptyList[String]): HeaderResult[Nothing] = new HeaderError("no headers are expected").asLeft
   }
 
-  implicit object StringNelParseableHeader extends ParseableHeader[NonEmptyList[String]] {
+  implicit object StringNelParseableHeader extends ParseableNelHeader[String] {
     def apply(names: NonEmptyList[String]): HeaderResult[NonEmptyList[String]] = names.asRight
   }
 
-  implicit object NonEmptyStringNelParseableHeader extends ParseableHeader[NonEmptyList[Option[String]]] {
+  implicit object NonEmptyStringNelParseableHeader extends ParseableNelHeader[Option[String]] {
     def apply(names: NonEmptyList[String]): HeaderResult[NonEmptyList[Option[String]]] = names.map { name =>
       if (name.isEmpty)
         none

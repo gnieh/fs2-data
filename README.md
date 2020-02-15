@@ -185,13 +185,13 @@ val input = """i,s,j
               |,other,-3
               |""".stripMargin
 
-val stream = Stream.emits(input).through(rows[IO]())
+val stream = Stream(input).through(rowsFromStrings[IO]())
 println(stream.compile.toList.unsafeRunSync())
 ```
 
 ### CSV Rows with headers
 
-Rows can be converted to a `CsvRow[Header]` for some `Header` type. This class provides higher-level utilities to manipulate rows.
+Rows can be converted to a `CsvRow[Header]` for some `Header` type. This class provides higher-level utilities to manipulate rows. If `Header` is a `NonEmptyList[_]`, additional extension methods are available to support common use cases. To simplify even further, there are also type aliases `CsvNelRow[_]` and `ParseableNelHeader[_]`.
 
 If your CSV file doesn't have headers, you can use the `noHeaders` pipe, which creates `CsvRow[Nothing]`
 
@@ -200,35 +200,37 @@ val noh = stream.through(noHeaders[IO])
 println(noh.compile.toList.unsafeRunSync())
 ```
 
-If you want to consider the first row as a header row, you can use the `headers` pipe. For instance to have headers as `String`:
+If you want to consider the first row as a header row, you can use the `headers` pipe. For instance to have headers as `NonEmptyList[String]`:
 
 ```scala
-val withh = stream.through(headers[IO, String])
+val withh = stream.through(nelHeaders[IO, String])
 println(withh.map(_.toMap).compile.toList.unsafeRunSync())
 ```
 
 To support your own type of `Header` you must provide an implicit `ParseableHeader[Header]`. For instance if you have a fix set of headers represented as [enumeratum][enumeratum] enum values, you can provide an instance of `ParseableHeader` as follows:
 
 ```scala
+import cats.implicits._
 import enumeratum._
 
-sealed trait MyHeaders extends EnumEntry
-object MyHeaders extends Enum[MyHeaders] {
+sealed trait MyHeader extends EnumEntry
+object MyHeader extends Enum[MyHeader] {
   case object I extends MyHeaders
   case object S extends MyHeaders
   case object J extends MyHeaders
   def values = findValues
 }
 
-implicit object ParseableMyHeaders extends ParseableHeader[MyHeaders] {
-  def parse(h: String) = MyHeaders.withNameInsensitive(h)
+// parseNel is a helper for parsing each header column independently, returning a NonEmptyList
+implicit val parseableMyHeaders: ParseableNelHeader[MyHeader] = ParseableHeader.parseNel { name =>
+  MyHeader.withNameInsensitive(name).toRight(new HeaderError(s"$name is not a valid MyHeader"))
 }
 
-val withMyHeaders = stream.through(headers[IO, MyHeaders])
+val withMyHeaders = stream.through(nelHeaders[IO, MyHeader])
 println(withMyHeaders.map(_.toMap).compile.toList.unsafeRunSync())
 ```
 
-If the parse method fails for a header, the entire stream fails.
+If the parse method fails for the headers, the entire stream fails.
 
 ### Decoding
 
