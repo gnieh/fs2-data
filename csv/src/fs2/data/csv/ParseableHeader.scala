@@ -26,7 +26,7 @@ import scala.annotation.tailrec
   */
 trait ParseableHeader[Header] {
 
-  def apply(names: NonEmptyList[String]): DecoderResult[Header]
+  def apply(names: NonEmptyList[String]): HeaderResult[Header]
 
 }
 
@@ -35,19 +35,19 @@ object ParseableHeader {
   def apply[Header: ParseableHeader]: ParseableHeader[Header] =
     implicitly[ParseableHeader[Header]]
 
-  def parseIndependently[HeadElem](parse: String => DecoderResult[HeadElem]): ParseableHeader[NonEmptyList[HeadElem]] =
+  def parseIndependently[HeadElem](parse: String => HeaderResult[HeadElem]): ParseableHeader[NonEmptyList[HeadElem]] =
     (names: NonEmptyList[String]) => names.traverse(parse)
 
   implicit object NothingParseableHeader extends ParseableHeader[Nothing] {
-    def apply(names: NonEmptyList[String]): DecoderResult[Nothing] = new DecoderError("no headers are expected").asLeft
+    def apply(names: NonEmptyList[String]): HeaderResult[Nothing] = new HeaderError("no headers are expected").asLeft
   }
 
   implicit object StringNelParseableHeader extends ParseableHeader[NonEmptyList[String]] {
-    def apply(names: NonEmptyList[String]): DecoderResult[NonEmptyList[String]] = names.asRight
+    def apply(names: NonEmptyList[String]): HeaderResult[NonEmptyList[String]] = names.asRight
   }
 
   implicit object NonEmptyStringNelParseableHeader extends ParseableHeader[NonEmptyList[Option[String]]] {
-    def apply(names: NonEmptyList[String]): DecoderResult[NonEmptyList[Option[String]]] = names.map { name =>
+    def apply(names: NonEmptyList[String]): HeaderResult[NonEmptyList[Option[String]]] = names.map { name =>
       if (name.isEmpty)
         none
       else
@@ -55,26 +55,26 @@ object ParseableHeader {
     }.asRight
   }
 
-  implicit object ParseableHeaderInstances extends MonadError[ParseableHeader, DecoderError] with SemigroupK[ParseableHeader] {
+  implicit object ParseableHeaderInstances extends MonadError[ParseableHeader, HeaderError] with SemigroupK[ParseableHeader] {
     def flatMap[A, B](fa: ParseableHeader[A])(f: A => ParseableHeader[B]): ParseableHeader[B] =
       names => fa(names).flatMap(f(_)(names))
 
-    def handleErrorWith[A](fa: ParseableHeader[A])(f: DecoderError => ParseableHeader[A]): ParseableHeader[A] =
+    def handleErrorWith[A](fa: ParseableHeader[A])(f: HeaderError => ParseableHeader[A]): ParseableHeader[A] =
       names => fa(names).leftFlatMap(f(_)(names))
 
     def pure[A](x: A): ParseableHeader[A] =
       _ => Right(x)
 
-    def raiseError[A](e: DecoderError): ParseableHeader[A] =
+    def raiseError[A](e: HeaderError): ParseableHeader[A] =
       _ => Left(e)
 
     def tailRecM[A, B](a: A)(f: A => ParseableHeader[Either[A, B]]): ParseableHeader[B] = {
       @tailrec
-      def step(names: NonEmptyList[String], a: A): DecoderResult[B] =
+      def step(names: NonEmptyList[String], a: A): HeaderResult[B] =
         f(a)(names) match {
           case left @ Left(_)          => left.rightCast[B]
           case Right(Left(a))          => step(names, a)
-          case Right(right @ Right(_)) => right.leftCast[DecoderError]
+          case Right(right @ Right(_)) => right.leftCast[HeaderError]
         }
       names => step(names, a)
     }

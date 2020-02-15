@@ -16,6 +16,8 @@
 package fs2
 package data
 
+import java.nio.{CharBuffer => JCharBuffer}
+
 import csv.internals._
 
 import cats._
@@ -28,11 +30,22 @@ package object csv {
 
   type DecoderResult[T] = Either[DecoderError, T]
 
+  type HeaderResult[T] = Either[HeaderError, T]
+
+  type CsvNelRow[HeadElem] = CsvRow[NonEmptyList[HeadElem]]
+
   /** Transforms a stream of characters into a stream of CSV rows.
     */
   def rows[F[_]](separator: Char = ',')(
       implicit F: ApplicativeError[F, Throwable]): Pipe[F, Char, NonEmptyList[String]] =
     RowParser.pipe[F](separator)
+
+  /** Transforms a stream of strings into a stream of CSV rows. Helper for streams which are not initially char-based,
+   *  prefer to use [[rows]] otherwise.
+   */
+  def rowsFromStrings[F[_]](separator: Char = ',')(
+    implicit F: ApplicativeError[F, Throwable]): Pipe[F, String, NonEmptyList[String]] =
+    _.flatMap(s => Stream.chunk(Chunk.charBuffer(JCharBuffer.wrap(s)))) through RowParser.pipe[F](separator)
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
   def headers[F[_], Header](implicit F: ApplicativeError[F, Throwable],
@@ -40,8 +53,8 @@ package object csv {
     CsvRowParser.pipe[F, Header](true)
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with a NonEmptyList of independent headers. */
-  def headerNel[F[_], HeadElem](implicit F: ApplicativeError[F, Throwable],
-                            Header: ParseableHeader[NonEmptyList[HeadElem]]): Pipe[F, NonEmptyList[String], CsvRow[NonEmptyList[HeadElem]]] =
+  def nelHeaders[F[_], HeadElem](implicit F: ApplicativeError[F, Throwable],
+                                 Header: ParseableHeader[NonEmptyList[HeadElem]]): Pipe[F, NonEmptyList[String], CsvNelRow[HeadElem]] =
     CsvRowParser.pipe[F, NonEmptyList[HeadElem]](true)
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */

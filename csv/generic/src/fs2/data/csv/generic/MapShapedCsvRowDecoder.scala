@@ -18,17 +18,17 @@ package data
 package csv
 package generic
 
+import cats.data.NonEmptyList
 import cats.implicits._
-
 import shapeless._
 import shapeless.labelled._
 
-trait MapShapedCsvRowDecoder[Repr] extends CsvRowDecoder[Repr, String]
+trait MapShapedCsvRowDecoder[Repr] extends CsvRowDecoder[Repr, NonEmptyList[String]]
 
 object MapShapedCsvRowDecoder extends LowPriorityMapShapedCsvRowDecoder1 {
 
   implicit def hnilRowDecoder[Wrapped]: WithDefaults[Wrapped, HNil, HNil, HNil] = new WithDefaults[Wrapped, HNil, HNil, HNil] {
-    def fromWithDefault(row: CsvRow[String], default: HNil, annotation: HNil): DecoderResult[HNil] =
+    def fromWithDefault(row: CsvNelRow[String], default: HNil, annotation: HNil): DecoderResult[HNil] =
       Right(HNil)
   }
 
@@ -40,7 +40,7 @@ object MapShapedCsvRowDecoder extends LowPriorityMapShapedCsvRowDecoder1 {
       : WithDefaults[Wrapped, FieldType[Key, Option[Head]] :: Tail, Option[Option[Head]] :: DefaultTail, Anno :: AnnoTail] =
     new WithDefaults[Wrapped, FieldType[Key, Option[Head]] :: Tail, Option[Option[Head]] :: DefaultTail, Anno :: AnnoTail] {
       def fromWithDefault(
-          row: CsvRow[String],
+          row: CsvNelRow[String],
           default: Option[Option[Head]] :: DefaultTail,
           anno: Anno :: AnnoTail): DecoderResult[FieldType[Key, Option[Head]] :: Tail] = {
         val head = row(witness.value.name) match {
@@ -59,7 +59,7 @@ object MapShapedCsvRowDecoder extends LowPriorityMapShapedCsvRowDecoder1 {
 trait LowPriorityMapShapedCsvRowDecoder1 {
 
   trait WithDefaults[Wrapped, Repr, DefaultRepr, AnnoRepr] {
-    def fromWithDefault(row: CsvRow[String], default: DefaultRepr, annotation: AnnoRepr): DecoderResult[Repr]
+    def fromWithDefault(row: CsvNelRow[String], default: DefaultRepr, annotation: AnnoRepr): DecoderResult[Repr]
   }
 
   implicit def hconsRowDecoder[Wrapped, Key <: Symbol, Head, Tail <: HList, DefaultTail <: HList, Anno, AnnoTail <: HList](
@@ -69,7 +69,7 @@ trait LowPriorityMapShapedCsvRowDecoder1 {
       Tail: Lazy[WithDefaults[Wrapped, Tail, DefaultTail, AnnoTail]])
       : WithDefaults[Wrapped, FieldType[Key, Head] :: Tail, Option[Head] :: DefaultTail, Anno :: AnnoTail] =
     new WithDefaults[Wrapped, FieldType[Key, Head] :: Tail, Option[Head] :: DefaultTail, Anno :: AnnoTail] {
-      def fromWithDefault(row: CsvRow[String],
+      def fromWithDefault(row: CsvNelRow[String],
                           default: Option[Head] :: DefaultTail, anno: Anno :: AnnoTail): DecoderResult[FieldType[Key, Head] :: Tail] = {
         val head = row(anno.head.fold(witness.value.name)(_.name)) match {
           case Some(head) if head.nonEmpty =>

@@ -18,9 +18,10 @@ package data
 package csv
 package generic
 
+import cats.data.NonEmptyList
 import shapeless._
 
-trait DerivedCsvRowDecoder[T] extends CsvRowDecoder[T, String]
+trait DerivedCsvRowDecoder[T] extends CsvRowDecoder[T, NonEmptyList[String]]
 
 object DerivedCsvRowDecoder {
 
@@ -31,7 +32,7 @@ object DerivedCsvRowDecoder {
       annotations: Annotations.Aux[CsvName, T, AnnoRepr],
       cc: Lazy[MapShapedCsvRowDecoder.WithDefaults[T, Repr, DefaultRepr, AnnoRepr]]): DerivedCsvRowDecoder[T] =
     new DerivedCsvRowDecoder[T] {
-      def apply(row: CsvRow[String]): DecoderResult[T] =
+      def apply(row: CsvNelRow[String]): DecoderResult[T] =
         cc.value.fromWithDefault(row, defaults(), annotations()).map(gen.from(_))
     }
 

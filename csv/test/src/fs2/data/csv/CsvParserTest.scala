@@ -20,7 +20,6 @@ import java.util.concurrent._
 import better.files.{Resource => _, _}
 import cats.effect._
 import io.circe.parser._
-import fs2._
 import fs2.io._
 import org.scalatest._
 
@@ -54,9 +53,8 @@ class CsvParserTest extends FlatSpec with Matchers with BeforeAndAfterAll {
         file
           .readAll[IO](path.path, blocker, 1024)
           .through(fs2.text.utf8Decode)
-          .flatMap(Stream.emits(_))
-          .through(rows[IO]())
-          .through(headerNel[IO, String])
+          .through(rowsFromStrings[IO]())
+          .through(nelHeaders[IO, String])
           .compile
           .toList
           .unsafeRunSync()

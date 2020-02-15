@@ -18,6 +18,7 @@ package data
 package csv
 package generic
 
+import cats.data.NonEmptyList
 import shapeless._
 
 object semiauto {
@@ -25,7 +26,7 @@ object semiauto {
   def deriveRowDecoder[T](implicit T: Lazy[DerivedRowDecoder[T]]): RowDecoder[T] =
     T.value
 
-  def deriveCsvRowDecoder[T](implicit T: Lazy[DerivedCsvRowDecoder[T]]): CsvRowDecoder[T, String] =
+  def deriveCsvRowDecoder[T](implicit T: Lazy[DerivedCsvRowDecoder[T]]): CsvRowDecoder[T, NonEmptyList[String]] =
     T.value
 
   def deriveCellDecoder[T](implicit T: Lazy[DerivedCellDecoder[T]]): CellDecoder[T] =

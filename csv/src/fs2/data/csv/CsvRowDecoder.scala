@@ -16,6 +16,7 @@
 package fs2.data.csv
 
 import cats._
+import cats.data.NonEmptyList
 import cats.implicits._
 
 import scala.annotation.tailrec
@@ -62,6 +63,10 @@ object CsvRowDecoder extends ExportedCsvRowDecoders {
     }
 
   def apply[T: CsvRowDecoder[*, Header], Header]: CsvRowDecoder[T, Header] = implicitly[CsvRowDecoder[T, Header]]
+
+  def fromNonEmptyHeader[Header, T](decode: (NonEmptyList[String], Header) => DecoderResult[T]): CsvRowDecoder[T, Header] =
+    (row: CsvRow[Header]) => row.header.toRight(new DecoderError("This decoder requires the header to be parsed"))
+      .flatMap(decode(row.values, _))
 
 }
 
