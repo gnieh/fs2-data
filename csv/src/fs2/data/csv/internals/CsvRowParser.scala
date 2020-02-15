@@ -32,8 +32,7 @@ private[csv] object CsvRowParser {
     _.evalMapAccumulate[F, Headers[Header], Option[CsvRow[Header]]](Headers.Uninitialized[Header]()) {
       case (Headers.Uninitialized(), fields) if withHeaders =>
         // headers have not been seen yet (first row)
-        val headerResult = fields.traverse(Header.apply)
-        F.fromEither(headerResult).map { headers =>
+        F.fromEither(Header(fields)).map { headers =>
           Headers.Initialized(Some(headers)) ->  None
         }
       case (Headers.Uninitialized(), fields) =>

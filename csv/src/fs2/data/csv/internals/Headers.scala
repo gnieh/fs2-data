@@ -18,14 +18,12 @@ package data
 package csv
 package internals
 
-import cats.data._
-
 private sealed trait Headers[Header]
 
 private[internals] object Headers {
 
   case class Uninitialized[Header]() extends Headers[Header]
 
-  case class Initialized[Header](headers: Option[NonEmptyList[Header]]) extends Headers[Header]
+  case class Initialized[Header](headers: Option[Header]) extends Headers[Header]
 
 }

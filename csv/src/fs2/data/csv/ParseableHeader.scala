@@ -15,6 +15,7 @@
  */
 package fs2.data.csv
 
+import cats.data.NonEmptyList
 import cats.{MonadError, SemigroupK}
 import cats.implicits._
 
@@ -25,7 +26,7 @@ import scala.annotation.tailrec
   */
 trait ParseableHeader[Header] {
 
-  def apply(name: String): DecoderResult[Header]
+  def apply(names: NonEmptyList[String]): DecoderResult[Header]
 
 }
 
@@ -34,28 +35,32 @@ object ParseableHeader {
   def apply[Header: ParseableHeader]: ParseableHeader[Header] =
     implicitly[ParseableHeader[Header]]
 
+  def parseIndependently[HeadElem](parse: String => DecoderResult[HeadElem]): ParseableHeader[NonEmptyList[HeadElem]] =
+    (names: NonEmptyList[String]) => names.traverse(parse)
+
   implicit object NothingParseableHeader extends ParseableHeader[Nothing] {
-    def apply(name: String): DecoderResult[Nothing] = new DecoderError("no headers are expected").asLeft
+    def apply(names: NonEmptyList[String]): DecoderResult[Nothing] = new DecoderError("no headers are expected").asLeft
   }
 
-  implicit object StringParseableHeader extends ParseableHeader[String] {
-    def apply(name: String): DecoderResult[String] = name.asRight
+  implicit object StringNelParseableHeader extends ParseableHeader[NonEmptyList[String]] {
+    def apply(names: NonEmptyList[String]): DecoderResult[NonEmptyList[String]] = names.asRight
   }
 
-  implicit object NonEmptyStringParseableHeader extends ParseableHeader[Option[String]] {
-    def apply(name: String): DecoderResult[Option[String]] =
+  implicit object NonEmptyStringNelParseableHeader extends ParseableHeader[NonEmptyList[Option[String]]] {
+    def apply(names: NonEmptyList[String]): DecoderResult[NonEmptyList[Option[String]]] = names.map { name =>
       if (name.isEmpty)
-        none.asRight
+        none
       else
-        name.some.asRight
+        name.some
+    }.asRight
   }
 
   implicit object ParseableHeaderInstances extends MonadError[ParseableHeader, DecoderError] with SemigroupK[ParseableHeader] {
     def flatMap[A, B](fa: ParseableHeader[A])(f: A => ParseableHeader[B]): ParseableHeader[B] =
-      s => fa(s).flatMap(f(_)(s))
+      names => fa(names).flatMap(f(_)(names))
 
     def handleErrorWith[A](fa: ParseableHeader[A])(f: DecoderError => ParseableHeader[A]): ParseableHeader[A] =
-      s => fa(s).leftFlatMap(f(_)(s))
+      names => fa(names).leftFlatMap(f(_)(names))
 
     def pure[A](x: A): ParseableHeader[A] =
       _ => Right(x)
@@ -65,18 +70,18 @@ object ParseableHeader {
 
     def tailRecM[A, B](a: A)(f: A => ParseableHeader[Either[A, B]]): ParseableHeader[B] = {
       @tailrec
-      def step(s: String, a: A): DecoderResult[B] =
-        f(a)(s) match {
+      def step(names: NonEmptyList[String], a: A): DecoderResult[B] =
+        f(a)(names) match {
           case left @ Left(_)          => left.rightCast[B]
-          case Right(Left(a))          => step(s, a)
+          case Right(Left(a))          => step(names, a)
           case Right(right @ Right(_)) => right.leftCast[DecoderError]
         }
-      s => step(s, a)
+      names => step(names, a)
     }
 
-    override def combineK[A](x: ParseableHeader[A], y: ParseableHeader[A]): ParseableHeader[A] = s =>
-      x(s) match {
-        case Left(_)      => y(s)
+    override def combineK[A](x: ParseableHeader[A], y: ParseableHeader[A]): ParseableHeader[A] = names =>
+      x(names) match {
+        case Left(_)      => y(names)
         case r @ Right(_) => r
       }
   }

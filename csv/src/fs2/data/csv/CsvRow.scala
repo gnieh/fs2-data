@@ -18,10 +18,10 @@ package fs2.data.csv
 import cats.data._
 import cats.implicits._
 
-case class CsvRow[Header](values: NonEmptyList[String], headers: Option[NonEmptyList[Header]]) {
+case class CsvRow[Header](values: NonEmptyList[String], header: Option[Header]) {
 
-  private lazy val byHeader: Option[Map[Header, String]] =
-    headers.map(_.toList.zip(values.toList).toMap)
+  private def byHeader[A](implicit ev: Header =:= NonEmptyList[A]): Option[Map[A, String]] =
+    header.map(_.toList.zip(values.toList).toMap)
 
   /** Number of cells in the row. */
   def size: Int = values.size
@@ -45,7 +45,7 @@ case class CsvRow[Header](values: NonEmptyList[String], headers: Option[NonEmpty
             f(cell)
           else
             cell
-      }, headers)
+      }, header)
 
   /** Modifies the cell content at the given `header` using the function `f`.
     *
@@ -53,9 +53,9 @@ case class CsvRow[Header](values: NonEmptyList[String], headers: Option[NonEmpty
     * will be modified. It shouldn't be a problem in the general case as headers
     * should not be duplicated.
     */
-  def modify(header: Header)(f: String => String): CsvRow[Header] =
-    headers match {
-      case Some(headers) => modify(headers.toList.indexOf(header))(f)
+  def modify[A](head: A)(f: String => String)(implicit ev: Header =:= NonEmptyList[A]): CsvRow[Header] =
+    header match {
+      case Some(header) => modify(header.toList.indexOf(head))(f)
       case None          => this
     }
 
@@ -70,7 +70,7 @@ case class CsvRow[Header](values: NonEmptyList[String], headers: Option[NonEmpty
             value
           else
             cell
-      }, headers)
+      }, header)
 
   /** Returns the row with the cell at `header` modifed to `value`.
     *
@@ -78,24 +78,24 @@ case class CsvRow[Header](values: NonEmptyList[String], headers: Option[NonEmpty
     * will be modified. It shouldn't be a problem in the general case as headers
     * should not be duplicated.
     */
-  def updated(header: Header, value: String): CsvRow[Header] =
-    headers match {
-      case Some(headers) => updated(headers.toList.indexOf(header), value)
+  def updated[A](head: Header, value: String)(implicit ev: Header =:= NonEmptyList[A]): CsvRow[Header] =
+    header match {
+      case Some(headers) => updated(headers.toList.indexOf(head), value)
       case None          => this
     }
 
   /** Returns the row without the cell at the given `idx`.
     * If the resulting row is empty, returns `None`.
     */
-  def delete(idx: Int): Option[CsvRow[Header]] =
+  def delete[A](idx: Int)(implicit ev: Header =:= NonEmptyList[A]): Option[CsvRow[NonEmptyList[A]]] =
     if (idx < 0 || idx >= values.size) {
-      Some(this)
+      Some(this.asInstanceOf[CsvRow[NonEmptyList[A]]])
     } else {
       val (before, after) = values.toList.splitAt(idx)
-      val newHeaders = headers match {
+      val newHeaders = header match {
         case None => Nil
         case _ =>
-          val (h1, h2) = headers.fold[List[Header]](Nil)(_.toList).splitAt(idx)
+          val (h1, h2) = header.fold[List[A]](Nil)(_.toList).splitAt(idx)
           h1 ++ h2.tail
       }
       NonEmptyList.fromList(before ++ after.tail).map(new CsvRow(_, NonEmptyList.fromList(newHeaders)))
@@ -108,23 +108,23 @@ case class CsvRow[Header](values: NonEmptyList[String], headers: Option[NonEmpty
     * will be deleted. It shouldn't be a problem in the general case as headers
     * should not be duplicated.
     */
-  def delete(header: Header): Option[CsvRow[Header]] =
-    headers match {
-      case Some(headers) => delete(headers.toList.indexOf(header))
-      case None          => Some(this)
+  def delete[A](head: A)(implicit ev: Header =:= NonEmptyList[A]): Option[CsvRow[NonEmptyList[A]]] =
+    header match {
+      case Some(headers) => delete(headers.toList.indexOf(head))
+      case None          => Some(this.asInstanceOf[CsvRow[NonEmptyList[A]]])
     }
 
   /** Returns the content of the cell at `headers` if it exists.
     * Returns `None` if `header` does not exist for the row.
     * An empty cell value results in `Some("")`.
     */
-  def apply(header: Header): Option[String] =
-    byHeader.flatMap(_.get(header))
+  def apply[A](head: A)(implicit ev: Header =:= NonEmptyList[A]): Option[String] =
+    byHeader.flatMap(_.get(head))
 
   /** Returns a map representation of this row if headers are defined, otherwise
     * returns `None`.
     */
-  def toMap: Option[Map[Header, String]] =
+  def toMap[A](implicit ev: Header =:= NonEmptyList[A]): Option[Map[A, String]] =
     byHeader
 
 }
@@ -135,16 +135,23 @@ object CsvRow {
     NonEmptyList.fromList(l).map(new CsvRow(_, None))
 
   def fromNel(nel: NonEmptyList[String]): CsvRow[Nothing] =
-    new CsvRow(nel, None)
+    CsvRow(nel, None)
 
-  def fromListHeaders[Header](l: List[(Header, String)]): Option[CsvRow[Header]] = {
+  def fromListAndHeader[Header](l: List[String], header: Header): Option[CsvRow[Header]] =
+    NonEmptyList.fromList(l).map(CsvRow(_, Some(header)))
+
+  // this is almost only an alias for apply, here for consistency with fromListAndHeader
+  def fromNelAndHeader[Header](nel: NonEmptyList[String], header: Header): CsvRow[Header] =
+    CsvRow(nel, Some(header))
+
+  def fromListHeaders[HeadElem](l: List[(HeadElem, String)]): Option[CsvRow[NonEmptyList[HeadElem]]] = {
     val (hs, vs) = l.unzip
-    NonEmptyList.fromList(vs).map(new CsvRow(_, NonEmptyList.fromList(hs)))
+    NonEmptyList.fromList(vs).map(CsvRow(_, NonEmptyList.fromList(hs)))
   }
 
-  def fromNelHeaders[Header](nel: NonEmptyList[(Header, String)]): CsvRow[Header] = {
+  def fromNelHeaders[HeadElem](nel: NonEmptyList[(HeadElem, String)]): CsvRow[NonEmptyList[HeadElem]] = {
     val (hs, vs) = nel.toList.unzip
-    new CsvRow(NonEmptyList.fromListUnsafe(vs), NonEmptyList.fromList(hs))
+    CsvRow(NonEmptyList.fromListUnsafe(vs), NonEmptyList.fromList(hs))
   }
 
 }
