@@ -46,6 +46,10 @@ package object csv {
   def noHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
     _.map(new Row(_))
 
+  /** Transforms a stream of raw CSV rows into rows, skipping the first line to ignore the headers. */
+  def skipHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
+    _.tail.map(new Row(_))
+
   def decode[F[_], R](implicit F: ApplicativeError[F, Throwable], R: RowDecoder[R]): Pipe[F, Row, R] =
     _.evalMap(row => R(row.values).liftTo[F])
 
