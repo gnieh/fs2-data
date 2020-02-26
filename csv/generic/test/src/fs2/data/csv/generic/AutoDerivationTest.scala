@@ -16,13 +16,13 @@
 package fs2.data.csv.generic
 
 import cats.data.NonEmptyList
-import fs2.data.csv.{CellDecoder, CsvRow, CsvRowDecoder, RowDecoder}
+import fs2.data.csv.{CellDecoder, CsvRow, CsvRowDecoder, Row, RowDecoder}
 import org.scalatest._
 
 class AutoDerivationTest extends FlatSpec with Matchers {
 
-  val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"), Some(NonEmptyList.of("i", "s", "j")))
-  val plainRow = CsvRow.fromNel(NonEmptyList.of("1", "test", "42"))
+  val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
+  val plainRow = new Row(NonEmptyList.of("1", "test", "42"))
 
   case class Test(i: Int, s: String, j: Int)
 

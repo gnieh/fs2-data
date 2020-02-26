@@ -18,34 +18,57 @@ package fs2.data.csv
 import cats.data._
 import cats.implicits._
 
-class CsvRow[Header](val values: NonEmptyList[String], val headers: Option[NonEmptyList[Header]]) {
-
-  private lazy val byHeader: Option[Map[Header, String]] =
-    headers.map(_.toList.zip(values.toList).toMap)
+class Row(val values: NonEmptyList[String]) {
 
   /** Number of cells in the row. */
   def size: Int = values.size
 
   /** Returns the content of the cell at `idx` if it exists.
-    * Returns `None` if `idx` is out of row bounds.
-    * An empty cell value results in `Some("")`.
-    */
+   * Returns `None` if `idx` is out of row bounds.
+   * An empty cell value results in `Some("")`.
+   */
   def apply(idx: Int): Option[String] =
     values.get(idx)
 
   /** Modifies the cell content at the given `idx` using the function `f`.
-    */
-  def modify(idx: Int)(f: String => String): CsvRow[Header] =
+   */
+  def modify(idx: Int)(f: String => String): Row =
     if (idx < 0 || idx >= values.size)
       this
     else
-      new CsvRow(values.zipWithIndex.map {
+      new Row(values.zipWithIndex.map {
         case (cell, i) =>
           if (i === idx)
             f(cell)
           else
             cell
-      }, headers)
+      })
+
+  /** Returns the row with the cell at `idx` set to `value`. */
+  def updated(idx: Int, value: String): Row =
+    modify(idx)(_ => value)
+
+  /** Returns the row without the cell at the given `idx`.
+   * If the resulting row is empty, returns `None`.
+   */
+  def delete(idx: Int): Option[Row] =
+    if (idx < 0 || idx >= values.size) {
+      Some(this)
+    } else {
+      val (before, after) = values.toList.splitAt(idx)
+      NonEmptyList.fromList(before ++ after.tail).map(new Row(_))
+    }
+}
+
+case class CsvRow[Header](override val values: NonEmptyList[String], headers: NonEmptyList[Header]) extends Row(values) {
+
+  private lazy val byHeader: Map[Header, String] =
+    headers.toList.zip(values.toList).toMap
+
+  /** Modifies the cell content at the given `idx` using the function `f`.
+    */
+  override def modify(idx: Int)(f: String => String): CsvRow[Header] =
+    copy(values = super.modify(idx)(f).values)
 
   /** Modifies the cell content at the given `header` using the function `f`.
     *
@@ -54,51 +77,31 @@ class CsvRow[Header](val values: NonEmptyList[String], val headers: Option[NonEm
     * should not be duplicated.
     */
   def modify(header: Header)(f: String => String): CsvRow[Header] =
-    headers match {
-      case Some(headers) => modify(headers.toList.indexOf(header))(f)
-      case None          => this
-    }
+    modify(headers.toList.indexOf(header))(f)
 
-  /** Returns the row with the cell at `idx` modifed to `value`. */
-  def updated(idx: Int, value: String): CsvRow[Header] =
-    if (idx < 0 || idx >= values.size)
-      this
-    else
-      new CsvRow(values.zipWithIndex.map {
-        case (cell, i) =>
-          if (i === idx)
-            value
-          else
-            cell
-      }, headers)
+  /** Returns the row with the cell at `idx` modified to `value`. */
+  override def updated(idx: Int, value: String): CsvRow[Header] =
+    modify(idx)(_ => value)
 
-  /** Returns the row with the cell at `header` modifed to `value`.
+  /** Returns the row with the cell at `header` modified to `value`.
     *
     * **Note:** Only the first occurrence of the values with the given header
     * will be modified. It shouldn't be a problem in the general case as headers
     * should not be duplicated.
     */
   def updated(header: Header, value: String): CsvRow[Header] =
-    headers match {
-      case Some(headers) => updated(headers.toList.indexOf(header), value)
-      case None          => this
-    }
+    updated(headers.toList.indexOf(header), value)
 
   /** Returns the row without the cell at the given `idx`.
     * If the resulting row is empty, returns `None`.
     */
-  def delete(idx: Int): Option[CsvRow[Header]] =
+  override def delete(idx: Int): Option[CsvRow[Header]] =
     if (idx < 0 || idx >= values.size) {
       Some(this)
     } else {
       val (before, after) = values.toList.splitAt(idx)
-      val newHeaders = headers match {
-        case None => Nil
-        case _ =>
-          val (h1, h2) = headers.fold[List[Header]](Nil)(_.toList).splitAt(idx)
-          h1 ++ h2.tail
-      }
-      NonEmptyList.fromList(before ++ after.tail).map(new CsvRow(_, NonEmptyList.fromList(newHeaders)))
+      val (h1, h2) = headers.toList.splitAt(idx)
+      (NonEmptyList.fromList(before ++ after.tail), NonEmptyList.fromList(h1 ++ h2.tail)).mapN(new CsvRow(_, _))
     }
 
   /** Returns the row without the cell at the given `header`.
@@ -109,42 +112,33 @@ class CsvRow[Header](val values: NonEmptyList[String], val headers: Option[NonEm
     * should not be duplicated.
     */
   def delete(header: Header): Option[CsvRow[Header]] =
-    headers match {
-      case Some(headers) => delete(headers.toList.indexOf(header))
-      case None          => Some(this)
-    }
+    delete(headers.toList.indexOf(header))
 
   /** Returns the content of the cell at `headers` if it exists.
     * Returns `None` if `header` does not exist for the row.
     * An empty cell value results in `Some("")`.
     */
   def apply(header: Header): Option[String] =
-    byHeader.flatMap(_.get(header))
+    byHeader.get(header)
 
   /** Returns a map representation of this row if headers are defined, otherwise
     * returns `None`.
     */
-  def toMap: Option[Map[Header, String]] =
+  def toMap: Map[Header, String] =
     byHeader
 
 }
 
 object CsvRow {
 
-  def fromList(l: List[String]): Option[CsvRow[Nothing]] =
-    NonEmptyList.fromList(l).map(new CsvRow(_, None))
-
-  def fromNel(nel: NonEmptyList[String]): CsvRow[Nothing] =
-    new CsvRow(nel, None)
-
   def fromListHeaders[Header](l: List[(Header, String)]): Option[CsvRow[Header]] = {
     val (hs, vs) = l.unzip
-    NonEmptyList.fromList(vs).map(new CsvRow(_, NonEmptyList.fromList(hs)))
+    (NonEmptyList.fromList(vs), NonEmptyList.fromList(hs)).mapN(new CsvRow(_, _))
   }
 
   def fromNelHeaders[Header](nel: NonEmptyList[(Header, String)]): CsvRow[Header] = {
     val (hs, vs) = nel.toList.unzip
-    new CsvRow(NonEmptyList.fromListUnsafe(vs), NonEmptyList.fromList(hs))
+    new CsvRow(NonEmptyList.fromListUnsafe(vs), NonEmptyList.fromListUnsafe(hs))
   }
 
 }

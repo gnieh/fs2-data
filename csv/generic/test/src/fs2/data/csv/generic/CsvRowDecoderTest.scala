@@ -25,11 +25,11 @@ import cats.data.NonEmptyList
 
 class CsvRowDecoderTest extends FlatSpec with Matchers {
 
-  val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"), Some(NonEmptyList.of("i", "s", "j")))
-  val csvRowDefaultI = new CsvRow(NonEmptyList.of("", "test", "42"), Some(NonEmptyList.of("i", "s", "j")))
-  val csvRowNoI = new CsvRow(NonEmptyList.of("test", "42"), Some(NonEmptyList.of("s", "j")))
-  val csvRowEmptyJ = new CsvRow(NonEmptyList.of("1", "test", ""), Some(NonEmptyList.of("i", "s", "j")))
-  val csvRowNoJ = new CsvRow(NonEmptyList.of("1", "test"), Some(NonEmptyList.of("i", "s")))
+  val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
+  val csvRowDefaultI = new CsvRow(NonEmptyList.of("", "test", "42"), NonEmptyList.of("i", "s", "j"))
+  val csvRowNoI = new CsvRow(NonEmptyList.of("test", "42"), NonEmptyList.of("s", "j"))
+  val csvRowEmptyJ = new CsvRow(NonEmptyList.of("1", "test", ""), NonEmptyList.of("i", "s", "j"))
+  val csvRowNoJ = new CsvRow(NonEmptyList.of("1", "test"), NonEmptyList.of("i", "s"))
 
   case class Test(i: Int = 0, s: String, j: Option[Int])
   case class TestOrder(s: String, j: Int, i: Int)

@@ -23,16 +23,13 @@ import cats.data._
 
 private[csv] object CsvRowParser {
 
-  def pipe[F[_], Header](withHeaders: Boolean)(
+  def pipe[F[_], Header](
       implicit F: ApplicativeError[F, Throwable],
       Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
-    _.mapAccumulate(Headers.Uninitialized[Header]: Headers[Header]) {
-      case (Headers.Uninitialized(), fields) if withHeaders =>
-        // headers have not been seen yet (first row)
-        (Headers.Initialized(Some(fields.map(Header.parse(_)))), None)
+    _.mapAccumulate(Headers.Uninitialized[Header](): Headers[Header]) {
       case (Headers.Uninitialized(), fields) =>
-        // no header are to be parsed
-        (Headers.Initialized(None), Some(new CsvRow[Header](fields, None)))
+        // headers have not been seen yet (first row)
+        (Headers.Initialized(fields.map(Header.parse)), None)
       case (initialized @ Headers.Initialized(headers), fields) =>
         // otherwise, headers are already initialized properly, just pass them to the row
         (initialized, Some(new CsvRow[Header](fields, headers)))
