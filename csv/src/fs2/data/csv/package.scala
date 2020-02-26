@@ -37,7 +37,11 @@ package object csv {
     CsvRowParser.pipe[F, Header]
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
-  def noHeaders[F[_]](implicit F: ApplicativeError[F, Throwable]): Pipe[F, NonEmptyList[String], Row] =
+  def withHeaders[F[_], Header](headers: NonEmptyList[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
+    _.map(CsvRow(_, headers))
+
+  /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
+  def noHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
     _.map(new Row(_))
 
   def decode[F[_], R](implicit F: ApplicativeError[F, Throwable], R: RowDecoder[R]): Pipe[F, NonEmptyList[String], R] =
