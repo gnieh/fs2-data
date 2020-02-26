@@ -19,20 +19,22 @@ package csv
 package internals
 
 import cats._
+import cats.implicits._
 import cats.data._
 
 private[csv] object CsvRowParser {
 
-  def pipe[F[_], Header](
-      implicit F: ApplicativeError[F, Throwable],
-      Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
-    _.mapAccumulate(Headers.Uninitialized[Header](): Headers[Header]) {
-      case (Headers.Uninitialized(), fields) =>
-        // headers have not been seen yet (first row)
-        (Headers.Initialized(fields.map(Header.parse)), None)
-      case (initialized @ Headers.Initialized(headers), fields) =>
-        // otherwise, headers are already initialized properly, just pass them to the row
-        (initialized, Some(new CsvRow[Header](fields, headers)))
-    }.map(_._2).unNone
+  def pipe[F[_], Header](implicit F: ApplicativeError[F, Throwable],
+                         Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
+    _.pull.uncons1.flatMap {
+      case Some((firstRow, tail)) =>
+        Header(firstRow) match {
+          case Left(error) => Pull.raiseError(error)
+          case Right(headers) if headers.length =!= firstRow.length =>
+            Pull.raiseError(new HeaderError("The count of headers must match the count of columns"))
+          case Right(headers) => tail.map(CsvRow[Header](_, headers)).pull.echo
+        }
+      case None => Pull.done
+    }.stream
 
 }

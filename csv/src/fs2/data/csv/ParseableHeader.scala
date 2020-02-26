@@ -15,12 +15,16 @@
  */
 package fs2.data.csv
 
-/** A typeclass describing what it means to be a parseable
+import cats.data.NonEmptyList
+import cats.implicits._
+import cats.{Functor, SemigroupK}
+
+/** A type class describing what it means to be a parseable
   * CSV header.
   */
 trait ParseableHeader[Header] {
 
-  def parse(name: String): Header
+  def apply(names: NonEmptyList[String]): HeaderResult[Header]
 
 }
 
@@ -30,19 +34,36 @@ object ParseableHeader {
     implicitly[ParseableHeader[Header]]
 
   implicit object NothingParseableHeader extends ParseableHeader[Nothing] {
-    def parse(name: String): Nothing = throw new CsvException("no headers are expected")
+    def apply(names: NonEmptyList[String]): HeaderResult[Nothing] =
+      new HeaderError("no headers are expected").asLeft[NonEmptyList[Nothing]]
   }
 
   implicit object StringParseableHeader extends ParseableHeader[String] {
-    def parse(name: String) = name
+    def apply(names: NonEmptyList[String]): HeaderResult[String] = names.asRight
   }
 
   implicit object NonEmptyStringParseableHeader extends ParseableHeader[Option[String]] {
-    def parse(name: String) =
-      if (name.isEmpty)
-        None
-      else
-        Some(name)
+    def apply(names: NonEmptyList[String]): HeaderResult[Option[String]] =
+      names.map { name =>
+        if (name.isEmpty)
+          None
+        else
+          Some(name)
+      }.asRight
   }
+
+  implicit object ParseableHeaderInstances extends Functor[ParseableHeader] with SemigroupK[ParseableHeader] {
+    override def map[A, B](fa: ParseableHeader[A])(f: A => B): ParseableHeader[B] = names => fa(names).map(_.map(f))
+
+    override def combineK[A](x: ParseableHeader[A], y: ParseableHeader[A]): ParseableHeader[A] =
+      names =>
+        x(names) match {
+          case Left(_)      => y(names)
+          case r @ Right(_) => r
+      }
+  }
+
+  def liftCellDecoder[T](implicit cellDecoder: CellDecoder[T]): ParseableHeader[T] =
+    _.traverse(cellDecoder(_).leftMap(e => new HeaderError(e.getMessage)))
 
 }
