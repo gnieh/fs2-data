@@ -29,9 +29,9 @@ private[csv] object CsvRowParser {
     _.pull.uncons1.flatMap {
       case Some((firstRow, tail)) =>
         Header(firstRow) match {
-          case Left(error) => Pull.raiseError(error)
+          case Left(error) => Pull.raiseError[F](error)
           case Right(headers) if headers.length =!= firstRow.length =>
-            Pull.raiseError(new HeaderError("The count of headers must match the count of columns"))
+            Pull.raiseError[F](new HeaderError("The count of headers must match the count of columns"))
           case Right(headers) => tail.map(CsvRow[Header](_, headers)).pull.echo
         }
       case None => Pull.done
