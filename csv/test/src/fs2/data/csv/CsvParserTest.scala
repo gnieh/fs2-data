@@ -64,7 +64,7 @@ class CsvParserTest extends FlatSpec with Matchers with BeforeAndAfterAll {
           .compile
           .toList
           .unsafeRunSync()
-          .map(_.toMap.get)
+          .map(_.toMap)
       actual should be(expected)
     }
   }

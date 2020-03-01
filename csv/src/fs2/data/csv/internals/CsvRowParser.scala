@@ -19,23 +19,24 @@ package csv
 package internals
 
 import cats._
+import cats.implicits._
 import cats.data._
 
 private[csv] object CsvRowParser {
 
-  def pipe[F[_], Header](withHeaders: Boolean)(
-      implicit F: ApplicativeError[F, Throwable],
-      Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
-    _.mapAccumulate(Headers.Uninitialized[Header]: Headers[Header]) {
-      case (Headers.Uninitialized(), fields) if withHeaders =>
-        // headers have not been seen yet (first row)
-        (Headers.Initialized(Some(fields.map(Header.parse(_)))), None)
-      case (Headers.Uninitialized(), fields) =>
-        // no header are to be parsed
-        (Headers.Initialized(None), Some(new CsvRow[Header](fields, None)))
-      case (initialized @ Headers.Initialized(headers), fields) =>
-        // otherwise, headers are already initialized properly, just pass them to the row
-        (initialized, Some(new CsvRow[Header](fields, headers)))
-    }.map(_._2).unNone
+  def pipe[F[_], Header](implicit F: ApplicativeError[F, Throwable],
+                         Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
+    _.pull.uncons1.flatMap {
+      case Some((firstRow, tail)) =>
+        Header(firstRow) match {
+          case Left(error) => Pull.raiseError[F](error)
+          case Right(headers) if headers.length =!= firstRow.length =>
+            val error = new HeaderError(
+              s"Got ${headers.length} headers, but ${firstRow.length} columns. Both numbers must match!")
+            Pull.raiseError[F](error)
+          case Right(headers) => tail.map(CsvRow[Header](_, headers)).pull.echo
+        }
+      case None => Pull.done
+    }.stream
 
 }

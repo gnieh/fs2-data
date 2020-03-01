@@ -55,12 +55,6 @@ object CsvRowDecoder extends ExportedCsvRowDecoders {
       }
     }
 
-  implicit def RowDecoderCsvRowDecoder[T](implicit T: RowDecoder[T]): CsvRowDecoder[T, Nothing] =
-    new CsvRowDecoder[T, Nothing] {
-      def apply(row: CsvRow[Nothing]): DecoderResult[T] =
-        T(row.values)
-    }
-
   def apply[T: CsvRowDecoder[*, Header], Header]: CsvRowDecoder[T, Header] = implicitly[CsvRowDecoder[T, Header]]
 
 }

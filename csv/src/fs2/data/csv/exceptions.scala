@@ -18,3 +18,5 @@ package fs2.data.csv
 class CsvException(msg: String, inner: Throwable = null) extends Exception(msg, inner)
 
 class DecoderError(msg: String, inner: Throwable = null) extends CsvException(msg, inner)
+
+class HeaderError(msg: String, inner: Throwable = null) extends CsvException(msg, inner)
