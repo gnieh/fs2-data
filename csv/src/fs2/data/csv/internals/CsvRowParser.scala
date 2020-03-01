@@ -31,7 +31,9 @@ private[csv] object CsvRowParser {
         Header(firstRow) match {
           case Left(error) => Pull.raiseError[F](error)
           case Right(headers) if headers.length =!= firstRow.length =>
-            Pull.raiseError[F](new HeaderError("The count of headers must match the count of columns"))
+            val error = new HeaderError(
+              s"Got ${headers.length} headers, but ${firstRow.length} columns. Both numbers must match!")
+            Pull.raiseError[F](error)
           case Right(headers) => tail.map(CsvRow[Header](_, headers)).pull.echo
         }
       case None => Pull.done
