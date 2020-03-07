@@ -24,14 +24,14 @@ class Row(val values: NonEmptyList[String]) {
   def size: Int = values.size
 
   /** Returns the content of the cell at `idx` if it exists.
-   * Returns `None` if `idx` is out of row bounds.
-   * An empty cell value results in `Some("")`.
-   */
+    * Returns `None` if `idx` is out of row bounds.
+    * An empty cell value results in `Some("")`.
+    */
   def apply(idx: Int): Option[String] =
     values.get(idx)
 
   /** Modifies the cell content at the given `idx` using the function `f`.
-   */
+    */
   def modify(idx: Int)(f: String => String): Row =
     if (idx < 0 || idx >= values.size)
       this
@@ -49,8 +49,8 @@ class Row(val values: NonEmptyList[String]) {
     modify(idx)(_ => value)
 
   /** Returns the row without the cell at the given `idx`.
-   * If the resulting row is empty, returns `None`.
-   */
+    * If the resulting row is empty, returns `None`.
+    */
   def delete(idx: Int): Option[Row] =
     if (idx < 0 || idx >= values.size) {
       Some(this)
@@ -60,7 +60,8 @@ class Row(val values: NonEmptyList[String]) {
     }
 }
 
-case class CsvRow[Header](override val values: NonEmptyList[String], headers: NonEmptyList[Header]) extends Row(values) {
+case class CsvRow[Header](override val values: NonEmptyList[String], headers: NonEmptyList[Header])
+    extends Row(values) {
 
   private lazy val byHeader: Map[Header, String] =
     headers.toList.zip(values.toList).toMap

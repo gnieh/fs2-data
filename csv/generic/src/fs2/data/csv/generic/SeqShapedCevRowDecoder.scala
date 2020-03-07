@@ -32,7 +32,7 @@ object SeqShapedRowDecoder extends LowPrioritySeqShapedRowDecoder1 {
       def apply(cells: NonEmptyList[String]): DecoderResult[Option[Head] :: HNil] =
         cells match {
           case NonEmptyList(c, Nil) =>
-            if(c.isEmpty)
+            if (c.isEmpty)
               Right(None :: HNil)
             else
               Head(c).map(Some(_) :: HNil)
@@ -42,13 +42,14 @@ object SeqShapedRowDecoder extends LowPrioritySeqShapedRowDecoder1 {
 
     }
 
-  implicit def hconsOptionDecoder[Head, Tail <: HList](implicit Head: CellDecoder[Head],
-                                                 Tail: Lazy[SeqShapedRowDecoder[Tail]]): SeqShapedRowDecoder[Option[Head] :: Tail] =
+  implicit def hconsOptionDecoder[Head, Tail <: HList](
+      implicit Head: CellDecoder[Head],
+      Tail: Lazy[SeqShapedRowDecoder[Tail]]): SeqShapedRowDecoder[Option[Head] :: Tail] =
     new SeqShapedRowDecoder[Option[Head] :: Tail] {
       def apply(cells: NonEmptyList[String]): DecoderResult[Option[Head] :: Tail] =
         for {
           tail <- NonEmptyList.fromList(cells.tail).liftTo[DecoderResult](new DecoderError("unexpect end of row"))
-          head <- if(cells.head.isEmpty) Right(None) else Head(cells.head).map(Some(_))
+          head <- if (cells.head.isEmpty) Right(None) else Head(cells.head).map(Some(_))
           tail <- Tail.value(tail)
         } yield head :: tail
     }
@@ -69,8 +70,9 @@ trait LowPrioritySeqShapedRowDecoder1 {
 
     }
 
-  implicit def hconsDecoder[Head, Tail <: HList](implicit Head: CellDecoder[Head],
-                                                 Tail: Lazy[SeqShapedRowDecoder[Tail]]): SeqShapedRowDecoder[Head :: Tail] =
+  implicit def hconsDecoder[Head, Tail <: HList](
+      implicit Head: CellDecoder[Head],
+      Tail: Lazy[SeqShapedRowDecoder[Tail]]): SeqShapedRowDecoder[Head :: Tail] =
     new SeqShapedRowDecoder[Head :: Tail] {
       def apply(cells: NonEmptyList[String]): DecoderResult[Head :: Tail] =
         for {

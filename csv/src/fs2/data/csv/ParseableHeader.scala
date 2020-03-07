@@ -60,7 +60,7 @@ object ParseableHeader {
         x(names) match {
           case Left(_)      => y(names)
           case r @ Right(_) => r
-      }
+        }
   }
 
   def liftCellDecoder[T](implicit cellDecoder: CellDecoder[T]): ParseableHeader[T] =

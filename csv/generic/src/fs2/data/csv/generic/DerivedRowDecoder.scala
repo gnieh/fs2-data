@@ -26,10 +26,9 @@ trait DerivedRowDecoder[T] extends RowDecoder[T]
 
 object DerivedRowDecoder {
 
-  final implicit def productDecoder[T, Repr <: HList](
-      implicit
-      gen: Generic.Aux[T, Repr],
-      cc: Lazy[SeqShapedRowDecoder[Repr]]): DerivedRowDecoder[T] =
+  final implicit def productDecoder[T, Repr <: HList](implicit
+                                                      gen: Generic.Aux[T, Repr],
+                                                      cc: Lazy[SeqShapedRowDecoder[Repr]]): DerivedRowDecoder[T] =
     new DerivedRowDecoder[T] {
 
       def apply(cells: NonEmptyList[String]): DecoderResult[T] =

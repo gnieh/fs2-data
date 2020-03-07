@@ -51,7 +51,7 @@ trait CellDecoder[T] {
       apply(s) match {
         case Left(_)      => cd(s)
         case r @ Right(_) => r.leftCast[DecoderError]
-    }
+      }
 
   /**
     * Similar to [[or]], but return the result as an Either signaling which cell decoder succeeded. Allows for parsing
@@ -69,7 +69,7 @@ trait CellDecoder[T] {
             case r @ Right(_) => r.leftCast[T].asRight
           }
         case Right(value) => Right(Left(value))
-    }
+      }
 }
 
 object CellDecoder extends CellDecoderInstances1 with LiteralCellDecoders with ExportedCellDecoders {
@@ -95,8 +95,7 @@ object CellDecoder extends CellDecoderInstances1 with LiteralCellDecoders with E
           case Right(Left(a))          => step(s, a)
           case Right(right @ Right(_)) => right.leftCast[DecoderError]
         }
-      s =>
-        step(s, a)
+      s => step(s, a)
     }
 
     override def combineK[A](x: CellDecoder[A], y: CellDecoder[A]): CellDecoder[A] = x or y

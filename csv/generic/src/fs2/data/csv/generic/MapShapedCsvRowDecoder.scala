@@ -27,22 +27,33 @@ trait MapShapedCsvRowDecoder[Repr] extends CsvRowDecoder[Repr, String]
 
 object MapShapedCsvRowDecoder extends LowPriorityMapShapedCsvRowDecoder1 {
 
-  implicit def hnilRowDecoder[Wrapped]: WithDefaults[Wrapped, HNil, HNil, HNil] = new WithDefaults[Wrapped, HNil, HNil, HNil] {
-    def fromWithDefault(row: CsvRow[String], default: HNil, annotation: HNil): DecoderResult[HNil] =
-      Right(HNil)
-  }
+  implicit def hnilRowDecoder[Wrapped]: WithDefaults[Wrapped, HNil, HNil, HNil] =
+    new WithDefaults[Wrapped, HNil, HNil, HNil] {
+      def fromWithDefault(row: CsvRow[String], default: HNil, annotation: HNil): DecoderResult[HNil] =
+        Right(HNil)
+    }
 
-  implicit def optionHconsRowDecoder[Wrapped, Key <: Symbol, Head, Tail <: HList, DefaultTail <: HList, Anno, AnnoTail <: HList](
-      implicit witness: Witness.Aux[Key],
-      Head: CellDecoder[Head],
-      ev: <:<[Anno, Option[CsvName]],
-      Tail: Lazy[WithDefaults[Wrapped, Tail, DefaultTail, AnnoTail]])
-      : WithDefaults[Wrapped, FieldType[Key, Option[Head]] :: Tail, Option[Option[Head]] :: DefaultTail, Anno :: AnnoTail] =
-    new WithDefaults[Wrapped, FieldType[Key, Option[Head]] :: Tail, Option[Option[Head]] :: DefaultTail, Anno :: AnnoTail] {
-      def fromWithDefault(
-          row: CsvRow[String],
-          default: Option[Option[Head]] :: DefaultTail,
-          anno: Anno :: AnnoTail): DecoderResult[FieldType[Key, Option[Head]] :: Tail] = {
+  implicit def optionHconsRowDecoder[Wrapped,
+                                     Key <: Symbol,
+                                     Head,
+                                     Tail <: HList,
+                                     DefaultTail <: HList,
+                                     Anno,
+                                     AnnoTail <: HList](implicit witness: Witness.Aux[Key],
+                                                        Head: CellDecoder[Head],
+                                                        ev: <:<[Anno, Option[CsvName]],
+                                                        Tail: Lazy[WithDefaults[Wrapped, Tail, DefaultTail, AnnoTail]])
+      : WithDefaults[Wrapped,
+                     FieldType[Key, Option[Head]] :: Tail,
+                     Option[Option[Head]] :: DefaultTail,
+                     Anno :: AnnoTail] =
+    new WithDefaults[Wrapped,
+                     FieldType[Key, Option[Head]] :: Tail,
+                     Option[Option[Head]] :: DefaultTail,
+                     Anno :: AnnoTail] {
+      def fromWithDefault(row: CsvRow[String],
+                          default: Option[Option[Head]] :: DefaultTail,
+                          anno: Anno :: AnnoTail): DecoderResult[FieldType[Key, Option[Head]] :: Tail] = {
         val head = row(witness.value.name) match {
           case Some(head) if head.nonEmpty => Head(head).map(Some(_))
           case _                           => Right(default.head.flatten)
@@ -62,15 +73,21 @@ trait LowPriorityMapShapedCsvRowDecoder1 {
     def fromWithDefault(row: CsvRow[String], default: DefaultRepr, annotation: AnnoRepr): DecoderResult[Repr]
   }
 
-  implicit def hconsRowDecoder[Wrapped, Key <: Symbol, Head, Tail <: HList, DefaultTail <: HList, Anno, AnnoTail <: HList](
-      implicit witness: Witness.Aux[Key],
-      Head: CellDecoder[Head],
-      ev: <:<[Anno, Option[CsvName]],
-      Tail: Lazy[WithDefaults[Wrapped, Tail, DefaultTail, AnnoTail]])
+  implicit def hconsRowDecoder[Wrapped,
+                               Key <: Symbol,
+                               Head,
+                               Tail <: HList,
+                               DefaultTail <: HList,
+                               Anno,
+                               AnnoTail <: HList](implicit witness: Witness.Aux[Key],
+                                                  Head: CellDecoder[Head],
+                                                  ev: <:<[Anno, Option[CsvName]],
+                                                  Tail: Lazy[WithDefaults[Wrapped, Tail, DefaultTail, AnnoTail]])
       : WithDefaults[Wrapped, FieldType[Key, Head] :: Tail, Option[Head] :: DefaultTail, Anno :: AnnoTail] =
     new WithDefaults[Wrapped, FieldType[Key, Head] :: Tail, Option[Head] :: DefaultTail, Anno :: AnnoTail] {
       def fromWithDefault(row: CsvRow[String],
-                          default: Option[Head] :: DefaultTail, anno: Anno :: AnnoTail): DecoderResult[FieldType[Key, Head] :: Tail] = {
+                          default: Option[Head] :: DefaultTail,
+                          anno: Anno :: AnnoTail): DecoderResult[FieldType[Key, Head] :: Tail] = {
         val head = row(anno.head.fold(witness.value.name)(_.name)) match {
           case Some(head) if head.nonEmpty =>
             Head(head)
