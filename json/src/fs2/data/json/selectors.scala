@@ -26,7 +26,7 @@ object Selector {
   case object ThisSelector extends Selector
 
   /** Selects the value in the object for which the key respects the predicate.
-    * If the currently pointed value is not an object and `strict` if `true`,
+    * If the currently pointed value is not an object and `strict` is `true`,
     * then an error is raised, otherwise the value is skipped.
     */
   case class NameSelector(pred: NamePredicate, strict: Boolean) extends Selector
@@ -42,7 +42,7 @@ object Selector {
   }
 
   /** Selects the value in the array for which the index respects the predicate.
-    * If the currently pointed value is not an array and `strict` if `true`,
+    * If the currently pointed value is not an array and `strict` is `true`,
     * then an error is raised, otherwise the value is skipped.
     */
   case class IndexSelector(pred: IndexPredicate, strict: Boolean) extends Selector

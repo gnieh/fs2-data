@@ -23,20 +23,16 @@ val fs2DataDeveloper = Developer("satabin", "Lucas Satabin", "https://github.com
 trait Fs2DataModule extends ScalaModule with ScalafmtModule {
 
   def scalacOptions =
-	 Seq("-feature", "-deprecation", "-unchecked", "-Ypatmat-exhaust-depth", "off", "-Ywarn-unused:imports") ++
-	 (if(scalaVersion().startsWith("2.13"))
-     Seq()
-   else
-     Seq("-Ypartial-unification", "-language:higherKinds"))
+    Seq("-feature", "-deprecation", "-unchecked", "-Ypatmat-exhaust-depth", "off", "-Ywarn-unused:imports") ++
+      (if (scalaVersion().startsWith("2.13"))
+         Seq()
+       else
+         Seq("-Ypartial-unification", "-language:higherKinds"))
 
   def ivyDeps =
-    Agg(
-      ivy"co.fs2::fs2-core:$fs2Version",
-      ivy"org.scala-lang.modules::scala-collection-compat:2.1.3")
+    Agg(ivy"co.fs2::fs2-core:$fs2Version", ivy"org.scala-lang.modules::scala-collection-compat:2.1.3")
 
-  def scalacPluginIvyDeps = Agg(
-    ivy"org.typelevel::kind-projector:0.10.3",
-    ivy"com.olegpy::better-monadic-for:0.3.1")
+  def scalacPluginIvyDeps = Agg(ivy"org.typelevel::kind-projector:0.10.3", ivy"com.olegpy::better-monadic-for:0.3.1")
 
   trait Fs2DataTests extends Tests {
     def ivyDeps =
@@ -134,7 +130,8 @@ class JsonModule(val crossScalaVersion: String) extends Fs2DataModule with Cross
     )
 
   object test extends Fs2DataTests {
-    def moduleDeps = Seq(circe)
+    def moduleDeps = Seq(circe, diffson)
+    def ivyDeps = super.ivyDeps() ++ Seq(ivy"org.gnieh::diffson-circe:4.0.2")
   }
 
   object circe extends Fs2DataModule with PublishModule {
@@ -149,6 +146,27 @@ class JsonModule(val crossScalaVersion: String) extends Fs2DataModule with Cross
     def pomSettings =
       PomSettings(
         description = "Streaming JSON library with support for circe ASTs",
+        organization = "org.gnieh",
+        url = fs2DataUrl,
+        licenses = Seq(fs2DataLicense),
+        versionControl = VersionControl.github("satabin", "fs2-data"),
+        developers = Seq(fs2DataDeveloper)
+      )
+
+  }
+
+  object diffson extends Fs2DataModule with PublishModule {
+    def scalaVersion = outer.scalaVersion
+    def moduleDeps = Seq(outer)
+    def ivyDeps = Agg(ivy"org.gnieh::diffson-core:4.0.2")
+
+    def publishVersion = fs2DataVersion
+
+    def artifactName = "fs2-data-json-diffson"
+
+    def pomSettings =
+      PomSettings(
+        description = "Streaming JSON library with support for patches",
         organization = "org.gnieh",
         url = fs2DataUrl,
         licenses = Seq(fs2DataLicense),

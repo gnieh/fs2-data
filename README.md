@@ -6,6 +6,7 @@ A set of streaming data parsers based on [fs2][fs2].
 Following modules are available:
   - `fs2-data-json`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json_2.13) A JSON parser and manipulation library
   - `fs2-data-json-circe`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-circe_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-circe_2.13) [circe][circe] support for parsed JSON.
+  - `fs2-data-json-diffson`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-diffson_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-diffson_2.13) [diffson][diffson] support for patching JSON streams.
   - `fs2-data-xml`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-xml_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-xml_2.13) An XML parser
   - `fs2-data-csv`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv_2.13) A CSV parser
   - `fs2-data-csv-generic`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv-generic_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv-generic_2.13) generic decoder for CSV files
@@ -13,19 +14,21 @@ Following modules are available:
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-  - [JSON module usage](#json-module-usage)
-    - [Stream parser](#stream-parser)
-    - [Selectors](#selectors)
-    - [AST Builder and Tokenizer](#ast-builder-and-tokenizer)
-    - [Circe](#circe)
-  - [XML module usage](#xml-module-usage)
-    - [Stream parser](#stream-parser-1)
-    - [Resolvers](#resolvers)
-    - [Normalization](#normalization)
-  - [CSV module usage](#csv-module-usage)
-    - [Stream parser](#stream-parser-2)
-    - [CSV Rows with headers](#csv-rows-with-headers)
-    - [Decoding](#decoding)
+
+- [JSON module usage](#json-module-usage)
+  - [Stream parser](#stream-parser)
+  - [Selectors](#selectors)
+  - [AST Builder and Tokenizer](#ast-builder-and-tokenizer)
+  - [Circe](#circe)
+  - [Patches](#patches)
+- [XML module usage](#xml-module-usage)
+  - [Stream parser](#stream-parser-1)
+  - [Resolvers](#resolvers)
+  - [Normalization](#normalization)
+- [CSV module usage](#csv-module-usage)
+  - [Stream parser](#stream-parser-2)
+  - [CSV Rows with headers](#csv-rows-with-headers)
+  - [Decoding](#decoding)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -115,6 +118,37 @@ println(asts.compile.toList.unsafeRunSync())
 
 val transformed = stream.through(transform[IO, Json](selector, json => Json.obj("test" -> json)))
 println(transformed.through(values[IO, Json]).compile.toList.unsafeRunSync())
+```
+
+### Patches
+
+The `fs2-data-json-diffson` module provides some integration with [diffson][diffson].
+It allows for patching a Json stream as it is read to emit the patched value downstream.
+Patching stream can be useful in several case, for instance:
+ - it can be used to filter out fields you don't need for further processing, before building an AST with these fields;
+ - it can be used to make data from an input stream anonymous by removing names or identifiers;
+ - it makes it possible to enrich an input stream with extra data you need for further processing;
+ - many other use cases when you need to amend input data on the fly without building the entire AST in memory.
+
+Currently only [JSON Merge Patch][jsonmergepatch] is supported.
+
+In order for patches to be applied, you need a `Tokenizer` for some `Json` type the patch operates on (see above) and a `Jsony` from [diffson][diffson] for that same `Json` type.
+
+Let's say you are using circe as Json AST library, you can use patches like this:
+```scala
+import fs2.data.json.mergepatch._
+
+import diffson._
+import diffson.circe._
+import diffson.jsonmergepatch._
+
+import io.circe._
+
+val mergePatch: JsonMergePatch[Json] = ...
+
+val patched = stream.through(patch(mergePatch))
+
+println(patched.compile.toList.unsafeRunSync())
 ```
 
 ## XML module usage
@@ -309,3 +343,5 @@ There's also support for full auto-derivation, just `import fs2.data.csv.generic
 [circe]: https://circe.github.io/circe/
 [shapeless]: https://github.com/milessabin/shapeless
 [enumeratum]: https://github.com/lloydmeta/enumeratum/
+[diffson]: https://github.com/gnieh/diffson
+[jsonmergepatch]: https://tools.ietf.org/html/rfc7396
