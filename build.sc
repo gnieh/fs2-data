@@ -2,8 +2,10 @@ import mill._
 import scalalib._
 import scalafmt._
 import publish._
-
+import $file.jmh
+import jmh.Jmh
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
+import mill.define.BaseModule
 
 val scala212 = "2.12.10"
 val scala213 = "2.13.1"
@@ -200,4 +202,13 @@ class XmlModule(val crossScalaVersion: String) extends Fs2DataModule with CrossS
     )
 
   object test extends Fs2DataTests
+}
+
+object benchmarks extends Cross[Benchmarks](scala212, scala213)
+class Benchmarks(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule with Jmh {
+  def moduleDeps = Seq(csv(crossScalaVersion))
+
+  def ivyDeps = T { super.ivyDeps() ++ Agg(ivy"com.github.pathikrit::better-files:3.8.0") }
+
+  def millSourcePath = os.pwd / "benchmarks"
 }

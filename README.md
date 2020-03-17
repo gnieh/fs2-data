@@ -339,9 +339,17 @@ println(rows.compile.toList.unsafeRunSync())
 
 There's also support for full auto-derivation, just `import fs2.data.csv.generic.auto._` for everything, `import fs2.data.csv.generic.auto.row._` for `RowDecoder` support only or `import fs2.data.csv.generic.auto.csvrow._` for `CsvRowDecoder` support.
 
+### Development
+This project builds using [mill][mill]. You can install `mill` yourself or use the provided `millw` wrapper, in this case replace `mill` with `./millw` in the following commands:
+* compile everything: `mill __.compile`
+* compile & run all tests: `mill __.test`
+* run benchmarks (you can provide [JMH][jmh] arguments in the end): `mill '__.benchmarks[2.13.1].runJmh'`
+
 [fs2]: https://fs2.io/
 [circe]: https://circe.github.io/circe/
 [shapeless]: https://github.com/milessabin/shapeless
 [enumeratum]: https://github.com/lloydmeta/enumeratum/
 [diffson]: https://github.com/gnieh/diffson
 [jsonmergepatch]: https://tools.ietf.org/html/rfc7396
+[mill]: https://github.com/lihaoyi/mill
+[jmh]: https://openjdk.java.net/projects/code-tools/jmh/
