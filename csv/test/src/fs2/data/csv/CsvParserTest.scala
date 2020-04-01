@@ -57,8 +57,7 @@ class CsvParserTest extends FlatSpec with Matchers with BeforeAndAfterAll {
       val actual =
         file
           .readAll[IO](path.path, blocker, 1024)
-          .through(fs2.text.utf8Decode)
-          .flatMap(Stream.emits(_))
+          .chunks
           .through(rows[IO]())
           .through(headers[IO, String])
           .compile

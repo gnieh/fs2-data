@@ -17,5 +17,7 @@ package fs2
 package data
 package csv
 package internals
+import scala.collection.mutable
 
-private[internals] case class ParseEnv(currentField: StringBuilder, tail: List[String], state: State, idx: Int)
+
+private[internals] case class ParseEnv(currentField: mutable.ArrayBuilder[Byte], tail: List[String], state: State, idx: Int)

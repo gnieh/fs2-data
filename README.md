@@ -219,7 +219,7 @@ val input = """i,s,j
               |,other,-3
               |""".stripMargin
 
-val stream = Stream.emits(input).through(rows[IO]())
+val stream = Stream.emits(input).through(utf8EncodeC).through(rows[IO]())
 println(stream.compile.toList.unsafeRunSync())
 ```
 

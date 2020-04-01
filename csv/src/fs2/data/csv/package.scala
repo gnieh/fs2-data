@@ -27,11 +27,11 @@ package object csv {
 
   type DecoderResult[T] = Either[DecoderError, T]
 
-  /** Transforms a stream of characters into a stream of CSV rows.
+  /** Transforms a stream of bytes into a stream of CSV rows using a character set (encoding).
     */
-  def rows[F[_]](separator: Char = ',')(
-      implicit F: ApplicativeError[F, Throwable]): Pipe[F, Char, NonEmptyList[String]] =
-    RowParser.pipe[F](separator)
+  def rows[F[_]](separator: Char = ',', charSet: String = "UTF-8")(
+      implicit F: ApplicativeError[F, Throwable]): Pipe[F, Chunk[Byte], NonEmptyList[String]] =
+    RowParser.pipe[F](separator, charSet)
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
   def headers[F[_], Header](implicit F: ApplicativeError[F, Throwable],

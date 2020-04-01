@@ -6,6 +6,7 @@ import org.openjdk.jmh.annotations._
 
 import better.files.File
 import cats.effect.SyncIO
+import fs2.text.utf8EncodeC
 
 /* Default settings for benchmarks in this class */
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
@@ -16,14 +17,14 @@ import cats.effect.SyncIO
 @Measurement(iterations = 5, time = 2)
 class CsvParserBenchmarks {
 
-  var csvContent: List[List[Char]] = _
+  var csvContent: String = _
 
   @Setup
   def readCsv(): Unit = csvContent = {
-    File("../../../../../benchmarks/resources/benchmark.csv").contentAsString.grouped(4096).toList.map(_.toList)
+    File("../../../../../benchmarks/resources/benchmark.csv").contentAsString
   }
 
-  def csvStream: Stream[SyncIO, Char] = Stream.emits(csvContent).flatMap(Stream.emits).covary[SyncIO]
+  def csvStream: Stream[SyncIO, Chunk[Byte]] = Stream.emit(csvContent).through(utf8EncodeC).covary[SyncIO]
 
   @Benchmark
   def parseRows(): Unit = {
