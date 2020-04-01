@@ -152,6 +152,7 @@ private[csv] object RowParser {
       s.pull.uncons.flatMap {
         case Some((chunkOfChunks, rest)) =>
           val c = chunkOfChunks.flatMap(c => c)
+          env.currentField.sizeHint(c.size)
           row(c, env.currentField, env.tail, env.state, env.idx)
             .flatMap(go(rest, _))
         case None =>
@@ -172,10 +173,6 @@ private[csv] object RowParser {
       }
 
     s =>
-      go(s, ParseEnv({
-        val builder = Array.newBuilder[Byte]
-        builder.sizeHint(4096)
-        builder
-      }, Nil, State.BeginningOfField, 0)).stream
+      go(s, ParseEnv(Array.newBuilder[Byte], Nil, State.BeginningOfField, 0)).stream
   }
 }
