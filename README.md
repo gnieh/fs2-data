@@ -287,7 +287,7 @@ import fs2.data.csv.generic.semiauto._
 
 sealed trait State
 case object On extends State
-object Off extends State
+case object Off extends State
 
 implicit val stateDecoder = deriveCellDecoder[State]
 // use stateDecoder to derive decoders for rows...or just test:
