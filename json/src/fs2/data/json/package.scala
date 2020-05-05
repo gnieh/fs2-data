@@ -30,7 +30,7 @@ package object json {
     * If the streams ends without failure, the sequence of tokens is sensured
     * to represent a (potentially empty) sequence of valid Json documents.
     */
-  def tokens[F[_]](implicit F: ApplicativeError[F, Throwable]): Pipe[F, Char, Token] =
+  def tokens[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Char, Token] =
     TokenParser.pipe[F]
 
   /** Filters the tokens according to the given selector sequence.
@@ -38,8 +38,7 @@ package object json {
     * an array, and values selected by object selector are wrapped into an object with original
     * key maintained.
     */
-  def filter[F[_]](selector: Selector, wrap: Boolean = false)(
-      implicit F: ApplicativeError[F, Throwable]): Pipe[F, Token, Token] =
+  def filter[F[_]](selector: Selector, wrap: Boolean = false)(implicit F: RaiseThrowable[F]): Pipe[F, Token, Token] =
     TokenSelector.pipe[F](selector, wrap)
 
   /** Transforms a stream of token into another one. The transformation function `f` is
@@ -49,14 +48,14 @@ package object json {
     * This operator locally creates Json AST values using the [[Builder]], and
     * returns tokens as emitted by the [[Tokenizer]] on the resulting value.
     */
-  def transform[F[_], Json](selector: Selector, f: Json => Json)(implicit F: ApplicativeError[F, Throwable],
+  def transform[F[_], Json](selector: Selector, f: Json => Json)(implicit F: RaiseThrowable[F],
                                                                  builder: Builder[Json],
                                                                  tokenizer: Tokenizer[Json]): Pipe[F, Token, Token] =
     TokenSelector.transformPipe[F, Json](selector, f)
 
   /** Transforms a stream of Json tokens into a stream of json values.
     */
-  def values[F[_], Json](implicit F: ApplicativeError[F, Throwable], builder: Builder[Json]): Pipe[F, Token, Json] =
+  def values[F[_], Json](implicit F: RaiseThrowable[F], builder: Builder[Json]): Pipe[F, Token, Json] =
     ValueParser.pipe[F, Json]
 
   implicit class StringOps(val s: String) extends AnyVal {

@@ -20,8 +20,6 @@ package json
 import ast._
 import internals._
 
-import cats._
-
 import diffson._
 import diffson.jsonmergepatch._
 
@@ -33,7 +31,7 @@ package object mergepatch {
                                       rest: Stream[F, Token],
                                       patch: Map[String, Json],
                                       chunkAcc: List[Token])(
-      implicit F: ApplicativeError[F, Throwable],
+      implicit F: RaiseThrowable[F],
       Json: Jsony[Json],
       tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, Token, List[Token]]] =
     if (idx >= chunk.size) {
@@ -105,7 +103,7 @@ package object mergepatch {
                                      rest: Stream[F, Token],
                                      patch: JsonMergePatch[Json],
                                      chunkAcc: List[Token])(
-      implicit F: ApplicativeError[F, Throwable],
+      implicit F: RaiseThrowable[F],
       Json: Jsony[Json],
       tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, Token, List[Token]]] =
     if (idx >= chunk.size) {
@@ -162,7 +160,7 @@ package object mergepatch {
                              idx: Int,
                              rest: Stream[F, Token],
                              patch: JsonMergePatch[Json],
-                             chunkAcc: List[Token])(implicit F: ApplicativeError[F, Throwable],
+                             chunkAcc: List[Token])(implicit F: RaiseThrowable[F],
                                                     Json: Jsony[Json],
                                                     tokenizer: Tokenizer[Json]): Pull[F, Token, Unit] =
     patchChunk(chunk, idx, rest, patch, chunkAcc).flatMap {
@@ -172,7 +170,7 @@ package object mergepatch {
         Pull.done
     }
 
-  def patch[F[_], Json](patch: JsonMergePatch[Json])(implicit F: ApplicativeError[F, Throwable],
+  def patch[F[_], Json](patch: JsonMergePatch[Json])(implicit F: RaiseThrowable[F],
                                                      Json: Jsony[Json],
                                                      tokenizer: Tokenizer[Json]): Pipe[F, Token, Token] =
     s => go(Chunk.empty, 0, s, patch, Nil).stream

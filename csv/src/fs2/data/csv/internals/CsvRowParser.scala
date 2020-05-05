@@ -18,13 +18,12 @@ package data
 package csv
 package internals
 
-import cats._
 import cats.implicits._
 import cats.data._
 
 private[csv] object CsvRowParser {
 
-  def pipe[F[_], Header](implicit F: ApplicativeError[F, Throwable],
+  def pipe[F[_], Header](implicit F: RaiseThrowable[F],
                          Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
     _.pull.uncons1.flatMap {
       case Some((firstRow, tail)) =>

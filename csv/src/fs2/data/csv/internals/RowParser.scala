@@ -18,12 +18,11 @@ package data
 package csv
 package internals
 
-import cats._
 import cats.data.{State => _, _}
 
 private[csv] object RowParser {
 
-  def pipe[F[_]](separator: Char)(implicit F: ApplicativeError[F, Throwable]): Pipe[F, Char, NonEmptyList[String]] = {
+  def pipe[F[_]](separator: Char)(implicit F: RaiseThrowable[F]): Pipe[F, Char, NonEmptyList[String]] = {
 
     def row(chunk: Chunk[Char],
             currentField: StringBuilder,

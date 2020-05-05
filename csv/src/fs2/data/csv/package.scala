@@ -17,9 +17,8 @@ package fs2
 package data
 
 import csv.internals._
-import cats._
+
 import cats.data._
-import cats.implicits._
 
 package object csv {
 
@@ -29,12 +28,11 @@ package object csv {
 
   /** Transforms a stream of characters into a stream of CSV rows.
     */
-  def rows[F[_]](separator: Char = ',')(
-      implicit F: ApplicativeError[F, Throwable]): Pipe[F, Char, NonEmptyList[String]] =
+  def rows[F[_]](separator: Char = ',')(implicit F: RaiseThrowable[F]): Pipe[F, Char, NonEmptyList[String]] =
     RowParser.pipe[F](separator)
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
-  def headers[F[_], Header](implicit F: ApplicativeError[F, Throwable],
+  def headers[F[_], Header](implicit F: RaiseThrowable[F],
                             Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
     CsvRowParser.pipe[F, Header]
 
@@ -50,18 +48,18 @@ package object csv {
   def skipHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
     _.tail.map(new Row(_))
 
-  def decode[F[_], R](implicit F: ApplicativeError[F, Throwable], R: RowDecoder[R]): Pipe[F, Row, R] =
-    _.evalMap(row => R(row.values).liftTo[F])
+  def decode[F[_], R](implicit F: RaiseThrowable[F], R: RowDecoder[R]): Pipe[F, Row, R] =
+    _.map(row => R(row.values)).rethrow
 
-  def attemptDecode[F[_], R](implicit F: Applicative[F], R: RowDecoder[R]): Pipe[F, Row, DecoderResult[R]] =
+  def attemptDecode[F[_], R](implicit R: RowDecoder[R]): Pipe[F, Row, DecoderResult[R]] =
     _.map(row => R(row.values))
 
-  def decodeRow[F[_], Header, R](implicit F: ApplicativeError[F, Throwable],
+  def decodeRow[F[_], Header, R](implicit F: RaiseThrowable[F],
                                  R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], R] =
-    _.evalMap(R(_).liftTo[F])
+    _.map(R(_)).rethrow
 
-  def attemptDecodeRow[F[_], Header, R](implicit F: Applicative[F],
-                                        R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], DecoderResult[R]] =
+  def attemptDecodeRow[F[_], Header, R](
+      implicit R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], DecoderResult[R]] =
     _.map(R(_))
 
 }
