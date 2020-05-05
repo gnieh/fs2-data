@@ -54,7 +54,7 @@ object MapShapedCsvRowDecoder extends LowPriorityMapShapedCsvRowDecoder1 {
       def fromWithDefault(row: CsvRow[String],
                           default: Option[Option[Head]] :: DefaultTail,
                           anno: Anno :: AnnoTail): DecoderResult[FieldType[Key, Option[Head]] :: Tail] = {
-        val head = row(witness.value.name) match {
+        val head = row(anno.head.fold(witness.value.name)(_.name)) match {
           case Some(head) if head.nonEmpty => Head(head).map(Some(_))
           case _                           => Right(default.head.flatten)
         }
