@@ -18,10 +18,6 @@ package data
 package xml
 package internals
 
-import cats._
-
-import fs2._
-
 import scala.collection.immutable.VectorBuilder
 
 private[xml] object EventParser {
@@ -30,8 +26,7 @@ private[xml] object EventParser {
 
   val valueDelimiters = " \t\r\n<&"
 
-  private def fail[F[_], R](prod: String, msg: String)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, R] =
+  private def fail[F[_], R](prod: String, msg: String)(implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, R] =
     Pull.raiseError[F](new XmlException(XmlSyntax(prod), msg))
 
   private def peekChar[F[_]](ctx: Context[F]): Pull[F, XmlEvent, Option[Result[F, Char]]] =
@@ -44,8 +39,7 @@ private[xml] object EventParser {
       Pull.pure(Some((ctx, ctx.chunk(ctx.idx))))
     }
 
-  private def nextChar[F[_]](ctx: Context[F])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, Char]] =
+  private def nextChar[F[_]](ctx: Context[F])(implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, Char]] =
     if (ctx.isEndOfChunk) {
       Pull.output(Chunk.seq(ctx.chunkAcc.reverse)) >> ctx.rest.pull.uncons.flatMap {
         case Some((hd, tl)) => nextChar(Context(hd, tl))
@@ -84,7 +78,7 @@ private[xml] object EventParser {
     c == ' ' || c == '\t' || c == '\r' || c == '\n'
 
   private def accept[F[_]](ctx: Context[F], c: Char, error: String, msg: String)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Context[F]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Context[F]] =
     if (ctx.isEndOfChunk) {
       Pull.output(Chunk.seq(ctx.chunkAcc.reverse)) >> ctx.rest.pull.uncons.flatMap {
         case Some((hd, tl)) => accept(Context(hd, tl), c, error, msg)
@@ -98,7 +92,7 @@ private[xml] object EventParser {
     }
 
   private def accept[F[_]](ctx: Context[F], s: String)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, Int]] = {
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, Int]] = {
     def loop(ctx: Context[F], sidx: Int): Pull[F, XmlEvent, Result[F, Int]] =
       if (sidx >= s.length) {
         Pull.pure((ctx, s.length))
@@ -117,14 +111,14 @@ private[xml] object EventParser {
   }
 
   private def accept[F[_]](ctx: Context[F], s: String, error: String, msg: String)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Context[F]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Context[F]] =
     accept(ctx, s).flatMap {
       case (ctx, n) if n == s.length => Pull.pure(ctx)
       case _                         => fail[F, Context[F]](error, msg)
     }
 
   private def assert[F[_]](ctx: Context[F], p: Char => Boolean, error: String, msg: String)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, Char]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, Char]] =
     peekChar(ctx).flatMap {
       case Some((ctx, c)) if p(c) => Pull.pure((ctx.nextIdx, c))
       case _                      => fail[F, Result[F, Char]](error, msg)
@@ -146,8 +140,7 @@ private[xml] object EventParser {
 
   // ==== low-level internals ====
 
-  private def readNCName[F[_]](ctx: Context[F])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, String]] =
+  private def readNCName[F[_]](ctx: Context[F])(implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, String]] =
     if (ctx.isEndOfChunk) {
       Pull.output(Chunk.seq(ctx.chunkAcc.reverse)) >> ctx.rest.pull.uncons.flatMap {
         case Some((hd, tl)) => readNCName(Context(hd, tl))
@@ -165,8 +158,7 @@ private[xml] object EventParser {
       }
     }
 
-  private def readQName[F[_]](ctx: Context[F])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, QName]] =
+  private def readQName[F[_]](ctx: Context[F])(implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, QName]] =
     readNCName(ctx).flatMap {
       case (ctx, part1) =>
         def readPart2(ctx: Context[F]): Pull[F, XmlEvent, Result[F, QName]] =
@@ -202,7 +194,7 @@ private[xml] object EventParser {
         Pull.pure(ctx)
     }
   private def readMarkupToken[F[_]](ctx: Context[F])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, MarkupToken]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, MarkupToken]] =
     accept(ctx, '<', "43", "expected token start").flatMap { ctx =>
       def read(ctx: Context[F]): Pull[F, XmlEvent, Result[F, MarkupToken]] =
         if (ctx.isEndOfChunk) {
@@ -247,7 +239,7 @@ private[xml] object EventParser {
 
   /** We have read '<!-' so far */
   private def skipComment[F[_]](ctx: Context[F])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, MarkupToken]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, MarkupToken]] =
     accept(ctx, '-', "15", "second dash missing to open comment").flatMap { ctx =>
       def loop(ctx: Context[F]): Pull[F, XmlEvent, Context[F]] =
         nextChar(ctx).flatMap {
@@ -268,14 +260,13 @@ private[xml] object EventParser {
 
   /** We have read '<![' so far */
   private def readCDATA[F[_]](ctx: Context[F])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, MarkupToken]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, MarkupToken]] =
     accept(ctx, "CDATA[", "19", "'CDATA[' expected").map { ctx =>
       (ctx, MarkupToken.CDataToken)
     }
 
   /** We have just read the PI target */
-  private def readPIBody[F[_]](ctx: Context[F])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, String]] =
+  private def readPIBody[F[_]](ctx: Context[F])(implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, String]] =
     space(ctx).flatMap { ctx =>
       def loop(ctx: Context[F], sb: StringBuilder): Pull[F, XmlEvent, Result[F, String]] =
         untilChar(ctx, c => c == '?', sb).flatMap { ctx =>
@@ -294,8 +285,7 @@ private[xml] object EventParser {
     }
 
   /** We read the beginning of internal DTD subset, read until final ']>' */
-  private def skipInternalDTD[F[_]](ctx: Context[F])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Context[F]] =
+  private def skipInternalDTD[F[_]](ctx: Context[F])(implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Context[F]] =
     nextChar(ctx).flatMap {
       case (ctx, ']') =>
         nextChar(ctx).flatMap {
@@ -306,7 +296,7 @@ private[xml] object EventParser {
     }
 
   private def readExternalID[F[_]](ctx: Context[F])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, String]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, String]] =
     readNCName(ctx).flatMap {
       case (ctx, sysOrPub) =>
         assert(ctx, isXmlWhitespace(_), "75", "space required after SYSTEM or PUBLIC").flatMap {
@@ -327,7 +317,7 @@ private[xml] object EventParser {
     }
 
   private def readQuoted[F[_]](ctx: Context[F], pub: Boolean, error: String)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, String]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, String]] =
     space(ctx).flatMap { ctx =>
       assert(ctx, c => c == '"' || c == '\'', error, "single or double quote expected")
         .flatMap {
@@ -353,7 +343,7 @@ private[xml] object EventParser {
     }
 
   private def scanMisc[F[_]](ctx: Context[F])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Option[Result[F, MarkupToken]]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Option[Result[F, MarkupToken]]] =
     space(ctx).flatMap { ctx =>
       peekChar(ctx).flatMap {
         case Some((ctx, '<')) =>
@@ -371,7 +361,7 @@ private[xml] object EventParser {
 
   /** We read '&#' so far */
   def readCharRef[F[_]](ctx: Context[F], is11: Boolean)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, Int]] = {
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, Int]] = {
     def postlude(ctx: Context[F], n: Int) =
       nextChar(ctx).flatMap {
         case (ctx, ';') =>
@@ -396,7 +386,7 @@ private[xml] object EventParser {
   }
 
   private def readNum[F[_]](ctx: Context[F], base: Int)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, Int]] = {
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, Int]] = {
     object Digit {
       def unapply(c: Char): Option[Int] =
         if ((base == 10 || base == 16) && '0' <= c && c <= '9')
@@ -428,7 +418,7 @@ private[xml] object EventParser {
   // ==== middle-level internals ====
 
   private def readAttributes[F[_]](ctx: Context[F], is11: Boolean, tname: QName)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, List[Attr]]] = {
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, List[Attr]]] = {
     def loop(ctx: Context[F], attributes: VectorBuilder[Attr]): Pull[F, XmlEvent, Result[F, List[Attr]]] =
       space(ctx).flatMap { ctx =>
         peekChar(ctx).flatMap {
@@ -457,7 +447,7 @@ private[xml] object EventParser {
                                        delim: Option[Char],
                                        current: StringBuilder,
                                        builder: VectorBuilder[XmlEvent.XmlTexty])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, List[XmlEvent.XmlTexty]]] = {
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, List[XmlEvent.XmlTexty]]] = {
     val delimiters = delim.fold(valueDelimiters)(valueDelimiters + _)
     untilChar(ctx, delimiters.contains(_), current).flatMap { ctx =>
       nextChar(ctx).flatMap {
@@ -499,7 +489,7 @@ private[xml] object EventParser {
   }
 
   private def readNamedEntity[F[_]](ctx: Context[F])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, String]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, String]] =
     readNCName(ctx).flatMap {
       case (ctx, name) =>
         accept(ctx, ';', "68", "named entity must end with a semicolon").map { ctx =>
@@ -508,7 +498,7 @@ private[xml] object EventParser {
     }
 
   private def completeStartTag[F[_]](ctx: Context[F], is11: Boolean, name: QName)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, XmlEvent.StartTag]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, XmlEvent.StartTag]] =
     readAttributes(ctx, is11, name).flatMap {
       case (ctx, attributes) =>
         space(ctx).flatMap { ctx =>
@@ -526,7 +516,7 @@ private[xml] object EventParser {
 
   /** We read '<[CDATA[' so far */
   private def readCDATABody[F[_]](ctx: Context[F], sb: StringBuilder)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, String]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, String]] =
     untilChar(ctx, c => c == '\n' || c == '\r' || c == ']' || c == '&', sb).flatMap { ctx =>
       nextChar(ctx).flatMap {
         case (ctx, '\n') =>
@@ -570,7 +560,7 @@ private[xml] object EventParser {
     }
 
   def checkCDATAEnd[F[_]](ctx: Context[F], sb: StringBuilder)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, Boolean]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, Boolean]] =
     peekChar(ctx).flatMap {
       case Some((ctx, '>')) =>
         // done
@@ -585,7 +575,7 @@ private[xml] object EventParser {
     }
 
   private def readCharData[F[_]](ctx: Context[F], is11: Boolean)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, XmlEvent]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, XmlEvent]] =
     peekChar(ctx).flatMap {
       case Some((ctx, '<')) =>
         readMarkupToken(ctx).flatMap {
@@ -629,7 +619,7 @@ private[xml] object EventParser {
     }
 
   private def slowPath[F[_]](ctx: Context[F], sb: StringBuilder)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, XmlEvent.XmlString]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, XmlEvent.XmlString]] =
     untilChar(ctx, c => c == '<' || c == '&' || c == '\r', sb).flatMap { ctx =>
       peekChar(ctx).flatMap {
         case Some((ctx, '<')) => Pull.pure((ctx, XmlEvent.XmlString(sb.toString, false)))
@@ -653,7 +643,7 @@ private[xml] object EventParser {
   // ==== high-level internals
 
   private def scanPrologToken0[F[_]](ctx: Context[F])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Option[Context[F]]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Option[Context[F]]] =
     peekChar(ctx).flatMap {
       case Some((ctx, '<')) =>
         readMarkupToken(ctx).flatMap {
@@ -683,7 +673,7 @@ private[xml] object EventParser {
     }
 
   private def scanPrologToken1[F[_]](ctx: Context[F], is11: Boolean)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Option[Context[F]]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Option[Context[F]]] =
     scanMisc(ctx).flatMap {
       case Some((ctx, MarkupToken.PIToken(name))) if !name.equalsIgnoreCase("xml") =>
         readPIBody(ctx).flatMap {
@@ -702,7 +692,7 @@ private[xml] object EventParser {
     }
 
   private def handleXmlDecl[F[_]](ctx: Context[F])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, (Boolean, XmlEvent.XmlDecl)]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, (Boolean, XmlEvent.XmlDecl)]] =
     for {
       (ctx, _) <- assert(ctx, isXmlWhitespace(_), "24", "space is expected after xml")
       ctx <- space(ctx)
@@ -730,7 +720,7 @@ private[xml] object EventParser {
     } yield res
 
   private def readEncoding[F[_]](ctx: Context[F], hasSpace: Boolean)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, (Boolean, Option[String])]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, (Boolean, Option[String])]] =
     peekChar(ctx).flatMap {
       case Some((ctx, c)) if isXmlWhitespace(c) =>
         space(ctx).flatMap(readEncoding(_, true))
@@ -764,7 +754,7 @@ private[xml] object EventParser {
     }
 
   private def readStandalone[F[_]](ctx: Context[F], hasSpace: Boolean)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Result[F, Option[Boolean]]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Result[F, Option[Boolean]]] =
     peekChar(ctx).flatMap {
       case Some((ctx, c)) if isXmlWhitespace(c) =>
         space(ctx).flatMap(readStandalone(_, true))
@@ -797,7 +787,7 @@ private[xml] object EventParser {
     }
 
   private def handleDecl[F[_]](ctx: Context[F], name: String)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Context[F]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Context[F]] =
     name match {
       case "DOCTYPE" =>
         for {
@@ -828,7 +818,7 @@ private[xml] object EventParser {
     }
 
   private def scanPrologToken2[F[_]](ctx: Context[F], is11: Boolean)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Option[Context[F]]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Option[Context[F]]] =
     scanMisc(ctx).flatMap {
       case Some((ctx, MarkupToken.PIToken(name))) =>
         readPIBody(ctx).flatMap {
@@ -843,7 +833,7 @@ private[xml] object EventParser {
     }
 
   private def readElement[F[_]](ctx: Context[F], is11: Boolean, name: QName)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Context[F]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Context[F]] =
     for {
       (ctx, startTag) <- completeStartTag(ctx, is11, name)
       ctx <- if (startTag.isEmpty)
@@ -853,7 +843,7 @@ private[xml] object EventParser {
     } yield ctx
 
   private def readContent[F[_]](ctx: Context[F], is11: Boolean, name: QName)(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, XmlEvent, Context[F]] =
+      implicit F: RaiseThrowable[F]): Pull[F, XmlEvent, Context[F]] =
     for {
       (ctx, last) <- readCharData(ctx, is11)
       ctx <- last match {
@@ -874,7 +864,7 @@ private[xml] object EventParser {
       }
     } yield ctx
 
-  def pipe[F[_]](implicit F: ApplicativeError[F, Throwable]): Pipe[F, Char, XmlEvent] = {
+  def pipe[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Char, XmlEvent] = {
     def go(ctx: Context[F]): Pull[F, XmlEvent, Unit] =
       scanPrologToken0(ctx).flatMap {
         case Some(ctx) => go(ctx)

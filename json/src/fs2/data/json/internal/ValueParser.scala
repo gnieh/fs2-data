@@ -20,14 +20,12 @@ package internals
 
 import ast._
 
-import cats._
-
 import scala.collection.immutable.VectorBuilder
 
 private[json] object ValueParser {
 
   private def pullArray[F[_], Json](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], acc: VectorBuilder[Json])(
-      implicit F: ApplicativeError[F, Throwable],
+      implicit F: RaiseThrowable[F],
       builder: Builder[Json]): Pull[F, INothing, Result[F, Token, Json]] =
     if (idx >= chunk.size) {
       rest.pull.uncons.flatMap {
@@ -50,7 +48,7 @@ private[json] object ValueParser {
                                      idx: Int,
                                      rest: Stream[F, Token],
                                      acc: VectorBuilder[(String, Json)])(
-      implicit F: ApplicativeError[F, Throwable],
+      implicit F: RaiseThrowable[F],
       builder: Builder[Json]): Pull[F, INothing, Result[F, Token, Json]] =
     if (idx >= chunk.size) {
       rest.pull.uncons.flatMap {
@@ -72,7 +70,7 @@ private[json] object ValueParser {
     }
 
   def pullValue[F[_], Json](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token])(
-      implicit F: ApplicativeError[F, Throwable],
+      implicit F: RaiseThrowable[F],
       builder: Builder[Json]): Pull[F, INothing, Result[F, Token, Json]] =
     if (idx >= chunk.size) {
       rest.pull.uncons.flatMap {
@@ -96,7 +94,7 @@ private[json] object ValueParser {
     * and returns it with the rest stream.
     */
   def pullOne[F[_], Json](s: Stream[F, Token])(
-      implicit F: ApplicativeError[F, Throwable],
+      implicit F: RaiseThrowable[F],
       builder: Builder[Json]): Pull[F, INothing, Option[(Json, Stream[F, Token])]] =
     s.pull.uncons.flatMap {
       case Some((hd, tl)) =>
@@ -109,7 +107,7 @@ private[json] object ValueParser {
 
   /** Pulls and emits all json values from the stream if any, builds the AST foreach value.
     */
-  def pullAll[F[_], Json](s: Stream[F, Token])(implicit F: ApplicativeError[F, Throwable],
+  def pullAll[F[_], Json](s: Stream[F, Token])(implicit F: RaiseThrowable[F],
                                                builder: Builder[Json]): Pull[F, Json, Unit] = {
     def go(chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], chunkAcc: List[Json]): Pull[F, Json, Unit] =
       if (idx >= chunk.size) {
@@ -126,7 +124,7 @@ private[json] object ValueParser {
     go(Chunk.empty, 0, s, Nil)
   }
 
-  def pipe[F[_], Json](implicit F: ApplicativeError[F, Throwable], builder: Builder[Json]): Pipe[F, Token, Json] =
+  def pipe[F[_], Json](implicit F: RaiseThrowable[F], builder: Builder[Json]): Pipe[F, Token, Json] =
     s => pullAll(s).stream
 
 }

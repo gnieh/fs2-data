@@ -31,7 +31,7 @@ package object xml {
     * If the streams ends without failure, the sequence of tokens is sensured
     * to represent a (potentially empty) sequence of valid XML documents.
     */
-  def events[F[_]](implicit F: ApplicativeError[F, Throwable]): Pipe[F, Char, XmlEvent] =
+  def events[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Char, XmlEvent] =
     EventParser.pipe[F]
 
   /** Resolves the character and entity references in the XML stream.

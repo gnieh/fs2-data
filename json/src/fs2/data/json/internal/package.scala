@@ -17,20 +17,18 @@ package fs2
 package data
 package json
 
-import cats._
-
 package object internals {
 
   private[internals] val hexa = "0123456789abcdef"
 
   private[json] type Result[F[_], In, Out] = Option[(Chunk[In], Int, Stream[F, In], Out)]
 
-  private[json] def skipValue[F[_]](chunk: Chunk[Token],
-                                    idx: Int,
-                                    rest: Stream[F, Token],
-                                    depth: Int,
-                                    chunkAcc: List[Token])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Token, List[Token]]] =
+  private[json] def skipValue[F[_]](
+      chunk: Chunk[Token],
+      idx: Int,
+      rest: Stream[F, Token],
+      depth: Int,
+      chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Token, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >>
         rest.pull.uncons.flatMap {
@@ -58,12 +56,12 @@ package object internals {
             skipValue(chunk, idx + 1, rest, depth, chunkAcc)
       }
 
-  private[json] def emitValue[F[_]](chunk: Chunk[Token],
-                                    idx: Int,
-                                    rest: Stream[F, Token],
-                                    depth: Int,
-                                    chunkAcc: List[Token])(
-      implicit F: ApplicativeError[F, Throwable]): Pull[F, Token, Result[F, Token, List[Token]]] =
+  private[json] def emitValue[F[_]](
+      chunk: Chunk[Token],
+      idx: Int,
+      rest: Stream[F, Token],
+      depth: Int,
+      chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Token, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >>
         rest.pull.uncons.flatMap {
