@@ -8,13 +8,13 @@ import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import mill.define.BaseModule
 
 val scala212 = "2.12.10"
-val scala213 = "2.13.1"
+val scala213 = "2.13.2"
 
 val fs2Version = "2.3.0"
 val circeVersion = "0.13.0"
 val shapelessVersion = "2.3.3"
 
-val fs2DataVersion = "0.6.0"
+val fs2DataVersion = "0.7.0-SNAPSHOT"
 
 val fs2DataLicense = License.`Apache-2.0`
 
@@ -32,14 +32,14 @@ trait Fs2DataModule extends ScalaModule with ScalafmtModule {
          Seq("-Ypartial-unification", "-language:higherKinds"))
 
   def ivyDeps =
-    Agg(ivy"co.fs2::fs2-core:$fs2Version", ivy"org.scala-lang.modules::scala-collection-compat:2.1.3")
+    Agg(ivy"co.fs2::fs2-core:$fs2Version", ivy"org.scala-lang.modules::scala-collection-compat:2.1.6")
 
   def scalacPluginIvyDeps = Agg(ivy"org.typelevel::kind-projector:0.10.3", ivy"com.olegpy::better-monadic-for:0.3.1")
 
   trait Fs2DataTests extends Tests {
     def ivyDeps =
       Agg(
-        ivy"org.scalatest::scalatest:3.1.0",
+        ivy"org.scalatest::scalatest:3.1.2",
         ivy"com.github.pathikrit::better-files:3.8.0",
         ivy"io.circe::circe-parser:$circeVersion",
         ivy"co.fs2::fs2-io:$fs2Version"
