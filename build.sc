@@ -7,7 +7,7 @@ import jmh.Jmh
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import mill.define.BaseModule
 
-val scala212 = "2.12.10"
+val scala212 = "2.12.11"
 val scala213 = "2.13.2"
 
 val fs2Version = "2.3.0"
