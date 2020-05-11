@@ -6,6 +6,7 @@ A set of streaming data parsers based on [fs2][fs2].
 Following modules are available:
   - `fs2-data-json`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json_2.13) A JSON parser and manipulation library
   - `fs2-data-json-circe`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-circe_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-circe_2.13) [circe][circe] support for parsed JSON.
+  - `fs2-data-json-interpolators`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-interpolators_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-interpolators_2.13) [contextual][contextual] support for statically checked JSON interpolators.
   - `fs2-data-json-diffson`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-diffson_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-diffson_2.13) [diffson][diffson] support for patching JSON streams.
   - `fs2-data-xml`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-xml_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-xml_2.13) An XML parser
   - `fs2-data-csv`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv_2.13) A CSV parser
@@ -18,6 +19,7 @@ Following modules are available:
 - [JSON module usage](#json-module-usage)
   - [Stream parser](#stream-parser)
   - [Selectors](#selectors)
+    - [Selector interpolators](#selector-interpolators)
   - [AST Builder and Tokenizer](#ast-builder-and-tokenizer)
   - [Circe](#circe)
   - [Patches](#patches)
@@ -29,6 +31,7 @@ Following modules are available:
   - [Stream parser](#stream-parser-2)
   - [CSV Rows with headers](#csv-rows-with-headers)
   - [Decoding](#decoding)
+  - [Development](#development)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -73,18 +76,40 @@ println(filtered.compile.toList.unsafeRunSync())
 ```
 
 The filter syntax is as follows:
-  - `.` select the root values, it is basically the identity filter.
+  - `.` selects the root values, it is basically the identity filter.
   - `.f` selects the field named `f` in objects. It fails if the value it is applied to is not a JSON object.
   - `.f?` is similar to `.f` but doesn't fail in case the value it is applied to is not a JSON object.
-  - `.[f1, f2, ..., fn]` selects only fields `f1` to `fn` in objects. The fields are emitted wrapped in an object. It fails if the value it is applied to is not an object.
-  - `.[f1, f2, ..., fn]` similar to `.[f1, f2, ..., fn]` but doesn't fail if the value it is applied to is not an object.
-  - `.[id1, idx2, ..., idxn]` selects only elements `idx1`, ..., `idxn` in arrays. The values are emitted wrapped in an array. It fails if the value it is applied to is not an array.
-  - `.[idx1, idx2, ..., idxn]?` similar to `.[idx1, idx2, ..., idxn]` but doesn't fail if the value it is applied to is not an array.
-  - `.[idx1:idx2]` selects only elements between `idx1` (inclusive) and `idx2` (exclusive) in arrays. The values are emitted wrapped in an array. It fails if the value it is applied to is not an array.
-  - `.[idx1:idx2]?` similar to `.[idx1:idx2]` but doesn't fail if the value it is applied to is not an array.
-  - `.[]` selects and enumerate elements from an array or objects. The values are not wrapped in an array or object. It fails if the value it is applied to is not an array or an object.
-  - `.[]?` similar as `.[]` but doesn't fail if the value it is applied to is neither an array nor an object.
+  - `.[f1, f2, ..., fn]` selects only fields `f1` to `fn` in objects. It fails if the value it is applied to is not an object.
+  - `.[f1, f2, ..., fn]?` is similar to `.[f1, f2, ..., fn]` but doesn't fail if the value it is applied to is not an object.
+  - `.[id1, idx2, ..., idxn]` selects only elements `idx1`, ..., `idxn` in arrays. It fails if the value it is applied to is not an array.
+  - `.[idx1, idx2, ..., idxn]?` is similar to `.[idx1, idx2, ..., idxn]` but doesn't fail if the value it is applied to is not an array.
+  - `.[idx1:idx2]` selects only elements between `idx1` (inclusive) and `idx2` (exclusive) in arrays. It fails if the value it is applied to is not an array.
+  - `.[idx1:idx2]?` is similar to `.[idx1:idx2]` but doesn't fail if the value it is applied to is not an array.
+  - `.[]` selects and enumerates elements from arrays or objects. It fails if the value it is applied to is not an array or an object.
+  - `.[]?` is similar as `.[]` but doesn't fail if the value it is applied to is neither an array nor an object.
   - `sel1 sel2` applies selector `sel1` to the root value, and selector `sel2` to each selected value.
+
+By default, selected values are emitted in the stream as they are matched, resulting in a stream with several Json values.
+If this is not desired, you can wrap the elements into arrays and objects, from the root by calling `filter` with `wrap` set to `true`.
+
+```scala
+val filteredWrapped = stream.through(filter(selector, wrap = true))
+println(filteredWrapped.compile.toList.unsafeRunSync())
+```
+
+If the selector selects elements in an array, then the resulting values are wrapped in an array.
+On the other hand, if it selects elements in an object, then emitted values are returned wrapped in an object, associated with the last selected keys.
+
+#### Selector interpolators
+
+The `fs2-data-json-interpolators` module provides statically checked string interpolators. You can use the `selector` interpolator to parse a string.
+
+The example above can be rewritten as:
+```scala
+import fs2.data.json.interpolators._
+
+val selector = selector".field3.[]"
+```
 
 ### AST Builder and Tokenizer
 
@@ -347,6 +372,7 @@ This project builds using [mill][mill]. You can install `mill` yourself or use t
 
 [fs2]: https://fs2.io/
 [circe]: https://circe.github.io/circe/
+[contextual]: https://propensive.com/opensource/contextual
 [shapeless]: https://github.com/milessabin/shapeless
 [enumeratum]: https://github.com/lloydmeta/enumeratum/
 [diffson]: https://github.com/gnieh/diffson
