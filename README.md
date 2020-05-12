@@ -364,7 +364,7 @@ println(rows.compile.toList.unsafeRunSync())
 
 There's also support for full auto-derivation, just `import fs2.data.csv.generic.auto._` for everything, `import fs2.data.csv.generic.auto.row._` for `RowDecoder` support only or `import fs2.data.csv.generic.auto.csvrow._` for `CsvRowDecoder` support.
 
-### Development
+## Development
 This project builds using [mill][mill]. You can install `mill` yourself or use the provided `millw` wrapper, in this case replace `mill` with `./millw` in the following commands:
 * compile everything: `mill __.compile`
 * compile & run all tests: `mill __.test`
