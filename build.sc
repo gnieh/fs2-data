@@ -136,6 +136,28 @@ class JsonModule(val crossScalaVersion: String) extends Fs2DataModule with Cross
     def ivyDeps = super.ivyDeps() ++ Seq(ivy"org.gnieh::diffson-circe:4.0.2")
   }
 
+  object interpolators extends Fs2DataModule with PublishModule {
+    def scalaVersion = outer.scalaVersion
+    def moduleDeps = Seq(outer)
+    def ivyDeps =
+      Agg(ivy"com.propensive::contextual:1.2.1", ivy"org.scala-lang:scala-reflect:${scalaVersion()}")
+
+    def publishVersion = fs2DataVersion
+
+    def artifactName = "fs2-data-json-interpolators"
+
+    def pomSettings =
+      PomSettings(
+        description = "Json interpolators support",
+        organization = "org.gnieh",
+        url = fs2DataUrl,
+        licenses = Seq(fs2DataLicense),
+        versionControl = VersionControl.github("satabin", "fs2-data"),
+        developers = Seq(fs2DataDeveloper)
+      )
+
+  }
+
   object circe extends Fs2DataModule with PublishModule {
     def scalaVersion = outer.scalaVersion
     def moduleDeps = Seq(outer)
