@@ -3,14 +3,7 @@
 
 A set of streaming data parsers based on [fs2][fs2].
 
-Following modules are available:
-  - `fs2-data-json`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json_2.13) A JSON parser and manipulation library
-  - `fs2-data-json-circe`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-circe_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-circe_2.13) [circe][circe] support for parsed JSON.
-  - `fs2-data-json-interpolators`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-interpolators_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-interpolators_2.13) [contextual][contextual] support for statically checked JSON interpolators.
-  - `fs2-data-json-diffson`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-diffson_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-diffson_2.13) [diffson][diffson] support for patching JSON streams.
-  - `fs2-data-xml`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-xml_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-xml_2.13) An XML parser
-  - `fs2-data-csv`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv_2.13) A CSV parser
-  - `fs2-data-csv-generic`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv-generic_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv-generic_2.13) generic decoder for CSV files
+For more details and documentation, please visit [the website][website]
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -227,148 +220,11 @@ val normalized = entityResolved.through(normalize[IO])
 println(normalized.compile.toList.unsafeRunSync())
 ```
 
-## CSV module usage
-
-### Stream parser
-
-To create a stream of CSV rows from an input stream, use the `rows` pipe in `fs2.data.csv` package. The default column separator is `,` but this can be overridden by providing the `separator` parameter.
-
-```scala
-import cats.effect._
-
-import fs2._
-import fs2.data.csv._
-
-val input = """i,s,j
-              |1,test,2
-              |,other,-3
-              |""".stripMargin
-
-val stream = Stream.emits(input).through(rows[IO]())
-println(stream.compile.toList.unsafeRunSync())
-```
-
-### CSV Rows with headers
-
-Rows can be converted to a `CsvRow[Header]` for some `Header` type. This class provides higher-level utilities to manipulate rows.
-
-If your CSV file doesn't have headers, you can use the `noHeaders` pipe, which creates `CsvRow[Nothing]`
-
-```scala
-val noh = stream.through(noHeaders[IO])
-println(noh.compile.toList.unsafeRunSync())
-```
-
-If you want to consider the first row as a header row, you can use the `headers` pipe. For instance to have headers as `String`:
-
-```scala
-val withh = stream.through(headers[IO, String])
-println(withh.map(_.toMap).compile.toList.unsafeRunSync())
-```
-
-To support your own type of `Header` you must provide an implicit `ParseableHeader[Header]`. For instance if you have a fix set of headers represented as [enumeratum][enumeratum] enum values, you can provide an instance of `ParseableHeader` as follows:
-
-```scala
-import enumeratum._
-
-sealed trait MyHeaders extends EnumEntry
-object MyHeaders extends Enum[MyHeaders] {
-  case object I extends MyHeaders
-  case object S extends MyHeaders
-  case object J extends MyHeaders
-  def values = findValues
-}
-
-implicit object ParseableMyHeaders extends ParseableHeader[MyHeaders] {
-  def parse(h: String) = MyHeaders.withNameInsensitive(h)
-}
-
-val withMyHeaders = stream.through(headers[IO, MyHeaders])
-println(withMyHeaders.map(_.toMap).compile.toList.unsafeRunSync())
-```
-
-If the parse method fails for a header, the entire stream fails.
-
-### Decoding
-
-Using the `decode` or `decodeRow` pipes, one can decode the rows into some Scala types by providing implicit instances of `RowDecoder` and `CsvRowDecoder` respectively.
-
-The simplest way of doing it, is to use the `fs2-data-csv-generic` module, which gives automatic derivation for case classes.
-
-For instance, to decode to a [shapeless][shapeless] `HList`
-
-```scala
-import fs2.data.csv.generic.hlist._
-import shapeless._
-
-val decodedH = stream.tail.through(decode[IO, Option[Int] :: String :: Int :: HNil]) // tail drops the header line
-println(decodedH.compile.toList.unsafeRunSync())
-```
-
-Cell types (`Int`, `String`, ...) can be decoded by providing implicit instances of `CellDecoder`. Instances for primitives and common types are defined already. You can easily define your own or use generic derivation for coproducts:
-
-```scala
-import fs2.data.csv.generic.semiauto._
-
-sealed trait State
-case object On extends State
-case object Off extends State
-
-implicit val stateDecoder = deriveCellDecoder[State]
-// use stateDecoder to derive decoders for rows...or just test:
-println(stateDecoder("On"))
-println(stateDecoder("Off"))
-```
-
-The generic derivation for cell decoders also supports renaming and deriving instances for unary product types (case classes with one field):
-
-```scala
-import fs2.data.csv.generic.semiauto._
-
-sealed trait Advanced
-@CsvValue("Active") case object On extends Advanced
-case class Unknown(name: String) extends Advanced
-
-implicit val unknownDecoder = deriveCellDecoder[Unknown] // works as we have an implicit CellDecoder[String]
-implicit val advancedDecoder = deriveCellDecoder[Advanced]
-
-println(advancedDecoder("Active")) // prints Right(On)
-println(advancedDecoder("Off")) // prints Right(Unknown(Off))
-```
-
-You can also decode rows to case classes automatically.
-
-```scala
-import fs2.data.csv.generic.semiauto._
-
-case class Row(s: String, i: Option[Int], j: Int)
-
-implicit val rowDecoder = deriveCsvRowDecoder[Row]
-
-val rows = withh.through(decodeRow[IO, String, Row])
-
-println(rows.compile.toList.unsafeRunSync())
-```
-
-Case class generic also supports default parameters:
-
-```scala
-case class Row(s: String, i: Int = 34, j: Int)
-
-implicit val rowDecoder = deriveCsvRowDecoder[Row]
-
-val rows = withh.through(decodeRow[IO, String, Row])
-
-println(rows.compile.toList.unsafeRunSync())
-```
-
-There's also support for full auto-derivation, just `import fs2.data.csv.generic.auto._` for everything, `import fs2.data.csv.generic.auto.row._` for `RowDecoder` support only or `import fs2.data.csv.generic.auto.csvrow._` for `CsvRowDecoder` support.
-
 ## Development
 This project builds using [mill][mill]. You can install `mill` yourself or use the provided `millw` wrapper, in this case replace `mill` with `./millw` in the following commands:
 * compile everything: `mill __.compile`
 * compile & run all tests: `mill __.test`
-* run benchmarks (you can provide [JMH][jmh] arguments in the end): `mill '__.benchmarks[2.13.1].runJmh'`
+* run benchmarks (you can provide [JMH][jmh] arguments in the end): `mill '__.benchmarks[2.13.2].runJmh'`
 
 [fs2]: https://fs2.io/
 [circe]: https://circe.github.io/circe/
@@ -379,3 +235,4 @@ This project builds using [mill][mill]. You can install `mill` yourself or use t
 [jsonmergepatch]: https://tools.ietf.org/html/rfc7396
 [mill]: https://github.com/lihaoyi/mill
 [jmh]: https://openjdk.java.net/projects/code-tools/jmh/
+[website]: https://fs2-data.gnieh.org

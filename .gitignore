@@ -52,7 +52,7 @@ ensime.sbt
 
 # website
 site/content/api
-site/content/examples
+site/content/documentation/*/
 site/output
 
 .metals/

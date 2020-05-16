@@ -1,4 +1,5 @@
 import mill._
+import eval._
 import scalalib._
 import scalafmt._
 import publish._
@@ -6,6 +7,10 @@ import $file.jmh
 import jmh.Jmh
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import mill.define.BaseModule
+import $file.mdoc
+import mdoc.MdocModule
+import ammonite.ops._
+import mill.modules.Jvm.runSubprocess
 
 val scala212 = "2.12.11"
 val scala213 = "2.13.2"
@@ -233,4 +238,133 @@ class Benchmarks(val crossScalaVersion: String) extends Fs2DataModule with Cross
   def ivyDeps = T { super.ivyDeps() ++ Agg(ivy"com.github.pathikrit::better-files:3.8.0") }
 
   def millSourcePath = os.pwd / "benchmarks"
+}
+
+object documentation extends Fs2DataModule with MdocModule {
+
+  def scalaVersion = scala213
+
+  def moduleDeps = Seq(csv(scala213), csv(scala213).generic, json(scala213), json(scala213).diffson, json(scala213).circe, json(scala213).interpolators, xml(scala213))
+
+  def mdocVersion = "2.2.0"
+
+  def mdocTargetDirectory = os.pwd / 'site / 'content / 'documentation
+
+  def ivyDeps = Agg(ivy"com.beachape::enumeratum:1.5.15")
+
+}
+
+def unidoc(ev: Evaluator) = T.command {
+
+  def isInfra(x: ScalaModule): Boolean =
+    x match {
+      case x: ScalaModule#Tests => true
+      case _ =>
+        val segments = x.millModuleBasePath.value.segments.toVector
+        segments.contains("documentation") || segments.contains("benchmarks")
+    }
+
+  val modules =
+    ev.rootModule.millInternal.segmentsToModules.values
+      .collect { case x: ScalaModule if !isInfra(x) => x }
+      .filter(mod => ev.evaluate(Agg(mod.scalaVersion)).values.head.asInstanceOf[String] == scala213)
+      .toSeq
+  val base = ev.rootModule.millModuleBasePath.value.toNIO.toString
+
+  val sources = ev
+    .evaluate(mill.api.Strict.Agg[define.Task[_]](modules.map(_.allSources): _*))
+    .values
+    .collect {
+      case paths: Seq[PathRef] => paths
+    }
+    .flatten
+
+  val javadocDir = os.pwd / 'site / 'content / 'api
+  mkdir(javadocDir)
+
+  val files = for {
+    ref <- sources
+    if exists(ref.path)
+    p <- (if (ref.path.isDir) ls.rec(ref.path) else Seq(ref.path))
+    if (p.isFile && ((p.ext == "scala") || (p.ext == "java")))
+  } yield p.toNIO.toString
+
+  val pluginOptions = ev
+    .evaluate(mill.api.Strict.Agg[define.Task[_]](modules.map(_.scalacPluginClasspath): _*))
+    .values
+    .collect {
+      case a: Agg[_] =>
+        a.items.collect {
+          case p: PathRef => s"-Xplugin:${p.path}"
+        }
+    }
+    .flatten
+    .distinct
+
+  val scalacOptions = ev
+    .evaluate(mill.api.Strict.Agg[define.Task[_]](modules.map(_.scalacOptions): _*))
+    .values
+    .collect {
+      case l: List[_] =>
+        l.collect {
+          case s: String => s
+        }
+    }
+    .flatten
+    .distinct
+
+  def url(v: String): String = {
+    val branch = if (v.endsWith("SNAPSHOT")) "master" else v
+    "http://github.com/satabin/fs2-data/tree/" + branch
+  }
+
+  val urlString = s"${url(fs2DataVersion)}/€{FILE_PATH}.scala#L1"
+
+  val options = Seq(
+    "-d",
+    javadocDir.toNIO.toString,
+    "-usejavacp",
+    "-doc-title",
+    "fs2-data API Documentation",
+    "-doc-version",
+    fs2DataVersion,
+    "-doc-source-url",
+    urlString,
+    "-skip-packages",
+    "better",
+    "-groups",
+    "-sourcepath",
+    base
+  ) ++ pluginOptions ++ scalacOptions
+
+  val scalaCompilerClasspath = ev
+    .evaluate(mill.api.Strict.Agg[define.Task[_]](modules.map(_.scalaCompilerClasspath): _*))
+    .values
+    .collect {
+      case a: Agg[_] =>
+        a.items.collect {
+          case p: PathRef => p.path
+        }
+    }
+    .flatten
+
+  val compileClasspath = ev
+    .evaluate(mill.api.Strict.Agg[define.Task[_]](modules.map(_.compileClasspath): _*))
+    .values
+    .collect {
+      case a: Agg[_] =>
+        a.items.collect {
+          case p: PathRef => p
+        }
+    }
+    .flatten
+
+  if (files.nonEmpty)
+    runSubprocess(
+      "scala.tools.nsc.ScalaDoc",
+      scalaCompilerClasspath ++ compileClasspath.filter(_.path.ext != "pom").map(_.path),
+      mainArgs = (files ++ options).toSeq
+    )
+
+  ()
 }
