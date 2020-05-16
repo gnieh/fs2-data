@@ -1,0 +1,240 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>fs2-data - CSV</title>
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <link rel="stylesheet" href="/css/syntax.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
+    <style>body{font-family: overpass, sans-serif; }</style>
+
+    <meta name="generator" content="Nanoc 4.11.16">
+  </head>
+  <body>
+    <header>
+        <nav class="nav-extended red darken-2">
+          <a href="#!" class="brand-logo right">fs2-data</a>
+          <a href="#" data-target="collapsed" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+          <div class="nav-wrapper">
+            <ul id="nav-mobile" class="left hide-on-med-and-down">
+              <li><a href="/">Home</a></li>
+              <li><a href="/documentation/">Documentation</a></li>
+              <li><a href="/api/">Scaladoc</a></li>
+              <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+            </ul>
+          </div>
+          
+          
+          <div class="nav-content">
+            <ul class="tabs tabs-transparent">
+              
+              
+              <li class="tab active"><a href="/documentation/csv/">CSV</a></li>
+              
+              
+              
+              <li class="tab"><a href="/documentation/csv/generic/">Generic</a></li>
+              
+              
+            </ul>
+          </div>
+          
+        </nav>
+
+    </header>
+
+    <ul class="sidenav" id="collapsed">
+      <li><a href="/">Home</a></li>
+      <li><a href="/documentation/">Documentation</a></li>
+      <li><a href="/api/">Scaladoc</a></li>
+      <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+    </ul>
+
+    <main>
+      <div class="container">
+        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv_2.13.svg" alt="Maven Central" /></a></p>
+
+<p>The <code>fs2-data-csv</code> module contains tools to parse and transform CSV data. These tools live in the <code>fs2.data.csv</code> package.</p>
+
+<p>This page covers the following topics:</p>
+<ul id="markdown-toc">
+  <li><a href="#basic-usage" id="markdown-toc-basic-usage">Basic usage</a></li>
+  <li><a href="#csv-rows-with-or-without-headers" id="markdown-toc-csv-rows-with-or-without-headers">CSV rows with or without headers</a></li>
+  <li><a href="#decoders" id="markdown-toc-decoders">Decoders</a></li>
+</ul>
+
+<h3 id="basic-usage">Basic usage</h3>
+
+<p>The first one of the provided tools is the <code>rows</code> pipe, which transforms a stream of characters into a stream of parsed rows. The rows are represented by <a href="https://typelevel.org/cats/datatypes/nel.html"><code>NonEmptyList[String]</code></a>, empty lines are skipped. Values can be quoted and escaped, according to <a href="https://tools.ietf.org/html/rfc4180">the RFC</a>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
+
+<span class="k">import</span> <span class="nn">fs2._</span>
+<span class="k">import</span> <span class="nn">fs2.data.csv._</span>
+
+<span class="k">val</span> <span class="nv">input</span> <span class="k">=</span> <span class="s">"""i,s,j
+              |1,test,2
+              |,other,-3
+              |"""</span><span class="o">.</span><span class="py">stripMargin</span>
+<span class="c1">// input: String = """i,s,j</span>
+<span class="c1">// 1,test,2</span>
+<span class="c1">// ,other,-3</span>
+<span class="c1">// """</span>
+
+<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">rows</span><span class="o">[</span><span class="kt">IO</span><span class="o">]())</span>
+<span class="c1">// stream: Stream[IO[A], cats.data.NonEmptyList[String]] = Stream(..)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
+<span class="c1">// List(NonEmptyList(i, s, j), NonEmptyList(1, test, 2), NonEmptyList(, other, -3))</span>
+</code></pre></div></div>
+
+<p>If your CSV data is not using the comma as separator, you can provide the character as parameter of the <code>rows</code> pipe. For instance, if your data uses semicolon as separator:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">input2</span> <span class="k">=</span> <span class="s">"""i;s;j
+               |1;test;2"""</span><span class="o">.</span><span class="py">stripMargin</span>
+<span class="c1">// input2: String = """i;s;j</span>
+<span class="c1">// 1;test;2"""</span>
+
+<span class="k">val</span> <span class="nv">stream2</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input2</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">rows</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="sc">';'</span><span class="o">))</span>
+<span class="c1">// stream2: Stream[IO[A], cats.data.NonEmptyList[String]] = Stream(..)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">stream2</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
+<span class="c1">// List(NonEmptyList(i, s, j), NonEmptyList(1, test, 2))</span>
+</code></pre></div></div>
+
+<h3 id="csv-rows-with-or-without-headers">CSV rows with or without headers</h3>
+
+<p>Rows can be converted to a <code>Row</code> or <code>CsvRow[Header]</code> for some <code>Header</code> type. These classes provides higher-level utilities to manipulate rows.</p>
+
+<p>If your CSV file doesn’t have headers, you can use the <code>noHeaders</code> pipe, which creates <code>Row</code>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">noh</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">noHeaders</span><span class="o">[</span><span class="kt">IO</span><span class="o">])</span>
+<span class="c1">// noh: Stream[IO[x], Row] = Stream(..)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">noh</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">values</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
+<span class="c1">// List(NonEmptyList(i, s, j), NonEmptyList(1, test, 2), NonEmptyList(, other, -3))</span>
+</code></pre></div></div>
+
+<p>If you want to consider the first row as a header row, you can use the <code>headers</code> pipe. For instance to have headers as <code>String</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">withh</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">headers</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">String</span><span class="o">])</span>
+<span class="c1">// withh: Stream[IO[x], CsvRow[String]] = Stream(..)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">withh</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">toMap</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
+<span class="c1">// List(Map(i -&gt; 1, s -&gt; test, j -&gt; 2), Map(i -&gt; , s -&gt; other, j -&gt; -3))</span>
+</code></pre></div></div>
+
+<p>To support your own type of <code>Header</code> you must provide an implicit <code>ParseableHeader[Header]</code>. For instance if you have a fix set of headers represented as <a href="https://github.com/lloydmeta/enumeratum/">enumeratum</a> enum values, you can provide an instance of <code>ParseableHeader</code> as follows:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">enumeratum._</span>
+<span class="k">import</span> <span class="nn">cats.implicits._</span>
+<span class="k">import</span> <span class="nn">cats.data.NonEmptyList</span>
+
+<span class="k">sealed</span> <span class="k">trait</span> <span class="nc">MyHeaders</span> <span class="k">extends</span> <span class="nc">EnumEntry</span>
+<span class="k">object</span> <span class="nc">MyHeaders</span> <span class="k">extends</span> <span class="nc">Enum</span><span class="o">[</span><span class="kt">MyHeaders</span><span class="o">]</span> <span class="o">{</span>
+  <span class="k">case</span> <span class="k">object</span> <span class="nc">I</span> <span class="k">extends</span> <span class="nc">MyHeaders</span>
+  <span class="k">case</span> <span class="k">object</span> <span class="nc">S</span> <span class="k">extends</span> <span class="nc">MyHeaders</span>
+  <span class="k">case</span> <span class="k">object</span> <span class="nc">J</span> <span class="k">extends</span> <span class="nc">MyHeaders</span>
+  <span class="k">def</span> <span class="nf">values</span> <span class="k">=</span> <span class="n">findValues</span>
+<span class="o">}</span>
+
+<span class="k">implicit</span> <span class="k">object</span> <span class="nc">ParseableMyHeaders</span> <span class="k">extends</span> <span class="nc">ParseableHeader</span><span class="o">[</span><span class="kt">MyHeaders</span><span class="o">]</span> <span class="o">{</span>
+  <span class="k">def</span> <span class="nf">apply</span><span class="o">(</span><span class="n">names</span><span class="k">:</span> <span class="kt">NonEmptyList</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span><span class="k">:</span> <span class="kt">HeaderResult</span><span class="o">[</span><span class="kt">MyHeaders</span><span class="o">]</span> <span class="k">=</span>
+    <span class="nv">names</span><span class="o">.</span><span class="py">traverse</span> <span class="o">{</span> <span class="n">name</span> <span class="k">=&gt;</span>
+      <span class="nv">MyHeaders</span><span class="o">.</span><span class="py">withNameInsensitiveOption</span><span class="o">(</span><span class="n">name</span><span class="o">)</span> <span class="k">match</span> <span class="o">{</span>
+        <span class="k">case</span> <span class="nc">Some</span><span class="o">(</span><span class="n">headers</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Right</span><span class="o">(</span><span class="n">headers</span><span class="o">)</span>
+        <span class="k">case</span> <span class="nc">None</span>          <span class="k">=&gt;</span> <span class="nc">Left</span><span class="o">(</span><span class="k">new</span> <span class="nc">HeaderError</span><span class="o">(</span><span class="n">s</span><span class="s">"Unknown header $name"</span><span class="o">))</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="k">val</span> <span class="nv">withMyHeaders</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">headers</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">MyHeaders</span><span class="o">])</span>
+<span class="c1">// withMyHeaders: Stream[IO[x], CsvRow[MyHeaders]] = Stream(..)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">withMyHeaders</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">toMap</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
+<span class="c1">// List(Map(I -&gt; 1, S -&gt; test, J -&gt; 2), Map(I -&gt; , S -&gt; other, J -&gt; -3))</span>
+</code></pre></div></div>
+
+<p>If the parse method fails for a header, the entire stream fails.</p>
+
+<h3 id="decoders">Decoders</h3>
+
+<p>The library also provides a decoder interface, which allows for decoding CSV rows into arbitrary data types through the <code>decode</code> and <code>decodeRow</code> pipes. There are several kinds of decoders:</p>
+<ul>
+  <li><code>CellDecoder</code> is a simple value decoder, used to transform values within the CSV fields. The library provides decoders for most of the Scala common types:
+    <ul>
+      <li>primitive types, strings</li>
+      <li>most of <code>java.time</code> types</li>
+      <li>if your wish to support custom field types, you need to implement your own <code>CellDecoder</code></li>
+    </ul>
+  </li>
+  <li><code>RowDecoder</code> is used to decode CSV <code>Row</code>s through the <code>decode</code> pipe, and is positional. Use it when your CSV file doesn’t have headers.</li>
+  <li><code>CsvRowDecoder</code> is used to decode <code>CsvRow</code>s through the <code>decodeRow</code> pipe, and has access to the headers. Use it when you want to use header names to decode the rows.</li>
+</ul>
+
+<p>For instance if you want to decode the CSV data into <a href="https://github.com/milessabin/shapeless">shapeless</a> <code>HList</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">shapeless._</span>
+
+<span class="k">implicit</span> <span class="k">object</span> <span class="nc">HListDecoder</span> <span class="k">extends</span> <span class="nc">RowDecoder</span><span class="o">[</span><span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="kt">::</span> <span class="kt">String</span> <span class="kt">::</span> <span class="kt">Int</span> <span class="kt">::</span> <span class="kt">HNil</span><span class="o">]</span> <span class="o">{</span>
+  <span class="k">def</span> <span class="nf">apply</span><span class="o">(</span><span class="n">cells</span><span class="k">:</span> <span class="kt">NonEmptyList</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span><span class="k">:</span> <span class="kt">DecoderResult</span><span class="o">[</span><span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="kt">::</span> <span class="kt">String</span> <span class="kt">::</span> <span class="kt">Int</span> <span class="kt">::</span> <span class="kt">HNil</span><span class="o">]</span> <span class="k">=</span>
+    <span class="nf">if</span><span class="o">(</span><span class="nv">cells</span><span class="o">.</span><span class="py">size</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="o">)</span>
+      <span class="nc">Left</span><span class="o">(</span><span class="k">new</span> <span class="nc">DecoderError</span><span class="o">(</span><span class="s">"row is too short"</span><span class="o">))</span>
+    <span class="k">else</span>
+      <span class="k">for</span> <span class="o">{</span>
+        <span class="n">i</span> <span class="k">&lt;-</span> <span class="nf">if</span><span class="o">(</span><span class="nv">cells</span><span class="o">.</span><span class="py">head</span><span class="o">.</span><span class="py">isEmpty</span><span class="o">)</span> <span class="nc">Right</span><span class="o">(</span><span class="nc">None</span><span class="o">)</span> <span class="k">else</span> <span class="nc">CellDecoder</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="py">apply</span><span class="o">(</span><span class="nv">cells</span><span class="o">.</span><span class="py">head</span><span class="o">).</span><span class="py">map</span><span class="o">(</span><span class="nc">Some</span><span class="o">(</span><span class="k">_</span><span class="o">))</span>
+        <span class="n">s</span> <span class="k">&lt;-</span> <span class="nc">CellDecoder</span><span class="o">[</span><span class="kt">String</span><span class="o">].</span><span class="py">apply</span><span class="o">(</span><span class="nv">cells</span><span class="o">.</span><span class="py">tail</span><span class="o">.</span><span class="py">head</span><span class="o">)</span>
+        <span class="n">j</span> <span class="k">&lt;-</span> <span class="nc">CellDecoder</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="py">apply</span><span class="o">(</span><span class="nv">cells</span><span class="o">.</span><span class="py">tail</span><span class="o">.</span><span class="py">tail</span><span class="o">.</span><span class="py">head</span><span class="o">)</span>
+      <span class="o">}</span> <span class="k">yield</span> <span class="n">i</span> <span class="o">::</span> <span class="n">s</span> <span class="o">::</span> <span class="n">j</span> <span class="o">::</span> <span class="nc">HNil</span>
+<span class="o">}</span>
+
+<span class="c1">// .tail drops the header line</span>
+<span class="k">val</span> <span class="nv">hlists</span> <span class="k">=</span> <span class="nv">noh</span><span class="o">.</span><span class="py">tail</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decode</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="kt">::</span> <span class="kt">String</span> <span class="kt">::</span> <span class="kt">Int</span> <span class="kt">::</span> <span class="kt">HNil</span><span class="o">])</span>
+<span class="c1">// hlists: Stream[IO[x], Option[Int] :: String :: Int :: HNil] = Stream(..)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">hlists</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
+<span class="c1">// List(Some(1) :: test :: 2 :: HNil, None :: other :: -3 :: HNil)</span>
+</code></pre></div></div>
+
+<p>Using the headers, one can decode the CSV data to some case class:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// note the order of fields is not the same as in the CSV data here</span>
+<span class="k">case</span> <span class="k">class</span> <span class="nc">MyRow</span><span class="o">(</span><span class="n">i</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">],</span> <span class="n">j</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
+
+<span class="k">implicit</span> <span class="k">object</span> <span class="nc">MyRowDecoder</span> <span class="k">extends</span> <span class="nc">CsvRowDecoder</span><span class="o">[</span><span class="kt">MyRow</span>, <span class="kt">String</span><span class="o">]</span> <span class="o">{</span>
+  <span class="k">def</span> <span class="nf">apply</span><span class="o">(</span><span class="n">row</span><span class="k">:</span> <span class="kt">CsvRow</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span><span class="k">:</span> <span class="kt">DecoderResult</span><span class="o">[</span><span class="kt">MyRow</span><span class="o">]</span> <span class="k">=</span>
+  <span class="k">for</span> <span class="o">{</span>
+    <span class="n">i</span> <span class="k">&lt;-</span> <span class="nv">row</span><span class="o">.</span><span class="py">as</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="s">"i"</span><span class="o">).</span><span class="py">map</span><span class="o">(</span><span class="nc">Some</span><span class="o">(</span><span class="k">_</span><span class="o">)).</span><span class="py">leftFlatMap</span><span class="o">(</span><span class="k">_</span> <span class="k">=&gt;</span> <span class="nc">Right</span><span class="o">(</span><span class="nc">None</span><span class="o">))</span>
+    <span class="n">j</span> <span class="k">&lt;-</span> <span class="nv">row</span><span class="o">.</span><span class="py">as</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="s">"j"</span><span class="o">)</span>
+    <span class="n">s</span> <span class="k">&lt;-</span> <span class="nv">row</span><span class="o">.</span><span class="py">as</span><span class="o">[</span><span class="kt">String</span><span class="o">](</span><span class="s">"s"</span><span class="o">)</span>
+  <span class="o">}</span> <span class="k">yield</span> <span class="nc">MyRow</span><span class="o">(</span><span class="n">i</span><span class="o">,</span> <span class="n">j</span><span class="o">,</span> <span class="n">s</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="k">val</span> <span class="nv">decoded</span> <span class="k">=</span> <span class="nv">withh</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decodeRow</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">String</span>, <span class="kt">MyRow</span><span class="o">])</span>
+<span class="c1">// decoded: Stream[IO[x], MyRow] = Stream(..)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">decoded</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
+<span class="c1">// List(MyRow(Some(1),2,test), MyRow(None,-3,other))</span>
+</code></pre></div></div>
+
+<p>As you can see this can be quite tedious to implement. Lucky us, the <code>fs2-data-csv-generic</code> module comes to the rescue to avoid having to write the boilerplate. Please refer to <a href="/documentation/csv/generic/">the module documentation</a> for more details.</p>
+
+
+      </div>
+    </main>
+
+    <footer class="page-footer red lighten-2">
+      <div class="footer-copyright red darken-2">
+        <div class="container">
+          Copyright © 2020 <a class="grey-text text-lighten-4" href="https://twitter.com/lucassatabin">@lucassatabin</a>
+          <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" class="grey-text text-lighten-4 right" /></a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+    <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.sidenav');
+      var instances = M.Sidenav.init(elems, {});
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.materialboxed');
+      var instances = M.Materialbox.init(elems, {});
+    });
+    </script>
+  </body>
+</html>

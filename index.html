@@ -1,0 +1,87 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>fs2-data - Home</title>
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <link rel="stylesheet" href="/css/syntax.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
+    <style>body{font-family: overpass, sans-serif; }</style>
+
+    <meta name="generator" content="Nanoc 4.11.16">
+  </head>
+  <body>
+    <header>
+        <nav class="nav-extended red darken-2">
+          <a href="#!" class="brand-logo right">fs2-data</a>
+          <a href="#" data-target="collapsed" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+          <div class="nav-wrapper">
+            <ul id="nav-mobile" class="left hide-on-med-and-down">
+              <li><a href="/">Home</a></li>
+              <li><a href="/documentation/">Documentation</a></li>
+              <li><a href="/api/">Scaladoc</a></li>
+              <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+            </ul>
+          </div>
+          
+          
+        </nav>
+
+    </header>
+
+    <ul class="sidenav" id="collapsed">
+      <li><a href="/">Home</a></li>
+      <li><a href="/documentation/">Documentation</a></li>
+      <li><a href="/api/">Scaladoc</a></li>
+      <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+    </ul>
+
+    <main>
+      <div class="container">
+        <h1 id="welcome-to-the-fs2-data-website">Welcome to the fs2-data website</h1>
+
+<p><a href="https://gitter.im/fs2-data/general?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge"><img src="https://badges.gitter.im/fs2-data/general.svg" alt="Join the chat on Gitter" /></a></p>
+
+<p><code>fs2-data</code> is a set of libraries that can be used to parse and transform data in a streaming manner. It aims at having as few dependencies as possible (usually, only <a href="https://fs2.io">fs2</a>). For more details on supported format, refer to <a href="/documentation/">the documentation</a>.</p>
+
+<h2 id="installation">Installation</h2>
+
+<p>Artefacts are published on maven, use your favorite build tool to bring it into your project.<br />
+Following modules are available:</p>
+<ul>
+  <li><code>fs2-data-json</code>: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json_2.13.svg" alt="Maven Central" /></a> A JSON parser and manipulation library</li>
+  <li><code>fs2-data-json-circe</code>: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-circe_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-circe_2.13.svg" alt="Maven Central" /></a> [circe][circe] support for parsed JSON.</li>
+  <li><code>fs2-data-json-interpolators</code>: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-interpolators_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-interpolators_2.13.svg" alt="Maven Central" /></a> [contextual][contextual] support for statically checked JSON interpolators.</li>
+  <li><code>fs2-data-json-diffson</code>: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-diffson_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-diffson_2.13.svg" alt="Maven Central" /></a> [diffson][diffson] support for patching JSON streams.</li>
+  <li><code>fs2-data-xml</code>: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-xml_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-xml_2.13.svg" alt="Maven Central" /></a> An XML parser</li>
+  <li><code>fs2-data-csv</code>: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv_2.13.svg" alt="Maven Central" /></a> A CSV parser</li>
+  <li><code>fs2-data-csv-generic</code>: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv-generic_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv-generic_2.13.svg" alt="Maven Central" /></a> generic decoder for CSV files</li>
+</ul>
+
+
+      </div>
+    </main>
+
+    <footer class="page-footer red lighten-2">
+      <div class="footer-copyright red darken-2">
+        <div class="container">
+          Copyright © 2020 <a class="grey-text text-lighten-4" href="https://twitter.com/lucassatabin">@lucassatabin</a>
+          <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" class="grey-text text-lighten-4 right" /></a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+    <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.sidenav');
+      var instances = M.Sidenav.init(elems, {});
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.materialboxed');
+      var instances = M.Materialbox.init(elems, {});
+    });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>fs2-data - Generic</title>
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <link rel="stylesheet" href="/css/syntax.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
+    <style>body{font-family: overpass, sans-serif; }</style>
+
+    <meta name="generator" content="Nanoc 4.11.16">
+  </head>
+  <body>
+    <header>
+        <nav class="nav-extended red darken-2">
+          <a href="#!" class="brand-logo right">fs2-data</a>
+          <a href="#" data-target="collapsed" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+          <div class="nav-wrapper">
+            <ul id="nav-mobile" class="left hide-on-med-and-down">
+              <li><a href="/">Home</a></li>
+              <li><a href="/documentation/">Documentation</a></li>
+              <li><a href="/api/">Scaladoc</a></li>
+              <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+            </ul>
+          </div>
+          
+          
+          <div class="nav-content">
+            <ul class="tabs tabs-transparent">
+              
+              
+              <li class="tab"><a href="/documentation/csv/">CSV</a></li>
+              
+              
+              
+              <li class="tab active"><a href="/documentation/csv/generic/">Generic</a></li>
+              
+              
+            </ul>
+          </div>
+          
+        </nav>
+
+    </header>
+
+    <ul class="sidenav" id="collapsed">
+      <li><a href="/">Home</a></li>
+      <li><a href="/documentation/">Documentation</a></li>
+      <li><a href="/api/">Scaladoc</a></li>
+      <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+    </ul>
+
+    <main>
+      <div class="container">
+        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv-generic_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv-generic_2.13.svg" alt="Maven Central" /></a></p>
+
+<p>The <code>fs2-data-csv-generic</code> module provides automatic and semi-automatic derivation for <code>RowDecoder</code> and <code>CsvRowDecoder</code>. It makes it easier to support custom row types but is based on <a href="https://github.com/milessabin/shapeless">shapeless</a>, which can have a significant impact on compilation time.</p>
+
+<p>To demonstrate how it works, let’s work again with the CSV data from the <a href="/documentation/csv/">core</a> module documentation.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
+
+<span class="k">import</span> <span class="nn">fs2._</span>
+<span class="k">import</span> <span class="nn">fs2.data.csv._</span>
+
+<span class="k">val</span> <span class="nv">input</span> <span class="k">=</span> <span class="s">"""i,s,j
+              |1,test,2
+              |,other,-3
+              |"""</span><span class="o">.</span><span class="py">stripMargin</span>
+<span class="c1">// input: String = """i,s,j</span>
+<span class="c1">// 1,test,2</span>
+<span class="c1">// ,other,-3</span>
+<span class="c1">// """</span>
+<span class="c1">// input: String = """i,s,j</span>
+<span class="c1">// 1,test,2</span>
+<span class="c1">// ,other,-3</span>
+<span class="c1">// """</span>
+
+<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">rows</span><span class="o">[</span><span class="kt">IO</span><span class="o">]())</span>
+<span class="c1">// stream: Stream[IO[A], cats.data.NonEmptyList[String]] = Stream(..)</span>
+</code></pre></div></div>
+
+<p>This page covers the following topics:</p>
+<ul id="markdown-toc">
+  <li><a href="#derivation-of-celldecoder" id="markdown-toc-derivation-of-celldecoder">Derivation of <code>CellDecoder</code></a></li>
+  <li><a href="#derivation-of-rowdecoder" id="markdown-toc-derivation-of-rowdecoder">Derivation of <code>RowDecoder</code></a></li>
+  <li><a href="#derivation-of-csvrowdecoder" id="markdown-toc-derivation-of-csvrowdecoder">Derivation of <code>CsvRowDecoder</code></a></li>
+</ul>
+
+<h3 id="derivation-of-celldecoder">Derivation of <code>CellDecoder</code></h3>
+
+<p>Cell types (<code>Int</code>, <code>String</code>, …) can be decoded by providing implicit instances of <code>CellDecoder</code>. Instances for primitives and common types are defined already. You can easily define your own or use generic derivation for coproducts:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.csv.generic._</span>
+<span class="k">import</span> <span class="nn">fs2.data.csv.generic.semiauto._</span>
+
+<span class="k">sealed</span> <span class="k">trait</span> <span class="nc">State</span>
+<span class="k">object</span> <span class="nc">State</span> <span class="o">{</span>
+  <span class="k">case</span> <span class="k">object</span> <span class="nc">On</span> <span class="k">extends</span> <span class="nc">State</span>
+  <span class="k">case</span> <span class="k">object</span> <span class="nc">Off</span> <span class="k">extends</span> <span class="nc">State</span>
+<span class="o">}</span>
+
+<span class="k">implicit</span> <span class="k">val</span> <span class="nv">stateDecoder</span> <span class="k">=</span> <span class="n">deriveCellDecoder</span><span class="o">[</span><span class="kt">State</span><span class="o">]</span>
+<span class="c1">// stateDecoder: CellDecoder[State] = fs2.data.csv.generic.DerivedCellDecoder$$anonfun$coproductDecoder$3@28d78140</span>
+<span class="c1">// use stateDecoder to derive decoders for rows...or just test:</span>
+<span class="nf">println</span><span class="o">(</span><span class="nf">stateDecoder</span><span class="o">(</span><span class="s">"On"</span><span class="o">))</span>
+<span class="c1">// Right(On)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nf">stateDecoder</span><span class="o">(</span><span class="s">"Off"</span><span class="o">))</span>
+<span class="c1">// Right(Off)</span>
+</code></pre></div></div>
+
+<p>The generic derivation for cell decoders also supports renaming and deriving instances for unary product types (case classes with one field):</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.csv.generic.semiauto._</span>
+
+<span class="k">sealed</span> <span class="k">trait</span> <span class="nc">Advanced</span>
+<span class="k">object</span> <span class="nc">Advanced</span> <span class="o">{</span>
+  <span class="nd">@CsvValue</span><span class="o">(</span><span class="s">"Active"</span><span class="o">)</span> <span class="k">case</span> <span class="k">object</span> <span class="nc">On</span> <span class="k">extends</span> <span class="nc">Advanced</span>
+  <span class="k">case</span> <span class="k">class</span> <span class="nc">Unknown</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Advanced</span>
+<span class="o">}</span>
+
+<span class="c1">// works as we have an implicit CellDecoder[String]</span>
+<span class="k">implicit</span> <span class="k">val</span> <span class="nv">unknownDecoder</span> <span class="k">=</span> <span class="n">deriveCellDecoder</span><span class="o">[</span><span class="kt">Advanced.Unknown</span><span class="o">]</span>
+<span class="c1">// unknownDecoder: CellDecoder[Advanced.Unknown] = fs2.data.csv.generic.DerivedCellDecoder$$anonfun$unaryProductDecoder$3@4c24e56e</span>
+<span class="k">implicit</span> <span class="k">val</span> <span class="nv">advancedDecoder</span> <span class="k">=</span> <span class="n">deriveCellDecoder</span><span class="o">[</span><span class="kt">Advanced</span><span class="o">]</span>
+<span class="c1">// advancedDecoder: CellDecoder[Advanced] = fs2.data.csv.generic.DerivedCellDecoder$$anonfun$coproductDecoder$3@482e1d45</span>
+
+<span class="nf">println</span><span class="o">(</span><span class="nf">advancedDecoder</span><span class="o">(</span><span class="s">"Active"</span><span class="o">))</span>
+<span class="c1">// Right(On)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nf">advancedDecoder</span><span class="o">(</span><span class="s">"Off"</span><span class="o">))</span>
+<span class="c1">// Right(Unknown(Off))</span>
+</code></pre></div></div>
+
+<h3 id="derivation-of-rowdecoder">Derivation of <code>RowDecoder</code></h3>
+
+<p>One can automatically derive a <code>RowDecoder</code> for <a href="https://github.com/milessabin/shapeless">shapeless</a> <code>HList</code>. The example previously written manually now looks like:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">shapeless._</span>
+<span class="k">import</span> <span class="nn">fs2.data.csv.generic.hlist._</span>
+
+<span class="c1">// .tail drops the header line</span>
+<span class="k">val</span> <span class="nv">hlists</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">noHeaders</span><span class="o">).</span><span class="py">tail</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decode</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="kt">::</span> <span class="kt">String</span> <span class="kt">::</span> <span class="kt">Int</span> <span class="kt">::</span> <span class="kt">HNil</span><span class="o">])</span>
+<span class="c1">// hlists: Stream[IO[x], Option[Int] :: String :: Int :: HNil] = Stream(..)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">hlists</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
+<span class="c1">// List(Some(1) :: test :: 2 :: HNil, None :: other :: -3 :: HNil)</span>
+</code></pre></div></div>
+
+<h3 id="derivation-of-csvrowdecoder">Derivation of <code>CsvRowDecoder</code></h3>
+
+<p>Let’s say you want to decode the CSV row to the following case class:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">MyRow</span><span class="o">(</span><span class="n">i</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">],</span> <span class="n">j</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
+</code></pre></div></div>
+
+<p>You can get an automatically derived <code>CsvRowDecoder</code> for every case class by importing <code>fs2.data.csv.generic.auto._</code></p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.csv.generic.auto._</span>
+
+<span class="k">val</span> <span class="nv">decoded</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">headers</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">String</span><span class="o">]).</span><span class="py">through</span><span class="o">(</span><span class="n">decodeRow</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">String</span>, <span class="kt">MyRow</span><span class="o">])</span>
+<span class="c1">// decoded: Stream[IO[x], MyRow] = Stream(..)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">decoded</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
+<span class="c1">// List(MyRow(Some(1),2,test), MyRow(None,-3,other))</span>
+</code></pre></div></div>
+
+<p>Automatic derivation can be quite slow at compile time, so you might want to opt for semiautomatic derivation. In this case, you need to explicitly define the implicit <code>CsvRowDecoder</code> instance in scope.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.csv.generic.semiauto._</span>
+
+<span class="k">implicit</span> <span class="k">val</span> <span class="nv">MyRowDecoder</span><span class="k">:</span> <span class="kt">CsvRowDecoder</span><span class="o">[</span><span class="kt">MyRow</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="n">deriveCsvRowDecoder</span><span class="o">[</span><span class="kt">MyRow</span><span class="o">]</span>
+<span class="c1">// MyRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.DerivedCsvRowDecoder$$anon$1@67c8ca0f</span>
+
+<span class="k">val</span> <span class="nv">decoded</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">headers</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">String</span><span class="o">]).</span><span class="py">through</span><span class="o">(</span><span class="n">decodeRow</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">String</span>, <span class="kt">MyRow</span><span class="o">])</span>
+<span class="c1">// decoded: Stream[IO[x], MyRow] = Stream(..)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">decoded</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
+<span class="c1">// List(MyRow(Some(1),2,test), MyRow(None,-3,other))</span>
+</code></pre></div></div>
+
+<p>Both automatic and semi-automatic decoders support also default values, so instead of an <code>Option[Int]</code> for <code>i</code>, you can define this class:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.csv.generic.auto._</span>
+
+<span class="k">case</span> <span class="k">class</span> <span class="nc">MyRowDefault</span><span class="o">(</span><span class="n">i</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">42</span><span class="o">,</span> <span class="n">j</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
+
+<span class="k">val</span> <span class="nv">decoded</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">headers</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">String</span><span class="o">]).</span><span class="py">through</span><span class="o">(</span><span class="n">decodeRow</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">String</span>, <span class="kt">MyRowDefault</span><span class="o">])</span>
+<span class="c1">// decoded: Stream[IO[x], MyRowDefault] = Stream(..)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">decoded</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
+<span class="c1">// List(MyRowDefault(1,2,test), MyRowDefault(42,-3,other))</span>
+</code></pre></div></div>
+
+
+      </div>
+    </main>
+
+    <footer class="page-footer red lighten-2">
+      <div class="footer-copyright red darken-2">
+        <div class="container">
+          Copyright © 2020 <a class="grey-text text-lighten-4" href="https://twitter.com/lucassatabin">@lucassatabin</a>
+          <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" class="grey-text text-lighten-4 right" /></a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+    <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.sidenav');
+      var instances = M.Sidenav.init(elems, {});
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.materialboxed');
+      var instances = M.Materialbox.init(elems, {});
+    });
+    </script>
+  </body>
+</html>
