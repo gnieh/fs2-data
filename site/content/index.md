@@ -25,3 +25,6 @@ Following modules are available:
 [doc]: /documentation/
 [cats-friendly-logo]: https://typelevel.org/cats/img/cats-badge-tiny.png
 [fs2]: https://fs2.io
+[circe]: https://circe.github.io/circe/
+[diffson]: https://github.com/gnieh/diffson
+[contextual]: https://propensive.com/opensource/contextual
