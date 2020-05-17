@@ -1,0 +1,39 @@
+name: Publish Website
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Checkout gh-pages branch in nanoc output
+        uses: actions/checkout@v2
+        with:
+          ref: gh-pages
+          path: site/output
+        run: |
+          git config --global user.email "lucas.satabin@gnieh.org"
+          git config --global user.name "Lucas Satabin"
+      - name: Setup java environement
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Generate unified scaladoc
+        run: ./millw unidoc
+      - name: Generate documentation
+        run: ./millw documentation.mdoc
+      - name: Setup ruby environment
+        uses: actions/setup-ruby@v1
+        run: |
+          gem install nanoc kramdown-parser-gfm rouge
+      - name: Generate site
+        run: |
+          cd site
+          nanoc
+      - name: Deploy site
+        run: nanoc deploy
