@@ -242,15 +242,24 @@ class Benchmarks(val crossScalaVersion: String) extends Fs2DataModule with Cross
 
 object documentation extends Fs2DataModule with MdocModule {
 
-  def scalaVersion = scala213
+  def scalaVersion = scala212
 
-  def moduleDeps = Seq(csv(scala213), csv(scala213).generic, json(scala213), json(scala213).diffson, json(scala213).circe, json(scala213).interpolators, xml(scala213))
+  def moduleDeps =
+    Seq(
+      csv(scala212),
+      csv(scala212).generic,
+      json(scala212),
+      json(scala212).diffson,
+      json(scala212).circe,
+      json(scala212).interpolators,
+      xml(scala212)
+    )
 
   def mdocVersion = "2.2.0"
 
   def mdocTargetDirectory = os.pwd / 'site / 'content / 'documentation
 
-  def ivyDeps = Agg(ivy"com.beachape::enumeratum:1.5.15")
+  def ivyDeps = Agg(ivy"com.beachape::enumeratum:1.5.15", ivy"org.gnieh::diffson-circe:4.0.2")
 
 }
 
