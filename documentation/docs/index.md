@@ -37,3 +37,6 @@ Available data modules are:
 
 [pipe-doc]: https://fs2.io/guide.html#statefully-transforming-streams
 [sax]: https://en.wikipedia.org/wiki/Simple_API_for_XML
+[circe]: https://circe.github.io/circe/
+[diffson]: https://github.com/gnieh/diffson
+[contextual]: https://propensive.com/opensource/contextual
