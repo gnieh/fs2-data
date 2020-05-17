@@ -149,6 +149,8 @@
 <span class="c1">// )</span>
 </code></pre></div></div>
 
+<p>The <code>parseSelector</code> method implicitly comes from the <code>import fs2.data.json._</code> and wraps the result in anything that has an <a href="https://typelevel.org/cats/api/cats/MonadError.html"><code>MonadError</code> with error type <code>Throwable</code></a> to catch potential parsing errors. If you prefer not to have this wrapping and don’t mind an extra dependency, you can have a look at <a href="/documentation/json/libraries">the interpolator</a>.</p>
+
 <p>The filter syntax is as follows:</p>
 <ul>
   <li><code>.</code> selects the root values, it is basically the identity filter.</li>
