@@ -1,0 +1,330 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>fs2-data - XML</title>
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <link rel="stylesheet" href="/css/syntax.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
+    <style>body{font-family: overpass, sans-serif; }</style>
+
+    <meta name="generator" content="Nanoc 4.11.16">
+  </head>
+  <body>
+    <header>
+        <nav class="nav-extended red darken-2">
+          <a href="#!" class="brand-logo right">fs2-data</a>
+          <a href="#" data-target="collapsed" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+          <div class="nav-wrapper">
+            <ul id="nav-mobile" class="left hide-on-med-and-down">
+              <li><a href="/">Home</a></li>
+              <li><a href="/documentation/">Documentation</a></li>
+              <li><a href="/api/">Scaladoc</a></li>
+              <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+            </ul>
+          </div>
+          
+          
+          <div class="nav-content">
+            <ul class="tabs tabs-transparent">
+              
+              
+              <li class="tab active"><a href="/documentation/xml/">XML</a></li>
+              
+              
+            </ul>
+          </div>
+          
+        </nav>
+
+    </header>
+
+    <ul class="sidenav" id="collapsed">
+      <li><a href="/">Home</a></li>
+      <li><a href="/documentation/">Documentation</a></li>
+      <li><a href="/api/">Scaladoc</a></li>
+      <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+    </ul>
+
+    <main>
+      <div class="container">
+        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-xml_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-xml_2.13.svg" alt="Maven Central" /></a></p>
+
+<p>The <code>fs2-data-xml</code> module provides tools to parse XML data in a streaming manner.</p>
+
+<p>This page covers the following topics:</p>
+<ul id="markdown-toc">
+  <li><a href="#basic-usage" id="markdown-toc-basic-usage">Basic usage</a></li>
+  <li><a href="#resolvers" id="markdown-toc-resolvers">Resolvers</a></li>
+  <li><a href="#normalization" id="markdown-toc-normalization">Normalization</a></li>
+</ul>
+
+<h3 id="basic-usage">Basic usage</h3>
+
+<p>To create a stream of XML events from an input stream, use the <code>events</code> pipe in <code>fs2.data.xml</code> package.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
+
+<span class="k">import</span> <span class="nn">fs2._</span>
+<span class="k">import</span> <span class="nn">fs2.data.xml._</span>
+
+<span class="k">val</span> <span class="nv">input</span> <span class="k">=</span> <span class="s">"""&lt;a xmlns:ns="http://test.ns"&gt;
+              |  &lt;ns:b ns:a="attribute"&gt;text&lt;/ns:b&gt;
+              |&lt;/a&gt;
+              |&lt;a&gt;
+              |  &lt;b/&gt;
+              |  test entity resolution &amp;amp; normalization
+              |&lt;/a&gt;"""</span><span class="o">.</span><span class="py">stripMargin</span>
+<span class="c1">// input: String = """&lt;a xmlns:ns="http://test.ns"&gt;</span>
+<span class="c1">//   &lt;ns:b ns:a="attribute"&gt;text&lt;/ns:b&gt;</span>
+<span class="c1">// &lt;/a&gt;</span>
+<span class="c1">// &lt;a&gt;</span>
+<span class="c1">//   &lt;b/&gt;</span>
+<span class="c1">//   test entity resolution &amp;amp; normalization</span>
+<span class="c1">// &lt;/a&gt;"""</span>
+
+<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">events</span><span class="o">[</span><span class="kt">IO</span><span class="o">])</span>
+<span class="c1">// stream: Stream[IO, XmlEvent] = Stream(..)</span>
+<span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res0: List[XmlEvent] = List(</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     QName(None, "a"),</span>
+<span class="c1">//     List(</span>
+<span class="c1">//       Attr(QName(Some("xmlns"), "ns"), List(XmlString("http://test.ns", false)))</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">//   """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     QName(Some("ns"), "b"),</span>
+<span class="c1">//     List(Attr(QName(Some("ns"), "a"), List(XmlString("attribute", false)))),</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   XmlString("text", false),</span>
+<span class="c1">//   EndTag(QName(Some("ns"), "b")),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">// """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   EndTag(QName(None, "a")),</span>
+<span class="c1">//   StartTag(QName(None, "a"), List(), false),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">//   """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   StartTag(QName(None, "b"), List(), true),</span>
+<span class="c1">//   EndTag(QName(None, "b")),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">//   test entity resolution """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   XmlEntityRef("amp"),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """ normalization</span>
+<span class="c1">// """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   EndTag(QName(None, "a"))</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>The pipe validates the XML structure while parsing. It reads all the XML elements in the input stream and emits events as they are available.</p>
+
+<h3 id="resolvers">Resolvers</h3>
+
+<p>Namespace can be resolved by using the <code>namespaceResolver</code> pipe.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">nsResolved</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">namespaceResolver</span><span class="o">[</span><span class="kt">IO</span><span class="o">])</span>
+<span class="c1">// nsResolved: Stream[IO[x], XmlEvent] = Stream(..)</span>
+<span class="nv">nsResolved</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res1: List[XmlEvent] = List(</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     QName(Some("http://www.w3.org/XML/1998/namespace"), "a"),</span>
+<span class="c1">//     List(</span>
+<span class="c1">//       Attr(QName(Some("xmlns"), "ns"), List(XmlString("http://test.ns", false)))</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">//   """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     QName(Some("http://test.ns"), "b"),</span>
+<span class="c1">//     List(</span>
+<span class="c1">//       Attr(</span>
+<span class="c1">//         QName(Some("http://test.ns"), "a"),</span>
+<span class="c1">//         List(XmlString("attribute", false))</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   XmlString("text", false),</span>
+<span class="c1">//   EndTag(QName(Some("http://test.ns"), "b")),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">// """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   EndTag(QName(Some("http://www.w3.org/XML/1998/namespace"), "a")),</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     QName(Some("http://www.w3.org/XML/1998/namespace"), "a"),</span>
+<span class="c1">//     List(),</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">//   """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     QName(Some("http://www.w3.org/XML/1998/namespace"), "b"),</span>
+<span class="c1">//     List(),</span>
+<span class="c1">//     true</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   EndTag(QName(Some("http://www.w3.org/XML/1998/namespace"), "b")),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">// ...</span>
+</code></pre></div></div>
+
+<p>Using the <code>referenceResolver</code> pipe, entity and character references can be resolved. By defaut the standard <code>xmlEntities</code> mapping is used, but it can be replaced by any mapping you see fit.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">entityResolved</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">referenceResolver</span><span class="o">[</span><span class="kt">IO</span><span class="o">]())</span>
+<span class="c1">// entityResolved: Stream[IO[x], XmlEvent] = Stream(..)</span>
+<span class="nv">entityResolved</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res2: List[XmlEvent] = List(</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     QName(None, "a"),</span>
+<span class="c1">//     List(</span>
+<span class="c1">//       Attr(QName(Some("xmlns"), "ns"), List(XmlString("http://test.ns", false)))</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">//   """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     QName(Some("ns"), "b"),</span>
+<span class="c1">//     List(Attr(QName(Some("ns"), "a"), List(XmlString("attribute", false)))),</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   XmlString("text", false),</span>
+<span class="c1">//   EndTag(QName(Some("ns"), "b")),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">// """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   EndTag(QName(None, "a")),</span>
+<span class="c1">//   StartTag(QName(None, "a"), List(), false),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">//   """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   StartTag(QName(None, "b"), List(), true),</span>
+<span class="c1">//   EndTag(QName(None, "b")),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">//   test entity resolution """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   XmlString("&amp;", false),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """ normalization</span>
+<span class="c1">// """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   EndTag(QName(None, "a"))</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<h3 id="normalization">Normalization</h3>
+
+<p>Once entites and namespaces are resolved, the events might be numerous and can be normalized to avoid emitting too many of them. For instance, after reference resolution, consecutive text events can be merged. This is achieved by using the <code>normalize</code> pipe.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">normalized</span> <span class="k">=</span> <span class="nv">entityResolved</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">normalize</span><span class="o">[</span><span class="kt">IO</span><span class="o">])</span>
+<span class="c1">// normalized: Stream[IO[x], XmlEvent] = Stream(..)</span>
+<span class="nv">normalized</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res3: List[XmlEvent] = List(</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     QName(None, "a"),</span>
+<span class="c1">//     List(</span>
+<span class="c1">//       Attr(QName(Some("xmlns"), "ns"), List(XmlString("http://test.ns", false)))</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">//   """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     QName(Some("ns"), "b"),</span>
+<span class="c1">//     List(Attr(QName(Some("ns"), "a"), List(XmlString("attribute", false)))),</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   XmlString("text", false),</span>
+<span class="c1">//   EndTag(QName(Some("ns"), "b")),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">// """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   EndTag(QName(None, "a")),</span>
+<span class="c1">//   StartTag(QName(None, "a"), List(), false),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">//   """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   StartTag(QName(None, "b"), List(), true),</span>
+<span class="c1">//   EndTag(QName(None, "b")),</span>
+<span class="c1">//   XmlString(</span>
+<span class="c1">//     """</span>
+<span class="c1">//   test entity resolution &amp; normalization</span>
+<span class="c1">// """,</span>
+<span class="c1">//     false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   EndTag(QName(None, "a"))</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+
+      </div>
+    </main>
+
+    <footer class="page-footer red lighten-2">
+      <div class="footer-copyright red darken-2">
+        <div class="container">
+          Copyright © 2020 <a class="grey-text text-lighten-4" href="https://twitter.com/lucassatabin">@lucassatabin</a>
+          <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" class="grey-text text-lighten-4 right" /></a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+    <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.sidenav');
+      var instances = M.Sidenav.init(elems, {});
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.materialboxed');
+      var instances = M.Materialbox.init(elems, {});
+    });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>fs2-data - JSON Patch</title>
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <link rel="stylesheet" href="/css/syntax.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
+    <style>body{font-family: overpass, sans-serif; }</style>
+
+    <meta name="generator" content="Nanoc 4.11.16">
+  </head>
+  <body>
+    <header>
+        <nav class="nav-extended red darken-2">
+          <a href="#!" class="brand-logo right">fs2-data</a>
+          <a href="#" data-target="collapsed" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+          <div class="nav-wrapper">
+            <ul id="nav-mobile" class="left hide-on-med-and-down">
+              <li><a href="/">Home</a></li>
+              <li><a href="/documentation/">Documentation</a></li>
+              <li><a href="/api/">Scaladoc</a></li>
+              <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+            </ul>
+          </div>
+          
+          
+          <div class="nav-content">
+            <ul class="tabs tabs-transparent">
+              
+              
+              <li class="tab"><a href="/documentation/json/">JSON</a></li>
+              
+              
+              
+              <li class="tab"><a href="/documentation/json/libraries/">JSON Libraries</a></li>
+              
+              
+              
+              <li class="tab"><a href="/documentation/json/interpolators/">Interpolators</a></li>
+              
+              
+              
+              <li class="tab active"><a href="/documentation/json/patches/">JSON Patch</a></li>
+              
+              
+            </ul>
+          </div>
+          
+        </nav>
+
+    </header>
+
+    <ul class="sidenav" id="collapsed">
+      <li><a href="/">Home</a></li>
+      <li><a href="/documentation/">Documentation</a></li>
+      <li><a href="/api/">Scaladoc</a></li>
+      <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+    </ul>
+
+    <main>
+      <div class="container">
+        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-diffson_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-diffson_2.13.svg" alt="Maven Central" /></a></p>
+
+<p>The <code>fs2-data-json-diffson</code> module provides some integration with <a href="https://github.com/gnieh/diffson">diffson</a>.<br />
+It allows for patching a Json stream as it is read to emit the patched value downstream.<br />
+Patching stream can be useful in several case, for instance:</p>
+<ul>
+  <li>it can be used to filter out fields you don’t need for further processing, before building an AST with these fields;</li>
+  <li>it can be used to make data from an input stream anonymous by removing names or identifiers;</li>
+  <li>it makes it possible to enrich an input stream with extra data you need for further processing;</li>
+  <li>many other use cases when you need to amend input data on the fly without building the entire AST in memory.</li>
+</ul>
+
+<p>Currently only <a href="https://tools.ietf.org/html/rfc7396">JSON Merge Patch</a> is supported.</p>
+
+<p>In order for patches to be applied, you need a <code>Tokenizer</code> for some <code>Json</code> type the patch operates on (see above) and a <code>Jsony</code> from <a href="https://github.com/gnieh/diffson">diffson</a> for that same <code>Json</code> type.</p>
+
+<p>Let’s say you are using circe as Json AST library, you can use patches like this:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
+
+<span class="k">import</span> <span class="nn">fs2.Stream</span>
+<span class="k">import</span> <span class="nn">fs2.data.json._</span>
+<span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
+<span class="k">import</span> <span class="nn">fs2.data.json.mergepatch._</span>
+
+<span class="k">import</span> <span class="nn">diffson._</span>
+<span class="k">import</span> <span class="nn">diffson.circe._</span>
+<span class="k">import</span> <span class="nn">diffson.jsonmergepatch._</span>
+
+<span class="k">import</span> <span class="nn">io.circe._</span>
+
+<span class="k">val</span> <span class="nv">input</span> <span class="k">=</span> <span class="s">"""{
+              |  "field1": 0,
+              |  "field2": "test",
+              |  "field3": [1, 2, 3]
+              |}
+              |{
+              |  "field1": 2,
+              |  "field3": []
+              |}"""</span><span class="o">.</span><span class="py">stripMargin</span>
+<span class="c1">// input: String = """{</span>
+<span class="c1">//   "field1": 0,</span>
+<span class="c1">//   "field2": "test",</span>
+<span class="c1">//   "field3": [1, 2, 3]</span>
+<span class="c1">// }</span>
+<span class="c1">// {</span>
+<span class="c1">//   "field1": 2,</span>
+<span class="c1">//   "field3": []</span>
+<span class="c1">// }"""</span>
+
+<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">IO</span><span class="o">])</span>
+<span class="c1">// stream: Stream[IO, Token] = Stream(..)</span>
+
+<span class="c1">// a patch that removes `field3`</span>
+<span class="k">val</span> <span class="nv">mergePatch</span> <span class="k">=</span> <span class="nv">JsonMergePatch</span><span class="o">.</span><span class="py">Object</span><span class="o">(</span><span class="nc">Map</span><span class="o">(</span><span class="s">"field3"</span> <span class="o">-&gt;</span> <span class="nv">Json</span><span class="o">.</span><span class="py">Null</span><span class="o">))</span>
+<span class="c1">// mergePatch: JsonMergePatch.Object[Json] = Object(Map("field3" -&gt; null))</span>
+
+<span class="k">val</span> <span class="nv">patched</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">patch</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">mergePatch</span><span class="o">))</span>
+<span class="c1">// patched: Stream[IO[x], Token] = Stream(..)</span>
+
+<span class="nv">patched</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res0: List[Token] = List(</span>
+<span class="c1">//   StartObject,</span>
+<span class="c1">//   Key("field1"),</span>
+<span class="c1">//   NumberValue("0"),</span>
+<span class="c1">//   Key("field2"),</span>
+<span class="c1">//   StringValue("test"),</span>
+<span class="c1">//   EndObject,</span>
+<span class="c1">//   StartObject,</span>
+<span class="c1">//   Key("field1"),</span>
+<span class="c1">//   NumberValue("2"),</span>
+<span class="c1">//   EndObject</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+
+      </div>
+    </main>
+
+    <footer class="page-footer red lighten-2">
+      <div class="footer-copyright red darken-2">
+        <div class="container">
+          Copyright © 2020 <a class="grey-text text-lighten-4" href="https://twitter.com/lucassatabin">@lucassatabin</a>
+          <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" class="grey-text text-lighten-4 right" /></a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+    <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.sidenav');
+      var instances = M.Sidenav.init(elems, {});
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.materialboxed');
+      var instances = M.Materialbox.init(elems, {});
+    });
+    </script>
+  </body>
+</html>

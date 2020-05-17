@@ -83,9 +83,13 @@
 <span class="c1">// """</span>
 
 <span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">rows</span><span class="o">[</span><span class="kt">IO</span><span class="o">]())</span>
-<span class="c1">// stream: Stream[IO[A], cats.data.NonEmptyList[String]] = Stream(..)</span>
-<span class="nf">println</span><span class="o">(</span><span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
-<span class="c1">// List(NonEmptyList(i, s, j), NonEmptyList(1, test, 2), NonEmptyList(, other, -3))</span>
+<span class="c1">// stream: Stream[IO, cats.data.NonEmptyList[String]] = Stream(..)</span>
+<span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res0: List[cats.data.NonEmptyList[String]] = List(</span>
+<span class="c1">//   NonEmptyList("i", List("s", "j")),</span>
+<span class="c1">//   NonEmptyList("1", List("test", "2")),</span>
+<span class="c1">//   NonEmptyList("", List("other", "-3"))</span>
+<span class="c1">// )</span>
 </code></pre></div></div>
 
 <p>If your CSV data is not using the comma as separator, you can provide the character as parameter of the <code>rows</code> pipe. For instance, if your data uses semicolon as separator:</p>
@@ -96,9 +100,12 @@
 <span class="c1">// 1;test;2"""</span>
 
 <span class="k">val</span> <span class="nv">stream2</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input2</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">rows</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="sc">';'</span><span class="o">))</span>
-<span class="c1">// stream2: Stream[IO[A], cats.data.NonEmptyList[String]] = Stream(..)</span>
-<span class="nf">println</span><span class="o">(</span><span class="nv">stream2</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
-<span class="c1">// List(NonEmptyList(i, s, j), NonEmptyList(1, test, 2))</span>
+<span class="c1">// stream2: Stream[IO, cats.data.NonEmptyList[String]] = Stream(..)</span>
+<span class="nv">stream2</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res1: List[cats.data.NonEmptyList[String]] = List(</span>
+<span class="c1">//   NonEmptyList("i", List("s", "j")),</span>
+<span class="c1">//   NonEmptyList("1", List("test", "2"))</span>
+<span class="c1">// )</span>
 </code></pre></div></div>
 
 <h3 id="csv-rows-with-or-without-headers">CSV rows with or without headers</h3>
@@ -109,16 +116,23 @@
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">noh</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">noHeaders</span><span class="o">[</span><span class="kt">IO</span><span class="o">])</span>
 <span class="c1">// noh: Stream[IO[x], Row] = Stream(..)</span>
-<span class="nf">println</span><span class="o">(</span><span class="nv">noh</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">values</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
-<span class="c1">// List(NonEmptyList(i, s, j), NonEmptyList(1, test, 2), NonEmptyList(, other, -3))</span>
+<span class="nv">noh</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">values</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res2: List[cats.data.NonEmptyList[String]] = List(</span>
+<span class="c1">//   NonEmptyList("i", List("s", "j")),</span>
+<span class="c1">//   NonEmptyList("1", List("test", "2")),</span>
+<span class="c1">//   NonEmptyList("", List("other", "-3"))</span>
+<span class="c1">// )</span>
 </code></pre></div></div>
 
 <p>If you want to consider the first row as a header row, you can use the <code>headers</code> pipe. For instance to have headers as <code>String</code>:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">withh</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">headers</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">String</span><span class="o">])</span>
 <span class="c1">// withh: Stream[IO[x], CsvRow[String]] = Stream(..)</span>
-<span class="nf">println</span><span class="o">(</span><span class="nv">withh</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">toMap</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
-<span class="c1">// List(Map(i -&gt; 1, s -&gt; test, j -&gt; 2), Map(i -&gt; , s -&gt; other, j -&gt; -3))</span>
+<span class="nv">withh</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">toMap</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res3: List[Map[String, String]] = List(</span>
+<span class="c1">//   Map("i" -&gt; "1", "s" -&gt; "test", "j" -&gt; "2"),</span>
+<span class="c1">//   Map("i" -&gt; "", "s" -&gt; "other", "j" -&gt; "-3")</span>
+<span class="c1">// )</span>
 </code></pre></div></div>
 
 <p>To support your own type of <code>Header</code> you must provide an implicit <code>ParseableHeader[Header]</code>. For instance if you have a fix set of headers represented as <a href="https://github.com/lloydmeta/enumeratum/">enumeratum</a> enum values, you can provide an instance of <code>ParseableHeader</code> as follows:</p>
@@ -147,8 +161,11 @@
 
 <span class="k">val</span> <span class="nv">withMyHeaders</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">headers</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">MyHeaders</span><span class="o">])</span>
 <span class="c1">// withMyHeaders: Stream[IO[x], CsvRow[MyHeaders]] = Stream(..)</span>
-<span class="nf">println</span><span class="o">(</span><span class="nv">withMyHeaders</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">toMap</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
-<span class="c1">// List(Map(I -&gt; 1, S -&gt; test, J -&gt; 2), Map(I -&gt; , S -&gt; other, J -&gt; -3))</span>
+<span class="nv">withMyHeaders</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">toMap</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res4: List[Map[MyHeaders, String]] = List(</span>
+<span class="c1">//   Map(I -&gt; "1", S -&gt; "test", J -&gt; "2"),</span>
+<span class="c1">//   Map(I -&gt; "", S -&gt; "other", J -&gt; "-3")</span>
+<span class="c1">// )</span>
 </code></pre></div></div>
 
 <p>If the parse method fails for a header, the entire stream fails.</p>
@@ -187,8 +204,11 @@
 <span class="c1">// .tail drops the header line</span>
 <span class="k">val</span> <span class="nv">hlists</span> <span class="k">=</span> <span class="nv">noh</span><span class="o">.</span><span class="py">tail</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decode</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="kt">::</span> <span class="kt">String</span> <span class="kt">::</span> <span class="kt">Int</span> <span class="kt">::</span> <span class="kt">HNil</span><span class="o">])</span>
 <span class="c1">// hlists: Stream[IO[x], Option[Int] :: String :: Int :: HNil] = Stream(..)</span>
-<span class="nf">println</span><span class="o">(</span><span class="nv">hlists</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
-<span class="c1">// List(Some(1) :: test :: 2 :: HNil, None :: other :: -3 :: HNil)</span>
+<span class="nv">hlists</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res5: List[Option[Int] :: String :: Int :: HNil] = List(</span>
+<span class="c1">//   Some(1) :: "test" :: 2 :: HNil,</span>
+<span class="c1">//   None :: "other" :: -3 :: HNil</span>
+<span class="c1">// )</span>
 </code></pre></div></div>
 
 <p>Using the headers, one can decode the CSV data to some case class:</p>
@@ -206,8 +226,11 @@
 <span class="o">}</span>
 <span class="k">val</span> <span class="nv">decoded</span> <span class="k">=</span> <span class="nv">withh</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decodeRow</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">String</span>, <span class="kt">MyRow</span><span class="o">])</span>
 <span class="c1">// decoded: Stream[IO[x], MyRow] = Stream(..)</span>
-<span class="nf">println</span><span class="o">(</span><span class="nv">decoded</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">())</span>
-<span class="c1">// List(MyRow(Some(1),2,test), MyRow(None,-3,other))</span>
+<span class="nv">decoded</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res6: List[MyRow] = List(</span>
+<span class="c1">//   MyRow(Some(1), 2, "test"),</span>
+<span class="c1">//   MyRow(None, -3, "other")</span>
+<span class="c1">// )</span>
 </code></pre></div></div>
 
 <p>As you can see this can be quite tedious to implement. Lucky us, the <code>fs2-data-csv-generic</code> module comes to the rescue to avoid having to write the boilerplate. Please refer to <a href="/documentation/csv/generic/">the module documentation</a> for more details.</p>

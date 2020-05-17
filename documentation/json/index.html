@@ -26,6 +26,28 @@
           </div>
           
           
+          <div class="nav-content">
+            <ul class="tabs tabs-transparent">
+              
+              
+              <li class="tab active"><a href="/documentation/json/">JSON</a></li>
+              
+              
+              
+              <li class="tab"><a href="/documentation/json/libraries/">JSON Libraries</a></li>
+              
+              
+              
+              <li class="tab"><a href="/documentation/json/interpolators/">Interpolators</a></li>
+              
+              
+              
+              <li class="tab"><a href="/documentation/json/patches/">JSON Patch</a></li>
+              
+              
+            </ul>
+          </div>
+          
         </nav>
 
     </header>
@@ -39,7 +61,153 @@
 
     <main>
       <div class="container">
-        
+        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json_2.13.svg" alt="Maven Central" /></a></p>
+
+<p>The <code>fs2-data-json</code> module provides tools to parse, query and transform JSON data in a streaming manner.</p>
+
+<p>This page covers the following topics:</p>
+<ul id="markdown-toc">
+  <li><a href="#basic-usage" id="markdown-toc-basic-usage">Basic usage</a></li>
+  <li><a href="#selectors" id="markdown-toc-selectors">Selectors</a></li>
+  <li><a href="#ast-builder-and-tokenizer" id="markdown-toc-ast-builder-and-tokenizer">AST builder and tokenizer</a></li>
+</ul>
+
+<h3 id="basic-usage">Basic usage</h3>
+
+<p>To create a stream of JSON tokens from an input stream, use the <code>tokens</code> pipe in <code>fs2.data.json</code> package. This pipe accepts a stream of characters and returns a stream of JSON tokens. This produces a stream of structurally valid tokens forming the JSON documents.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
+
+<span class="k">import</span> <span class="nn">fs2._</span>
+<span class="k">import</span> <span class="nn">fs2.data.json._</span>
+
+<span class="k">val</span> <span class="nv">input</span> <span class="k">=</span> <span class="s">"""{
+              |  "field1": 0,
+              |  "field2": "test",
+              |  "field3": [1, 2, 3]
+              |}
+              |{
+              |  "field1": 2,
+              |  "field3": []
+              |}"""</span><span class="o">.</span><span class="py">stripMargin</span>
+<span class="c1">// input: String = """{</span>
+<span class="c1">//   "field1": 0,</span>
+<span class="c1">//   "field2": "test",</span>
+<span class="c1">//   "field3": [1, 2, 3]</span>
+<span class="c1">// }</span>
+<span class="c1">// {</span>
+<span class="c1">//   "field1": 2,</span>
+<span class="c1">//   "field3": []</span>
+<span class="c1">// }"""</span>
+
+<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">IO</span><span class="o">])</span>
+<span class="c1">// stream: Stream[IO, Token] = Stream(..)</span>
+<span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res0: List[Token] = List(</span>
+<span class="c1">//   StartObject,</span>
+<span class="c1">//   Key("field1"),</span>
+<span class="c1">//   NumberValue("0"),</span>
+<span class="c1">//   Key("field2"),</span>
+<span class="c1">//   StringValue("test"),</span>
+<span class="c1">//   Key("field3"),</span>
+<span class="c1">//   StartArray,</span>
+<span class="c1">//   NumberValue("1"),</span>
+<span class="c1">//   NumberValue("2"),</span>
+<span class="c1">//   NumberValue("3"),</span>
+<span class="c1">//   EndArray,</span>
+<span class="c1">//   EndObject,</span>
+<span class="c1">//   StartObject,</span>
+<span class="c1">//   Key("field1"),</span>
+<span class="c1">//   NumberValue("2"),</span>
+<span class="c1">//   Key("field3"),</span>
+<span class="c1">//   StartArray,</span>
+<span class="c1">//   EndArray,</span>
+<span class="c1">//   EndObject</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>The pipe validates the JSON structure while parsing. It reads all the json values in the input stream and emits tokens as they are available.</p>
+
+<h3 id="selectors">Selectors</h3>
+
+<p>Selectors can be used to select a subset of a JSON token stream.</p>
+
+<p>For instance, to select and enumerate elements that are in the <code>field3</code> array, you can create this selector. Only the tokens describing the values in <code>field3</code> will be emitted as a result.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">selector</span> <span class="k">=</span> <span class="s">".field3.[]"</span><span class="o">.</span><span class="py">parseSelector</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// selector: Selector = PipeSelector(</span>
+<span class="c1">//   NameSelector(Single("field3"), true),</span>
+<span class="c1">//   IteratorSelector(true)</span>
+<span class="c1">// )</span>
+<span class="k">val</span> <span class="nv">filtered</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">selector</span><span class="o">))</span>
+<span class="c1">// filtered: Stream[IO[x], Token] = Stream(..)</span>
+<span class="nv">filtered</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res1: List[Token] = List(</span>
+<span class="c1">//   NumberValue("1"),</span>
+<span class="c1">//   NumberValue("2"),</span>
+<span class="c1">//   NumberValue("3")</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>The filter syntax is as follows:</p>
+<ul>
+  <li><code>.</code> selects the root values, it is basically the identity filter.</li>
+  <li><code>.f</code> selects the field named <code>f</code> in objects. It fails if the value it is applied to is not a JSON object.</li>
+  <li><code>.f?</code> is similar to <code>.f</code> but doesn’t fail in case the value it is applied to is not a JSON object.</li>
+  <li><code>.[f1, f2, ..., fn]</code> selects only fields <code>f1</code> to <code>fn</code> in objects. It fails if the value it is applied to is not an object.</li>
+  <li><code>.[f1, f2, ..., fn]?</code> is similar to <code>.[f1, f2, ..., fn]</code> but doesn’t fail if the value it is applied to is not an object.</li>
+  <li><code>.[id1, idx2, ..., idxn]</code> selects only elements <code>idx1</code>, …, <code>idxn</code> in arrays. It fails if the value it is applied to is not an array.</li>
+  <li><code>.[idx1, idx2, ..., idxn]?</code> is similar to <code>.[idx1, idx2, ..., idxn]</code> but doesn’t fail if the value it is applied to is not an array.</li>
+  <li><code>.[idx1:idx2]</code> selects only elements between <code>idx1</code> (inclusive) and <code>idx2</code> (exclusive) in arrays. It fails if the value it is applied to is not an array.</li>
+  <li><code>.[idx1:idx2]?</code> is similar to <code>.[idx1:idx2]</code> but doesn’t fail if the value it is applied to is not an array.</li>
+  <li><code>.[]</code> selects and enumerates elements from arrays or objects. It fails if the value it is applied to is not an array or an object.</li>
+  <li><code>.[]?</code> is similar as <code>.[]</code> but doesn’t fail if the value it is applied to is neither an array nor an object.</li>
+  <li><code>sel1 sel2</code> applies selector <code>sel1</code> to the root value, and selector <code>sel2</code> to each selected value.</li>
+</ul>
+
+<p>By default, selected values are emitted in the stream as they are matched, resulting in a stream with several Json values.<br />
+If this is not desired, you can wrap the elements into arrays and objects, from the root by calling <code>filter</code> with <code>wrap</code> set to <code>true</code>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">filteredWrapped</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">selector</span><span class="o">,</span> <span class="n">wrap</span> <span class="k">=</span> <span class="kc">true</span><span class="o">))</span>
+<span class="c1">// filteredWrapped: Stream[IO[x], Token] = Stream(..)</span>
+<span class="nv">filteredWrapped</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res2: List[Token] = List(</span>
+<span class="c1">//   StartObject,</span>
+<span class="c1">//   Key("field3"),</span>
+<span class="c1">//   StartArray,</span>
+<span class="c1">//   NumberValue("1"),</span>
+<span class="c1">//   NumberValue("2"),</span>
+<span class="c1">//   NumberValue("3"),</span>
+<span class="c1">//   EndArray,</span>
+<span class="c1">//   EndObject,</span>
+<span class="c1">//   StartObject,</span>
+<span class="c1">//   Key("field3"),</span>
+<span class="c1">//   StartArray,</span>
+<span class="c1">//   EndArray,</span>
+<span class="c1">//   EndObject</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>If the selector selects elements in an array, then the resulting values are wrapped in an array.<br />
+On the other hand, if it selects elements in an object, then emitted values are returned wrapped in an object, associated with the last selected keys.</p>
+
+<h3 id="ast-builder-and-tokenizer">AST builder and tokenizer</h3>
+
+<p>JSON ASTs can be built if you provider an implicit <a href="/api/fs2/data/json/ast/Builder.html"><code>Builder[Json]</code></a> to the <code>values</code> pipe. The <code>Builder[Json]</code> typeclass describes how JSON ASTs of type <code>Json</code> are built from streams.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="nv">builder</span><span class="k">:</span> <span class="kt">Builder</span><span class="o">[</span><span class="kt">SomeJsonType</span><span class="o">]</span> <span class="k">=</span> <span class="o">...</span>
+<span class="k">val</span> <span class="nv">asts</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">values</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">SomeJsonType</span><span class="o">])</span>
+</code></pre></div></div>
+
+<p>The <code>asts</code> stream emits all top-level JSON values parsed, in our example, the two objects are emitted.</p>
+
+<p>If you provide an implicit <a href="/api/fs2/data/json/ast/Tokenizer.html"><code>Tokenizer[Json]</code></a>, which describes how a JSON AST is transformed into JSON tokens, you can apply transformations to the JSON stream. For instance, you can wrap all values in the <code>fields3</code> array by using this code:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">implicit</span> <span class="n">tokenizer</span><span class="k">:</span> <span class="kt">Tokenizer</span><span class="o">[</span><span class="kt">SomeJsonType</span><span class="o">]</span> <span class="k">=</span> <span class="o">...</span>
+<span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">transform</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">selector</span><span class="o">,</span> <span class="n">json</span> <span class="k">=&gt;</span> <span class="nc">SomeJsonObject</span><span class="o">(</span><span class="s">"test"</span> <span class="o">-&gt;</span> <span class="n">json</span><span class="o">)))</span>
+</code></pre></div></div>
+<p>For concrete examples of provided <code>Builder</code>s and <code>Tokeizer</code>s, please refer to <a href="/documentation/json/libraries">the JSON library binding modules documentation</a></p>
+
 
       </div>
     </main>

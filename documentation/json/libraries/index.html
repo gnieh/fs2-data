@@ -1,0 +1,171 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>fs2-data - JSON Libraries</title>
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <link rel="stylesheet" href="/css/syntax.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
+    <style>body{font-family: overpass, sans-serif; }</style>
+
+    <meta name="generator" content="Nanoc 4.11.16">
+  </head>
+  <body>
+    <header>
+        <nav class="nav-extended red darken-2">
+          <a href="#!" class="brand-logo right">fs2-data</a>
+          <a href="#" data-target="collapsed" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+          <div class="nav-wrapper">
+            <ul id="nav-mobile" class="left hide-on-med-and-down">
+              <li><a href="/">Home</a></li>
+              <li><a href="/documentation/">Documentation</a></li>
+              <li><a href="/api/">Scaladoc</a></li>
+              <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+            </ul>
+          </div>
+          
+          
+          <div class="nav-content">
+            <ul class="tabs tabs-transparent">
+              
+              
+              <li class="tab"><a href="/documentation/json/">JSON</a></li>
+              
+              
+              
+              <li class="tab active"><a href="/documentation/json/libraries/">JSON Libraries</a></li>
+              
+              
+              
+              <li class="tab"><a href="/documentation/json/interpolators/">Interpolators</a></li>
+              
+              
+              
+              <li class="tab"><a href="/documentation/json/patches/">JSON Patch</a></li>
+              
+              
+            </ul>
+          </div>
+          
+        </nav>
+
+    </header>
+
+    <ul class="sidenav" id="collapsed">
+      <li><a href="/">Home</a></li>
+      <li><a href="/documentation/">Documentation</a></li>
+      <li><a href="/api/">Scaladoc</a></li>
+      <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+    </ul>
+
+    <main>
+      <div class="container">
+        <p>Bindings to popular Scala JSON libraries can be added by implementing the <code>Builder</code> and <code>Tokenizer</code> traits. <code>fs2-data</code> provides some of them out of the box.</p>
+
+<p>This page covers the following libraries:</p>
+<ul id="markdown-toc">
+  <li><a href="#circe" id="markdown-toc-circe">Circe</a></li>
+</ul>
+
+<p>Examples on this page use the following input:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
+
+<span class="k">import</span> <span class="nn">fs2.Stream</span>
+<span class="k">import</span> <span class="nn">fs2.data.json._</span>
+
+<span class="k">val</span> <span class="nv">input</span> <span class="k">=</span> <span class="s">"""{
+              |  "field1": 0,
+              |  "field2": "test",
+              |  "field3": [1, 2, 3]
+              |}
+              |{
+              |  "field1": 2,
+              |  "field3": []
+              |}"""</span><span class="o">.</span><span class="py">stripMargin</span>
+
+<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">IO</span><span class="o">])</span>
+
+<span class="k">val</span> <span class="nv">selector</span> <span class="k">=</span> <span class="s">".field3.[]"</span><span class="o">.</span><span class="py">parseSelector</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+
+<span class="k">val</span> <span class="nv">filtered</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">selector</span><span class="o">))</span>
+</code></pre></div></div>
+
+<h3 id="circe">Circe</h3>
+
+<p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-circe_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-circe_2.13.svg" alt="Maven Central" /></a></p>
+
+<p>The <code>fs2-data-json-circe</code> module provides <code>Builder</code> and <code>Tokenizer</code> instances for the <a href="https://circe.github.io/circe/">circe</a> <code>Json</code> type.<br />
+For instance both examples from the <a href="/documentation/json/">core module documentation</a> with circe can be written that way:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
+<span class="k">import</span> <span class="nn">io.circe._</span>
+
+<span class="k">val</span> <span class="nv">asts</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">values</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Json</span><span class="o">])</span>
+<span class="c1">// asts: Stream[IO[x], Json] = Stream(..)</span>
+<span class="nv">asts</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res0: List[Json] = List(</span>
+<span class="c1">//   JObject(</span>
+<span class="c1">//     object[field1 -&gt; 0,field2 -&gt; "test",field3 -&gt; [</span>
+<span class="c1">//   1,</span>
+<span class="c1">//   2,</span>
+<span class="c1">//   3</span>
+<span class="c1">// ]]</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   JObject(</span>
+<span class="c1">//     object[field1 -&gt; 2,field3 -&gt; [</span>
+<span class="c1">// ]]</span>
+<span class="c1">//   )</span>
+<span class="c1">// )</span>
+
+<span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">transform</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">selector</span><span class="o">,</span> <span class="n">json</span> <span class="k">=&gt;</span> <span class="nv">Json</span><span class="o">.</span><span class="py">obj</span><span class="o">(</span><span class="s">"test"</span> <span class="o">-&gt;</span> <span class="n">json</span><span class="o">)))</span>
+<span class="c1">// transformed: Stream[IO[x], Token] = Stream(..)</span>
+<span class="nv">transformed</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">values</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Json</span><span class="o">]).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res1: List[Json] = List(</span>
+<span class="c1">//   JObject(</span>
+<span class="c1">//     object[field1 -&gt; 0,field2 -&gt; "test",field3 -&gt; [</span>
+<span class="c1">//   {</span>
+<span class="c1">//     "test" : 1</span>
+<span class="c1">//   },</span>
+<span class="c1">//   {</span>
+<span class="c1">//     "test" : 2</span>
+<span class="c1">//   },</span>
+<span class="c1">//   {</span>
+<span class="c1">//     "test" : 3</span>
+<span class="c1">//   }</span>
+<span class="c1">// ]]</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   JObject(</span>
+<span class="c1">//     object[field1 -&gt; 2,field3 -&gt; [</span>
+<span class="c1">// ]]</span>
+<span class="c1">//   )</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+
+      </div>
+    </main>
+
+    <footer class="page-footer red lighten-2">
+      <div class="footer-copyright red darken-2">
+        <div class="container">
+          Copyright © 2020 <a class="grey-text text-lighten-4" href="https://twitter.com/lucassatabin">@lucassatabin</a>
+          <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" class="grey-text text-lighten-4 right" /></a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+    <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.sidenav');
+      var instances = M.Sidenav.init(elems, {});
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.materialboxed');
+      var instances = M.Materialbox.init(elems, {});
+    });
+    </script>
+  </body>
+</html>

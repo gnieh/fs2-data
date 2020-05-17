@@ -31,6 +31,8 @@
               
               <li class="tab"><a href="/documentation/json/">JSON</a></li>
               
+              <li class="tab"><a href="/documentation/xml/">XML</a></li>
+              
               <li class="tab"><a href="/documentation/csv/">CSV</a></li>
               
             </ul>
@@ -49,13 +51,41 @@
 
     <main>
       <div class="container">
-        <p><code>fs2-data</code> consists of several modules, handling a different data formatw, and sub-modules for each data format, adding more features (but also more dependencies). The core module for each data format has no other dependency than <code>fs2</code> and provides tools to parse and transform data in a streaming manner.</p>
+        <h1 id="fs2-data-documentation"><code>fs2-data</code> Documentation</h1>
+
+<p><code>fs2-data</code> consists of several modules, handling a different data format, and sub-modules for each data format, adding more features (but also more dependencies). The core module for each data format has no other dependency than <code>fs2</code> and provides tools to parse and transform data in a streaming manner.</p>
+
+<p>For each module, the entry point is an <a href="https://fs2.io/guide.html#statefully-transforming-streams">fs2 <code>Pipe</code></a> transforming a stream of characters into some tokens or events. All parsers are streaming parsers, which means that the parsed tree is never constructed in memory by the parser, but instead, is emitted as a sequence of <em>tokens</em> or <em>events</em> (similar to <a href="https://en.wikipedia.org/wiki/Simple_API_for_XML">SAX</a>), and that the input data is not fully held in memory either. The parsers read the input as it comes, and emit the tokens as soon as possible, discarding the input data that is not useful anymore.</p>
+
+<p>As the entry points operate on stream of characters, a common pattern when using this library to read data from a file is to start by building a <code>Stream[F, Char]</code> as follows:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
+
+<span class="k">import</span> <span class="nn">fs2._</span>
+
+<span class="k">import</span> <span class="nn">java.nio.file.Paths</span>
+
+<span class="k">implicit</span> <span class="k">val</span> <span class="nv">cs</span> <span class="k">=</span> <span class="nv">IO</span><span class="o">.</span><span class="py">contextShift</span><span class="o">(</span><span class="nv">scala</span><span class="o">.</span><span class="py">concurrent</span><span class="o">.</span><span class="py">ExecutionContext</span><span class="o">.</span><span class="py">global</span><span class="o">)</span>
+
+<span class="nc">Blocker</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="py">use</span> <span class="o">{</span> <span class="n">blocker</span> <span class="k">=&gt;</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">file</span>
+    <span class="o">.</span><span class="py">readAll</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="nv">Paths</span><span class="o">.</span><span class="py">get</span><span class="o">(</span><span class="s">"/some/path/to/a/file.data"</span><span class="o">),</span> <span class="n">blocker</span><span class="o">,</span> <span class="mi">1024</span><span class="o">)</span>
+    <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">text</span><span class="o">.</span><span class="py">utf8Decode</span><span class="o">)</span>
+    <span class="o">.</span><span class="py">flatMap</span><span class="o">(</span><span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="k">_</span><span class="o">))</span>
+    <span class="c1">// perform your parsing and transformation here</span>
+    <span class="o">.</span><span class="py">compile</span>
+    <span class="o">.</span><span class="py">drain</span>
+<span class="o">}</span>
+</code></pre></div></div>
 
 <p>Available data modules are:</p>
 
 <ul>
   <li>
     <p><a href="/documentation/json/">JSON</a> - JSON parser and transformation</p>
+  </li>
+  <li>
+    <p><a href="/documentation/xml/">XML</a> - XML parser and validator</p>
   </li>
   <li>
     <p><a href="/documentation/csv/">CSV</a> - CSV parser and codec</p>
