@@ -1,12 +1,18 @@
 language: scala
 dist: xenial
 
-scala:
-  - 2.12.11
-  - 2.13.2
-
-script:
-  - ./millw _[$TRAVIS_SCALA_VERSION]._.test
+jobs:
+  include:
+    - name: Tests 2.12
+      script:
+        - ./millw all {json[2.12.11],xml[2.12.11],csv[2.12.11]}.__.test
+    - name: Tests 2.13
+      script:
+        - ./millw all {json[2.13.2],xml[2.13.2],csv[2.13.2]}.__.test
+    - name: Documentation
+      scala: 2.12.11
+      script:
+        - ./millw documentation.mdoc
 
 cache:
   directories:
@@ -14,7 +20,7 @@ cache:
     - $HOME/.mill/download
 
 jdk:
-  - openjdk8
+  - openjdk11
 
 branches:
   only:
