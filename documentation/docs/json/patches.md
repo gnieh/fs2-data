@@ -22,7 +22,7 @@ Let's say you are using circe as Json AST library, you can use patches like this
 ```scala mdoc
 import cats.effect._
 
-import fs2._
+import fs2.Stream
 import fs2.data.json._
 import fs2.data.json.circe._
 import fs2.data.json.mergepatch._

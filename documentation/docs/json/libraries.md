@@ -15,7 +15,7 @@ Examples on this page use the following input:
 ```scala mdoc:silent
 import cats.effect._
 
-import fs2._
+import fs2.Stream
 import fs2.data.json._
 
 val input = """{

@@ -259,7 +259,8 @@ object documentation extends Fs2DataModule with MdocModule {
 
   def mdocTargetDirectory = os.pwd / 'site / 'content / 'documentation
 
-  def ivyDeps = Agg(ivy"com.beachape::enumeratum:1.5.15", ivy"org.gnieh::diffson-circe:4.0.2")
+  def ivyDeps =
+    Agg(ivy"com.beachape::enumeratum:1.5.15", ivy"org.gnieh::diffson-circe:4.0.2", ivy"co.fs2::fs2-io:$fs2Version")
 
 }
 
