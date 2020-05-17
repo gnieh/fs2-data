@@ -58,6 +58,13 @@ package object json {
   def values[F[_], Json](implicit F: RaiseThrowable[F], builder: Builder[Json]): Pipe[F, Token, Json] =
     ValueParser.pipe[F, Json]
 
+  /** Transforms a stream of Json values into a stream of Json tokens.
+    *
+    * This operation is the opposite of `values`.
+    */
+  def tokenize[F[_], Json](implicit tokenizer: Tokenizer[Json]): Pipe[F, Json, Token] =
+    _.flatMap(value => Stream.emits(tokenizer.tokenize(value).toList))
+
   implicit class StringOps(val s: String) extends AnyVal {
     def parseSelector[F[_]](implicit F: MonadError[F, Throwable]): F[Selector] =
       new SelectorParser[F](s).parse()
