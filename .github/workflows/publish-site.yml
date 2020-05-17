@@ -16,6 +16,7 @@ jobs:
         with:
           ref: gh-pages
           path: site/output
+      - name: Setup git user
         run: |
           git config --global user.email "lucas.satabin@gnieh.org"
           git config --global user.name "Lucas Satabin"
@@ -29,6 +30,7 @@ jobs:
         run: ./millw documentation.mdoc
       - name: Setup ruby environment
         uses: actions/setup-ruby@v1
+      - name: Install nanoc
         run: |
           gem install nanoc kramdown-parser-gfm rouge
       - name: Generate site
