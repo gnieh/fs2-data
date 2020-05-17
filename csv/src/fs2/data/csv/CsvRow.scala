@@ -30,6 +30,16 @@ class Row(val values: NonEmptyList[String]) {
   def apply(idx: Int): Option[String] =
     values.get(idx)
 
+  /** Returns the decoded content of the cell at `idx`.
+    * Fails if the index doesn't exist or cannot be decoded
+    * to the expected type.
+    */
+  def as[T](idx: Int)(implicit decoder: CellDecoder[T]): DecoderResult[T] =
+    values.get(idx) match {
+      case Some(v) => decoder(v)
+      case None    => Left(new DecoderError(s"unknown index $idx"))
+    }
+
   /** Modifies the cell content at the given `idx` using the function `f`.
     */
   def modify(idx: Int)(f: String => String): Row =
@@ -115,12 +125,22 @@ case class CsvRow[Header](override val values: NonEmptyList[String], headers: No
   def delete(header: Header): Option[CsvRow[Header]] =
     delete(headers.toList.indexOf(header))
 
-  /** Returns the content of the cell at `headers` if it exists.
+  /** Returns the content of the cell at `header` if it exists.
     * Returns `None` if `header` does not exist for the row.
     * An empty cell value results in `Some("")`.
     */
   def apply(header: Header): Option[String] =
     byHeader.get(header)
+
+  /** Returns the decoded content of the cell at `header`.
+    * Fails if the field doesn't exist or cannot be decoded
+    * to the expected type.
+    */
+  def as[T](header: Header)(implicit decoder: CellDecoder[T]): DecoderResult[T] =
+    byHeader.get(header) match {
+      case Some(v) => decoder(v)
+      case None    => Left(new DecoderError(s"unknown field $header"))
+    }
 
   /** Returns a map representation of this row if headers are defined, otherwise
     * returns `None`.

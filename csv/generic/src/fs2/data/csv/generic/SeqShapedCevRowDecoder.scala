@@ -48,7 +48,7 @@ object SeqShapedRowDecoder extends LowPrioritySeqShapedRowDecoder1 {
     new SeqShapedRowDecoder[Option[Head] :: Tail] {
       def apply(cells: NonEmptyList[String]): DecoderResult[Option[Head] :: Tail] =
         for {
-          tail <- NonEmptyList.fromList(cells.tail).liftTo[DecoderResult](new DecoderError("unexpect end of row"))
+          tail <- NonEmptyList.fromList(cells.tail).liftTo[DecoderResult](new DecoderError("unexpected end of row"))
           head <- if (cells.head.isEmpty) Right(None) else Head(cells.head).map(Some(_))
           tail <- Tail.value(tail)
         } yield head :: tail

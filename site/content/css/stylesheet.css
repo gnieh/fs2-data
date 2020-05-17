@@ -1,0 +1,16 @@
+pre {
+  border: 1px solid #ddd;
+  background-color: #eef;
+  padding: 0 .4em;
+  font-family: monospace;
+}
+
+.container ul {
+  padding-left: 30px!important;
+  margin-top: 10px!important;
+  margin-bottom: 15px!important;
+}
+
+.container ul li {
+  list-style-type: disc!important;
+}
