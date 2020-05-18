@@ -22,19 +22,89 @@ import cats.data.NonEmptyList
 import scala.annotation.tailrec
 
 /** Describes how a row can be decoded to the given type.
+  *
+  * `RowDecoder` provides convenient methods such as `map`, `emap`, or `flatMap`
+  * to build new decoders out of more basic one.
+  *
+  * Actually, `RowDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
+  * instance. To get the full power of it, import `cats.implicits._`.
+  *
   */
 trait RowDecoder[T] {
-  def apply(cells: NonEmptyList[String]): DecoderResult[T]
+  def apply(row: NonEmptyList[String]): DecoderResult[T]
+
+  /**
+    * Map the parsed value.
+    * @param f the mapping function
+    * @tparam T2 the result type
+    * @return a row decoder reading the mapped type
+    */
+  def map[T2](f: T => T2): RowDecoder[T2] =
+    row => apply(row).map(f)
+
+  /**
+    * Map the parsed value to a new decoder, which in turn will be applie toString
+    * the parsed value.
+    * @param f the mapping function
+    * @tparam T2 the result type
+    * @return a row decoder reading the mapped type
+    */
+  def flatMap[T2](f: T => RowDecoder[T2]): RowDecoder[T2] =
+    row => apply(row).flatMap(f(_)(row))
+
+  /**
+    * Map the parsed value, potentially failing.
+    * @param f the mapping function
+    * @tparam T2 the result type
+    * @return a row decoder reading the mapped type
+    */
+  def emap[T2](f: T => DecoderResult[T2]): RowDecoder[T2] =
+    row => apply(row).flatMap(f)
+
+  /**
+    * Fail-over. If this decoder fails, try the supplied other decoder.
+    * @param cd the fail-over decoder
+    * @tparam TT the return type
+    * @return a decoder combining this and the other decoder
+    */
+  def or[TT >: T](cd: => RowDecoder[TT]): RowDecoder[TT] =
+    row =>
+      apply(row) match {
+        case Left(_)      => cd(row)
+        case r @ Right(_) => r.leftCast[DecoderError]
+      }
+
+  /**
+    * Similar to [[or]], but return the result as an Either signaling which row decoder succeeded. Allows for parsing
+    * an unrelated type in case of failure.
+    * @param cd the alternative decoder
+    * @tparam B the type the alternative decoder returns
+    * @return a decoder combining both decoders
+    */
+  def either[B](cd: RowDecoder[B]): RowDecoder[Either[T, B]] =
+    row =>
+      apply(row) match {
+        case Left(_) =>
+          cd(row) match {
+            case l @ Left(_)  => l.rightCast[Either[T, B]]
+            case r @ Right(_) => r.leftCast[T].asRight
+          }
+        case Right(value) => Right(Left(value))
+      }
+
 }
 
 object RowDecoder extends ExportedRowDecoders {
 
-  implicit object RowDecoderMonadError extends MonadError[RowDecoder, DecoderError] {
+  implicit object RowDecoderMonadError extends MonadError[RowDecoder, DecoderError] with SemigroupK[RowDecoder] {
+    override def map[A, B](fa: RowDecoder[A])(f: A => B): RowDecoder[B] =
+      fa.map(f)
+
     def flatMap[A, B](fa: RowDecoder[A])(f: A => RowDecoder[B]): RowDecoder[B] =
-      cells => fa(cells).flatMap(f(_)(cells))
+      fa.flatMap(f)
 
     def handleErrorWith[A](fa: RowDecoder[A])(f: DecoderError => RowDecoder[A]): RowDecoder[A] =
-      cells => fa(cells).leftFlatMap(f(_)(cells))
+      row => fa(row).leftFlatMap(f(_)(row))
 
     def pure[A](x: A): RowDecoder[A] =
       _ => Right(x)
@@ -44,15 +114,16 @@ object RowDecoder extends ExportedRowDecoders {
 
     def tailRecM[A, B](a: A)(f: A => RowDecoder[Either[A, B]]): RowDecoder[B] = {
       @tailrec
-      def step(cells: NonEmptyList[String], a: A): DecoderResult[B] =
-        f(a)(cells) match {
+      def step(row: NonEmptyList[String], a: A): DecoderResult[B] =
+        f(a)(row) match {
           case left @ Left(_)          => left.rightCast[B]
-          case Right(Left(a))          => step(cells, a)
+          case Right(Left(a))          => step(row, a)
           case Right(right @ Right(_)) => right.leftCast[DecoderError]
         }
-      cells => step(cells, a)
+      row => step(row, a)
     }
 
+    def combineK[A](x: RowDecoder[A], y: RowDecoder[A]): RowDecoder[A] = x or y
   }
 
   def apply[T: RowDecoder]: RowDecoder[T] = implicitly[RowDecoder[T]]

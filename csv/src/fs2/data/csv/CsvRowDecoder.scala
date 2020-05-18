@@ -21,17 +21,88 @@ import cats.implicits._
 import scala.annotation.tailrec
 
 /** Describes how a row can be decoded to the given type.
+  *
+  * `CsvRowDecoder` provides convenient methods such as `map`, `emap`, or `flatMap`
+  * to build new decoders out of more basic one.
+  *
+  * Actually, `CsvRowDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
+  * instance. To get the full power of it, import `cats.implicits._`.
+  *
   */
 trait CsvRowDecoder[T, Header] {
   def apply(row: CsvRow[Header]): DecoderResult[T]
+
+  /**
+    * Map the parsed value.
+    * @param f the mapping function
+    * @tparam T2 the result type
+    * @return a row decoder reading the mapped type
+    */
+  def map[T2](f: T => T2): CsvRowDecoder[T2, Header] =
+    row => apply(row).map(f)
+
+  /**
+    * Map the parsed value to a new decoder, which in turn will be applie toString
+    * the parsed value.
+    * @param f the mapping function
+    * @tparam T2 the result type
+    * @return a row decoder reading the mapped type
+    */
+  def flatMap[T2](f: T => CsvRowDecoder[T2, Header]): CsvRowDecoder[T2, Header] =
+    row => apply(row).flatMap(f(_)(row))
+
+  /**
+    * Map the parsed value, potentially failing.
+    * @param f the mapping function
+    * @tparam T2 the result type
+    * @return a row decoder reading the mapped type
+    */
+  def emap[T2](f: T => DecoderResult[T2]): CsvRowDecoder[T2, Header] =
+    row => apply(row).flatMap(f)
+
+  /**
+    * Fail-over. If this decoder fails, try the supplied other decoder.
+    * @param cd the fail-over decoder
+    * @tparam TT the return type
+    * @return a decoder combining this and the other decoder
+    */
+  def or[TT >: T](cd: => CsvRowDecoder[TT, Header]): CsvRowDecoder[TT, Header] =
+    row =>
+      apply(row) match {
+        case Left(_)      => cd(row)
+        case r @ Right(_) => r.leftCast[DecoderError]
+      }
+
+  /**
+    * Similar to [[or]], but return the result as an Either signaling which row decoder succeeded. Allows for parsing
+    * an unrelated type in case of failure.
+    * @param cd the alternative decoder
+    * @tparam B the type the alternative decoder returns
+    * @return a decoder combining both decoders
+    */
+  def either[B](cd: CsvRowDecoder[B, Header]): CsvRowDecoder[Either[T, B], Header] =
+    row =>
+      apply(row) match {
+        case Left(_) =>
+          cd(row) match {
+            case l @ Left(_)  => l.rightCast[Either[T, B]]
+            case r @ Right(_) => r.leftCast[T].asRight
+          }
+        case Right(value) => Right(Left(value))
+      }
+
 }
 
 object CsvRowDecoder extends ExportedCsvRowDecoders {
 
-  implicit def CsvRowDecoderMonadError[Header]: MonadError[CsvRowDecoder[*, Header], DecoderError] =
-    new MonadError[CsvRowDecoder[*, Header], DecoderError] {
+  implicit def CsvRowDecoderInstances[Header]
+      : MonadError[CsvRowDecoder[*, Header], DecoderError] with SemigroupK[CsvRowDecoder[*, Header]] =
+    new MonadError[CsvRowDecoder[*, Header], DecoderError] with SemigroupK[CsvRowDecoder[*, Header]] {
+      override def map[A, B](fa: CsvRowDecoder[A, Header])(f: A => B): CsvRowDecoder[B, Header] =
+        fa.map(f)
+
       def flatMap[A, B](fa: CsvRowDecoder[A, Header])(f: A => CsvRowDecoder[B, Header]): CsvRowDecoder[B, Header] =
-        row => fa(row).flatMap(f(_)(row))
+        fa.flatMap(f)
 
       def handleErrorWith[A](fa: CsvRowDecoder[A, Header])(
           f: DecoderError => CsvRowDecoder[A, Header]): CsvRowDecoder[A, Header] =
@@ -53,6 +124,8 @@ object CsvRowDecoder extends ExportedCsvRowDecoders {
           }
         row => step(row, a)
       }
+
+      def combineK[A](x: CsvRowDecoder[A, Header], y: CsvRowDecoder[A, Header]): CsvRowDecoder[A, Header] = x or y
     }
 
   def apply[T: CsvRowDecoder[*, Header], Header]: CsvRowDecoder[T, Header] = implicitly[CsvRowDecoder[T, Header]]
