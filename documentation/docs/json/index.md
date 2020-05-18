@@ -97,8 +97,43 @@ val transformed = stream.through(transform[IO, Json](selector, json => SomeJsonO
 ```
 For concrete examples of provided `Builder`s and `Tokeizer`s, please refer to [the JSON library binding modules documentation][json-lib-doc]
 
+### JSON Renderers
+
+Once you got a JSON token stream, selected and transformed what you needed in it, you can then write the resulting token stream to some storage. This can be achieved using renderers.
+
+For instance, let's say you want to write the resulting JSON stream to a file in compact form (i.e. with no space or new lines), you can do:
+
+```scala mdoc:compile-only
+import java.nio.file.Paths
+
+implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
+
+Blocker[IO].use { blocker =>
+  stream
+    .through(render.compact)
+    .through(text.utf8Encode)
+    .through(io.file.writeAll[IO](Paths.get("/some/path/to/file.json"), blocker))
+    .compile
+    .drain
+}
+```
+
+There exists also a `pretty()` renderer, that indents inner elements by the given indent string.
+
+If you are interested in the String rendering as a value, the library also provides [`Collector`s][collector-doc]:
+
+```scala mdoc
+stream.compile.to(collector.compact).unsafeRunSync()
+
+// default indentation is 2 spaces
+stream.compile.to(collector.pretty()).unsafeRunSync()
+// if you are more into tabs (or any other indentation size) you can change the indentation string
+stream.compile.to(collector.pretty("\t")).unsafeRunSync()
+```
+
 [json-lib-doc]: /documentation/json/libraries
 [interpolator-doc]: /documentation/json/libraries
 [builder-api]: /api/fs2/data/json/ast/Builder.html
 [tokenizer-api]: /api/fs2/data/json/ast/Tokenizer.html
 [monad-error]: https://typelevel.org/cats/api/cats/MonadError.html
+[collector-doc]: https://oss.sonatype.org/service/local/repositories/releases/archive/co/fs2/fs2-core_2.13/2.3.0/fs2-core_2.13-2.3.0-javadoc.jar/!/fs2/Collector.html
