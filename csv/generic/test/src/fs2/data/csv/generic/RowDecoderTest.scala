@@ -20,12 +20,12 @@ package generic
 import semiauto._
 import hlist._
 
-import org.scalatest._
-
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import shapeless._
 import cats.data.NonEmptyList
 
-class RowDecoderTest extends FlatSpec with Matchers {
+class RowDecoderTest extends AnyFlatSpec with Matchers {
 
   val csvRow = NonEmptyList.of("1", "test", "42")
   val csvRowEmptyI = NonEmptyList.of("", "test", "42")
@@ -64,7 +64,8 @@ class RowDecoderTest extends FlatSpec with Matchers {
   }
 
   "hlist" should "be handled properly" in {
-    RowDecoder[Int :: String :: Int :: HNil].apply(csvRow) shouldBe Right(1 :: "test" :: 42 :: HNil)
+    RowDecoder[Int :: String :: Int :: HNil].apply(csvRow) shouldBe Right(
+      1 :: "test" :: 42 :: HNil)
   }
 
   it should "be handled properly with optional columns" in {

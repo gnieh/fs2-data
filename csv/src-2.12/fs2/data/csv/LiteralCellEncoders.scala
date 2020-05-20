@@ -13,29 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2
-package data
-package csv
-package generic
+package fs2.data.csv
 
-import shapeless._
-
-object semiauto {
-
-  def deriveRowDecoder[T](
-      implicit T: Lazy[DerivedRowDecoder[T]]): RowDecoder[T] =
-    T.value
-
-  def deriveCsvRowDecoder[T](
-      implicit T: Lazy[DerivedCsvRowDecoder[T]]): CsvRowDecoder[T, String] =
-    T.value
-
-  def deriveCellDecoder[T](
-      implicit T: Lazy[DerivedCellDecoder[T]]): CellDecoder[T] =
-    T.value
-
-  def deriveCellEncoder[T](
-      implicit T: Lazy[DerivedCellEncoder[T]]): CellEncoder[T] =
-    T.value
-
-}
+// No literals for 2.12
+trait LiteralCellEncoders

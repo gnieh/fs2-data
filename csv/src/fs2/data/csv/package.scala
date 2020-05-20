@@ -16,9 +16,10 @@
 package fs2
 package data
 
+import cats.Show
 import csv.internals._
-
 import cats.data._
+import cats.implicits._
 
 package object csv {
 
@@ -28,16 +29,19 @@ package object csv {
 
   /** Transforms a stream of characters into a stream of CSV rows.
     */
-  def rows[F[_]](separator: Char = ',')(implicit F: RaiseThrowable[F]): Pipe[F, Char, NonEmptyList[String]] =
+  def rows[F[_]](separator: Char = ',')(
+      implicit F: RaiseThrowable[F]): Pipe[F, Char, NonEmptyList[String]] =
     RowParser.pipe[F](separator)
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
   def headers[F[_], Header](implicit F: RaiseThrowable[F],
-                            Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
+                            Header: ParseableHeader[Header])
+    : Pipe[F, NonEmptyList[String], CsvRow[Header]] =
     CsvRowParser.pipe[F, Header]
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with given headers. */
-  def withHeaders[F[_], Header](headers: NonEmptyList[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
+  def withHeaders[F[_], Header](headers: NonEmptyList[Header])
+    : Pipe[F, NonEmptyList[String], CsvRow[Header]] =
     _.map(CsvRow(_, headers))
 
   /** Transforms a stream of raw CSV rows into rows. */
@@ -48,18 +52,64 @@ package object csv {
   def skipHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
     _.tail.map(new Row(_))
 
-  def decode[F[_], R](implicit F: RaiseThrowable[F], R: RowDecoder[R]): Pipe[F, Row, R] =
+  def decode[F[_], R](implicit F: RaiseThrowable[F],
+                      R: RowDecoder[R]): Pipe[F, Row, R] =
     _.map(row => R(row.values)).rethrow
 
-  def attemptDecode[F[_], R](implicit R: RowDecoder[R]): Pipe[F, Row, DecoderResult[R]] =
+  def attemptDecode[F[_], R](
+      implicit R: RowDecoder[R]): Pipe[F, Row, DecoderResult[R]] =
     _.map(row => R(row.values))
 
-  def decodeRow[F[_], Header, R](implicit F: RaiseThrowable[F],
-                                 R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], R] =
+  def decodeRow[F[_], Header, R](
+      implicit F: RaiseThrowable[F],
+      R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], R] =
     _.map(R(_)).rethrow
 
-  def attemptDecodeRow[F[_], Header, R](
-      implicit R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], DecoderResult[R]] =
+  def attemptDecodeRow[F[_], Header, R](implicit R: CsvRowDecoder[R, Header])
+    : Pipe[F, CsvRow[Header], DecoderResult[R]] =
     _.map(R(_))
+
+  def writeWithHeaders[F[_], Header](headers: NonEmptyList[Header])(
+      implicit H: WriteableHeader[Header]): Pipe[F, Row, NonEmptyList[String]] =
+    Stream(H(headers)) ++ _.map(_.values)
+
+  def writeWithoutHeaders[F[_]]: Pipe[F, Row, NonEmptyList[String]] =
+    _.map(_.values)
+
+  def toStrings[F[_]](
+      separator: Char = ',',
+      newline: String = "\n"): Pipe[F, NonEmptyList[String], String] = {
+    _.flatMap(
+      nel =>
+        Stream
+          .emits(nel.toList)
+          .map(RowWriter.encodeColumn(separator))
+          .intersperse(separator.toString) ++ Stream(newline))
+  }
+
+  def toRowStrings[F[_]](
+      separator: Char = ',',
+      newline: String = "\n"): Pipe[F, NonEmptyList[String], String] = {
+    // explicit Show avoids mapping the NEL before
+    val showColumn: Show[String] =
+      Show.show(RowWriter.encodeColumn(separator))
+    _.map(_.mkString_("", separator.toString, newline)(showColumn, implicitly))
+  }
+
+  def encode[F[_], R](implicit R: RowEncoder[R]): Pipe[F, R, Row] =
+    _.map(row => new Row(R(row)))
+
+  def encodeRow[F[_], Header, R](
+      implicit R: CsvRowEncoder[R, Header]): Pipe[F, R, CsvRow[Header]] =
+    _.map(R(_))
+
+  def encodeRowWithFirstHeaders[F[_], Header](
+      implicit H: WriteableHeader[Header])
+    : Pipe[F, CsvRow[Header], NonEmptyList[String]] =
+    _.pull.peek1.flatMap {
+      case Some((CsvRow(_, headers), tail)) =>
+        Pull.output1(H(headers)) >> tail.map(_.values).pull.echo
+      case None => Pull.done
+    }.stream
 
 }

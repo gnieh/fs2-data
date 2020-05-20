@@ -18,18 +18,22 @@ package data.csv
 package generic
 
 import semiauto._
-
-import org.scalatest._
-
 import cats.data.NonEmptyList
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class CsvRowDecoderTest extends FlatSpec with Matchers {
+class CsvRowDecoderTest extends AnyFlatSpec with Matchers {
 
-  val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
-  val csvRowDefaultI = new CsvRow(NonEmptyList.of("", "test", "42"), NonEmptyList.of("i", "s", "j"))
-  val csvRowNoI = new CsvRow(NonEmptyList.of("test", "42"), NonEmptyList.of("s", "j"))
-  val csvRowEmptyJ = new CsvRow(NonEmptyList.of("1", "test", ""), NonEmptyList.of("i", "s", "j"))
-  val csvRowNoJ = new CsvRow(NonEmptyList.of("1", "test"), NonEmptyList.of("i", "s"))
+  val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"),
+                          NonEmptyList.of("i", "s", "j"))
+  val csvRowDefaultI = new CsvRow(NonEmptyList.of("", "test", "42"),
+                                  NonEmptyList.of("i", "s", "j"))
+  val csvRowNoI =
+    new CsvRow(NonEmptyList.of("test", "42"), NonEmptyList.of("s", "j"))
+  val csvRowEmptyJ =
+    new CsvRow(NonEmptyList.of("1", "test", ""), NonEmptyList.of("i", "s", "j"))
+  val csvRowNoJ =
+    new CsvRow(NonEmptyList.of("1", "test"), NonEmptyList.of("i", "s"))
 
   case class Test(i: Int = 0, s: String, j: Option[Int])
   case class TestOrder(s: String, j: Int, i: Int)
@@ -68,8 +72,10 @@ class CsvRowDecoderTest extends FlatSpec with Matchers {
   }
 
   it should "be decoded according to their field renames if value is optional" in {
-    testOptionRenameDecoder(csvRow) shouldBe Right(TestOptionRename("test", Some(42), 1))
-    testOptionRenameDecoder(csvRowNoJ) shouldBe Right(TestOptionRename("test", None, 1))
+    testOptionRenameDecoder(csvRow) shouldBe Right(
+      TestOptionRename("test", Some(42), 1))
+    testOptionRenameDecoder(csvRowNoJ) shouldBe Right(
+      TestOptionRename("test", None, 1))
   }
 
 }
