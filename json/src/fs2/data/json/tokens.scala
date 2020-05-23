@@ -17,22 +17,44 @@ package fs2
 package data
 package json
 
-sealed abstract class Token(val kind: String)
+sealed abstract class Token(val kind: String) {
+  def jsonRepr: String
+}
 object Token {
 
-  case object StartObject extends Token("object")
-  case object EndObject extends Token("<none>")
+  case object StartObject extends Token("object") {
+    def jsonRepr: String = "{"
+  }
+  case object EndObject extends Token("<none>") {
+    def jsonRepr: String = "}"
+  }
 
-  case object StartArray extends Token("array")
-  case object EndArray extends Token("<none>")
+  case object StartArray extends Token("array") {
+    def jsonRepr: String = "["
+  }
+  case object EndArray extends Token("<none>") {
+    def jsonRepr: String = "]"
+  }
 
-  case class Key(value: String) extends Token("key")
+  case class Key(value: String) extends Token("key") {
+    def jsonRepr: String = s""""$value""""
+  }
 
-  case object NullValue extends Token("null")
+  case object NullValue extends Token("null") {
+    def jsonRepr: String = "null"
+  }
 
-  case object TrueValue extends Token("boolean")
-  case object FalseValue extends Token("boolean")
-  case class NumberValue(value: String) extends Token("number")
-  case class StringValue(value: String) extends Token("string")
+  case object TrueValue extends Token("boolean") {
+    def jsonRepr: String = "true"
+  }
+  case object FalseValue extends Token("boolean") {
+    def jsonRepr: String = "false"
+  }
+  case class NumberValue(value: String) extends Token("number") {
+    def jsonRepr: String = value
+  }
+  case class StringValue(value: String) extends Token("string") {
+    def jsonRepr: String = s""""$value""""
+  }
 
 }

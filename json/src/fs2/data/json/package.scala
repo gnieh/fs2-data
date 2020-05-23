@@ -58,6 +58,66 @@ package object json {
   def values[F[_], Json](implicit F: RaiseThrowable[F], builder: Builder[Json]): Pipe[F, Token, Json] =
     ValueParser.pipe[F, Json]
 
+  /** Transforms a stream of Json values into a stream of Json tokens.
+    *
+    * This operation is the opposite of `values`.
+    */
+  def tokenize[F[_], Json](implicit tokenizer: Tokenizer[Json]): Pipe[F, Json, Token] =
+    _.flatMap(value => Stream.emits(tokenizer.tokenize(value).toList))
+
+  /** Json Token stream pipes to render Json values. */
+  object render {
+
+    /** Renders a compact representation of the Json token stream.
+      *
+      * Chunks can be concatenated to render all values in the stream,
+      * separated by new lines.
+      *
+      * You can use this to write the Json stream to a file.
+      */
+    def compact[F[_]]: Pipe[F, Token, String] =
+      Renderer.pipe[F](false, "")
+
+    /** Renders a pretty-printed representation of the token stream with the given
+      * indentation size.
+      *
+      * Chunks can be concatenated to render all values in the stream,
+      * separated by new lines.
+      *
+      * You can use this to write the Json stream to a file.
+      */
+    def pretty[F[_]](indent: String = "  "): Pipe[F, Token, String] =
+      Renderer.pipe[F](true, indent)
+
+  }
+
+  /** Json Token stream collectors. */
+  object collector {
+
+    /** A collector of the Json values in the streams
+      * rendered in compact form.
+      *
+      * Top-level values are separated by new lines.
+      */
+    object compact extends Collector[Token] {
+      type Out = String
+      def newBuilder: Collector.Builder[Token, Out] =
+        new Renderer(false, false, "")
+    }
+
+    /** A collector of the Json values in the streams
+      * rendered in pretty form.
+      *
+      * Top-level values are separated by new lines.
+      */
+    def pretty(indent: String = "  "): Collector.Aux[Token, String] =
+      new Collector[Token] {
+        type Out = String
+        def newBuilder: Collector.Builder[Token, String] =
+          new Renderer(true, false, indent)
+      }
+  }
+
   implicit class StringOps(val s: String) extends AnyVal {
     def parseSelector[F[_]](implicit F: MonadError[F, Throwable]): F[Selector] =
       new SelectorParser[F](s).parse()
