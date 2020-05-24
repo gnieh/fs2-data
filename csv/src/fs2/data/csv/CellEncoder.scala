@@ -30,10 +30,14 @@ trait CellEncoder[T] {
   def apply(cell: T): String
 }
 
-object CellEncoder extends CellEncoderInstances1 with LiteralCellEncoders with ExportedCellEncoders {
+object CellEncoder
+    extends CellEncoderInstances1
+    with LiteralCellEncoders
+    with ExportedCellEncoders {
 
   implicit object CellEncoderInstances extends Contravariant[CellEncoder] {
-    override def contramap[A, B](fa: CellEncoder[A])(f: B => A): CellEncoder[B] = (cell: B) => fa(f(cell))
+    override def contramap[A, B](fa: CellEncoder[A])(
+        f: B => A): CellEncoder[B] = (cell: B) => fa(f(cell))
   }
 
   def apply[T: CellEncoder]: CellEncoder[T] = implicitly[CellEncoder[T]]
@@ -78,6 +82,10 @@ object CellEncoder extends CellEncoderInstances1 with LiteralCellEncoders with E
   implicit val offsetTimeEncoder: CellEncoder[OffsetTime] = _.toString
   implicit val zonedDateTimeEncoder: CellEncoder[ZonedDateTime] = _.toString
 
+  // Option
+  implicit def optionEncoder[Cell: CellEncoder]: CellEncoder[Option[Cell]] =
+    _.fold("")(CellEncoder[Cell].apply)
+
 }
 
 trait CellEncoderInstances1 {
@@ -85,6 +93,7 @@ trait CellEncoderInstances1 {
 }
 
 trait ExportedCellEncoders {
-  implicit def exportedCellEncoders[A](implicit exported: Exported[CellEncoder[A]]): CellEncoder[A] =
+  implicit def exportedCellEncoders[A](
+      implicit exported: Exported[CellEncoder[A]]): CellEncoder[A] =
     exported.instance
 }

@@ -37,6 +37,19 @@ class ExportMacros(val c: blackbox.Context) {
     }
   }
 
+  final def exportRowEncoder[A](
+      implicit a: c.WeakTypeTag[A]): c.Expr[Exported[RowEncoder[A]]] = {
+    c.typecheck(
+      q"_root_.shapeless.lazily[_root_.fs2.data.csv.generic.DerivedRowEncoder[$a]]",
+      silent = true) match {
+      case EmptyTree =>
+        c.abort(c.enclosingPosition, s"Unable to infer value of type $a")
+      case t =>
+        c.Expr[Exported[RowEncoder[A]]](
+          q"new _root_.fs2.data.csv.Exported($t: _root_.fs2.data.csv.RowEncoder[$a])")
+    }
+  }
+
   final def exportCsvRowDecoder[A](implicit a: c.WeakTypeTag[A])
     : c.Expr[Exported[CsvRowDecoder[A, String]]] = {
     c.typecheck(
@@ -47,6 +60,19 @@ class ExportMacros(val c: blackbox.Context) {
       case t =>
         c.Expr[Exported[CsvRowDecoder[A, String]]](
           q"new _root_.fs2.data.csv.Exported($t: _root_.fs2.data.csv.CsvRowDecoder[$a, ${weakTypeTag[String]}])")
+    }
+  }
+
+  final def exportCsvRowEncoder[A](implicit a: c.WeakTypeTag[A])
+    : c.Expr[Exported[CsvRowEncoder[A, String]]] = {
+    c.typecheck(
+      q"_root_.shapeless.lazily[_root_.fs2.data.csv.generic.DerivedCsvRowEncoder[$a]]",
+      silent = true) match {
+      case EmptyTree =>
+        c.abort(c.enclosingPosition, s"Unable to infer value of type $a")
+      case t =>
+        c.Expr[Exported[CsvRowEncoder[A, String]]](
+          q"new _root_.fs2.data.csv.Exported($t: _root_.fs2.data.csv.CsvRowEncoder[$a, ${weakTypeTag[String]}])")
     }
   }
 

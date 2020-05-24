@@ -9,8 +9,6 @@ import shapeless.Annotation
 
 class CellEncoderTest extends AnyFlatSpec with Matchers with EitherValues {
 
-  import models._
-
   "derivation for coproducts" should "work out of the box for enum-style sealed traits" in {
     val simpleEncoder: CellEncoder[Simple] = semiauto.deriveCellEncoder
 

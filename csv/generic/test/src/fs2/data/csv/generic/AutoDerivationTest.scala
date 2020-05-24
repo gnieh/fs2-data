@@ -22,8 +22,6 @@ import org.scalatest.matchers.should.Matchers
 
 class AutoDerivationTest extends AnyFlatSpec with Matchers {
 
-  import models._
-
   val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"),
                           NonEmptyList.of("i", "s", "j"))
   val plainRow = new Row(NonEmptyList.of("1", "test", "42"))

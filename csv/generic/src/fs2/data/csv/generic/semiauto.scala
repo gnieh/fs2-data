@@ -26,8 +26,16 @@ object semiauto {
       implicit T: Lazy[DerivedRowDecoder[T]]): RowDecoder[T] =
     T.value
 
+  def deriveRowEncoder[T](
+      implicit T: Lazy[DerivedRowEncoder[T]]): RowEncoder[T] =
+    T.value
+
   def deriveCsvRowDecoder[T](
       implicit T: Lazy[DerivedCsvRowDecoder[T]]): CsvRowDecoder[T, String] =
+    T.value
+
+  def deriveCsvRowEncoder[T](
+      implicit T: Lazy[DerivedCsvRowEncoder[T]]): CsvRowEncoder[T, String] =
     T.value
 
   def deriveCellDecoder[T](
