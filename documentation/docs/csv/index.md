@@ -94,14 +94,46 @@ If the parse method fails for a header, the entire stream fails.
 ### Decoders
 
 The library also provides a decoder interface, which allows for decoding CSV rows into arbitrary data types through the `decode` and `decodeRow` pipes. There are several kinds of decoders:
- - `CellDecoder` is a simple value decoder, used to transform values within the CSV fields. The library provides decoders for most of the Scala common types:
-   - primitive types, strings
-   - most of `java.time` types
-   - if your wish to support custom field types, you need to implement your own `CellDecoder`
+ - `CellDecoder` is a simple value decoder, used to transform values within the CSV fields.
  - `RowDecoder` is used to decode CSV `Row`s through the `decode` pipe, and is positional. Use it when your CSV file doesn't have headers.
  - `CsvRowDecoder` is used to decode `CsvRow`s through the `decodeRow` pipe, and has access to the headers. Use it when you want to use header names to decode the rows.
 
-For instance if you want to decode the CSV data into [shapeless][shapeless] `HList`:
+#### `CellDecoder`
+
+The library provides decoders for most of the Scala common types:
+   - primitive types;
+   - `String`;
+   - Enums;
+   - `FiniteDuration`;
+   - `URL`, `URI`;
+   - `UUID`;
+   - most common `java.time` types.
+
+If you wish to support custom field types, you need to implement your own `CellDecoder`. To that end, you can use the convenience methods like `map` or `emap` defined on the [`CellDecoder` trait][celldecoder-scaladoc].
+
+For instance, if you want to be able to parse an integer field into some enum, you can do:
+
+```scala mdoc
+import enumeratum.values._
+
+sealed abstract class State(val value: Int) extends IntEnumEntry
+object State extends IntEnum[State] {
+  case object On extends State(1)
+  case object Off extends State(0)
+
+  def values = findValues
+
+  implicit val decoder: CellDecoder[State] =
+    CellDecoder
+      .intDecoder
+      .emap(withValueOpt(_)
+        .liftTo[DecoderResult](new DecoderError("Unknown state")))
+}
+```
+
+#### `RowDecoder`
+
+`RowDecoder`s can be used to decode an entire CSV row based on field positions. For instance if you want to decode the CSV data into [shapeless][shapeless] `HList`:
 
 ```scala mdoc
 import shapeless._
@@ -123,7 +155,9 @@ val hlists = noh.tail.through(decode[IO, Option[Int] :: String :: Int :: HNil])
 hlists.compile.toList.unsafeRunSync()
 ```
 
-Using the headers, one can decode the CSV data to some case class:
+#### `CsvRowDecoder`
+
+If your CSV data set has headers, you can use `CsvRowDecoder`. Using the headers, one can decode the CSV data to some case class:
 
 ```scala mdoc
 // note the order of fields is not the same as in the CSV data here
@@ -148,3 +182,4 @@ As you can see this can be quite tedious to implement. Lucky us, the `fs2-data-c
 [enumeratum]: https://github.com/lloydmeta/enumeratum/
 [shapeless]: https://github.com/milessabin/shapeless
 [csv-generic-doc]: /documentation/csv/generic/
+[celldecoder-scaladoc]: /api/fs2/data/csv/CellDecoder.html

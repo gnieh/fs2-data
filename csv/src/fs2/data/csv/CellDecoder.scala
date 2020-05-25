@@ -28,9 +28,35 @@ import scala.annotation.tailrec
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /** Describes how a cell can be decoded to the given type.
+  *
+  * `CellDecoder` provides convenient methods such as `map`, `emap`, or `flatMap`
+  * to build new decoders out of more basic one.
+  *
+  * Actually, `CellDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
+  * instance. To get the full power of it, import `cats.implicits._`.
+  *
   */
 trait CellDecoder[T] {
   def apply(cell: String): DecoderResult[T]
+
+  /**
+    * Map the parsed value.
+    * @param f the mapping function
+    * @tparam T2 the result type
+    * @return a cell decoder reading the mapped type
+    */
+  def map[T2](f: T => T2): CellDecoder[T2] =
+    s => apply(s).map(f)
+
+  /**
+    * Map the parsed value to a new decoder, which in turn will be applie toString
+    * the parsed value.
+    * @param f the mapping function
+    * @tparam T2 the result type
+    * @return a cell decoder reading the mapped type
+    */
+  def flatMap[T2](f: T => CellDecoder[T2]): CellDecoder[T2] =
+    s => apply(s).flatMap(f(_)(s))
 
   /**
     * Map the parsed value, potentially failing.
@@ -38,7 +64,8 @@ trait CellDecoder[T] {
     * @tparam T2 the result type
     * @return a cell decoder reading the mapped type
     */
-  def emap[T2](f: T => Either[DecoderError, T2]): CellDecoder[T2] = s => apply(s).flatMap(f)
+  def emap[T2](f: T => DecoderResult[T2]): CellDecoder[T2] =
+    s => apply(s).flatMap(f)
 
   /**
     * Fail-over. If this decoder fails, try the supplied other decoder.
@@ -75,8 +102,12 @@ trait CellDecoder[T] {
 object CellDecoder extends CellDecoderInstances1 with LiteralCellDecoders with ExportedCellDecoders {
 
   implicit object CellDecoderInstances extends MonadError[CellDecoder, DecoderError] with SemigroupK[CellDecoder] {
+
+    override def map[A, B](fa: CellDecoder[A])(f: A => B): CellDecoder[B] =
+      fa.map(f)
+
     def flatMap[A, B](fa: CellDecoder[A])(f: A => CellDecoder[B]): CellDecoder[B] =
-      s => fa(s).flatMap(f(_)(s))
+      fa.flatMap(f)
 
     def handleErrorWith[A](fa: CellDecoder[A])(f: DecoderError => CellDecoder[A]): CellDecoder[A] =
       s => fa(s).leftFlatMap(f(_)(s))
