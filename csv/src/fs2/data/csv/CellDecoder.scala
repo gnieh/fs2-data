@@ -49,7 +49,7 @@ trait CellDecoder[T] {
     s => apply(s).map(f)
 
   /**
-    * Map the parsed value to a new decoder, which in turn will be applie toString
+    * Map the parsed value to a new decoder, which in turn will be applied toString
     * the parsed value.
     * @param f the mapping function
     * @tparam T2 the result type
