@@ -30,7 +30,7 @@ class CellEncoderTest extends FlatSpec with Matchers with EitherValues {
     CellEncoder[Boolean].apply(true) shouldBe "true"
     CellEncoder[Char].apply('C') shouldBe "C"
     CellEncoder[Double].apply(1.2) shouldBe "1.2"
-    CellEncoder[BigDecimal].apply(BigDecimal("12e455")) shouldBe "1.2e456"
+    CellEncoder[BigDecimal].apply(BigDecimal("12e455")) shouldBe "1.2E+456"
     CellEncoder[String].apply("foobar") shouldBe "foobar"
     CellEncoder[FiniteDuration].apply(2.seconds) shouldBe "2 seconds"
 

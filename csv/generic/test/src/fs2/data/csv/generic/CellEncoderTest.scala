@@ -53,7 +53,6 @@ class CellEncoderTest extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   it should "work for types with arguments" in {
-    semiauto.deriveCellEncoder[Wrapper[Int]].apply(Wrapper(7)) shouldBe Right(
-      )
+    semiauto.deriveCellEncoder[Wrapper[Int]].apply(Wrapper(7)) shouldBe "7"
   }
 }
