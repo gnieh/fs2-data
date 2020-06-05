@@ -29,10 +29,6 @@ object DerivedCsvRowEncoder {
       gen: LabelledGeneric.Aux[T, Repr],
       annotations: Annotations.Aux[CsvName, T, AnnoRepr],
       cc: Lazy[MapShapedCsvRowEncoder.WithAnnotations[T, Repr, AnnoRepr]])
-    : DerivedCsvRowEncoder[T] = ???
-  /*new DerivedCsvRowEncoder[T] {
-      def apply(elem: T): CsvRow[String] =
-        cc.value.fromWithAnnotation(gen.to(elem), annotations())
-    }*/
+    : DerivedCsvRowEncoder[T] = (elem: T) => cc.value.fromWithAnnotation(gen.to(elem), annotations())
 
 }

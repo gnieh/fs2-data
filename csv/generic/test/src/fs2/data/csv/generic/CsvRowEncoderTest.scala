@@ -26,54 +26,35 @@ class CsvRowEncoderTest extends AnyFlatSpec with Matchers {
 
   val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"),
                           NonEmptyList.of("i", "s", "j"))
+  val csvRowK = new CsvRow(NonEmptyList.of("1", "test", "42"),
+    NonEmptyList.of("i", "s", "k"))
   val csvRowDefaultI = new CsvRow(NonEmptyList.of("", "test", "42"),
                                   NonEmptyList.of("i", "s", "j"))
-  val csvRowNoI =
-    new CsvRow(NonEmptyList.of("test", "42"), NonEmptyList.of("s", "j"))
   val csvRowEmptyJ =
     new CsvRow(NonEmptyList.of("1", "test", ""), NonEmptyList.of("i", "s", "j"))
-  val csvRowNoJ =
-    new CsvRow(NonEmptyList.of("1", "test"), NonEmptyList.of("i", "s"))
 
   case class Test(i: Int = 0, s: String, j: Option[Int])
-  case class TestOrder(s: String, j: Int, i: Int)
-  case class TestRename(s: String, @CsvName("j") k: Int, i: Int)
-  case class TestOptionRename(s: String, @CsvName("j") k: Option[Int], i: Int)
+  case class TestRename(i: Int, s: String, @CsvName("j") k: Int)
+  case class TestOptionRename(i: Int, s: String, @CsvName("j") k: Option[Int])
 
   val testEncoder = deriveCsvRowEncoder[Test]
-  val testOrderEncoder = deriveCsvRowEncoder[TestOrder]
   val testRenameEncoder = deriveCsvRowEncoder[TestRename]
   val testOptionRenameEncoder = deriveCsvRowEncoder[TestOptionRename]
 
-  "case classes" should "be encoded properly by header name and not position" in {
+  "case classes" should "be encoded properly" in {
     testEncoder(Test(1, "test", Some(42))) shouldBe csvRow
-
-    testOrderEncoder(TestOrder("test", 42, 1)) shouldBe csvRow
-  }
-
-  it should "be handled properly with default value and empty cell" in {
-    testEncoder(Test(0, "test", Some(42))) shouldBe csvRowDefaultI
-  }
-
-  it should "be handled properly with default value and missing column" in {
-    testEncoder(Test(0, "test", Some(42))) shouldBe csvRowNoI
   }
 
   it should "be handled properly with optional value and empty cell" in {
     testEncoder(Test(1, "test", None)) shouldBe csvRowEmptyJ
   }
 
-  it should "be handled properly with optional value and missing column" in {
-    testEncoder(Test(1, "test", None)) shouldBe csvRowNoJ
-  }
-
   it should "be encoded according to their field renames" in {
-    testRenameEncoder(TestRename("test", 42, 1)) shouldBe csvRow
+    testRenameEncoder(TestRename(1, "test", 42)) shouldBe csvRow
   }
 
   it should "be encoded according to their field renames if value is optional" in {
-    testOptionRenameEncoder(TestOptionRename("test", Some(42), 1)) shouldBe csvRow
-    testOptionRenameEncoder(TestOptionRename("test", None, 1)) shouldBe csvRowNoJ
+    testOptionRenameEncoder(TestOptionRename(1, "test", Some(42))) shouldBe csvRow
   }
 
 }
