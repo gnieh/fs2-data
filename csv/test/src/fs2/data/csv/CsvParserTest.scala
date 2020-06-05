@@ -19,15 +19,15 @@ import io.circe.parser._
 import fs2._
 import fs2.io._
 import cats.effect._
-import org.scalatest._
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent._
 import better.files.{Resource => _, _}
 import java.util.concurrent._
 
-import org.scalatest.matchers.should
-
-class CsvParserTest extends FlatSpec with Matchers with BeforeAndAfterAll {
+class CsvParserTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
 
   private var executor: ExecutorService = _
   private var blocker: Blocker = _
