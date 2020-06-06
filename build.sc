@@ -36,9 +36,6 @@ trait Fs2DataModule extends ScalaModule with ScalafmtModule {
        else
          Seq("-Ypartial-unification", "-language:higherKinds"))
 
-  def ivyDeps =
-    Agg(ivy"co.fs2::fs2-core:$fs2Version", ivy"org.scala-lang.modules::scala-collection-compat:2.1.6")
-
   def scalacPluginIvyDeps = Agg(ivy"org.typelevel::kind-projector:0.10.3", ivy"com.olegpy::better-monadic-for:0.3.1")
 
   trait Fs2DataTests extends Tests {
@@ -54,10 +51,36 @@ trait Fs2DataModule extends ScalaModule with ScalafmtModule {
 
 }
 
+object text extends Cross[TextModule](scala212, scala213)
+
+class TextModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule with PublishModule {
+  outer =>
+
+  def ivyDeps =
+    Agg(ivy"co.fs2::fs2-core:$fs2Version", ivy"org.scala-lang.modules::scala-collection-compat:2.1.6")
+
+  def publishVersion = fs2DataVersion
+
+  def artifactName = "fs2-data-text"
+
+  def pomSettings =
+    PomSettings(
+      description = "Utilities for textual data format",
+      organization = "org.gnieh",
+      url = fs2DataUrl,
+      licenses = Seq(fs2DataLicense),
+      versionControl = VersionControl.github("satabin", "fs2-data"),
+      developers = Seq(fs2DataDeveloper)
+    )
+
+}
+
 object csv extends Cross[CsvModule](scala212, scala213)
 
 class CsvModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule with PublishModule {
   outer =>
+
+  def moduleDeps = Seq(text())
 
   def publishVersion = fs2DataVersion
 
@@ -121,6 +144,8 @@ object json extends Cross[JsonModule](scala212, scala213)
 
 class JsonModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule with PublishModule {
   outer =>
+
+  def moduleDeps = Seq(text())
 
   def publishVersion = fs2DataVersion
 
@@ -211,6 +236,8 @@ object xml extends Cross[XmlModule](scala212, scala213)
 
 class XmlModule(val crossScalaVersion: String) extends Fs2DataModule with CrossScalaModule with PublishModule {
   outer =>
+
+  def moduleDeps = Seq(text())
 
   def scalacPluginIvyDeps = Agg(ivy"com.olegpy::better-monadic-for:0.3.1")
 
