@@ -26,7 +26,7 @@ private[json] object ValueParser {
 
   private def pullArray[F[_], Json](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], acc: VectorBuilder[Json])(
       implicit F: RaiseThrowable[F],
-      builder: Builder[Json]): Pull[F, INothing, Result[F, Token, Json]] =
+      builder: Builder[Json]): Pull[F, INothing, Result[F, Json]] =
     if (idx >= chunk.size) {
       rest.pull.uncons.flatMap {
         case Some((hd, tl)) => pullArray(hd, 0, tl, acc)
@@ -49,7 +49,7 @@ private[json] object ValueParser {
                                      rest: Stream[F, Token],
                                      acc: VectorBuilder[(String, Json)])(
       implicit F: RaiseThrowable[F],
-      builder: Builder[Json]): Pull[F, INothing, Result[F, Token, Json]] =
+      builder: Builder[Json]): Pull[F, INothing, Result[F, Json]] =
     if (idx >= chunk.size) {
       rest.pull.uncons.flatMap {
         case Some((hd, tl)) => pullObject(hd, 0, tl, acc)
@@ -71,7 +71,7 @@ private[json] object ValueParser {
 
   def pullValue[F[_], Json](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token])(
       implicit F: RaiseThrowable[F],
-      builder: Builder[Json]): Pull[F, INothing, Result[F, Token, Json]] =
+      builder: Builder[Json]): Pull[F, INothing, Result[F, Json]] =
     if (idx >= chunk.size) {
       rest.pull.uncons.flatMap {
         case Some((hd, tl)) => pullValue(hd, 0, tl)

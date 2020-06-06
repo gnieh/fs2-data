@@ -16,6 +16,7 @@
 package fs2
 package data
 
+import text._
 import json.ast._
 import json.internals._
 
@@ -30,8 +31,8 @@ package object json {
     * If the streams ends without failure, the sequence of tokens is sensured
     * to represent a (potentially empty) sequence of valid Json documents.
     */
-  def tokens[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Char, Token] =
-    TokenParser.pipe[F]
+  def tokens[F[_], T](implicit F: RaiseThrowable[F], T: CharLikeChunks[F, T]): Pipe[F, T, Token] =
+    TokenParser.pipe[F, T]
 
   /** Filters the tokens according to the given selector sequence.
     * if `wrap` is set to `true` then values selected by array selector are wrapped into

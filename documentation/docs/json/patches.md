@@ -22,7 +22,7 @@ Let's say you are using circe as Json AST library, you can use patches like this
 ```scala mdoc
 import cats.effect._
 
-import fs2.Stream
+import fs2.{Fallible, Stream}
 import fs2.data.json._
 import fs2.data.json.circe._
 import fs2.data.json.mergepatch._
@@ -43,14 +43,14 @@ val input = """{
               |  "field3": []
               |}""".stripMargin
 
-val stream = Stream.emits(input).through(tokens[IO])
+val stream = Stream.emits(input).through(tokens[Fallible, Char])
 
 // a patch that removes `field3`
 val mergePatch = JsonMergePatch.Object(Map("field3" -> Json.Null))
 
-val patched = stream.through(patch[IO, Json](mergePatch))
+val patched = stream.through(patch[Fallible, Json](mergePatch))
 
-patched.compile.toList.unsafeRunSync()
+patched.compile.toList
 ```
 
 [diffson]: https://github.com/gnieh/diffson

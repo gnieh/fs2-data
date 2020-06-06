@@ -12,10 +12,11 @@ This page covers the following libraries:
 
 Examples on this page use the following input:
 
-```scala mdoc:silent
+```scala mdoc
 import cats.effect._
+import cats.implicits._
 
-import fs2.Stream
+import fs2.{Fallible, Stream}
 import fs2.data.json._
 
 val input = """{
@@ -28,11 +29,9 @@ val input = """{
               |  "field3": []
               |}""".stripMargin
 
-val stream = Stream.emits(input).through(tokens[IO])
+val stream = Stream.emit(input).through(tokens[Fallible, String])
 
-val selector = ".field3.[]".parseSelector[IO].unsafeRunSync()
-
-val filtered = stream.through(filter(selector))
+val selector = ".field3.[]".parseSelector[Either[Throwable, *]].fold(throw _, identity)
 ```
 
 ### Circe
@@ -46,11 +45,11 @@ For instance both examples from the [core module documentation][json-doc] with c
 import fs2.data.json.circe._
 import io.circe._
 
-val asts = stream.through(values[IO, Json])
-asts.compile.toList.unsafeRunSync()
+val asts = stream.through(values[Fallible, Json])
+asts.compile.toList
 
-val transformed = stream.through(transform[IO, Json](selector, json => Json.obj("test" -> json)))
-transformed.through(values[IO, Json]).compile.toList.unsafeRunSync()
+val transformed = stream.through(transform[Fallible, Json](selector, json => Json.obj("test" -> json)))
+transformed.through(values[Fallible, Json]).compile.toList
 ```
 
 [json-doc]: /documentation/json/

@@ -17,8 +17,6 @@ package fs2.data.json
 
 import circe._
 
-import cats.effect._
-
 import fs2._
 
 import org.scalatest.flatspec.AnyFlatSpec
@@ -30,11 +28,11 @@ class TokenizerSpec extends AnyFlatSpec with Matchers {
 
     val input = Stream.emits("""true {"field1": "test", "field2": 23}""")
 
-    val toks = input.through(tokens[IO])
+    val toks = input.through(tokens[Fallible, Char])
 
     val roundtrip = toks.through(values).through(tokenize)
 
-    toks.compile.toList.unsafeRunSync() shouldBe roundtrip.compile.toList.unsafeRunSync()
+    toks.compile.toList shouldBe roundtrip.compile.toList
 
   }
 

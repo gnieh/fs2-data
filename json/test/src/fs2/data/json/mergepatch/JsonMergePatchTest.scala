@@ -18,8 +18,6 @@ package mergepatch
 
 import circe._
 
-import cats.effect._
-
 import diffson.jsonmergepatch.JsonMergePatch
 import diffson.circe._
 
@@ -57,96 +55,88 @@ class JsonMergePatchTest extends AnyFlatSpec with Matchers {
     val patched =
       Stream
         .emits("true")
-        .through(tokens[IO])
+        .through(tokens[Fallible, Char])
         .through(patch(valuePatch))
         .compile
         .toList
-        .unsafeRunSync()
-    patched shouldBe List(Token.NumberValue("5"))
+    patched shouldBe Right(List(Token.NumberValue("5")))
   }
 
   it should "replace an object value" in {
     val patched =
       Stream
         .emits("""{"key": 4}""")
-        .through(tokens[IO])
+        .through(tokens[Fallible, Char])
         .through(patch(valuePatch))
         .compile
         .toList
-        .unsafeRunSync()
-    patched shouldBe List(Token.NumberValue("5"))
+    patched shouldBe Right(List(Token.NumberValue("5")))
   }
 
   it should "replace an array value" in {
     val patched =
       Stream
         .emits("""[1, 2, 3]""")
-        .through(tokens[IO])
+        .through(tokens[Fallible, Char])
         .through(patch(valuePatch))
         .compile
         .toList
-        .unsafeRunSync()
-    patched shouldBe List(Token.NumberValue("5"))
+    patched shouldBe Right(List(Token.NumberValue("5")))
   }
 
   "a null patch" should "remove a simple value" in {
     val patched =
       Stream
         .emits("true")
-        .through(tokens[IO])
+        .through(tokens[Fallible, Char])
         .through(patch(nullPatch))
         .compile
         .toList
-        .unsafeRunSync()
-    patched shouldBe Nil
+    patched shouldBe Right(Nil)
   }
 
   it should "remove an object value" in {
     val patched =
       Stream
         .emits("""{"key": 4}""")
-        .through(tokens[IO])
+        .through(tokens[Fallible, Char])
         .through(patch(nullPatch))
         .compile
         .toList
-        .unsafeRunSync()
-    patched shouldBe Nil
+    patched shouldBe Right(Nil)
   }
 
   it should "remove an array value" in {
     val patched =
       Stream
         .emits("""[1, 2, 3]""")
-        .through(tokens[IO])
+        .through(tokens[Fallible, Char])
         .through(patch(nullPatch))
         .compile
         .toList
-        .unsafeRunSync()
-    patched shouldBe Nil
+    patched shouldBe Right(Nil)
   }
 
   "an object patch" should "replace a simple value" in {
     val patched =
       Stream
         .emits("true")
-        .through(tokens[IO])
+        .through(tokens[Fallible, Char])
         .through(patch(objectPatch))
         .compile
         .toList
-        .unsafeRunSync()
-    patched shouldBe objectPatchTokens
+    patched shouldBe Right(objectPatchTokens)
   }
 
   it should "replace an array value" in {
     val patched =
       Stream
         .emits("""[1, 2, 3]""")
-        .through(tokens[IO])
+        .through(tokens[Fallible, Char])
         .through(patch(objectPatch))
         .compile
         .toList
-        .unsafeRunSync()
-    patched shouldBe objectPatchTokens
+    patched shouldBe Right(objectPatchTokens)
   }
 
   it should "be applied recursively to an object value" in {
@@ -172,12 +162,11 @@ class JsonMergePatchTest extends AnyFlatSpec with Matchers {
       Stream
         .emits(
           """{"untouched1": 32, "key2": {"nested": "test string", "deleted": false, "untouched2": "another string"}, "key1": true}""")
-        .through(tokens[IO])
+        .through(tokens[Fallible, Char])
         .through(patch(objectPatch))
         .compile
         .toList
-        .unsafeRunSync()
-    patched shouldBe objectTokens
+    patched shouldBe Right(objectTokens)
   }
 
 }
