@@ -31,7 +31,7 @@ val input = """<a xmlns:ns="http://test.ns">
               |  test entity resolution &amp; normalization
               |</a>""".stripMargin
 
-val stream = Stream.emits(input).through(events[IO])
+val stream = Stream.emit(input).through(events[IO, String])
 stream.compile.toList.unsafeRunSync()
 ```
 
@@ -58,7 +58,6 @@ entityResolved.compile.toList.unsafeRunSync()
 Once entites and namespaces are resolved, the events might be numerous and can be normalized to avoid emitting too many of them. For instance, after reference resolution, consecutive text events can be merged. This is achieved by using the `normalize` pipe.
 
 ```scala mdoc
-val normalized = entityResolved.through(normalize[IO])
+val normalized = entityResolved.through(normalize)
 normalized.compile.toList.unsafeRunSync()
 ```
-

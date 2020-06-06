@@ -16,6 +16,7 @@
 package fs2
 package data
 
+import text._
 import xml.internals._
 
 import cats._
@@ -31,8 +32,8 @@ package object xml {
     * If the streams ends without failure, the sequence of tokens is sensured
     * to represent a (potentially empty) sequence of valid XML documents.
     */
-  def events[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Char, XmlEvent] =
-    EventParser.pipe[F]
+  def events[F[_], T](implicit F: RaiseThrowable[F], T: CharLikeChunks[F, T]): Pipe[F, T, XmlEvent] =
+    EventParser.pipe[F, T]
 
   /** Resolves the character and entity references in the XML stream.
     * Entities are already defined and validated (especially no recursion),
