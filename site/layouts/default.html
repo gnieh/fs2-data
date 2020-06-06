@@ -57,6 +57,14 @@
       <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
     </ul>
 
+    <% if @item.path.start_with? "/documentation/" then %>
+    <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
+      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/master/documentation/docs/<%= @item.identifier.to_s.delete_prefix("/documentation/") %>" target="_blank">
+        <i class="large material-icons">mode_edit</i>
+      </a>
+    </div>
+    <% end %>
+
     <main>
       <div class="container">
         <%= yield %>
@@ -79,8 +87,8 @@
       var instances = M.Sidenav.init(elems, {});
     });
     document.addEventListener('DOMContentLoaded', function() {
-      var elems = document.querySelectorAll('.materialboxed');
-      var instances = M.Materialbox.init(elems, {});
+      var elems = document.querySelectorAll('.tooltipped');
+      var instances = M.Tooltip.init(elems, {});
     });
     </script>
   </body>
