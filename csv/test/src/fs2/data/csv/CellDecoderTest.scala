@@ -1,10 +1,12 @@
 package fs2.data.csv
 
-import org.scalatest.{EitherValues, FlatSpec, Matchers}
+import org.scalatest.EitherValues
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
 
-class CellDecoderTest extends FlatSpec with Matchers with EitherValues {
+class CellDecoderTest extends AnyFlatSpec with Matchers with EitherValues {
 
   "CellDecoder" should "have implicit instances available for standard types" in {
     CellDecoder[String]

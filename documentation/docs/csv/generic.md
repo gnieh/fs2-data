@@ -11,8 +11,6 @@ The `fs2-data-csv-generic` module provides automatic and semi-automatic derivati
 To demonstrate how it works, let's work again with the CSV data from the [core][csv-doc] module documentation.
 
 ```scala mdoc:reset
-import cats.effect._
-
 import fs2._
 import fs2.data.csv._
 
@@ -21,8 +19,7 @@ val input = """i,s,j
               |,other,-3
               |""".stripMargin
 
-val stream = Stream.emits(input).through(rows[IO]())
-// stream: Stream[IO[A], cats.data.NonEmptyList[String]] = Stream(..)
+val stream = Stream.emit(input).through(rows[Fallible, String]())
 ```
 
 This page covers the following topics:
@@ -77,8 +74,8 @@ import shapeless._
 import fs2.data.csv.generic.hlist._
 
 // .tail drops the header line
-val hlists = stream.through(noHeaders).tail.through(decode[IO, Option[Int] :: String :: Int :: HNil])
-hlists.compile.toList.unsafeRunSync()
+val hlists = stream.through(noHeaders).tail.through(decode[Fallible, Option[Int] :: String :: Int :: HNil])
+hlists.compile.toList
 ```
 
 ### Derivation of `CsvRowDecoder`
@@ -94,8 +91,8 @@ You can get an automatically derived `CsvRowDecoder` for every case class by imp
 ```scala mdoc:nest
 import fs2.data.csv.generic.auto._
 
-val decoded = stream.through(headers[IO, String]).through(decodeRow[IO, String, MyRow])
-decoded.compile.toList.unsafeRunSync()
+val decoded = stream.through(headers[Fallible, String]).through(decodeRow[Fallible, String, MyRow])
+decoded.compile.toList
 ```
 
 Automatic derivation can be quite slow at compile time, so you might want to opt for semiautomatic derivation. In this case, you need to explicitly define the implicit `CsvRowDecoder` instance in scope.
@@ -105,8 +102,8 @@ import fs2.data.csv.generic.semiauto._
 
 implicit val MyRowDecoder: CsvRowDecoder[MyRow, String] = deriveCsvRowDecoder[MyRow]
 
-val decoded = stream.through(headers[IO, String]).through(decodeRow[IO, String, MyRow])
-decoded.compile.toList.unsafeRunSync()
+val decoded = stream.through(headers[Fallible, String]).through(decodeRow[Fallible, String, MyRow])
+decoded.compile.toList
 ```
 
 Both automatic and semi-automatic decoders support also default values, so instead of an `Option[Int]` for `i`, you can define this class:
@@ -116,8 +113,8 @@ import fs2.data.csv.generic.auto._
 
 case class MyRowDefault(i: Int = 42, j: Int, s: String)
 
-val decoded = stream.through(headers[IO, String]).through(decodeRow[IO, String, MyRowDefault])
-decoded.compile.toList.unsafeRunSync()
+val decoded = stream.through(headers[Fallible, String]).through(decodeRow[Fallible, String, MyRowDefault])
+decoded.compile.toList
 ```
 
 [csv-doc]: /documentation/csv/

@@ -28,8 +28,8 @@ val input = """i,s,j
               |,other,-3
               |""".stripMargin
 
-val stream = Stream.emits(input).through(rows[IO]())
-stream.compile.toList.unsafeRunSync()
+val stream = Stream.emit(input).through(rows[Fallible, String]())
+stream.compile.toList
 ```
 
 If your CSV data is not using the comma as separator, you can provide the character as parameter of the `rows` pipe. For instance, if your data uses semicolon as separator:
@@ -38,8 +38,8 @@ If your CSV data is not using the comma as separator, you can provide the charac
 val input2 = """i;s;j
                |1;test;2""".stripMargin
 
-val stream2 = Stream.emits(input2).through(rows[IO](';'))
-stream2.compile.toList.unsafeRunSync()
+val stream2 = Stream.emit(input2).through(rows[Fallible, String](';'))
+stream2.compile.toList
 ```
 
 ### CSV rows with or without headers
@@ -49,15 +49,15 @@ Rows can be converted to a `Row` or `CsvRow[Header]` for some `Header` type. The
 If your CSV file doesn't have headers, you can use the `noHeaders` pipe, which creates `Row`.
 
 ```scala mdoc
-val noh = stream.through(noHeaders[IO])
-noh.map(_.values).compile.toList.unsafeRunSync()
+val noh = stream.through(noHeaders)
+noh.map(_.values).compile.toList
 ```
 
 If you want to consider the first row as a header row, you can use the `headers` pipe. For instance to have headers as `String`:
 
 ```scala mdoc
-val withh = stream.through(headers[IO, String])
-withh.map(_.toMap).compile.toList.unsafeRunSync()
+val withh = stream.through(headers[Fallible, String])
+withh.map(_.toMap).compile.toList
 ```
 
 To support your own type of `Header` you must provide an implicit `ParseableHeader[Header]`. For instance if you have a fix set of headers represented as [enumeratum][enumeratum] enum values, you can provide an instance of `ParseableHeader` as follows:
@@ -85,8 +85,8 @@ implicit object ParseableMyHeaders extends ParseableHeader[MyHeaders] {
     }
 }
 
-val withMyHeaders = stream.through(headers[IO, MyHeaders])
-withMyHeaders.map(_.toMap).compile.toList.unsafeRunSync()
+val withMyHeaders = stream.through(headers[Fallible, MyHeaders])
+withMyHeaders.map(_.toMap).compile.toList
 ```
 
 If the parse method fails for a header, the entire stream fails.
@@ -151,8 +151,8 @@ implicit object HListDecoder extends RowDecoder[Option[Int] :: String :: Int :: 
 }
 
 // .tail drops the header line
-val hlists = noh.tail.through(decode[IO, Option[Int] :: String :: Int :: HNil])
-hlists.compile.toList.unsafeRunSync()
+val hlists = noh.tail.through(decode[Fallible, Option[Int] :: String :: Int :: HNil])
+hlists.compile.toList
 ```
 
 #### `CsvRowDecoder`
@@ -171,8 +171,8 @@ implicit object MyRowDecoder extends CsvRowDecoder[MyRow, String] {
     s <- row.as[String]("s")
   } yield MyRow(i, j, s)
 }
-val decoded = withh.through(decodeRow[IO, String, MyRow])
-decoded.compile.toList.unsafeRunSync()
+val decoded = withh.through(decodeRow[Fallible, String, MyRow])
+decoded.compile.toList
 ```
 
 As you can see this can be quite tedious to implement. Lucky us, the `fs2-data-csv-generic` module comes to the rescue to avoid having to write the boilerplate. Please refer to [the module documentation][csv-generic-doc] for more details.
