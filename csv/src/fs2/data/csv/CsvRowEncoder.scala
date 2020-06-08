@@ -21,14 +21,15 @@ import cats._
   */
 trait CsvRowEncoder[T, Header] {
   def apply(elem: T): CsvRow[Header]
+
+  def contramap[B](f: B => T): CsvRowEncoder[B, Header] = elem => apply(f(elem))
 }
 
 object CsvRowEncoder extends ExportedCsvRowEncoders {
 
   implicit def CsvRowEncoderContravariant[Header]: Contravariant[CsvRowEncoder[*, Header]] =
     new Contravariant[CsvRowEncoder[*, Header]] {
-      override def contramap[A, B](fa: CsvRowEncoder[A, Header])(f: B => A): CsvRowEncoder[B, Header] =
-        elem => fa(f(elem))
+      override def contramap[A, B](fa: CsvRowEncoder[A, Header])(f: B => A): CsvRowEncoder[B, Header] = fa.contramap(f)
     }
 
   def apply[T: CsvRowEncoder[*, Header], Header]: CsvRowEncoder[T, Header] =

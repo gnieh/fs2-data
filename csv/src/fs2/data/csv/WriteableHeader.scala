@@ -5,6 +5,8 @@ import cats.data.NonEmptyList
 
 trait WriteableHeader[Header] {
   def apply(headers: NonEmptyList[Header]): NonEmptyList[String]
+
+  def contramap[B](f: B => Header): WriteableHeader[B] = headers => apply(headers.map(f))
 }
 
 object WriteableHeader {
@@ -16,7 +18,7 @@ object WriteableHeader {
   }
 
   implicit object WriteableHeaderInstances extends Contravariant[WriteableHeader] {
-    override def contramap[A, B](fa: WriteableHeader[A])(f: B => A): WriteableHeader[B] = h => fa(h.map(f))
+    override def contramap[A, B](fa: WriteableHeader[A])(f: B => A): WriteableHeader[B] = fa.contramap(f)
   }
 
   def liftCellEncoder[T](implicit cellEncoder: CellEncoder[T]): WriteableHeader[T] =

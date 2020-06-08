@@ -22,13 +22,15 @@ import cats.data.NonEmptyList
   */
 trait RowEncoder[T] {
   def apply(elem: T): NonEmptyList[String]
+
+  def contramap[B](f: B => T): RowEncoder[B] = elem => apply(f(elem))
 }
 
 object RowEncoder extends ExportedRowEncoders {
 
   implicit object RowEncoderContravariant extends Contravariant[RowEncoder] {
     override def contramap[A, B](fa: RowEncoder[A])(f: B => A): RowEncoder[B] =
-      elem => fa(f(elem))
+      fa.contramap(f)
   }
 
   def apply[T: RowEncoder]: RowEncoder[T] = implicitly[RowEncoder[T]]

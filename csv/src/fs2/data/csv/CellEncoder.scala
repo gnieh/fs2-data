@@ -28,6 +28,8 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   */
 trait CellEncoder[T] {
   def apply(cell: T): String
+
+  def contramap[B](f: B => T): CellEncoder[B] = (cell: B) => apply(f(cell))
 }
 
 object CellEncoder
@@ -36,8 +38,7 @@ object CellEncoder
     with ExportedCellEncoders {
 
   implicit object CellEncoderInstances extends Contravariant[CellEncoder] {
-    override def contramap[A, B](fa: CellEncoder[A])(
-        f: B => A): CellEncoder[B] = (cell: B) => fa(f(cell))
+    override def contramap[A, B](fa: CellEncoder[A])(f: B => A): CellEncoder[B] = fa.contramap(f)
   }
 
   def apply[T: CellEncoder]: CellEncoder[T] = implicitly[CellEncoder[T]]
