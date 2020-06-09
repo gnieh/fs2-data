@@ -24,15 +24,13 @@ import shapeless._
 
 object hlist {
 
-  final implicit def hlistDecoder[T <: HList](
-      implicit cc: Lazy[SeqShapedRowDecoder[T]]): DerivedRowDecoder[T] =
+  final implicit def hlistDecoder[T <: HList](implicit cc: Lazy[SeqShapedRowDecoder[T]]): DerivedRowDecoder[T] =
     new DerivedRowDecoder[T] {
       def apply(cells: NonEmptyList[String]): DecoderResult[T] =
         cc.value(cells)
     }
 
-  final implicit def hlistEncoder[T <: HList](
-      implicit cc: Lazy[SeqShapedRowEncoder[T]]): DerivedRowEncoder[T] =
+  final implicit def hlistEncoder[T <: HList](implicit cc: Lazy[SeqShapedRowEncoder[T]]): DerivedRowEncoder[T] =
     new DerivedRowEncoder[T] {
       override def apply(elem: T): NonEmptyList[String] = cc.value(elem)
     }

@@ -24,10 +24,9 @@ trait DerivedRowEncoder[T] extends RowEncoder[T]
 
 object DerivedRowEncoder {
 
-  final implicit def productEncoder[T, Repr <: HList](
-      implicit
-      gen: Generic.Aux[T, Repr],
-      cc: Lazy[SeqShapedRowEncoder[Repr]]): DerivedRowEncoder[T] =
+  final implicit def productEncoder[T, Repr <: HList](implicit
+                                                      gen: Generic.Aux[T, Repr],
+                                                      cc: Lazy[SeqShapedRowEncoder[Repr]]): DerivedRowEncoder[T] =
     (elem: T) => cc.value(gen.to(elem))
 
 }

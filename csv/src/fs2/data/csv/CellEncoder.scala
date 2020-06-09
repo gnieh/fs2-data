@@ -32,14 +32,10 @@ trait CellEncoder[T] {
   def contramap[B](f: B => T): CellEncoder[B] = (cell: B) => apply(f(cell))
 }
 
-object CellEncoder
-    extends CellEncoderInstances1
-    with LiteralCellEncoders
-    with ExportedCellEncoders {
+object CellEncoder extends CellEncoderInstances1 with LiteralCellEncoders with ExportedCellEncoders {
 
   implicit object CellEncoderInstances extends Contravariant[CellEncoder] {
-    override def contramap[A, B](fa: CellEncoder[A])(
-        f: B => A): CellEncoder[B] = fa.contramap(f)
+    override def contramap[A, B](fa: CellEncoder[A])(f: B => A): CellEncoder[B] = fa.contramap(f)
   }
 
   def apply[T: CellEncoder]: CellEncoder[T] = implicitly[CellEncoder[T]]
@@ -78,14 +74,12 @@ object CellEncoder
   implicit val instantEncoder: CellEncoder[Instant] = fromToString(_)
   implicit val periodEncoder: CellEncoder[Period] = fromToString(_)
   implicit val localDateEncoder: CellEncoder[LocalDate] = fromToString(_)
-  implicit val localDateTimeEncoder: CellEncoder[LocalDateTime] = fromToString(
-    _)
+  implicit val localDateTimeEncoder: CellEncoder[LocalDateTime] = fromToString(_)
   implicit val localTimeEncoder: CellEncoder[LocalTime] = fromToString(_)
   implicit val offsetDateTimeEncoder: CellEncoder[OffsetDateTime] =
     fromToString(_)
   implicit val offsetTimeEncoder: CellEncoder[OffsetTime] = fromToString(_)
-  implicit val zonedDateTimeEncoder: CellEncoder[ZonedDateTime] = fromToString(
-    _)
+  implicit val zonedDateTimeEncoder: CellEncoder[ZonedDateTime] = fromToString(_)
 
   // Option
   implicit def optionEncoder[Cell: CellEncoder]: CellEncoder[Option[Cell]] =
@@ -98,7 +92,6 @@ trait CellEncoderInstances1 {
 }
 
 trait ExportedCellEncoders {
-  implicit def exportedCellEncoders[A](
-      implicit exported: Exported[CellEncoder[A]]): CellEncoder[A] =
+  implicit def exportedCellEncoders[A](implicit exported: Exported[CellEncoder[A]]): CellEncoder[A] =
     exported.instance
 }

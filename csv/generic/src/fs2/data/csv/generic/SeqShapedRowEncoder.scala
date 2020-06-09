@@ -23,15 +23,12 @@ trait SeqShapedRowEncoder[Repr] extends RowEncoder[Repr]
 
 object SeqShapedRowEncoder {
 
-  implicit def lastElemEncoder[Head](
-      implicit Head: CellEncoder[Head]): SeqShapedRowEncoder[Head :: HNil] =
+  implicit def lastElemEncoder[Head](implicit Head: CellEncoder[Head]): SeqShapedRowEncoder[Head :: HNil] =
     (last: Head :: HNil) => NonEmptyList.one(Head(last.head))
 
   implicit def hconsEncoder[Head, Tail <: HList](
       implicit Head: CellEncoder[Head],
-      Tail: Lazy[SeqShapedRowEncoder[Tail]])
-    : SeqShapedRowEncoder[Head :: Tail] =
-    (fields: Head :: Tail) =>
-      NonEmptyList(Head(fields.head), Tail.value(fields.tail).toList)
+      Tail: Lazy[SeqShapedRowEncoder[Tail]]): SeqShapedRowEncoder[Head :: Tail] =
+    (fields: Head :: Tail) => NonEmptyList(Head(fields.head), Tail.value(fields.tail).toList)
 
 }

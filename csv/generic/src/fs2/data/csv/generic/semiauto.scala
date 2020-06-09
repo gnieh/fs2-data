@@ -22,28 +22,22 @@ import shapeless._
 
 object semiauto {
 
-  def deriveRowDecoder[T](
-      implicit T: Lazy[DerivedRowDecoder[T]]): RowDecoder[T] =
+  def deriveRowDecoder[T](implicit T: Lazy[DerivedRowDecoder[T]]): RowDecoder[T] =
     T.value
 
-  def deriveRowEncoder[T](
-      implicit T: Lazy[DerivedRowEncoder[T]]): RowEncoder[T] =
+  def deriveRowEncoder[T](implicit T: Lazy[DerivedRowEncoder[T]]): RowEncoder[T] =
     T.value
 
-  def deriveCsvRowDecoder[T](
-      implicit T: Lazy[DerivedCsvRowDecoder[T]]): CsvRowDecoder[T, String] =
+  def deriveCsvRowDecoder[T](implicit T: Lazy[DerivedCsvRowDecoder[T]]): CsvRowDecoder[T, String] =
     T.value
 
-  def deriveCsvRowEncoder[T](
-      implicit T: Lazy[DerivedCsvRowEncoder[T]]): CsvRowEncoder[T, String] =
+  def deriveCsvRowEncoder[T](implicit T: Lazy[DerivedCsvRowEncoder[T]]): CsvRowEncoder[T, String] =
     T.value
 
-  def deriveCellDecoder[T](
-      implicit T: Lazy[DerivedCellDecoder[T]]): CellDecoder[T] =
+  def deriveCellDecoder[T](implicit T: Lazy[DerivedCellDecoder[T]]): CellDecoder[T] =
     T.value
 
-  def deriveCellEncoder[T](
-      implicit T: Lazy[DerivedCellEncoder[T]]): CellEncoder[T] =
+  def deriveCellEncoder[T](implicit T: Lazy[DerivedCellEncoder[T]]): CellEncoder[T] =
     T.value
 
 }
