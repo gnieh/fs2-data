@@ -20,24 +20,13 @@ package generic
 
 import shapeless._
 
-object semiauto {
+trait DerivedRowEncoder[T] extends RowEncoder[T]
 
-  def deriveRowDecoder[T](implicit T: Lazy[DerivedRowDecoder[T]]): RowDecoder[T] =
-    T.value
+object DerivedRowEncoder {
 
-  def deriveRowEncoder[T](implicit T: Lazy[DerivedRowEncoder[T]]): RowEncoder[T] =
-    T.value
-
-  def deriveCsvRowDecoder[T](implicit T: Lazy[DerivedCsvRowDecoder[T]]): CsvRowDecoder[T, String] =
-    T.value
-
-  def deriveCsvRowEncoder[T](implicit T: Lazy[DerivedCsvRowEncoder[T]]): CsvRowEncoder[T, String] =
-    T.value
-
-  def deriveCellDecoder[T](implicit T: Lazy[DerivedCellDecoder[T]]): CellDecoder[T] =
-    T.value
-
-  def deriveCellEncoder[T](implicit T: Lazy[DerivedCellEncoder[T]]): CellEncoder[T] =
-    T.value
+  final implicit def productEncoder[T, Repr <: HList](implicit
+                                                      gen: Generic.Aux[T, Repr],
+                                                      cc: Lazy[SeqShapedRowEncoder[Repr]]): DerivedRowEncoder[T] =
+    (elem: T) => cc.value(gen.to(elem))
 
 }

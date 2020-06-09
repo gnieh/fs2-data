@@ -29,9 +29,9 @@ This page covers the following topics:
 * Contents
 {:toc}
 
-### Derivation of `CellDecoder`
+### Derivation of `CellDecoder` & `CellEncoder`
 
-Cell types (`Int`, `String`, ...) can be decoded by providing implicit instances of `CellDecoder`. Instances for primitives and common types are defined already. You can easily define your own or use generic derivation for coproducts:
+Cell types (`Int`, `String`, ...) can be decoded and encoded by providing implicit instances of `CellDecoder`/`CellEncoder`. Instances for primitives and common types are defined already. You can easily define your own or use generic derivation for coproducts:
 
 ```scala mdoc
 import fs2.data.csv.generic._
@@ -47,6 +47,10 @@ implicit val stateDecoder = deriveCellDecoder[State]
 // use stateDecoder to derive decoders for rows...or just test:
 stateDecoder("On")
 stateDecoder("Off")
+
+// same goes for the encoder
+implicit val stateEncoder = deriveCellEncoder[State]
+stateEncoder(State.On)
 ```
 
 The generic derivation for cell decoders also supports renaming and deriving instances for unary product types (case classes with one field):
@@ -66,11 +70,17 @@ implicit val advancedDecoder = deriveCellDecoder[Advanced]
 
 advancedDecoder("Active")
 advancedDecoder("Off")
+
+implicit val unknownEncoder = deriveCellEncoder[Advanced.Unknown]
+implicit val advancedEncoder = deriveCellEncoder[Advanced]
+
+advancedEncoder(Advanced.On)
+advancedEncoder(Advanced.Unknown("Off"))
 ```
 
-### Derivation of `RowDecoder`
+### Derivation of `RowDecoder` & `RowEncoder`
 
-One can automatically derive a `RowDecoder` for [shapeless][shapeless] `HList`. The example previously written manually now looks like:
+One can automatically derive an instance for a [shapeless][shapeless] `HList` if there are instances for all cell types. The example previously written manually now looks like:
 
 ```scala mdoc
 import shapeless._
@@ -89,16 +99,20 @@ Let's say you want to decode the CSV row to the following case class:
 case class MyRow(i: Option[Int], j: Int, s: String)
 ```
 
-You can get an automatically derived `CsvRowDecoder` for every case class by importing `fs2.data.csv.generic.auto._`
+You can get an automatically derived `CsvRowDecoder` (and a matching `CsvRowEncoder`) for every case class by importing `fs2.data.csv.generic.auto._`
 
 ```scala mdoc:nest
 import fs2.data.csv.generic.auto._
 
-val decoded = stream.through(headers[IO, String]).through(decodeRow[IO, String, MyRow])
-decoded.compile.toList.unsafeRunSync()
+val roundtrip = stream.through(headers[IO, String])
+  .through(decodeRow[IO, String, MyRow])
+  // and back
+  .through(encodeRow[IO, String, MyRow])
+  .through(encodeRowWithFirstHeaders[IO, String])
+roundtrip.compile.toList.unsafeRunSync()
 ```
 
-Automatic derivation can be quite slow at compile time, so you might want to opt for semiautomatic derivation. In this case, you need to explicitly define the implicit `CsvRowDecoder` instance in scope.
+Automatic derivation can be quite slow at compile time, so you might want to opt for semiautomatic derivation. In this case, you need to explicitly define the implicit instance in scope.
 
 ```scala mdoc:nest
 import fs2.data.csv.generic.semiauto._
@@ -109,7 +123,7 @@ val decoded = stream.through(headers[IO, String]).through(decodeRow[IO, String, 
 decoded.compile.toList.unsafeRunSync()
 ```
 
-Both automatic and semi-automatic decoders support also default values, so instead of an `Option[Int]` for `i`, you can define this class:
+Both automatic and semi-automatic decoders support also default values when decoding, so instead of an `Option[Int]` for `i`, you can define this class:
 
 ```scala mdoc:nest
 import fs2.data.csv.generic.auto._

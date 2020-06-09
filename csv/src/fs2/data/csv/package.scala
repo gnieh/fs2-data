@@ -16,9 +16,10 @@
 package fs2
 package data
 
+import cats.Show
 import csv.internals._
-
 import cats.data._
+import cats.implicits._
 
 package object csv {
 
@@ -61,5 +62,46 @@ package object csv {
   def attemptDecodeRow[F[_], Header, R](
       implicit R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], DecoderResult[R]] =
     _.map(R(_))
+
+  def writeWithHeaders[F[_], Header](headers: NonEmptyList[Header])(
+      implicit H: WriteableHeader[Header]): Pipe[F, Row, NonEmptyList[String]] =
+    Stream(H(headers)) ++ _.map(_.values)
+
+  def writeWithoutHeaders[F[_]]: Pipe[F, Row, NonEmptyList[String]] =
+    _.map(_.values)
+
+  def toStrings[F[_]](separator: Char = ',',
+                      newline: String = "\n",
+                      escape: EscapeMode = EscapeMode.Auto): Pipe[F, NonEmptyList[String], String] = {
+    _.flatMap(
+      nel =>
+        Stream
+          .emits(nel.toList)
+          .map(RowWriter.encodeColumn(separator, escape))
+          .intersperse(separator.toString) ++ Stream(newline))
+  }
+
+  def toRowStrings[F[_]](separator: Char = ',',
+                         newline: String = "\n",
+                         escape: EscapeMode = EscapeMode.Auto): Pipe[F, NonEmptyList[String], String] = {
+    // explicit Show avoids mapping the NEL before
+    val showColumn: Show[String] =
+      Show.show(RowWriter.encodeColumn(separator, escape))
+    _.map(_.mkString_("", separator.toString, newline)(showColumn, implicitly))
+  }
+
+  def encode[F[_], R](implicit R: RowEncoder[R]): Pipe[F, R, Row] =
+    _.map(row => new Row(R(row)))
+
+  def encodeRow[F[_], Header, R](implicit R: CsvRowEncoder[R, Header]): Pipe[F, R, CsvRow[Header]] =
+    _.map(R(_))
+
+  def encodeRowWithFirstHeaders[F[_], Header](
+      implicit H: WriteableHeader[Header]): Pipe[F, CsvRow[Header], NonEmptyList[String]] =
+    _.pull.peek1.flatMap {
+      case Some((CsvRow(_, headers), stream)) =>
+        Pull.output1(H(headers)) >> stream.map(_.values).pull.echo
+      case None => Pull.done
+    }.stream
 
 }

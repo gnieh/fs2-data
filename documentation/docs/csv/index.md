@@ -13,7 +13,7 @@ This page covers the following topics:
 * Contents
 {:toc}
 
-### Basic usage
+### Parsing CSV
 
 The first one of the provided tools is the `rows` pipe, which transforms a stream of characters into a stream of parsed rows. The rows are represented by [`NonEmptyList[String]`][nel], empty lines are skipped. Values can be quoted and escaped, according to [the RFC][rfc].
 
@@ -91,16 +91,30 @@ withMyHeaders.map(_.toMap).compile.toList.unsafeRunSync()
 
 If the parse method fails for a header, the entire stream fails.
 
-### Decoders
+### Writing CSV
+There are also pipes for encoding rows to CSV, with or without headers. Simple example without headers:
 
-The library also provides a decoder interface, which allows for decoding CSV rows into arbitrary data types through the `decode` and `decodeRow` pipes. There are several kinds of decoders:
- - `CellDecoder` is a simple value decoder, used to transform values within the CSV fields.
- - `RowDecoder` is used to decode CSV `Row`s through the `decode` pipe, and is positional. Use it when your CSV file doesn't have headers.
- - `CsvRowDecoder` is used to decode `CsvRow`s through the `decodeRow` pipe, and has access to the headers. Use it when you want to use header names to decode the rows.
+```scala mdoc
+val testRows = Stream(Row(NonEmptyList.of("3", "", "test")))
+testRows
+  .through(writeWithoutHeaders)
+  .through(toRowStrings(/* separator: Char = ',', newline: String = "\n"*/))
+  .compile
+  .toList
+```
 
-#### `CellDecoder`
+If you want to write headers, use `writeWithHeaders` or, in case you use `CsvRow`, `encodeRowWithFirstHeaders`. For writing non-String headers, you'll need to provide an instance of `WritableHeader`, a type class analog to `ParseableHeader`.
 
-The library provides decoders for most of the Scala common types:
+### Decoders and Encoders
+
+The library also provides decoder and encoder type classes, which allow for decoding CSV rows into arbitrary data types through the `decode` and `decodeRow` pipes and encoding data to CSV via `encode` and `encodeRow`. There are several kinds:
+ - `CellDecoder` is a simple value decoder, used to transform values within the CSV fields. `CellEncoder` describes the reverse operation, encoding a simple value into a String.
+ - `RowDecoder` and `RowEncoder` are used to decode/encode CSV `Row`s through the `decode`/`encode` pipes, and is positional. Use it when your CSV file doesn't have headers.
+ - `CsvRowDecoder` is used to decode `CsvRow`s through the `decodeRow` pipe, and has access to the headers. Use it when you want to use header names to decode the rows. Analog, `CsvRowEncoder` exists to encode values to CSV with headers.
+
+#### `CellDecoder` & `CellEncoder`
+
+The library provides decoders and encoders for most of the Scala common types:
    - primitive types;
    - `String`;
    - Enums;
@@ -131,7 +145,18 @@ object State extends IntEnum[State] {
 }
 ```
 
-#### `RowDecoder`
+For `CellEncoder`, it is even easier to define your own as encoding can't fail, so basically it's just a function `A => String`. The easiest ways to roll your own are using Scala's single abstract method sugar:
+```scala mdoc
+case class Wrapper(content: String)
+implicit val wrapperCellEncoder: CellEncoder[Wrapper] = (w: Wrapper) => w.content
+```
+
+or using `contramap` on an existing encoder:
+```scala mdoc
+implicit val wrapperCellEncoder2: CellEncoder[Wrapper] = CellEncoder[String].contramap(_.content)
+```
+
+#### `RowDecoder` & `RowEncoder`
 
 `RowDecoder`s can be used to decode an entire CSV row based on field positions. For instance if you want to decode the CSV data into [shapeless][shapeless] `HList`:
 
@@ -155,7 +180,22 @@ val hlists = noh.tail.through(decode[IO, Option[Int] :: String :: Int :: HNil])
 hlists.compile.toList.unsafeRunSync()
 ```
 
-#### `CsvRowDecoder`
+Again, encoding is easier as it can't fail:
+
+```scala mdoc
+import shapeless._
+
+implicit object HListEncoder extends RowEncoder[Option[Int] :: String :: Int :: HNil] {
+  def apply(input: Option[Int] :: String :: Int :: HNil): NonEmptyList[String] =
+    NonEmptyList.of(CellEncoder[Option[Int]].apply(input.head), input.tail.head, input.tail.tail.head.toString)
+}
+
+// .tail drops the header line
+val row = Stream(Option(3) :: "test" :: 42 :: HNil)
+row.through(encode).compile.toList
+```
+
+#### `CsvRowDecoder` & `CsvRowEncoder`
 
 If your CSV data set has headers, you can use `CsvRowDecoder`. Using the headers, one can decode the CSV data to some case class:
 
@@ -174,6 +214,8 @@ implicit object MyRowDecoder extends CsvRowDecoder[MyRow, String] {
 val decoded = withh.through(decodeRow[IO, String, MyRow])
 decoded.compile.toList.unsafeRunSync()
 ```
+
+Analogously, you can encode your data with a `CsvRowEncoder`. Make sure to not vary the headers based on the data itself as this can't be reflected in the CSV format.
 
 As you can see this can be quite tedious to implement. Lucky us, the `fs2-data-csv-generic` module comes to the rescue to avoid having to write the boilerplate. Please refer to [the module documentation][csv-generic-doc] for more details.
 
