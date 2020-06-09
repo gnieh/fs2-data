@@ -20,19 +20,24 @@ package internals
 
 private[csv] object RowWriter {
 
-  def encodeColumn(separator: Char)(in: String): String = {
-    val (quote, extraChars) = needsQuotes(in, separator)
-    if (quote) {
-      val sb = new StringBuilder(in.length + extraChars + 2)
-      sb.append("\"")
-      in.foreach {
-        case '"' => sb.append("\"\"")
-        case c   => sb.append(c)
-      }
-      sb.append("\"")
-      sb.result
-    } else
+  def encodeColumn(separator: Char, mode: EscapeMode)(in: String): String = {
+    if (mode == EscapeMode.Never) {
       in
+    } else {
+      val (escape, extraChars) = needsQuotes(in, separator)
+      if (escape || mode == EscapeMode.Always) {
+        val sb = new StringBuilder(in.length + extraChars + 2)
+        sb.append("\"")
+        in.foreach {
+          case '"' => sb.append("\"\"")
+          case c   => sb.append(c)
+        }
+        sb.append("\"")
+        sb.result
+      } else {
+        in
+      }
+    }
   }
 
   private def needsQuotes(in: String, separator: Char): (Boolean, Int) = {

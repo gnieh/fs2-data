@@ -38,7 +38,8 @@ object CellEncoder
     with ExportedCellEncoders {
 
   implicit object CellEncoderInstances extends Contravariant[CellEncoder] {
-    override def contramap[A, B](fa: CellEncoder[A])(f: B => A): CellEncoder[B] = fa.contramap(f)
+    override def contramap[A, B](fa: CellEncoder[A])(
+        f: B => A): CellEncoder[B] = fa.contramap(f)
   }
 
   def apply[T: CellEncoder]: CellEncoder[T] = implicitly[CellEncoder[T]]
@@ -54,34 +55,37 @@ object CellEncoder
 
   // Primitives
   implicit val unitEncoder: CellEncoder[Unit] = _ => ""
-  implicit val booleanEncoder: CellEncoder[Boolean] = _.toString
-  implicit val byteEncoder: CellEncoder[Byte] = _.toString
-  implicit val shortEncoder: CellEncoder[Short] = _.toString
-  implicit val charEncoder: CellEncoder[Char] = _.toString
-  implicit val intEncoder: CellEncoder[Int] = _.toString
-  implicit val longEncoder: CellEncoder[Long] = _.toString
-  implicit val floatEncoder: CellEncoder[Float] = _.toString
-  implicit val doubleEncoder: CellEncoder[Double] = _.toString
-  implicit val bigDecimalEncoder: CellEncoder[BigDecimal] = _.toString
-  implicit val bigIntEncoder: CellEncoder[BigInt] = _.toString
+  implicit val booleanEncoder: CellEncoder[Boolean] = fromToString(_)
+  implicit val byteEncoder: CellEncoder[Byte] = fromToString(_)
+  implicit val shortEncoder: CellEncoder[Short] = fromToString(_)
+  implicit val charEncoder: CellEncoder[Char] = fromToString(_)
+  implicit val intEncoder: CellEncoder[Int] = fromToString(_)
+  implicit val longEncoder: CellEncoder[Long] = fromToString(_)
+  implicit val floatEncoder: CellEncoder[Float] = fromToString(_)
+  implicit val doubleEncoder: CellEncoder[Double] = fromToString(_)
+  implicit val bigDecimalEncoder: CellEncoder[BigDecimal] = fromToString(_)
+  implicit val bigIntEncoder: CellEncoder[BigInt] = fromToString(_)
   implicit val stringEncoder: CellEncoder[String] = identity
   implicit val charArrayEncoder: CellEncoder[Array[Char]] = new String(_)
 
   // Standard Library types
   implicit val finiteDurationEncoder: CellEncoder[FiniteDuration] =
     durationEncoder.narrow
-  implicit val javaUrlEncoder: CellEncoder[URL] = _.toString
-  implicit val uuidEncoder: CellEncoder[UUID] = _.toString
+  implicit val javaUrlEncoder: CellEncoder[URL] = fromToString(_)
+  implicit val uuidEncoder: CellEncoder[UUID] = fromToString(_)
 
   // Java Time
-  implicit val instantEncoder: CellEncoder[Instant] = _.toString
-  implicit val periodEncoder: CellEncoder[Period] = _.toString
-  implicit val localDateEncoder: CellEncoder[LocalDate] = _.toString
-  implicit val localDateTimeEncoder: CellEncoder[LocalDateTime] = _.toString
-  implicit val localTimeEncoder: CellEncoder[LocalTime] = _.toString
-  implicit val offsetDateTimeEncoder: CellEncoder[OffsetDateTime] = _.toString
-  implicit val offsetTimeEncoder: CellEncoder[OffsetTime] = _.toString
-  implicit val zonedDateTimeEncoder: CellEncoder[ZonedDateTime] = _.toString
+  implicit val instantEncoder: CellEncoder[Instant] = fromToString(_)
+  implicit val periodEncoder: CellEncoder[Period] = fromToString(_)
+  implicit val localDateEncoder: CellEncoder[LocalDate] = fromToString(_)
+  implicit val localDateTimeEncoder: CellEncoder[LocalDateTime] = fromToString(
+    _)
+  implicit val localTimeEncoder: CellEncoder[LocalTime] = fromToString(_)
+  implicit val offsetDateTimeEncoder: CellEncoder[OffsetDateTime] =
+    fromToString(_)
+  implicit val offsetTimeEncoder: CellEncoder[OffsetTime] = fromToString(_)
+  implicit val zonedDateTimeEncoder: CellEncoder[ZonedDateTime] = fromToString(
+    _)
 
   // Option
   implicit def optionEncoder[Cell: CellEncoder]: CellEncoder[Option[Cell]] =

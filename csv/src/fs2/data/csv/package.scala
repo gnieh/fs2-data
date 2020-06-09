@@ -76,23 +76,25 @@ package object csv {
   def writeWithoutHeaders[F[_]]: Pipe[F, Row, NonEmptyList[String]] =
     _.map(_.values)
 
-  def toStrings[F[_]](
-      separator: Char = ',',
-      newline: String = "\n"): Pipe[F, NonEmptyList[String], String] = {
+  def toStrings[F[_]](separator: Char = ',',
+                      newline: String = "\n",
+                      escape: EscapeMode = EscapeMode.Auto)
+    : Pipe[F, NonEmptyList[String], String] = {
     _.flatMap(
       nel =>
         Stream
           .emits(nel.toList)
-          .map(RowWriter.encodeColumn(separator))
+          .map(RowWriter.encodeColumn(separator, escape))
           .intersperse(separator.toString) ++ Stream(newline))
   }
 
-  def toRowStrings[F[_]](
-      separator: Char = ',',
-      newline: String = "\n"): Pipe[F, NonEmptyList[String], String] = {
+  def toRowStrings[F[_]](separator: Char = ',',
+                         newline: String = "\n",
+                         escape: EscapeMode = EscapeMode.Auto)
+    : Pipe[F, NonEmptyList[String], String] = {
     // explicit Show avoids mapping the NEL before
     val showColumn: Show[String] =
-      Show.show(RowWriter.encodeColumn(separator))
+      Show.show(RowWriter.encodeColumn(separator, escape))
     _.map(_.mkString_("", separator.toString, newline)(showColumn, implicitly))
   }
 
@@ -107,8 +109,8 @@ package object csv {
       implicit H: WriteableHeader[Header])
     : Pipe[F, CsvRow[Header], NonEmptyList[String]] =
     _.pull.peek1.flatMap {
-      case Some((CsvRow(_, headers), tail)) =>
-        Pull.output1(H(headers)) >> tail.map(_.values).pull.echo
+      case Some((CsvRow(_, headers), stream)) =>
+        Pull.output1(H(headers)) >> stream.map(_.values).pull.echo
       case None => Pull.done
     }.stream
 

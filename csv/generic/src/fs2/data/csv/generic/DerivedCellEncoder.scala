@@ -40,7 +40,7 @@ object DerivedCellEncoder extends DerivedCellEncoderInstances0 {
       implicit
       gen: LabelledGeneric.Aux[T, Repr],
       cc: Lazy[DerivedCellEncoder[Repr]]): DerivedCellEncoder[T] =
-    t => (cc.value: CellEncoder[Repr]).contramap(gen.to)(t)
+    t => cc.value.contramap(gen.to)(t)
 
   final implicit val encodeCNil: DerivedCellEncoder[CNil] = (_: CNil) =>
     sys.error("Can't happen")
