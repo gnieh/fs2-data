@@ -21,14 +21,14 @@ package object internals {
 
   private[internals] val hexa = "0123456789abcdef"
 
-  private[json] type Result[F[_], In, Out] = Option[(Chunk[In], Int, Stream[F, In], Out)]
+  private[json] type Result[F[_], Out] = Option[(Chunk[Token], Int, Stream[F, Token], Out)]
 
   private[json] def skipValue[F[_]](
       chunk: Chunk[Token],
       idx: Int,
       rest: Stream[F, Token],
       depth: Int,
-      chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Token, List[Token]]] =
+      chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >>
         rest.pull.uncons.flatMap {
@@ -61,7 +61,7 @@ package object internals {
       idx: Int,
       rest: Stream[F, Token],
       depth: Int,
-      chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Token, List[Token]]] =
+      chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >>
         rest.pull.uncons.flatMap {
@@ -70,7 +70,7 @@ package object internals {
           case None =>
             Pull.raiseError[F](new JsonException("unexpected end of input"))
         }
-    } else
+    } else {
       chunk(idx) match {
         case token @ (Token.StartArray | Token.StartObject) =>
           emitValue(chunk, idx + 1, rest, depth + 1, token :: chunkAcc)
@@ -90,5 +90,6 @@ package object internals {
           else
             emitValue(chunk, idx + 1, rest, depth, token :: chunkAcc)
       }
+    }
 
 }

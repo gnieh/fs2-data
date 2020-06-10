@@ -33,7 +33,7 @@ package object mergepatch {
                                       chunkAcc: List[Token])(
       implicit F: RaiseThrowable[F],
       Json: Jsony[Json],
-      tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, Token, List[Token]]] =
+      tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => patchObject(hd, 0, tl, patch, Nil)
@@ -105,7 +105,7 @@ package object mergepatch {
                                      chunkAcc: List[Token])(
       implicit F: RaiseThrowable[F],
       Json: Jsony[Json],
-      tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, Token, List[Token]]] =
+      tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => patchChunk(hd, 0, tl, patch, Nil)

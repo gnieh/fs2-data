@@ -16,19 +16,19 @@ import cats.effect.SyncIO
 @Measurement(iterations = 5, time = 2)
 class CsvParserBenchmarks {
 
-  var csvContent: List[List[Char]] = _
+  var csvContent: List[String] = _
 
   @Setup
   def readCsv(): Unit = csvContent = {
-    File("../../../../../benchmarks/resources/benchmark.csv").contentAsString.grouped(4096).toList.map(_.toList)
+    File("../../../../../benchmarks/resources/benchmark.csv").contentAsString.grouped(4096).toList
   }
 
-  def csvStream: Stream[SyncIO, Char] = Stream.emits(csvContent).flatMap(Stream.emits).covary[SyncIO]
+  def csvStream: Stream[SyncIO, String] = Stream.emits(csvContent).covary[SyncIO]
 
   @Benchmark
   def parseRows(): Unit = {
     csvStream
-      .through(fs2.data.csv.rows[SyncIO](','))
+      .through(fs2.data.csv.rows[SyncIO, String](','))
       .through(fs2.data.csv.skipHeaders)
       .compile
       .lastOrError

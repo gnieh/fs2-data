@@ -28,9 +28,9 @@ class RenderSpec extends AnyFlatSpec with Matchers {
 
     val input = Stream.emits("""true {"field1": "test", "field2": [23, [true, null]]}""")
 
-    val toks = input.through(tokens[Fallible])
+    val toks = input.through(tokens[Fallible, Char])
 
-    val roundtrip = toks.through(render.compact).flatMap(Stream.emits(_)).through(tokens[Fallible])
+    val roundtrip = toks.through(render.compact).flatMap(Stream.emits(_)).through(tokens)
 
     toks.compile.toList shouldBe roundtrip.compile.toList
 
@@ -40,9 +40,9 @@ class RenderSpec extends AnyFlatSpec with Matchers {
 
     val input = Stream.emits("""true {"field1": "test", "field2": [23, [true, null]]}""")
 
-    val toks = input.through(tokens[Fallible])
+    val toks = input.through(tokens[Fallible, Char])
 
-    val roundtrip = toks.through(render.pretty()).flatMap(Stream.emits(_)).through(tokens[Fallible])
+    val roundtrip = toks.through(render.pretty()).flatMap(Stream.emits(_)).through(tokens)
 
     toks.compile.toList shouldBe roundtrip.compile.toList
 

@@ -16,6 +16,7 @@
 package fs2
 package data
 
+import text._
 import csv.internals._
 
 import cats.data._
@@ -28,8 +29,9 @@ package object csv {
 
   /** Transforms a stream of characters into a stream of CSV rows.
     */
-  def rows[F[_]](separator: Char = ',')(implicit F: RaiseThrowable[F]): Pipe[F, Char, NonEmptyList[String]] =
-    RowParser.pipe[F](separator)
+  def rows[F[_], T](separator: Char = ',')(implicit F: RaiseThrowable[F],
+                                           T: CharLikeChunks[F, T]): Pipe[F, T, NonEmptyList[String]] =
+    RowParser.pipe[F, T](separator)
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
   def headers[F[_], Header](implicit F: RaiseThrowable[F],

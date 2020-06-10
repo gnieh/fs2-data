@@ -19,7 +19,6 @@ import circe._
 
 import io.circe.parser._
 
-import fs2._
 import fs2.io._
 
 import cats.effect._
@@ -71,7 +70,6 @@ class JsonParserTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
         file
           .readAll[IO](path.path, blocker, 1024)
           .through(fs2.text.utf8Decode)
-          .flatMap(Stream.emits(_))
           .through(tokens)
           .through(values)
           .compile

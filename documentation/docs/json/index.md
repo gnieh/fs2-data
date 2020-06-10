@@ -19,6 +19,7 @@ To create a stream of JSON tokens from an input stream, use the `tokens` pipe in
 
 ```scala mdoc
 import cats.effect._
+import cats.implicits._
 
 import fs2._
 import fs2.data.json._
@@ -33,8 +34,8 @@ val input = """{
               |  "field3": []
               |}""".stripMargin
 
-val stream = Stream.emits(input).through(tokens[IO])
-stream.compile.toList.unsafeRunSync()
+val stream = Stream.emit(input).through(tokens[Fallible, String])
+stream.compile.toList
 ```
 
 The pipe validates the JSON structure while parsing. It reads all the json values in the input stream and emits tokens as they are available.
@@ -46,9 +47,9 @@ Selectors can be used to select a subset of a JSON token stream.
 For instance, to select and enumerate elements that are in the `field3` array, you can create this selector. Only the tokens describing the values in `field3` will be emitted as a result.
 
 ```scala mdoc
-val selector = ".field3.[]".parseSelector[IO].unsafeRunSync()
+val selector = ".field3.[]".parseSelector[Either[Throwable, *]].fold(throw _, identity)
 val filtered = stream.through(filter(selector))
-filtered.compile.toList.unsafeRunSync()
+filtered.compile.toList
 ```
 
 The `parseSelector` method implicitly comes from the `import fs2.data.json._` and wraps the result in anything that has an [`MonadError` with error type `Throwable`][monad-error] to catch potential parsing errors. If you prefer not to have this wrapping and don't mind an extra dependency, you can have a look at [the interpolator][interpolator-doc].
@@ -72,7 +73,7 @@ If this is not desired, you can wrap the elements into arrays and objects, from 
 
 ```scala mdoc
 val filteredWrapped = stream.through(filter(selector, wrap = true))
-filteredWrapped.compile.toList.unsafeRunSync()
+filteredWrapped.compile.toList
 ```
 
 If the selector selects elements in an array, then the resulting values are wrapped in an array.
@@ -93,7 +94,7 @@ If you provide an implicit [`Tokenizer[Json]`][tokenizer-api], which describes h
 
 ```scala
 implicit tokenizer: Tokenizer[SomeJsonType] = ...
-val transformed = stream.through(transform[IO, Json](selector, json => SomeJsonObject("test" -> json)))
+val transformed = stream.through(transform[Fallible, Json](selector, json => SomeJsonObject("test" -> json)))
 ```
 For concrete examples of provided `Builder`s and `Tokeizer`s, please refer to [the JSON library binding modules documentation][json-lib-doc]
 
@@ -110,6 +111,7 @@ implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
 
 Blocker[IO].use { blocker =>
   stream
+    .lift[IO]
     .through(render.compact)
     .through(text.utf8Encode)
     .through(io.file.writeAll[IO](Paths.get("/some/path/to/file.json"), blocker))
@@ -123,12 +125,12 @@ There exists also a `pretty()` renderer, that indents inner elements by the give
 If you are interested in the String rendering as a value, the library also provides [`Collector`s][collector-doc]:
 
 ```scala mdoc
-stream.compile.to(collector.compact).unsafeRunSync()
+stream.compile.to(collector.compact)
 
 // default indentation is 2 spaces
-stream.compile.to(collector.pretty()).unsafeRunSync()
+stream.compile.to(collector.pretty())
 // if you are more into tabs (or any other indentation size) you can change the indentation string
-stream.compile.to(collector.pretty("\t")).unsafeRunSync()
+stream.compile.to(collector.pretty("\t"))
 ```
 
 [json-lib-doc]: /documentation/json/libraries
