@@ -2,7 +2,7 @@
 
 There a several ways you can contribute to `fs2-data`:
  - You found a bug? You can [open an issue][open-issue].
- - If you have an idea, foudn something missing, or just a question, you can also [open an issue][open-issue].
+ - If you have an idea, found something missing, or just a question, you can also [open an issue][open-issue].
  - Code contributions are also welcome, you can [open a pull request][open-pr].
    - For coding conventions, please see below.
  - If something is broken or missing, or unclear in the documentation, you can propose a change by editing the page,
@@ -43,7 +43,7 @@ Make sure you document your new feature in the documentation by either adding it
 
 If you plan on contributing a new data format please bare these rules in mind:
  - `fs2-data` parsers must behave as stream parsers. This means that there must not be
-   arbitrary infinite back-tracking in the parser (ideally no backtracking at all).
+   arbitrary infinite backtracking in the parser (ideally no backtracking at all).
  - The goal of the `fs2-data` parsers is that no AST is fully built in memory, but
    the sequence of emitted elements is correct _so far_. It is not a simple lexer, but
    must validate its input according to the data format grammar.
