@@ -22,6 +22,8 @@ import text._
 
 import cats.data.{State => _, _}
 
+import scala.collection.immutable.VectorBuilder
+
 private[csv] object RowParser {
 
   def pipe[F[_], T](separator: Char)(implicit F: RaiseThrowable[F],
@@ -31,10 +33,12 @@ private[csv] object RowParser {
              currentField: StringBuilder,
              tail: List[String],
              state: State,
-             chunkAcc: List[NonEmptyList[String]]): Pull[F, NonEmptyList[String], Unit] =
+             chunkAcc: VectorBuilder[NonEmptyList[String]]): Pull[F, NonEmptyList[String], Unit] =
       if (T.needsPull(context)) {
-        Pull.output(Chunk.seq(chunkAcc.reverse)) >> T.pullNext(context).flatMap {
-          case Some(context) => rows(context, currentField, tail, state, Nil)
+        Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(context).flatMap {
+          case Some(context) => 
+            chunkAcc.clear()
+            rows(context, currentField, tail, state, chunkAcc)
           case None          =>
             // stream is exhausted, emit potential last line
             state match {
@@ -76,7 +80,7 @@ private[csv] object RowParser {
                    currentField,
                    Nil,
                    State.BeginningOfField,
-                   NonEmptyList(field, tail).reverse :: chunkAcc)
+                    chunkAcc += NonEmptyList(field, tail).reverse)
             } else if (c == '\r') {
               rows(T.advance(context), currentField, tail, State.ExpectNewLine, chunkAcc)
             } else {
@@ -91,7 +95,7 @@ private[csv] object RowParser {
                    currentField,
                    Nil,
                    State.BeginningOfField,
-                   NonEmptyList(field, tail).reverse :: chunkAcc)
+                    chunkAcc += NonEmptyList(field, tail).reverse)
             } else {
               // this is an error
               Pull.raiseError[F](new CsvException(s"unexpected character '$c'"))
@@ -110,7 +114,7 @@ private[csv] object RowParser {
                      currentField,
                      Nil,
                      State.BeginningOfField,
-                     NonEmptyList("", tail).reverse :: chunkAcc)
+                      chunkAcc += NonEmptyList("", tail).reverse)
               } else {
                 rows(T.advance(context), currentField, Nil, State.BeginningOfField, chunkAcc)
               }
@@ -133,7 +137,7 @@ private[csv] object RowParser {
                    currentField,
                    Nil,
                    State.BeginningOfField,
-                   NonEmptyList(field, tail).reverse :: chunkAcc)
+                    chunkAcc += NonEmptyList(field, tail).reverse)
             } else if (c == '\r') {
               rows(T.advance(context), currentField, tail, State.InUnquotedSeenCr, chunkAcc)
             } else {
@@ -148,7 +152,7 @@ private[csv] object RowParser {
                    currentField,
                    Nil,
                    State.BeginningOfField,
-                   NonEmptyList(field, tail).reverse :: chunkAcc)
+                    chunkAcc += NonEmptyList(field, tail).reverse)
             } else {
               currentField.append('\r')
               if (c == separator) {
@@ -168,7 +172,7 @@ private[csv] object RowParser {
     s =>
       Stream
         .suspend(Stream.emit(T.create(s)))
-        .flatMap(rows(_, new StringBuilder, Nil, State.BeginningOfField, Nil).stream)
+        .flatMap(rows(_, new StringBuilder, Nil, State.BeginningOfField, new VectorBuilder).stream)
   }
 
 }

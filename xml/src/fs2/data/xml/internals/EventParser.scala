@@ -35,22 +35,28 @@ private[xml] object EventParser {
     def fail[R](prod: String, msg: String): Pull[F, XmlEvent, R] =
       Pull.raiseError[F](new XmlException(XmlSyntax(prod), msg))
 
-    def peekChar(ctx: T.Context,
-                 chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, Option[(T.Context, List[XmlEvent], Char)]] =
+    def peekChar(
+        ctx: T.Context,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, Option[(T.Context, VectorBuilder[XmlEvent], Char)]] =
       if (T.needsPull(ctx)) {
-        Pull.output(Chunk.seq(chunkAcc.reverse)) >> T.pullNext(ctx).flatMap {
-          case Some(ctx) => peekChar(ctx, Nil)
-          case None      => Pull.pure(None)
+        Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(ctx).flatMap {
+          case Some(ctx) =>
+            chunkAcc.clear()
+            peekChar(ctx, chunkAcc)
+          case None => Pull.pure(None)
         }
       } else {
         Pull.pure(Some((ctx, chunkAcc, T.current(ctx))))
       }
 
-    def nextChar(ctx: T.Context, chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], Char)] =
+    def nextChar(ctx: T.Context,
+                 chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], Char)] =
       if (T.needsPull(ctx)) {
-        Pull.output(Chunk.seq(chunkAcc.reverse)) >> T.pullNext(ctx).flatMap {
-          case Some(ctx) => nextChar(ctx, Nil)
-          case None      => fail("1", "unexpected end of input")
+        Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(ctx).flatMap {
+          case Some(ctx) =>
+            chunkAcc.clear()
+            nextChar(ctx, chunkAcc)
+          case None => fail("1", "unexpected end of input")
         }
       } else {
         val c = T.current(ctx)
@@ -89,11 +95,13 @@ private[xml] object EventParser {
                    c: Char,
                    error: String,
                    msg: String,
-                   chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent])] =
+                   chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
       if (T.needsPull(ctx)) {
-        Pull.output(Chunk.seq(chunkAcc.reverse)) >> T.pullNext(ctx).flatMap {
-          case Some(ctx) => acceptChar(ctx, c, error, msg, Nil)
-          case None      => fail(error, msg)
+        Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(ctx).flatMap {
+          case Some(ctx) =>
+            chunkAcc.clear()
+            acceptChar(ctx, c, error, msg, chunkAcc)
+          case None => fail(error, msg)
         }
       } else {
         if (T.current(ctx) == c)
@@ -104,16 +112,19 @@ private[xml] object EventParser {
 
     def accept(ctx: T.Context,
                s: String,
-               chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], Int)] = {
+               chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], Int)] = {
       def loop(ctx: T.Context,
                sidx: Int,
-               chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], Int)] =
+               chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], Int)] =
         if (sidx >= s.length) {
           Pull.pure((ctx, chunkAcc, s.length))
         } else if (T.needsPull(ctx)) {
-          Pull.output(Chunk.seq(chunkAcc.reverse)) >> T.pullNext(ctx).flatMap {
-            case Some(ctx) => accept(ctx, s, Nil)
-            case None      => Pull.pure((eos, Nil, sidx))
+          Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(ctx).flatMap {
+            case Some(ctx) =>
+              chunkAcc.clear()
+              accept(ctx, s, chunkAcc)
+            case None =>
+              Pull.pure((eos, new VectorBuilder[XmlEvent], sidx))
           }
         } else {
           if (T.current(ctx) == s.charAt(sidx))
@@ -128,7 +139,7 @@ private[xml] object EventParser {
                      s: String,
                      error: String,
                      msg: String,
-                     chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent])] =
+                     chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
       accept(ctx, s, chunkAcc).flatMap {
         case (ctx, chunkAcc, n) if n == s.length => Pull.pure((ctx, chunkAcc))
         case _                                   => fail(error, msg)
@@ -138,7 +149,7 @@ private[xml] object EventParser {
                p: Char => Boolean,
                error: String,
                msg: String,
-               chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], Char)] =
+               chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], Char)] =
       peekChar(ctx, chunkAcc).flatMap {
         case Some((ctx, chunkAcc, c)) if p(c) => Pull.pure((T.advance(ctx), chunkAcc, c))
         case _                                => fail(error, msg)
@@ -147,11 +158,14 @@ private[xml] object EventParser {
     def untilChar(ctx: T.Context,
                   p: Char => Boolean,
                   sb: StringBuilder,
-                  chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent])] =
+                  chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
       if (T.needsPull(ctx)) {
-        Pull.output(Chunk.seq(chunkAcc.reverse)) >> T.pullNext(ctx).flatMap {
-          case Some(ctx) => untilChar(ctx, p, sb, Nil)
-          case None      => Pull.pure((eos, Nil))
+        Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(ctx).flatMap {
+          case Some(ctx) =>
+            chunkAcc.clear()
+            untilChar(ctx, p, sb, chunkAcc)
+          case None =>
+            Pull.pure((eos, new VectorBuilder[XmlEvent]))
         }
       } else {
         val c = T.current(ctx)
@@ -163,11 +177,14 @@ private[xml] object EventParser {
 
     // ==== low-level internals ====
 
-    def readNCName(ctx: T.Context, chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], String)] =
+    def readNCName(ctx: T.Context,
+                   chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], String)] =
       if (T.needsPull(ctx)) {
-        Pull.output(Chunk.seq(chunkAcc.reverse)) >> T.pullNext(ctx).flatMap {
-          case Some(ctx) => readNCName(ctx, Nil)
-          case None      => fail("1", "unexpected end of input")
+        Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(ctx).flatMap {
+          case Some(ctx) =>
+            chunkAcc.clear()
+            readNCName(ctx, chunkAcc)
+          case None => fail("1", "unexpected end of input")
         }
       } else {
         val c = T.current(ctx)
@@ -182,15 +199,20 @@ private[xml] object EventParser {
         }
       }
 
-    def readQName(ctx: T.Context, chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], QName)] =
+    def readQName(ctx: T.Context,
+                  chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], QName)] =
       readNCName(ctx, chunkAcc).flatMap {
         case (ctx, chunkAcc, part1) =>
-          def readPart2(ctx: T.Context,
-                        chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], QName)] =
+          def readPart2(
+              ctx: T.Context,
+              chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], QName)] =
             if (T.needsPull(ctx)) {
-              Pull.output(Chunk.seq(chunkAcc.reverse)) >> T.pullNext(ctx).flatMap {
-                case Some(ctx) => readPart2(ctx, Nil)
-                case None      => Pull.pure((eos, Nil, QName(None, part1)))
+              Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(ctx).flatMap {
+                case Some(ctx) =>
+                  chunkAcc.clear()
+                  readPart2(ctx, chunkAcc)
+                case None =>
+                  Pull.pure((eos, new VectorBuilder[XmlEvent], QName(None, part1)))
               }
             } else {
               T.current(ctx) match {
@@ -206,11 +228,15 @@ private[xml] object EventParser {
           readPart2(ctx, chunkAcc)
       }
 
-    def space(ctx: T.Context, chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent])] =
+    def space(ctx: T.Context,
+              chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
       if (T.needsPull(ctx)) {
-        Pull.output(Chunk.seq(chunkAcc.reverse)) >> T.pullNext(ctx).flatMap {
-          case Some(ctx) => space(ctx, Nil)
-          case None      => Pull.pure((eos, Nil))
+        Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(ctx).flatMap {
+          case Some(ctx) =>
+            chunkAcc.clear()
+            space(ctx, chunkAcc)
+          case None =>
+            Pull.pure((eos, new VectorBuilder[XmlEvent]))
         }
       } else {
         if (isXmlWhitespace(T.current(ctx)))
@@ -219,16 +245,20 @@ private[xml] object EventParser {
           Pull.pure((ctx, chunkAcc))
       }
 
-    def readMarkupToken(ctx: T.Context,
-                        chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], MarkupToken)] =
+    def readMarkupToken(
+        ctx: T.Context,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], MarkupToken)] =
       acceptChar(ctx, '<', "43", "expected token start", chunkAcc).flatMap {
         case (ctx, chunkAcc) =>
-          def read(ctx: T.Context,
-                   chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], MarkupToken)] =
+          def read(
+              ctx: T.Context,
+              chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], MarkupToken)] =
             if (T.needsPull(ctx)) {
-              Pull.output(Chunk.seq(chunkAcc.reverse)) >> T.pullNext(ctx).flatMap {
-                case Some(ctx) => read(ctx, Nil)
-                case None      => fail("1", "unexpected end of input")
+              Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(ctx).flatMap {
+                case Some(ctx) =>
+                  chunkAcc.clear()
+                  read(ctx, chunkAcc)
+                case None => fail("1", "unexpected end of input")
               }
             } else {
               T.current(ctx) match {
@@ -266,11 +296,13 @@ private[xml] object EventParser {
       }
 
     /** We have read '<!-' so far */
-    def skipComment(ctx: T.Context,
-                    chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], MarkupToken)] =
+    def skipComment(
+        ctx: T.Context,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], MarkupToken)] =
       acceptChar(ctx, '-', "15", "second dash missing to open comment", chunkAcc).flatMap {
         case (ctx, chunkAcc) =>
-          def loop(ctx: T.Context, chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent])] =
+          def loop(ctx: T.Context,
+                   chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
             nextChar(ctx, chunkAcc).flatMap {
               case (ctx, chunkAcc, '-') =>
                 nextChar(ctx, chunkAcc).flatMap {
@@ -289,20 +321,22 @@ private[xml] object EventParser {
       }
 
     /** We have read '<![' so far */
-    def readCDATA(ctx: T.Context,
-                  chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], MarkupToken)] =
+    def readCDATA(
+        ctx: T.Context,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], MarkupToken)] =
       acceptString(ctx, "CDATA[", "19", "'CDATA[' expected", chunkAcc).map {
         case (ctx, chunkAcc) =>
           (ctx, chunkAcc, MarkupToken.CDataToken)
       }
 
     /** We have just read the PI target */
-    def readPIBody(ctx: T.Context, chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], String)] =
+    def readPIBody(ctx: T.Context,
+                   chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], String)] =
       space(ctx, chunkAcc).flatMap {
         case (ctx, chunkAcc) =>
           def loop(ctx: T.Context,
                    sb: StringBuilder,
-                   chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], String)] =
+                   chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], String)] =
             untilChar(ctx, c => c == '?', sb, chunkAcc).flatMap {
               case (ctx, chunkAcc) =>
                 acceptChar(ctx, '?', "16", "unexpected end of input", chunkAcc).flatMap {
@@ -321,7 +355,8 @@ private[xml] object EventParser {
       }
 
     /** We read the beginning of internal DTD subset, read until final ']>' */
-    def skipInternalDTD(ctx: T.Context, chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent])] =
+    def skipInternalDTD(ctx: T.Context,
+                        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
       nextChar(ctx, chunkAcc).flatMap {
         case (ctx, chunkAcc, ']') =>
           nextChar(ctx, chunkAcc).flatMap {
@@ -331,8 +366,9 @@ private[xml] object EventParser {
         case (ctx, chunkAcc, _) => skipInternalDTD(ctx, chunkAcc)
       }
 
-    def readExternalID(ctx: T.Context,
-                       chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], String)] =
+    def readExternalID(
+        ctx: T.Context,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], String)] =
       readNCName(ctx, chunkAcc).flatMap {
         case (ctx, chunkAcc, sysOrPub) =>
           assert(ctx, isXmlWhitespace(_), "75", "space required after SYSTEM or PUBLIC", chunkAcc).flatMap {
@@ -359,7 +395,7 @@ private[xml] object EventParser {
     def readQuoted(ctx: T.Context,
                    pub: Boolean,
                    error: String,
-                   chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], String)] =
+                   chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], String)] =
       space(ctx, chunkAcc).flatMap {
         case (ctx, chunkAcc) =>
           assert(ctx, c => c == '"' || c == '\'', error, "single or double quote expected", chunkAcc)
@@ -386,8 +422,8 @@ private[xml] object EventParser {
             }
       }
 
-    def scanMisc(ctx: T.Context,
-                 chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, Option[(T.Context, List[XmlEvent], MarkupToken)]] =
+    def scanMisc(ctx: T.Context, chunkAcc: VectorBuilder[XmlEvent])
+        : Pull[F, XmlEvent, Option[(T.Context, VectorBuilder[XmlEvent], MarkupToken)]] =
       space(ctx, chunkAcc).flatMap {
         case (ctx, chunkAcc) =>
           peekChar(ctx, chunkAcc).flatMap {
@@ -408,8 +444,8 @@ private[xml] object EventParser {
     /** We read '&#' so far */
     def readCharRef(ctx: T.Context,
                     is11: Boolean,
-                    chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], Int)] = {
-      def postlude(ctx: T.Context, n: Int, chunkAcc: List[XmlEvent]) =
+                    chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], Int)] = {
+      def postlude(ctx: T.Context, n: Int, chunkAcc: VectorBuilder[XmlEvent]) =
         nextChar(ctx, chunkAcc).flatMap {
           case (ctx, chunkAcc, ';') =>
             if (isValid(is11, n))
@@ -434,7 +470,7 @@ private[xml] object EventParser {
 
     def readNum(ctx: T.Context,
                 base: Int,
-                chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], Int)] = {
+                chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], Int)] = {
       object Digit {
         def unapply(c: Char): Option[Int] =
           if ((base == 10 || base == 16) && '0' <= c && c <= '9')
@@ -449,14 +485,14 @@ private[xml] object EventParser {
 
       def restNum(ctx: T.Context,
                   acc: Int,
-                  chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], Int)] =
+                  chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], Int)] =
         peekChar(ctx, chunkAcc).flatMap {
           case Some((ctx, chunkAcc, Digit(d))) =>
             restNum(T.advance(ctx), acc * base + d, chunkAcc)
           case Some((ctx, chunkAcc, _)) =>
             Pull.pure((ctx, chunkAcc, acc))
           case None =>
-            Pull.pure((eos, Nil, acc))
+            Pull.pure((eos, new VectorBuilder[XmlEvent], acc))
         }
 
       nextChar(ctx, chunkAcc).flatMap {
@@ -467,13 +503,14 @@ private[xml] object EventParser {
 
     // ==== middle-level internals ====
 
-    def readAttributes(ctx: T.Context,
-                       is11: Boolean,
-                       tname: QName,
-                       chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], List[Attr])] = {
+    def readAttributes(
+        ctx: T.Context,
+        is11: Boolean,
+        tname: QName,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], List[Attr])] = {
       def loop(ctx: T.Context,
                attributes: VectorBuilder[Attr],
-               chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], List[Attr])] =
+               chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], List[Attr])] =
         space(ctx, chunkAcc).flatMap {
           case (ctx, chunkAcc) =>
             peekChar(ctx, chunkAcc).flatMap {
@@ -503,13 +540,13 @@ private[xml] object EventParser {
       loop(ctx, new VectorBuilder, chunkAcc)
     }
 
-    def readAttributeValue(
-        ctx: T.Context,
-        is11: Boolean,
-        delim: Option[Char],
-        current: StringBuilder,
-        builder: VectorBuilder[XmlEvent.XmlTexty],
-        chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], List[XmlEvent.XmlTexty])] = {
+    def readAttributeValue(ctx: T.Context,
+                           is11: Boolean,
+                           delim: Option[Char],
+                           current: StringBuilder,
+                           builder: VectorBuilder[XmlEvent.XmlTexty],
+                           chunkAcc: VectorBuilder[XmlEvent])
+        : Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], List[XmlEvent.XmlTexty])] = {
       val delimiters = delim.fold(valueDelimiters)(valueDelimiters + _)
       untilChar(ctx, delimiters.contains(_), current, chunkAcc).flatMap {
         case (ctx, chunkAcc) =>
@@ -551,8 +588,9 @@ private[xml] object EventParser {
       }
     }
 
-    def readNamedEntity(ctx: T.Context,
-                        chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], String)] =
+    def readNamedEntity(
+        ctx: T.Context,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], String)] =
       readNCName(ctx, chunkAcc).flatMap {
         case (ctx, chunkAcc, name) =>
           acceptChar(ctx, ';', "68", "named entity must end with a semicolon", chunkAcc).map {
@@ -561,10 +599,11 @@ private[xml] object EventParser {
           }
       }
 
-    def completeStartTag(ctx: T.Context,
-                         is11: Boolean,
-                         name: QName,
-                         chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], XmlEvent.StartTag)] =
+    def completeStartTag(
+        ctx: T.Context,
+        is11: Boolean,
+        name: QName,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], XmlEvent.StartTag)] =
       readAttributes(ctx, is11, name, chunkAcc).flatMap {
         case (ctx, chunkAcc, attributes) =>
           space(ctx, chunkAcc).flatMap {
@@ -581,9 +620,10 @@ private[xml] object EventParser {
       }
 
     /** We read '<[CDATA[' so far */
-    def readCDATABody(ctx: T.Context,
-                      sb: StringBuilder,
-                      chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], String)] =
+    def readCDATABody(
+        ctx: T.Context,
+        sb: StringBuilder,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], String)] =
       untilChar(ctx, c => c == '\n' || c == '\r' || c == ']' || c == '&', sb, chunkAcc).flatMap {
         case (ctx, chunkAcc) =>
           nextChar(ctx, chunkAcc).flatMap {
@@ -627,9 +667,10 @@ private[xml] object EventParser {
           }
       }
 
-    def checkCDATAEnd(ctx: T.Context,
-                      sb: StringBuilder,
-                      chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], Boolean)] =
+    def checkCDATAEnd(
+        ctx: T.Context,
+        sb: StringBuilder,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], Boolean)] =
       peekChar(ctx, chunkAcc).flatMap {
         case Some((ctx, chunkAcc, '>')) =>
           // done
@@ -643,9 +684,10 @@ private[xml] object EventParser {
           fail("1", "unexpected end of input")
       }
 
-    def readCharData(ctx: T.Context,
-                     is11: Boolean,
-                     chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], XmlEvent)] =
+    def readCharData(
+        ctx: T.Context,
+        is11: Boolean,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], XmlEvent)] =
       peekChar(ctx, chunkAcc).flatMap {
         case Some((ctx, chunkAcc, '<')) =>
           readMarkupToken(ctx, chunkAcc).flatMap {
@@ -685,12 +727,11 @@ private[xml] object EventParser {
         case Some((ctx, chunkAcc, _)) =>
           slowPath(ctx, new StringBuilder, chunkAcc)
         case None =>
-          Pull.pure((eos, Nil, XmlEvent.EndDocument))
+          Pull.pure((eos, new VectorBuilder[XmlEvent], XmlEvent.EndDocument))
       }
 
-    def slowPath(ctx: T.Context,
-                 sb: StringBuilder,
-                 chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], XmlEvent.XmlString)] =
+    def slowPath(ctx: T.Context, sb: StringBuilder, chunkAcc: VectorBuilder[XmlEvent])
+        : Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], XmlEvent.XmlString)] =
       untilChar(ctx, c => c == '<' || c == '&' || c == '\r', sb, chunkAcc).flatMap {
         case (ctx, chunkAcc) =>
           peekChar(ctx, chunkAcc).flatMap {
@@ -714,19 +755,20 @@ private[xml] object EventParser {
 
     // ==== high-level internals
 
-    def scanPrologToken0(ctx: T.Context,
-                         chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, Option[(T.Context, List[XmlEvent])]] =
+    def scanPrologToken0(
+        ctx: T.Context,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, Option[(T.Context, VectorBuilder[XmlEvent])]] =
       peekChar(ctx, chunkAcc).flatMap {
         case Some((ctx, chunkAcc, '<')) =>
           readMarkupToken(ctx, chunkAcc).flatMap {
             case (ctx, chunkAcc, MarkupToken.PIToken(name)) if name.equalsIgnoreCase("xml") =>
               handleXmlDecl(ctx, chunkAcc).flatMap {
-                case (ctx, chunkAcc, (is11, decl)) => scanPrologToken1(ctx, is11, decl :: chunkAcc)
+                case (ctx, chunkAcc, (is11, decl)) => scanPrologToken1(ctx, is11, chunkAcc += decl)
               }
             case (ctx, chunkAcc, MarkupToken.PIToken(name)) =>
               readPIBody(ctx, chunkAcc).flatMap {
                 case (ctx, chunkAcc, body) =>
-                  scanPrologToken1(ctx, false, XmlEvent.XmlPI(name, body) :: chunkAcc)
+                  scanPrologToken1(ctx, false, chunkAcc += XmlEvent.XmlPI(name, body))
               }
             case (ctx, chunkAcc, MarkupToken.DeclToken(name)) =>
               handleDecl(ctx, name, chunkAcc).flatMap {
@@ -745,13 +787,14 @@ private[xml] object EventParser {
           Pull.pure(None)
       }
 
-    def scanPrologToken1(ctx: T.Context,
-                         is11: Boolean,
-                         chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, Option[(T.Context, List[XmlEvent])]] =
+    def scanPrologToken1(
+        ctx: T.Context,
+        is11: Boolean,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, Option[(T.Context, VectorBuilder[XmlEvent])]] =
       scanMisc(ctx, chunkAcc).flatMap {
         case Some((ctx, chunkAcc, MarkupToken.PIToken(name))) if !name.equalsIgnoreCase("xml") =>
           readPIBody(ctx, chunkAcc).flatMap {
-            case (ctx, chunkAcc, body) => scanPrologToken1(ctx, is11, XmlEvent.XmlPI(name, body) :: chunkAcc)
+            case (ctx, chunkAcc, body) => scanPrologToken1(ctx, is11, chunkAcc += XmlEvent.XmlPI(name, body))
           }
         case Some((ctx, chunkAcc, MarkupToken.DeclToken(name))) =>
           handleDecl(ctx, name, chunkAcc).flatMap {
@@ -765,9 +808,8 @@ private[xml] object EventParser {
           Pull.pure(None)
       }
 
-    def handleXmlDecl(
-        ctx: T.Context,
-        chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], (Boolean, XmlEvent.XmlDecl))] =
+    def handleXmlDecl(ctx: T.Context, chunkAcc: VectorBuilder[XmlEvent])
+        : Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], (Boolean, XmlEvent.XmlDecl))] =
       for {
         (ctx, chunkAcc, _) <- assert(ctx, isXmlWhitespace(_), "24", "space is expected after xml", chunkAcc)
         (ctx, chunkAcc) <- space(ctx, chunkAcc)
@@ -802,10 +844,8 @@ private[xml] object EventParser {
         }
       } yield res
 
-    def readEncoding(
-        ctx: T.Context,
-        hasSpace: Boolean,
-        chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], (Boolean, Option[String]))] =
+    def readEncoding(ctx: T.Context, hasSpace: Boolean, chunkAcc: VectorBuilder[XmlEvent])
+        : Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], (Boolean, Option[String]))] =
       peekChar(ctx, chunkAcc).flatMap {
         case Some((ctx, chunkAcc, c)) if isXmlWhitespace(c) =>
           space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) => readEncoding(ctx, true, chunkAcc) }
@@ -845,12 +885,13 @@ private[xml] object EventParser {
         case Some((ctx, chunkAcc, _)) =>
           Pull.pure((ctx, chunkAcc, (hasSpace, None)))
         case None =>
-          Pull.pure((eos, Nil, (hasSpace, None)))
+          Pull.pure((eos, new VectorBuilder[XmlEvent], (hasSpace, None)))
       }
 
-    def readStandalone(ctx: T.Context,
-                       hasSpace: Boolean,
-                       chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent], Option[Boolean])] =
+    def readStandalone(
+        ctx: T.Context,
+        hasSpace: Boolean,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], Option[Boolean])] =
       peekChar(ctx, chunkAcc).flatMap {
         case Some((ctx, chunkAcc, c)) if isXmlWhitespace(c) =>
           space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) => readStandalone(ctx, true, chunkAcc) }
@@ -889,12 +930,12 @@ private[xml] object EventParser {
             fail("32", "expected space before 'standalone' attribute")
           }
         case Some((ctx, chunkAcc, _)) => Pull.pure((ctx, chunkAcc, None))
-        case None                     => Pull.pure((eos, Nil, None))
+        case None                     => Pull.pure((eos, new VectorBuilder[XmlEvent], None))
       }
 
     def handleDecl(ctx: T.Context,
                    name: String,
-                   chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent])] =
+                   chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
       name match {
         case "DOCTYPE" =>
           for {
@@ -906,17 +947,17 @@ private[xml] object EventParser {
               case Some((ctx, chunkAcc, c)) if isNCNameStart(c) =>
                 readExternalID(ctx, chunkAcc).map { case (ctx, chunkAcc, name) => (ctx, chunkAcc, Some(name)) }
               case Some((ctx, chunkAcc, c)) => Pull.pure((ctx, chunkAcc, None))
-              case None                     => Pull.pure((eos, Nil, None))
+              case None                     => Pull.pure((eos, new VectorBuilder[XmlEvent], None))
             }
             (ctx, chunkAcc) <- space(ctx, chunkAcc)
             res <- nextChar(ctx, chunkAcc).flatMap {
               case (ctx, chunkAcc, '>') =>
                 // done
-                Pull.pure(ctx, XmlEvent.XmlDoctype(name, docname, systemid) :: chunkAcc)
+                Pull.pure(ctx, chunkAcc += XmlEvent.XmlDoctype(name, docname, systemid))
               case (ctx, chunkAcc, '[') =>
                 skipInternalDTD(ctx, chunkAcc).map {
                   case (ctx, chunkAcc) =>
-                    (ctx, XmlEvent.XmlDoctype(name, docname, systemid) :: chunkAcc)
+                    (ctx, chunkAcc += XmlEvent.XmlDoctype(name, docname, systemid))
                 }
               case (_, _, c) =>
                 fail("28", s"end of doctype or internal DTD expected but got $c")
@@ -926,13 +967,14 @@ private[xml] object EventParser {
           fail("22", "expected DOCTYPE declaration")
       }
 
-    def scanPrologToken2(ctx: T.Context,
-                         is11: Boolean,
-                         chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, Option[(T.Context, List[XmlEvent])]] =
+    def scanPrologToken2(
+        ctx: T.Context,
+        is11: Boolean,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, Option[(T.Context, VectorBuilder[XmlEvent])]] =
       scanMisc(ctx, chunkAcc).flatMap {
         case Some((ctx, chunkAcc, MarkupToken.PIToken(name))) =>
           readPIBody(ctx, chunkAcc).flatMap {
-            case (ctx, chunkAcc, body) => scanPrologToken2(ctx, is11, XmlEvent.XmlPI(name, body) :: chunkAcc)
+            case (ctx, chunkAcc, body) => scanPrologToken2(ctx, is11, chunkAcc += XmlEvent.XmlPI(name, body))
           }
         case Some((ctx, chunkAcc, MarkupToken.StartToken(name))) =>
           readElement(ctx, is11, name, chunkAcc).map(Some(_))
@@ -945,47 +987,47 @@ private[xml] object EventParser {
     def readElement(ctx: T.Context,
                     is11: Boolean,
                     name: QName,
-                    chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent])] =
+                    chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
       for {
         (ctx, chunkAcc, startTag) <- completeStartTag(ctx, is11, name, chunkAcc)
         res <- if (startTag.isEmpty)
-          Pull.pure((ctx, XmlEvent.EndTag(name) :: startTag :: chunkAcc))
+          Pull.pure((ctx, chunkAcc += startTag += XmlEvent.EndTag(name)))
         else
-          readContent(ctx, is11, name, startTag :: chunkAcc)
+          readContent(ctx, is11, name, chunkAcc += startTag)
       } yield res
 
     def readContent(ctx: T.Context,
                     is11: Boolean,
                     name: QName,
-                    chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, (T.Context, List[XmlEvent])] =
+                    chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
       for {
         (ctx, chunkAcc, last) <- readCharData(ctx, is11, chunkAcc)
         res <- last match {
           case XmlEvent.EndTag(n) if n == name =>
             // we are done reading that content
-            Pull.pure((ctx, last :: chunkAcc))
+            Pull.pure((ctx, chunkAcc += last))
           case XmlEvent.EndTag(n) =>
             fail("GIMatch", s"unexpected closing tag '</${n.render}>' (expected '</${name.render}>')")
           case XmlEvent.StartTag(name1, _, false) =>
             // parse child element, and continue
-            readContent(ctx, is11, name1, last :: chunkAcc).flatMap {
+            readContent(ctx, is11, name1, chunkAcc += last).flatMap {
               case (ctx, chunkAcc) => readContent(ctx, is11, name, chunkAcc)
             }
           case XmlEvent.StartTag(name1, _, true) =>
             // parse child element, and continue
-            readContent(ctx, is11, name, XmlEvent.EndTag(name1) :: last :: chunkAcc)
+            readContent(ctx, is11, name, chunkAcc += last += XmlEvent.EndTag(name1))
           case _ =>
             // just emit and continue
-            readContent(ctx, is11, name, last :: chunkAcc)
+            readContent(ctx, is11, name, chunkAcc += last)
         }
       } yield res
 
-    def go(ctx: T.Context, chunkAcc: List[XmlEvent]): Pull[F, XmlEvent, Unit] =
+    def go(ctx: T.Context, chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, Unit] =
       scanPrologToken0(ctx, chunkAcc).flatMap {
         case Some((ctx, chunkAcc)) => go(ctx, chunkAcc)
         case None                  => Pull.done
       }
-    s => Stream.suspend(Stream.emit(T.create(s))).flatMap(go(_, Nil).stream)
+    s => Stream.suspend(Stream.emit(T.create(s))).flatMap(go(_, new VectorBuilder).stream)
   }
 
 }
