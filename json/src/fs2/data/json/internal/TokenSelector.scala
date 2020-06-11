@@ -43,12 +43,13 @@ private[json] object TokenSelector {
       emitNonSelected: Boolean,
       wrap: Boolean,
       toSelect: String => Boolean,
+      mandatories: Set[String],
       onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, Token, List[Token]]],
       chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Token, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >>
         rest.pull.uncons.flatMap {
-          case Some((hd, tl)) => selectName(hd, 0, tl, emitNonSelected, wrap, toSelect, onSelect, Nil)
+          case Some((hd, tl)) => selectName(hd, 0, tl, emitNonSelected, wrap, toSelect, mandatories, onSelect, Nil)
           case None           => Pull.raiseError[F](new JsonException("unexpected end of input"))
         }
     } else
@@ -68,15 +69,20 @@ private[json] object TokenSelector {
             }
           action.flatMap {
             case Some((chunk, idx, rest, chunkAcc)) =>
-              selectName(chunk, idx, rest, emitNonSelected, wrap, toSelect, onSelect, chunkAcc)
+              selectName(chunk, idx, rest, emitNonSelected, wrap, toSelect, mandatories - name, onSelect, chunkAcc)
             case None =>
               Pull.raiseError[F](new JsonException("unexpected end of input"))
           }
 
         case Token.EndObject =>
           // object is done, go up
-          val chunkAcc1 = if (wrap) Token.EndObject :: chunkAcc else chunkAcc
-          Pull.pure(Some((chunk, idx + 1, rest, chunkAcc1)))
+          // but first check if all mandatory fields have been seen
+          if (mandatories.isEmpty) {
+            val chunkAcc1 = if (wrap) Token.EndObject :: chunkAcc else chunkAcc
+            Pull.pure(Some((chunk, idx + 1, rest, chunkAcc1)))
+          } else {
+            Pull.raiseError[F](new JsonMissingFieldException(s"missing mandatory fields: ${mandatories.mkString(", ")}", mandatories))
+          }
         case token =>
           Pull.raiseError[F](new JsonException("malformed json"))
       }
@@ -139,12 +145,12 @@ private[json] object TokenSelector {
       selector match {
         case Selector.ThisSelector =>
           onSelect(chunk, idx, rest, chunkAcc)
-        case Selector.NameSelector(pred, strict) =>
+        case Selector.NameSelector(pred, strict, mandatory) =>
           chunk(idx) match {
             case Token.StartObject =>
               // enter the object context and go down to the name
               val chunkAcc1 = if (wrap) Token.StartObject :: chunkAcc else chunkAcc
-              selectName(chunk, idx + 1, rest, emitNonSelected, wrap, pred, onSelect, chunkAcc1)
+              selectName(chunk, idx + 1, rest, emitNonSelected, wrap, pred, pred.values, onSelect, chunkAcc1)
             case token =>
               if (strict)
                 Pull.raiseError[F](new JsonException(s"cannot ${token.kind} number with string"))
@@ -178,7 +184,7 @@ private[json] object TokenSelector {
             case Token.StartObject =>
               // enter the object context and go down to the name
               val chunkAcc1 = if (wrap) Token.StartObject :: chunkAcc else chunkAcc
-              selectName(chunk, idx + 1, rest, emitNonSelected, wrap, NamePredicate.All, onSelect, chunkAcc1)
+              selectName(chunk, idx + 1, rest, emitNonSelected, wrap, NamePredicate.All, Set.empty, onSelect, chunkAcc1)
             case token =>
               if (strict)
                 Pull.raiseError[F](new JsonException(s"cannot iterate over ${token.kind}"))
