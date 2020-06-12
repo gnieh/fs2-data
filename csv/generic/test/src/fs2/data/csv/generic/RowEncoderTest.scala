@@ -13,19 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2
-package data.csv
+package fs2.data.csv
 package generic
 
-import semiauto._
 import hlist._
+import semiauto._
 
+import cats.data.NonEmptyList
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import shapeless._
-import cats.data.NonEmptyList
 
-class RowDecoderTest extends AnyFlatSpec with Matchers {
+class RowEncoderTest extends AnyFlatSpec with Matchers {
 
   val csvRow = NonEmptyList.of("1", "test", "42")
   val csvRowEmptyI = NonEmptyList.of("", "test", "42")
@@ -36,46 +35,38 @@ class RowDecoderTest extends AnyFlatSpec with Matchers {
   case class TestOptI(i: Option[Int], s: String, j: Int)
   case class TestOptJ(i: Int, s: String, j: Option[Int])
 
-  val testDecoder = deriveRowDecoder[Test]
-  val testOrderDecoder = deriveRowDecoder[TestOrder]
-  val testOptIDecoder = deriveRowDecoder[TestOptI]
-  val testOptJDecoder = deriveRowDecoder[TestOptJ]
+  val testEncoder = deriveRowEncoder[Test]
+  val testOrderEncoder = deriveRowEncoder[TestOrder]
+  val testOptIEncoder = deriveRowEncoder[TestOptI]
+  val testOptJEncoder = deriveRowEncoder[TestOptJ]
 
   "case class" should "be handled with positional fields" in {
-    val res = testDecoder(csvRow)
-    res shouldBe Right(Test(1, "test", 42))
-
-    val fail = testOrderDecoder(csvRow)
-    fail shouldBe Symbol("left")
+    testEncoder(Test(1, "test", 42)) shouldBe csvRow
   }
 
   it should "be handled properly with optional fields" in {
-    val resi = testOptIDecoder(csvRow)
-    resi shouldBe Right(TestOptI(Some(1), "test", 42))
+    testOptIEncoder(TestOptI(Some(1), "test", 42)) shouldBe csvRow
 
-    val resinone = testOptIDecoder(csvRowEmptyI)
-    resinone shouldBe Right(TestOptI(None, "test", 42))
+    testOptIEncoder(TestOptI(None, "test", 42)) shouldBe csvRowEmptyI
 
-    val resj = testOptJDecoder(csvRow)
-    resj shouldBe Right(TestOptJ(1, "test", Some(42)))
+    testOptJEncoder(TestOptJ(1, "test", Some(42))) shouldBe csvRow
 
-    val resjnone = testOptJDecoder(csvRowEmptyJ)
-    resjnone shouldBe Right(TestOptJ(1, "test", None))
+    testOptJEncoder(TestOptJ(1, "test", None)) shouldBe csvRowEmptyJ
   }
 
   "hlist" should "be handled properly" in {
-    RowDecoder[Int :: String :: Int :: HNil].apply(csvRow) shouldBe Right(
-      1 :: "test" :: 42 :: HNil)
+    RowEncoder[Int :: String :: Int :: HNil]
+      .apply(1 :: "test" :: 42 :: HNil) shouldBe csvRow
   }
 
   it should "be handled properly with optional columns" in {
-    val decoder = RowDecoder[Option[Int] :: String :: Option[Int] :: HNil]
+    val encoder = RowEncoder[Option[Int] :: String :: Option[Int] :: HNil]
 
-    decoder(csvRow) shouldBe Right(Some(1) :: "test" :: Some(42) :: HNil)
+    encoder(Some(1) :: "test" :: Some(42) :: HNil) shouldBe csvRow
 
-    decoder(csvRowEmptyI) shouldBe Right(None :: "test" :: Some(42) :: HNil)
+    encoder(None :: "test" :: Some(42) :: HNil) shouldBe csvRowEmptyI
 
-    decoder(csvRowEmptyJ) shouldBe Right(Some(1) :: "test" :: None :: HNil)
+    encoder(Some(1) :: "test" :: None :: HNil) shouldBe csvRowEmptyJ
   }
 
 }

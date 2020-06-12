@@ -16,7 +16,7 @@
 package fs2.data.csv
 
 import io.circe.parser._
-
+import fs2._
 import fs2.io._
 
 import cats.effect._
@@ -49,12 +49,13 @@ class CsvParserTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
 
   private val testFileDir: File = File("csv/test/resources/csv-spectrum/csvs/")
   for (path <- testFileDir.list) {
+    val expected =
+      parse(File(
+        s"csv/test/resources/csv-spectrum/json/${path.nameWithoutExtension}.json").contentAsString)
+        .flatMap(_.as[List[Map[String, String]]])
+        .toTry
+        .get
     s"File ${testFileDir.relativize(path).toString}" should "be parsed correctly" in {
-      val expected =
-        parse((File(s"csv/test/resources/csv-spectrum/json/${path.nameWithoutExtension}.json")).contentAsString)
-          .flatMap(_.as[List[Map[String, String]]])
-          .toTry
-          .get
       val actual =
         file
           .readAll[IO](path.path, blocker, 1024)
@@ -66,6 +67,24 @@ class CsvParserTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
           .unsafeRunSync()
           .map(_.toMap)
       actual should be(expected)
+    }
+
+    it should "be encoded and parsed correctly" in {
+      val reencoded =
+        Stream
+          .emits(expected)
+          .map(m => CsvRow.fromListHeaders(m.toList))
+          .unNone
+          .through(encodeRowWithFirstHeaders)
+          .through(toStrings())
+          .through(rows[IO, String]())
+          .through(headers[IO, String])
+          .compile
+          .toList
+          .unsafeRunSync()
+          .map(_.toMap)
+
+      reencoded should be(expected)
     }
   }
 }

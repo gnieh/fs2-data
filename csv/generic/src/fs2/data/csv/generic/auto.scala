@@ -13,26 +13,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.csv.generic
-
-import fs2.data.csv.{CellDecoder, CsvRowDecoder, Exported, RowDecoder}
+package fs2.data.csv
+package generic
 
 import scala.language.experimental.macros
 
 trait AutoDerivedRowDecoders {
-  implicit def exportRowDecoder[A]: Exported[RowDecoder[A]] = macro ExportMacros.exportRowDecoder[A]
+  implicit def exportRowDecoder[A]: Exported[RowDecoder[A]] =
+    macro ExportMacros.exportRowDecoder[A]
+}
+
+trait AutoDerivedRowEncoders {
+  implicit def exportRowEncoder[A]: Exported[RowEncoder[A]] =
+    macro ExportMacros.exportRowEncoder[A]
 }
 
 trait AutoDerivedCsvRowDecoders {
-  implicit def exportCsvRowDecoder[A]: Exported[CsvRowDecoder[A, String]] = macro ExportMacros.exportCsvRowDecoder[A]
+  implicit def exportCsvRowDecoder[A]: Exported[CsvRowDecoder[A, String]] =
+    macro ExportMacros.exportCsvRowDecoder[A]
+}
+
+trait AutoDerivedCsvRowEncoders {
+  implicit def exportCsvRowEncoder[A]: Exported[CsvRowEncoder[A, String]] =
+    macro ExportMacros.exportCsvRowEncoder[A]
 }
 
 trait AutoDerivedCellDecoders {
-  implicit def exportCellDecoder[A]: Exported[CellDecoder[A]] = macro ExportMacros.exportCellDecoder[A]
+  implicit def exportCellDecoder[A]: Exported[CellDecoder[A]] =
+    macro ExportMacros.exportCellDecoder[A]
 }
 
-object auto extends AutoDerivedRowDecoders with AutoDerivedCsvRowDecoders with AutoDerivedCellDecoders {
-  object row extends AutoDerivedRowDecoders
-  object csvrow extends AutoDerivedCsvRowDecoders
-  object cell extends AutoDerivedCellDecoders
+trait AutoDerivedCellEncoders {
+  implicit def exportCellEncoder[A]: Exported[CellEncoder[A]] =
+    macro ExportMacros.exportCellEncoder[A]
+}
+
+object auto
+    extends AutoDerivedRowDecoders
+    with AutoDerivedRowEncoders
+    with AutoDerivedCsvRowDecoders
+    with AutoDerivedCsvRowEncoders
+    with AutoDerivedCellDecoders
+    with AutoDerivedCellEncoders {
+  object row extends AutoDerivedRowDecoders with AutoDerivedRowEncoders
+  object csvrow extends AutoDerivedCsvRowDecoders with AutoDerivedCsvRowEncoders
+  object cell extends AutoDerivedCellDecoders with AutoDerivedCellEncoders
 }

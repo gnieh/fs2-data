@@ -57,9 +57,10 @@ The `parseSelector` method implicitly comes from the `import fs2.data.json._` an
 The filter syntax is as follows:
   - `.` selects the root values, it is basically the identity filter.
   - `.f` selects the field named `f` in objects. It fails if the value it is applied to is not a JSON object.
+    - `f` must be a valid Java identifier, meaning it has to respect this regular expression: `[a-ZA-Z_][a-zA-Z0-9_]*`. If you wish to select a field that doesn't respect this regular expression, you can use the syntax `.["my non-identifier field"]` described below.
   - `.f?` is similar to `.f` but doesn't fail in case the value it is applied to is not a JSON object.
-  - `.[f1, f2, ..., fn]` selects only fields `f1` to `fn` in objects. It fails if the value it is applied to is not an object.
-  - `.[f1, f2, ..., fn]?` is similar to `.[f1, f2, ..., fn]` but doesn't fail if the value it is applied to is not an object.
+  - `.["f1", "f2", ..., "fn"]` selects only fields `f1` to `fn` in objects. It fails if the value it is applied to is not an object.
+  - `.["f1", "f2", ..., "fn"]?` is similar to `.["f1", "f2", ..., "fn"]` but doesn't fail if the value it is applied to is not an object.
   - `.[id1, idx2, ..., idxn]` selects only elements `idx1`, ..., `idxn` in arrays. It fails if the value it is applied to is not an array.
   - `.[idx1, idx2, ..., idxn]?` is similar to `.[idx1, idx2, ..., idxn]` but doesn't fail if the value it is applied to is not an array.
   - `.[idx1:idx2]` selects only elements between `idx1` (inclusive) and `idx2` (exclusive) in arrays. It fails if the value it is applied to is not an array.

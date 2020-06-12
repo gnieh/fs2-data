@@ -70,6 +70,10 @@ class Row(val values: NonEmptyList[String]) {
     }
 }
 
+object Row {
+  def apply(values: NonEmptyList[String]): Row = new Row(values)
+}
+
 case class CsvRow[Header](override val values: NonEmptyList[String], headers: NonEmptyList[Header])
     extends Row(values) {
 

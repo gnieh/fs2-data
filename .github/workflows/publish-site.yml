@@ -33,9 +33,8 @@ jobs:
       - name: Install nanoc
         run: |
           gem install nanoc kramdown-parser-gfm rouge
-      - name: Generate site
+      - name: Generate and deploy site
         run: |
           cd site
           nanoc
-      - name: Deploy site
-        run: nanoc deploy
+          nanoc deploy

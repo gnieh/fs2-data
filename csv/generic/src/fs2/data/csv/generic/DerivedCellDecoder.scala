@@ -31,8 +31,8 @@ object DerivedCellDecoder extends DerivedCellDecoderInstances0 {
   final implicit def unaryProductDecoder[A <: Product, L <: HList, H](implicit
                                                                       gen: Generic.Aux[A, L],
                                                                       ev: =:=[H :: HNil, L],
-                                                                      cc: CellDecoder[H]
-  ): DerivedCellDecoder[A] = s => cc(s).map(v => gen.from(v :: HNil))
+                                                                      cc: CellDecoder[H]): DerivedCellDecoder[A] =
+    s => cc(s).map(v => gen.from(v :: HNil))
 
   // Coproducts
 

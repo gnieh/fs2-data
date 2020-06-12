@@ -20,24 +20,15 @@ package generic
 
 import shapeless._
 
-object semiauto {
+trait DerivedCsvRowEncoder[T] extends CsvRowEncoder[T, String]
 
-  def deriveRowDecoder[T](implicit T: Lazy[DerivedRowDecoder[T]]): RowDecoder[T] =
-    T.value
+object DerivedCsvRowEncoder {
 
-  def deriveRowEncoder[T](implicit T: Lazy[DerivedRowEncoder[T]]): RowEncoder[T] =
-    T.value
-
-  def deriveCsvRowDecoder[T](implicit T: Lazy[DerivedCsvRowDecoder[T]]): CsvRowDecoder[T, String] =
-    T.value
-
-  def deriveCsvRowEncoder[T](implicit T: Lazy[DerivedCsvRowEncoder[T]]): CsvRowEncoder[T, String] =
-    T.value
-
-  def deriveCellDecoder[T](implicit T: Lazy[DerivedCellDecoder[T]]): CellDecoder[T] =
-    T.value
-
-  def deriveCellEncoder[T](implicit T: Lazy[DerivedCellEncoder[T]]): CellEncoder[T] =
-    T.value
+  final implicit def productWriter[T, Repr <: HList, AnnoRepr <: HList](
+      implicit
+      gen: LabelledGeneric.Aux[T, Repr],
+      annotations: Annotations.Aux[CsvName, T, AnnoRepr],
+      cc: Lazy[MapShapedCsvRowEncoder.WithAnnotations[T, Repr, AnnoRepr]]): DerivedCsvRowEncoder[T] =
+    (elem: T) => cc.value.fromWithAnnotation(gen.to(elem), annotations())
 
 }

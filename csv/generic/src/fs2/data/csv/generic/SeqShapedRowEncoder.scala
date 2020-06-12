@@ -13,26 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2
-package data
-package csv
-package generic
+package fs2.data.csv.generic
 
 import cats.data.NonEmptyList
-
+import fs2.data.csv.{CellEncoder, RowEncoder}
 import shapeless._
 
-object hlist {
+trait SeqShapedRowEncoder[Repr] extends RowEncoder[Repr]
 
-  final implicit def hlistDecoder[T <: HList](implicit cc: Lazy[SeqShapedRowDecoder[T]]): DerivedRowDecoder[T] =
-    new DerivedRowDecoder[T] {
-      def apply(cells: NonEmptyList[String]): DecoderResult[T] =
-        cc.value(cells)
-    }
+object SeqShapedRowEncoder {
 
-  final implicit def hlistEncoder[T <: HList](implicit cc: Lazy[SeqShapedRowEncoder[T]]): DerivedRowEncoder[T] =
-    new DerivedRowEncoder[T] {
-      override def apply(elem: T): NonEmptyList[String] = cc.value(elem)
-    }
+  implicit def lastElemEncoder[Head](implicit Head: CellEncoder[Head]): SeqShapedRowEncoder[Head :: HNil] =
+    (last: Head :: HNil) => NonEmptyList.one(Head(last.head))
+
+  implicit def hconsEncoder[Head, Tail <: HList](
+      implicit Head: CellEncoder[Head],
+      Tail: Lazy[SeqShapedRowEncoder[Tail]]): SeqShapedRowEncoder[Head :: Tail] =
+    (fields: Head :: Tail) => NonEmptyList(Head(fields.head), Tail.value(fields.tail).toList)
 
 }
