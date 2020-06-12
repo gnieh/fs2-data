@@ -59,6 +59,14 @@
       <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
     </ul>
 
+    
+    <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
+      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/master/documentation/docs/json/index.md" target="_blank">
+        <i class="large material-icons">mode_edit</i>
+      </a>
+    </div>
+    
+
     <main>
       <div class="container">
         <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json_2.13.svg" alt="Maven Central" /></a></p>
@@ -70,6 +78,7 @@
   <li><a href="#basic-usage" id="markdown-toc-basic-usage">Basic usage</a></li>
   <li><a href="#selectors" id="markdown-toc-selectors">Selectors</a></li>
   <li><a href="#ast-builder-and-tokenizer" id="markdown-toc-ast-builder-and-tokenizer">AST builder and tokenizer</a></li>
+  <li><a href="#json-renderers" id="markdown-toc-json-renderers">JSON Renderers</a></li>
 </ul>
 
 <h3 id="basic-usage">Basic usage</h3>
@@ -154,10 +163,14 @@
 <p>The filter syntax is as follows:</p>
 <ul>
   <li><code>.</code> selects the root values, it is basically the identity filter.</li>
-  <li><code>.f</code> selects the field named <code>f</code> in objects. It fails if the value it is applied to is not a JSON object.</li>
+  <li><code>.f</code> selects the field named <code>f</code> in objects. It fails if the value it is applied to is not a JSON object.
+    <ul>
+      <li><code>f</code> must be a valid Java identifier, meaning it has to respect this regular expression: <code>[a-ZA-Z_][a-zA-Z0-9_]*</code>. If you wish to select a field that doesn’t respect this regular expression, you can use the syntax <code>.["my non-identifier field"]</code> described below.</li>
+    </ul>
+  </li>
   <li><code>.f?</code> is similar to <code>.f</code> but doesn’t fail in case the value it is applied to is not a JSON object.</li>
-  <li><code>.[f1, f2, ..., fn]</code> selects only fields <code>f1</code> to <code>fn</code> in objects. It fails if the value it is applied to is not an object.</li>
-  <li><code>.[f1, f2, ..., fn]?</code> is similar to <code>.[f1, f2, ..., fn]</code> but doesn’t fail if the value it is applied to is not an object.</li>
+  <li><code>.["f1", "f2", ..., "fn"]</code> selects only fields <code>f1</code> to <code>fn</code> in objects. It fails if the value it is applied to is not an object.</li>
+  <li><code>.["f1", "f2", ..., "fn"]?</code> is similar to <code>.["f1", "f2", ..., "fn"]</code> but doesn’t fail if the value it is applied to is not an object.</li>
   <li><code>.[id1, idx2, ..., idxn]</code> selects only elements <code>idx1</code>, …, <code>idxn</code> in arrays. It fails if the value it is applied to is not an array.</li>
   <li><code>.[idx1, idx2, ..., idxn]?</code> is similar to <code>.[idx1, idx2, ..., idxn]</code> but doesn’t fail if the value it is applied to is not an array.</li>
   <li><code>.[idx1:idx2]</code> selects only elements between <code>idx1</code> (inclusive) and <code>idx2</code> (exclusive) in arrays. It fails if the value it is applied to is not an array.</li>
@@ -210,6 +223,65 @@ On the other hand, if it selects elements in an object, then emitted values are 
 </code></pre></div></div>
 <p>For concrete examples of provided <code>Builder</code>s and <code>Tokeizer</code>s, please refer to <a href="/documentation/json/libraries">the JSON library binding modules documentation</a></p>
 
+<h3 id="json-renderers">JSON Renderers</h3>
+
+<p>Once you got a JSON token stream, selected and transformed what you needed in it, you can then write the resulting token stream to some storage. This can be achieved using renderers.</p>
+
+<p>For instance, let’s say you want to write the resulting JSON stream to a file in compact form (i.e. with no space or new lines), you can do:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">java.nio.file.Paths</span>
+
+<span class="k">implicit</span> <span class="k">val</span> <span class="nv">cs</span> <span class="k">=</span> <span class="nv">IO</span><span class="o">.</span><span class="py">contextShift</span><span class="o">(</span><span class="nv">scala</span><span class="o">.</span><span class="py">concurrent</span><span class="o">.</span><span class="py">ExecutionContext</span><span class="o">.</span><span class="py">global</span><span class="o">)</span>
+
+<span class="nc">Blocker</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="py">use</span> <span class="o">{</span> <span class="n">blocker</span> <span class="k">=&gt;</span>
+  <span class="n">stream</span>
+    <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">render</span><span class="o">.</span><span class="py">compact</span><span class="o">)</span>
+    <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">text</span><span class="o">.</span><span class="py">utf8Encode</span><span class="o">)</span>
+    <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">io</span><span class="o">.</span><span class="py">file</span><span class="o">.</span><span class="py">writeAll</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="nv">Paths</span><span class="o">.</span><span class="py">get</span><span class="o">(</span><span class="s">"/some/path/to/file.json"</span><span class="o">),</span> <span class="n">blocker</span><span class="o">))</span>
+    <span class="o">.</span><span class="py">compile</span>
+    <span class="o">.</span><span class="py">drain</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>There exists also a <code>pretty()</code> renderer, that indents inner elements by the given indent string.</p>
+
+<p>If you are interested in the String rendering as a value, the library also provides <a href="https://oss.sonatype.org/service/local/repositories/releases/archive/co/fs2/fs2-core_2.13/2.3.0/fs2-core_2.13-2.3.0-javadoc.jar/!/fs2/Collector.html"><code>Collector</code>s</a>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">compact</span><span class="o">).</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res4: collector.compact.Out = "{\"field1\":0,\"field2\":\"test\",\"field3\":[1,2,3]}{\"field1\":2,\"field3\":[]}"</span>
+
+<span class="c1">// default indentation is 2 spaces</span>
+<span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">()).</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res5: String = """{</span>
+<span class="c1">//   "field1": 0,</span>
+<span class="c1">//   "field2": "test",</span>
+<span class="c1">//   "field3": [</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     2,</span>
+<span class="c1">//     3</span>
+<span class="c1">//   ]</span>
+<span class="c1">// }</span>
+<span class="c1">// {</span>
+<span class="c1">//   "field1": 2,</span>
+<span class="c1">//   "field3": []</span>
+<span class="c1">// }"""</span>
+<span class="c1">// if you are more into tabs (or any other indentation size) you can change the indentation string</span>
+<span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">(</span><span class="s">"\t"</span><span class="o">)).</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res6: String = """{</span>
+<span class="c1">// 	"field1": 0,</span>
+<span class="c1">// 	"field2": "test",</span>
+<span class="c1">// 	"field3": [</span>
+<span class="c1">// 		1,</span>
+<span class="c1">// 		2,</span>
+<span class="c1">// 		3</span>
+<span class="c1">// 	]</span>
+<span class="c1">// }</span>
+<span class="c1">// {</span>
+<span class="c1">// 	"field1": 2,</span>
+<span class="c1">// 	"field3": []</span>
+<span class="c1">// }"""</span>
+</code></pre></div></div>
+
 
       </div>
     </main>
@@ -230,8 +302,8 @@ On the other hand, if it selects elements in an object, then emitted values are 
       var instances = M.Sidenav.init(elems, {});
     });
     document.addEventListener('DOMContentLoaded', function() {
-      var elems = document.querySelectorAll('.materialboxed');
-      var instances = M.Materialbox.init(elems, {});
+      var elems = document.querySelectorAll('.tooltipped');
+      var instances = M.Tooltip.init(elems, {});
     });
     </script>
   </body>
