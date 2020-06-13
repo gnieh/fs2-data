@@ -24,7 +24,7 @@ import cats._
 import cats.implicits._
 
 import scala.util.Try
-import scala.annotation.tailrec
+import scala.annotation.{implicitNotFound, tailrec}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /** Describes how a cell can be decoded to the given type.
@@ -36,6 +36,8 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   * instance. To get the full power of it, import `cats.implicits._`.
   *
   */
+@implicitNotFound(
+  "No implicit CellDecoder found for type ${T}.\nYou can define one using CellDecoder.instance, by calling map on another CellDecoder or by using generic derivation for coproducts and unary products.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val cellDecoder: CellDecoder[${T}] = deriveCellDecoder\n\n")
 trait CellDecoder[T] {
   def apply(cell: String): DecoderResult[T]
 
