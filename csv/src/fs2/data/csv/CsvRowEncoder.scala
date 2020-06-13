@@ -17,8 +17,12 @@ package fs2.data.csv
 
 import cats._
 
+import scala.annotation.implicitNotFound
+
 /** Describes how a row can be encoded from a value of the given type.
   */
+@implicitNotFound(
+  "No implicit CsvRowEncoder found for type ${T}.\nYou can define one using CsvRowEncoder.instance, by calling contramap on another CsvRowEncoder or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val csvRowEncoder: CsvRowEncoder[${T}] = deriveCsvRowEncoder\nMake sure to have instances of CellEncoder for every member type in scope.\n")
 trait CsvRowEncoder[T, Header] {
   def apply(elem: T): CsvRow[Header]
 
@@ -32,9 +36,11 @@ object CsvRowEncoder extends ExportedCsvRowEncoders {
       override def contramap[A, B](fa: CsvRowEncoder[A, Header])(f: B => A): CsvRowEncoder[B, Header] = fa.contramap(f)
     }
 
-  def apply[T: CsvRowEncoder[*, Header], Header]: CsvRowEncoder[T, Header] =
-    implicitly[CsvRowEncoder[T, Header]]
+  @inline
+  def apply[T: CsvRowEncoder[*, Header], Header]: CsvRowEncoder[T, Header] = implicitly[CsvRowEncoder[T, Header]]
 
+  @inline
+  def instance[T, Header](f: T => CsvRow[Header]): CsvRowEncoder[T, Header] = f(_)
 }
 
 trait ExportedCsvRowEncoders {

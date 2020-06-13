@@ -12,6 +12,7 @@ class CellEncoderTest extends AnyFlatSpec with Matchers with EitherValues {
 
   "CellEncoder" should "have implicit instances available for standard types" in {
     CellEncoder[String]
+    CellEncoder[Array[Char]]
     CellEncoder[Boolean]
     CellEncoder[Unit]
     CellEncoder[Int]
