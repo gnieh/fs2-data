@@ -28,16 +28,21 @@ object Selector {
   /** Selects the value in the object for which the key respects the predicate.
     * If the currently pointed value is not an object and `strict` is `true`,
     * then an error is raised, otherwise the value is skipped.
+    * If the currently pointed value is an object and `mandatory` is `true`,
+    * then an error is raised if the object doesn't contain all the names.
     */
-  case class NameSelector(pred: NamePredicate, strict: Boolean) extends Selector
+  case class NameSelector(pred: NamePredicate, strict: Boolean, mandatory: Boolean) extends Selector
   object NameSelector {
-    def apply(name: String, strict: Boolean) =
-      new NameSelector(NamePredicate.Single(name), strict)
-    def apply(names: Seq[String], strict: Boolean) =
-      names match {
-        case Seq(name) => new NameSelector(NamePredicate.Single(name), strict)
-        case Seq()     => new NameSelector(NamePredicate.None, strict)
-        case _         => new NameSelector(NamePredicate.Several(names.toSet), strict)
+    def apply(name: String, strict: Boolean, mandatory: Boolean) =
+      new NameSelector(NamePredicate.Single(name), strict, mandatory)
+    def apply(names: Set[String], strict: Boolean, mandatory: Boolean) =
+      if (names.size <= 1) {
+        names.headOption match {
+          case Some(name) => new NameSelector(NamePredicate.Single(name), strict, mandatory)
+          case None       => new NameSelector(NamePredicate.None, strict, mandatory)
+        }
+      } else {
+        new NameSelector(NamePredicate.Several(names), strict, mandatory)
       }
   }
 
@@ -49,11 +54,14 @@ object Selector {
   object IndexSelector {
     def apply(idx: Int, strict: Boolean) =
       new IndexSelector(IndexPredicate.Single(idx), strict)
-    def apply(indices: Seq[Int], strict: Boolean) =
-      indices match {
-        case Seq(idx) => new IndexSelector(IndexPredicate.Single(idx), strict)
-        case Seq()    => new IndexSelector(IndexPredicate.None, strict)
-        case _        => new IndexSelector(IndexPredicate.Several(indices.toSet), strict)
+    def apply(indices: Set[Int], strict: Boolean) =
+      if (indices.size <= 1) {
+        indices.headOption match {
+          case Some(idx) => new IndexSelector(IndexPredicate.Single(idx), strict)
+          case None      => new IndexSelector(IndexPredicate.None, strict)
+        }
+      } else {
+        new IndexSelector(IndexPredicate.Several(indices), strict)
       }
     def apply(start: Int, end: Int, strict: Boolean) =
       if (start == end)
@@ -78,19 +86,29 @@ object Selector {
   case class PipeSelector(left: Selector, right: Selector) extends Selector
 }
 
-sealed trait NamePredicate extends (String => Boolean)
+sealed trait NamePredicate extends (String => Boolean) {
+
+  /** Returns the set of values this predicate selects
+    * if this is a finite list. Returns `Set.empty` otherwise.
+    */
+  def values: Set[String]
+}
 object NamePredicate {
   case object All extends NamePredicate {
     def apply(name: String): Boolean = true
+    def values: Set[String] = Set.empty
   }
   case object None extends NamePredicate {
     def apply(name: String): Boolean = false
+    def values: Set[String] = Set.empty
   }
   case class Single(name: String) extends NamePredicate {
     def apply(n: String): Boolean = n == name
+    def values: Set[String] = Set(name)
   }
   case class Several(names: Set[String]) extends NamePredicate {
     def apply(name: String): Boolean = names.contains(name)
+    def values: Set[String] = names
   }
 }
 

@@ -29,8 +29,8 @@ case class JsonSelectorException(msg: String, idx: Int) extends Exception(msg)
   * Selector ::= `.`
   *            | Sel Sel*
   *
-  * Sel ::= `.` Name `?`?
-  *       | `.` `[` String (`,` String)* `]` `?`?
+  * Sel ::= `.` Name `!`? `?`?
+  *       | `.` `[` String (`,` String)* `]` `!`? `?`?
   *       | `.` `[` Integer (`,` Integer)* `]` `?`?
   *       | `.` `[` Integer `:` Integer `]` `?`?
   *       | `.` `[` `]` `?`?
@@ -49,11 +49,11 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
 
   // === parser ===
 
-  private def parseSeveralIndices(idx: Int, indices: Seq[Int]): F[(Boolean => Selector, Int)] =
+  private def parseSeveralIndices(idx: Int, indices: Set[Int]): F[(Boolean => Selector, Int)] =
     next(idx).flatMap {
       case Some((Comma(_), idx)) =>
         next(idx).flatMap {
-          case Some((Integer(i, _), idx)) => parseSeveralIndices(idx, i +: indices)
+          case Some((Integer(i, _), idx)) => parseSeveralIndices(idx, indices + i)
           case Some((token, _)) =>
             F.raiseError(new JsonSelectorException(s"invalid selector token '$token'", token.idx))
           case None =>
@@ -86,7 +86,7 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
   private def parseArraySelector(idx: Int, fst: Int): F[(Boolean => Selector, Int)] =
     next(idx).flatMap {
       case Some((RightBracket(_), idx)) => F.pure((Selector.IndexSelector(fst, _), idx))
-      case Some((Comma(_), _))          => parseSeveralIndices(idx, Seq(fst))
+      case Some((Comma(_), _))          => parseSeveralIndices(idx, Set(fst))
       case Some((Colon(_), idx))        => parseRangeIndices(idx, fst)
       case Some((token, _)) =>
         F.raiseError(new JsonSelectorException(s"invalid selector token '$token'", token.idx))
@@ -94,18 +94,25 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
         F.raiseError(new JsonSelectorException("unexpected end of input", idx))
     }
 
-  private def parseSeveralNames(idx: Int, names: Seq[String]): F[(Boolean => Selector, Int)] =
+  private def parseMandatory(idx: Int, names: Set[String]): F[(Boolean => Selector, Int)] =
+    next(idx, peek = true).map {
+      case Some((Bang(_), idx)) => (Selector.NameSelector(names, _, true), idx + 1)
+      case _                    => (Selector.NameSelector(names, _, false), idx)
+    }
+
+  private def parseSeveralNames(idx: Int, names: Set[String]): F[(Boolean => Selector, Int)] =
     next(idx).flatMap {
       case Some((Comma(_), idx)) =>
         next(idx).flatMap {
-          case Some((Str(s, _), idx)) => parseSeveralNames(idx, s +: names)
+          case Some((Str(s, _), idx)) => parseSeveralNames(idx, names + s)
           case Some((token, _)) =>
             F.raiseError(new JsonSelectorException(s"invalid selector token '$token'", token.idx))
           case None =>
             F.raiseError(new JsonSelectorException("unexpected end of input", idx))
         }
       case Some((RightBracket(_), idx)) =>
-        F.pure((Selector.NameSelector(names, _), idx))
+        // check whether names are mandatory
+        parseMandatory(idx, names)
       case Some((token, _)) =>
         F.raiseError(new JsonSelectorException(s"invalid selector token '$token'", token.idx))
       case None =>
@@ -114,8 +121,8 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
 
   private def parseObjectSelector(idx: Int, fst: String): F[(Boolean => Selector, Int)] =
     next(idx).flatMap {
-      case Some((RightBracket(_), idx)) => F.pure((Selector.NameSelector(fst, _), idx))
-      case Some((Comma(_), _))          => parseSeveralNames(idx, Seq(fst))
+      case Some((RightBracket(_), idx)) => parseMandatory(idx, Set(fst))
+      case Some((Comma(_), _))          => parseSeveralNames(idx, Set(fst))
       case Some((token, _)) =>
         F.raiseError(new JsonSelectorException(s"invalid selector token '$token'", token.idx))
       case None =>
@@ -141,7 +148,7 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
             case Some((LeftBracket(_), idx)) =>
               parseBracketed(idx)
             case Some((Name(name, _), idx)) =>
-              F.pure((Selector.NameSelector(name, _), idx))
+              parseMandatory(idx, Set(name))
             case Some((token, _)) =>
               F.raiseError(new JsonSelectorException(s"invalid selector token '$token'", token.idx))
             case None =>
@@ -185,7 +192,7 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
 
   // === lexer ===
 
-  private def next(idx: Int): F[Option[(Token, Int)]] =
+  private def next(idx: Int, peek: Boolean = false): F[Option[(Token, Int)]] =
     if (idx >= input.length) {
       F.pure(None)
     } else {
@@ -194,24 +201,25 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
         next(idx + 1)
       else
         (c: @switch) match {
-          case '[' => F.pure(Some((LeftBracket(idx), idx + 1)))
-          case ']' => F.pure(Some((RightBracket(idx), idx + 1)))
-          case '.' => F.pure(Some((Dot(idx), idx + 1)))
-          case ':' => F.pure(Some((Colon(idx), idx + 1)))
-          case ',' => F.pure(Some((Comma(idx), idx + 1)))
-          case '?' => F.pure(Some((QuestionMark(idx), idx + 1)))
+          case '[' => F.pure(Some((LeftBracket(idx), if (peek) idx else idx + 1)))
+          case ']' => F.pure(Some((RightBracket(idx), if (peek) idx else idx + 1)))
+          case '.' => F.pure(Some((Dot(idx), if (peek) idx else idx + 1)))
+          case ':' => F.pure(Some((Colon(idx), if (peek) idx else idx + 1)))
+          case ',' => F.pure(Some((Comma(idx), if (peek) idx else idx + 1)))
+          case '?' => F.pure(Some((QuestionMark(idx), if (peek) idx else idx + 1)))
+          case '!' => F.pure(Some((Bang(idx), if (peek) idx else idx + 1)))
           case '"' =>
             string(idx + 1).map {
-              case (str, idx1) => Some((Str(str, idx), idx1))
+              case (str, idx1) => Some((Str(str, idx), if (peek) idx else idx1))
             }
           case _ =>
             if (c.isDigit) {
               integer(idx + 1, c).map {
-                case (i, idx1) => Some((Integer(i, idx), idx1))
+                case (i, idx1) => Some((Integer(i, idx), if (peek) idx else idx1))
               }
             } else if (c.isLetter || c == '_') {
               name(idx + 1, c).map {
-                case (n, idx1) => Some((Name(n, idx), idx1))
+                case (n, idx1) => Some((Name(n, idx), if (peek) idx else idx1))
               }
             } else {
               F.raiseError(new JsonSelectorException(s"invalid selector character '$c'", idx))
@@ -316,6 +324,7 @@ private object SelectorParser {
   case class Colon(idx: Int) extends Token
   case class Comma(idx: Int) extends Token
   case class QuestionMark(idx: Int) extends Token
+  case class Bang(idx: Int) extends Token
   case class Str(s: String, idx: Int) extends Token
   case class Name(s: String, idx: Int) extends Token
   case class Integer(i: Int, idx: Int) extends Token
