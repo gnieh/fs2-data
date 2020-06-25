@@ -21,6 +21,7 @@ package internals
 import scala.annotation.switch
 
 private[json] object TokenParser {
+
   // the opening quote has already been read
   def string_[F[_]](
       chunk: Chunk[Char],
@@ -32,7 +33,7 @@ private[json] object TokenParser {
       acc: StringBuilder,
       chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Char, List[Token]]] = {
     if (idx >= chunk.size)
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+      emitChunk(chunkAcc) >> rest.pull.uncons.flatMap {
         case Some((chunk, rest)) => string_(chunk, 0, rest, key, state, unicode, acc, Nil)
         case None                => Pull.raiseError[F](new JsonException("unexpected end of input"))
       } else {
@@ -49,7 +50,7 @@ private[json] object TokenParser {
             case 'r'  => string_(chunk, idx + 1, rest, key, StringState.Normal, 0, acc.append('\r'), chunkAcc)
             case 't'  => string_(chunk, idx + 1, rest, key, StringState.Normal, 0, acc.append('\t'), chunkAcc)
             case 'u'  => string_(chunk, idx + 1, rest, key, StringState.Expect4Unicode, 0, acc, chunkAcc)
-            case _    => Pull.raiseError[F](new JsonException(s"unknown escaped character '$c'"))
+            case _    => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unknown escaped character '$c'"))
           }
         case StringState.Normal =>
           if (c == '"')
@@ -60,7 +61,7 @@ private[json] object TokenParser {
           else if (c >= 0x20 && c <= 0x10ffff)
             string_(chunk, idx + 1, rest, key, StringState.Normal, 0, acc.append(c), chunkAcc)
           else
-            Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
+            emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
         case n /* StringState.ExpectNUnicode */ =>
           val cidx = hexa.indexOf(c.toLower)
           if (cidx >= 0) {
@@ -78,7 +79,7 @@ private[json] object TokenParser {
               string_(chunk, idx + 1, rest, key, n - 1, unicode1, acc, chunkAcc)
             }
           } else {
-            Pull.raiseError[F](new JsonException("malformed escaped unicode sequence"))
+            emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException("malformed escaped unicode sequence"))
           }
       }
     }
@@ -151,7 +152,7 @@ private[json] object TokenParser {
       }
 
     if (idx >= chunk.size)
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+      emitChunk(chunkAcc) >> rest.pull.uncons.flatMap {
         case Some((chunk, rest)) => number_(chunk, 0, rest, state, acc, Nil)
         case None =>
           if (NumberState.isFinal(state))
@@ -165,7 +166,7 @@ private[json] object TokenParser {
           if (NumberState.isFinal(state))
             Pull.pure(Some((chunk, idx, rest, Token.NumberValue(acc.result) :: chunkAcc)))
           else
-            Pull.raiseError[F](new JsonException(s"invalid number character '$c'"))
+            emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid number character '$c'"))
         case state =>
           number_(chunk, idx + 1, rest, state, acc.append(c), chunkAcc)
       }
@@ -181,7 +182,7 @@ private[json] object TokenParser {
       token: Token,
       chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Char, List[Token]]] = {
     if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+      emitChunk(chunkAcc) >> rest.pull.uncons.flatMap {
         case Some((chunk, rest)) => keyword_(chunk, 0, rest, expected, eidx, token, Nil)
         case None                => Pull.raiseError[F](new JsonException("unexpected end of input"))
       }
@@ -193,18 +194,19 @@ private[json] object TokenParser {
         else
           keyword_(chunk, idx + 1, rest, expected, eidx + 1, token, chunkAcc)
       } else {
-        Pull.raiseError[F](new JsonException(s"unexpected character '$c' (expected $expected)"))
+        emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected character '$c' (expected $expected)"))
       }
     }
   }
 
   def value_[F[_]](chunk: Chunk[Char], idx: Int, rest: Stream[F, Char], state: Int, chunkAcc: List[Token])(
       implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Char, List[Token]]] =
-    if (idx >= chunk.size)
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+    if (idx >= chunk.size) {
+      emitChunk(chunkAcc) >> rest.pull.uncons.flatMap {
         case Some((chunk, rest)) => value_(chunk, 0, rest, state, Nil)
         case None                => Pull.raiseError[F](new JsonException("unexpected end of input"))
-      } else {
+      }
+    } else {
       val c = chunk(idx)
       (c: @switch) match {
         case '{' =>
@@ -217,7 +219,7 @@ private[json] object TokenParser {
         case '"' => string_(chunk, idx + 1, rest, false, StringState.Normal, 0, new StringBuilder, chunkAcc)
         case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
           number_(chunk, idx, rest, NumberState.NumberStart, new StringBuilder, chunkAcc)
-        case c => Pull.raiseError[F](new JsonException(s"unexpected '$c'"))
+        case c => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c'"))
       }
     }
 
@@ -241,7 +243,7 @@ private[json] object TokenParser {
                 chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Char, List[Token]]] = {
     val idx1 = idx //eatWhitespaces(idx, chunk)
     if (idx1 >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+      emitChunk(chunkAcc) >> rest.pull.uncons.flatMap {
         case Some((chunk, rest)) => go_(chunk, 0, rest, state, history, Nil)
         case None =>
           if (history.isEmpty)
@@ -267,19 +269,19 @@ private[json] object TokenParser {
                     case prev :: tail => go_(chunk, idx1 + 1, rest, prev, tail, Token.EndObject :: chunkAcc)
                     case Nil          => Pull.pure(Some((chunk, idx1 + 1, rest, Token.EndObject :: chunkAcc)))
                   }
-                case _ => Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
+                case _ => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
               }
             case State.ExpectObjectKey =>
               (c: @switch) match {
                 case '"' =>
                   string_(chunk, idx1 + 1, rest, true, StringState.Normal, 0, new StringBuilder, chunkAcc)
                     .flatMap(continue(State.AfterObjectKey, history))
-                case _ => Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
+                case _ => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
               }
             case State.AfterObjectKey =>
               (c: @switch) match {
                 case ':' => go_(chunk, idx1 + 1, rest, State.BeforeObjectValue, history, chunkAcc)
-                case c   => Pull.raiseError[F](new JsonException(s"unexpected '$c' after object key"))
+                case c   => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object key"))
               }
             case State.BeforeObjectValue =>
               value_(chunk, idx1, rest, State.AfterObjectValue, chunkAcc)
@@ -293,7 +295,7 @@ private[json] object TokenParser {
                     case prev :: tail => go_(chunk, idx1 + 1, rest, prev, tail, Token.EndObject :: chunkAcc)
                     case Nil          => Pull.pure(Some((chunk, idx1 + 1, rest, Token.EndObject :: chunkAcc)))
                   }
-                case c => Pull.raiseError[F](new JsonException(s"unexpected '$c' after object value"))
+                case c => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object value"))
               }
             case State.ExpectArrayValue =>
               value_(chunk, idx1, rest, State.AfterArrayValue, chunkAcc)
@@ -318,7 +320,7 @@ private[json] object TokenParser {
                   }
                 case ',' =>
                   go_(chunk, idx1 + 1, rest, State.ExpectArrayValue, history, chunkAcc)
-                case c => Pull.raiseError[F](new JsonException(s"unexpected '$c' after array value"))
+                case c => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after array value"))
               }
           }
       }

@@ -47,11 +47,10 @@ private[json] object TokenSelector {
       onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, Token, List[Token]]],
       chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Token, List[Token]]] =
     if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >>
-        rest.pull.uncons.flatMap {
-          case Some((hd, tl)) => selectName(hd, 0, tl, emitNonSelected, wrap, toSelect, mandatories, onSelect, Nil)
-          case None           => Pull.raiseError[F](new JsonException("unexpected end of input"))
-        }
+      emitChunk(chunkAcc) >> rest.pull.uncons.flatMap {
+        case Some((hd, tl)) => selectName(hd, 0, tl, emitNonSelected, wrap, toSelect, mandatories, onSelect, Nil)
+        case None           => Pull.raiseError[F](new JsonException("unexpected end of input"))
+      }
     } else
       chunk(idx) match {
         case key @ Token.Key(name) =>
@@ -81,10 +80,11 @@ private[json] object TokenSelector {
             val chunkAcc1 = if (wrap) Token.EndObject :: chunkAcc else chunkAcc
             Pull.pure(Some((chunk, idx + 1, rest, chunkAcc1)))
           } else {
-            Pull.raiseError[F](new JsonMissingFieldException(s"missing mandatory fields: ${mandatories.mkString(", ")}", mandatories))
+            emitChunk(chunkAcc) >> Pull.raiseError[F](
+              new JsonMissingFieldException(s"missing mandatory fields: ${mandatories.mkString(", ")}", mandatories))
           }
         case token =>
-          Pull.raiseError[F](new JsonException("malformed json"))
+          emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException("malformed json"))
       }
 
   private def selectIndex[F[_]](
@@ -98,11 +98,10 @@ private[json] object TokenSelector {
       onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, Token, List[Token]]],
       chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Token, List[Token]]] =
     if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >>
-        rest.pull.uncons.flatMap {
-          case Some((hd, tl)) => selectIndex(hd, 0, tl, emitNonSelected, wrap, arrIdx, toSelect, onSelect, Nil)
-          case None           => Pull.raiseError[F](new JsonException("unexpected end of input"))
-        }
+      emitChunk(chunkAcc) >> rest.pull.uncons.flatMap {
+        case Some((hd, tl)) => selectIndex(hd, 0, tl, emitNonSelected, wrap, arrIdx, toSelect, onSelect, Nil)
+        case None           => Pull.raiseError[F](new JsonException("unexpected end of input"))
+      }
     } else
       chunk(idx) match {
         case Token.EndArray =>
@@ -136,11 +135,10 @@ private[json] object TokenSelector {
       onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, Token, List[Token]]],
       chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Token, List[Token]]] =
     if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >>
-        rest.pull.uncons.flatMap {
-          case Some((hd, tl)) => filterChunk(hd, 0, tl, selector, emitNonSelected, wrap, onSelect, Nil)
-          case None           => Pull.pure(None)
-        }
+      emitChunk(chunkAcc) >> rest.pull.uncons.flatMap {
+        case Some((hd, tl)) => filterChunk(hd, 0, tl, selector, emitNonSelected, wrap, onSelect, Nil)
+        case None           => Pull.pure(None)
+      }
     } else
       selector match {
         case Selector.ThisSelector =>
@@ -153,7 +151,7 @@ private[json] object TokenSelector {
               selectName(chunk, idx + 1, rest, emitNonSelected, wrap, pred, pred.values, onSelect, chunkAcc1)
             case token =>
               if (strict)
-                Pull.raiseError[F](new JsonException(s"cannot ${token.kind} number with string"))
+                emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"cannot ${token.kind} number with string"))
               else if (emitNonSelected)
                 emitValue(chunk, idx, rest, 0, chunkAcc)
               else
@@ -168,7 +166,7 @@ private[json] object TokenSelector {
               selectIndex(chunk, idx + 1, rest, emitNonSelected, wrap, 0, pred, onSelect, chunkAcc1)
             case token =>
               if (strict)
-                Pull.raiseError[F](new JsonException(s"cannot index ${token.kind} with number"))
+                emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"cannot index ${token.kind} with number"))
               else if (emitNonSelected)
                 emitValue(chunk, idx, rest, 0, chunkAcc)
               else
@@ -187,7 +185,7 @@ private[json] object TokenSelector {
               selectName(chunk, idx + 1, rest, emitNonSelected, wrap, NamePredicate.All, Set.empty, onSelect, chunkAcc1)
             case token =>
               if (strict)
-                Pull.raiseError[F](new JsonException(s"cannot iterate over ${token.kind}"))
+                emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"cannot iterate over ${token.kind}"))
               else if (emitNonSelected)
                 emitValue(chunk, idx, rest, 0, chunkAcc)
               else

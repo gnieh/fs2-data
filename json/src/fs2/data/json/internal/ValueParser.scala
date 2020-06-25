@@ -111,15 +111,17 @@ private[json] object ValueParser {
                                                builder: Builder[Json]): Pull[F, Json, Unit] = {
     def go(chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], chunkAcc: List[Json]): Pull[F, Json, Unit] =
       if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+        emitChunk(chunkAcc) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) => go(hd, 0, tl, Nil)
           case None           => Pull.done
         }
       } else {
-        pullValue(chunk, idx, rest).flatMap {
-          case Some((chunk, idx, rest, json)) => go(chunk, idx, rest, json :: chunkAcc)
-          case None                           => Pull.done
-        }
+        pullValue(chunk, idx, rest)
+          .handleErrorWith(t => emitChunk(chunkAcc) >> Pull.raiseError(t))
+          .flatMap {
+            case Some((chunk, idx, rest, json)) => go(chunk, idx, rest, json :: chunkAcc)
+            case None                           => Pull.done
+          }
       }
     go(Chunk.empty, 0, s, Nil)
   }
