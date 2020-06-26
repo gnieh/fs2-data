@@ -94,7 +94,7 @@ val mandatorySelector = ".field2!".parseSelector[ThrowableEither].toTry.get
 stream.through(filter(mandatorySelector)).compile.toList
 ```
 
-The `filter` preserves the chunk structure, so that the stream fails as soon as an error is encountered in the chunk, discarding potential previously selected values in the same chunk.
+The `filter` preserves the chunk structure, so that the stream fails as soon as an error is encountered in the chunk, but first emitting previously selected values in the same chunk.
 
 ### AST builder and tokenizer
 

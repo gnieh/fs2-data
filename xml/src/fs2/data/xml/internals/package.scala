@@ -21,4 +21,7 @@ package object internals {
 
   private[internals] type Result[F[_], O] = (Context[F], O)
 
+  private[internals] def emitChunk[T](chunkAcc: List[T]) =
+    Pull.output(Chunk.seq(chunkAcc.reverse))
+
 }
