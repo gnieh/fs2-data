@@ -13,8 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.json
+package fs2
+package data
+package xml
 
-class JsonException(msg: String) extends Exception(msg)
+import scala.collection.immutable.VectorBuilder
 
-class JsonMissingFieldException(msg: String, val missing: Set[String]) extends Exception(msg)
+package object internals {
+
+  private[internals] def emitChunk[T](chunkAcc: Option[VectorBuilder[T]]) =
+    chunkAcc.fold(Pull.done.covaryOutput[T])(vb => Pull.output(Chunk.vector(vb.result())))
+
+}

@@ -19,7 +19,7 @@ import cats._
 import cats.implicits._
 import cats.data.NonEmptyList
 
-import scala.annotation.tailrec
+import scala.annotation.{implicitNotFound, tailrec}
 
 /** Describes how a row can be decoded to the given type.
   *
@@ -30,6 +30,8 @@ import scala.annotation.tailrec
   * instance. To get the full power of it, import `cats.implicits._`.
   *
   */
+@implicitNotFound(
+  "No implicit RowDecoder found for type ${T}.\nYou can define one using RowDecoder.instance, by calling map on another RowDecoder or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val rowDecoder: RowDecoder[${T}] = deriveRowDecoder\nMake sure to have instances of CellDecoder for every member type in scope.\n")
 trait RowDecoder[T] {
   def apply(row: NonEmptyList[String]): DecoderResult[T]
 
@@ -43,7 +45,7 @@ trait RowDecoder[T] {
     row => apply(row).map(f)
 
   /**
-    * Map the parsed value to a new decoder, which in turn will be applie toString
+    * Map the parsed value to a new decoder, which in turn will be applied to
     * the parsed value.
     * @param f the mapping function
     * @tparam T2 the result type
@@ -126,8 +128,11 @@ object RowDecoder extends ExportedRowDecoders {
     def combineK[A](x: RowDecoder[A], y: RowDecoder[A]): RowDecoder[A] = x or y
   }
 
+  @inline
   def apply[T: RowDecoder]: RowDecoder[T] = implicitly[RowDecoder[T]]
 
+  @inline
+  def instance[T](f: NonEmptyList[String] => DecoderResult[T]): RowDecoder[T] = f(_)
 }
 
 trait ExportedRowDecoders {

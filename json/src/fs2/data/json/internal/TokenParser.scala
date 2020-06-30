@@ -34,7 +34,7 @@ private[json] object TokenParser {
                 acc: StringBuilder,
                 chunkAcc: VectorBuilder[Token]): Pull[F, Token, Option[(T.Context, VectorBuilder[Token])]] = {
       if (T.needsPull(context)) {
-        Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(context).flatMap {
+        emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
           case Some(context) =>
             chunkAcc.clear()
             string_(context, key, state, unicode, acc, chunkAcc)
@@ -54,7 +54,7 @@ private[json] object TokenParser {
               case 'r'  => string_(T.advance(context), key, StringState.Normal, 0, acc.append('\r'), chunkAcc)
               case 't'  => string_(T.advance(context), key, StringState.Normal, 0, acc.append('\t'), chunkAcc)
               case 'u'  => string_(T.advance(context), key, StringState.Expect4Unicode, 0, acc, chunkAcc)
-              case _    => Pull.raiseError[F](new JsonException(s"unknown escaped character '$c'"))
+              case _    => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unknown escaped character '$c'"))
             }
           case StringState.Normal =>
             if (c == '"')
@@ -67,7 +67,7 @@ private[json] object TokenParser {
             else if (c >= 0x20 && c <= 0x10ffff)
               string_(T.advance(context), key, StringState.Normal, 0, acc.append(c), chunkAcc)
             else
-              Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
+              emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
           case n /* StringState.ExpectNUnicode */ =>
             val cidx = hexa.indexOf(c.toLower)
             if (cidx >= 0) {
@@ -83,7 +83,7 @@ private[json] object TokenParser {
                 string_(T.advance(context), key, n - 1, unicode1, acc, chunkAcc)
               }
             } else {
-              Pull.raiseError[F](new JsonException("malformed escaped unicode sequence"))
+              emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException("malformed escaped unicode sequence"))
             }
         }
       }
@@ -153,7 +153,7 @@ private[json] object TokenParser {
         }
 
       if (T.needsPull(context)) {
-        Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(context).flatMap {
+        emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
           case Some(context) =>
             chunkAcc.clear()
             number_(context, state, acc, chunkAcc)
@@ -170,7 +170,7 @@ private[json] object TokenParser {
             if (NumberState.isFinal(state))
               Pull.pure(Some((context, chunkAcc += Token.NumberValue(acc.result))))
             else
-              Pull.raiseError[F](new JsonException(s"invalid number character '$c'"))
+              emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid number character '$c'"))
           case state =>
             number_(T.advance(context), state, acc.append(c), chunkAcc)
         }
@@ -183,7 +183,7 @@ private[json] object TokenParser {
                  token: Token,
                  chunkAcc: VectorBuilder[Token]): Pull[F, Token, Option[(T.Context, VectorBuilder[Token])]] = {
       if (T.needsPull(context)) {
-        Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(context).flatMap {
+        emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
           case Some(context) =>
             chunkAcc.clear()
             keyword_(context, expected, eidx, token, chunkAcc)
@@ -197,7 +197,7 @@ private[json] object TokenParser {
           else
             keyword_(T.advance(context), expected, eidx + 1, token, chunkAcc)
         } else {
-          Pull.raiseError[F](new JsonException(s"unexpected character '$c' (expected $expected)"))
+          emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected character '$c' (expected $expected)"))
         }
       }
     }
@@ -205,7 +205,7 @@ private[json] object TokenParser {
     def value_(context: T.Context, state: Int, chunkAcc: VectorBuilder[Token])(
         implicit F: RaiseThrowable[F]): Pull[F, Token, Option[(T.Context, VectorBuilder[Token])]] =
       if (T.needsPull(context)) {
-        Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(context).flatMap {
+        emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
           case Some(context) =>
             chunkAcc.clear()
             value_(context, state, chunkAcc)
@@ -224,7 +224,7 @@ private[json] object TokenParser {
           case '"' => string_(T.advance(context), false, StringState.Normal, 0, new StringBuilder, chunkAcc)
           case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
             number_(context, NumberState.NumberStart, new StringBuilder, chunkAcc)
-          case c => Pull.raiseError[F](new JsonException(s"unexpected '$c'"))
+          case c => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c'"))
         }
       }
 
@@ -240,7 +240,7 @@ private[json] object TokenParser {
             state: Int,
             chunkAcc: VectorBuilder[Token]): Pull[F, Token, Option[(T.Context, VectorBuilder[Token])]] = {
       if (T.needsPull(context)) {
-        Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(context).flatMap {
+        emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
           case Some(context) =>
             chunkAcc.clear()
             go_(context, state, chunkAcc)
@@ -262,19 +262,19 @@ private[json] object TokenParser {
                       .flatMap(res => continue(State.AfterObjectKey)(res))
                   case '}' =>
                     Pull.pure(Some((T.advance(context), chunkAcc += Token.EndObject)))
-                  case _ => Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
+                  case _ => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
                 }
               case State.ExpectObjectKey =>
                 (c: @switch) match {
                   case '"' =>
                     string_(T.advance(context), true, StringState.Normal, 0, new StringBuilder, chunkAcc)
                       .flatMap(res => continue(State.AfterObjectKey)(res))
-                  case _ => Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
+                  case _ => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
                 }
               case State.AfterObjectKey =>
                 (c: @switch) match {
                   case ':' => go_(T.advance(context), State.BeforeObjectValue, chunkAcc)
-                  case c   => Pull.raiseError[F](new JsonException(s"unexpected '$c' after object key"))
+                  case c   => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object key"))
                 }
               case State.BeforeObjectValue =>
                 value_(context, State.AfterObjectValue, chunkAcc)
@@ -285,7 +285,7 @@ private[json] object TokenParser {
                     go_(T.advance(context), State.ExpectObjectKey, chunkAcc)
                   case '}' =>
                     Pull.pure(Some((T.advance(context), chunkAcc += Token.EndObject)))
-                  case c => Pull.raiseError[F](new JsonException(s"unexpected '$c' after object value"))
+                  case c => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object value"))
                 }
               case State.ExpectArrayValue =>
                 value_(context, State.AfterArrayValue, chunkAcc)
@@ -304,7 +304,7 @@ private[json] object TokenParser {
                     Pull.pure(Some((T.advance(context), chunkAcc += Token.EndArray)))
                   case ',' =>
                     go_(T.advance(context), State.ExpectArrayValue, chunkAcc)
-                  case c => Pull.raiseError[F](new JsonException(s"unexpected '$c' after array value"))
+                  case c => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after array value"))
                 }
             }
         }

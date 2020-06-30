@@ -116,10 +116,12 @@ private[json] object ValueParser {
           case None           => Pull.done
         }
       } else {
-        pullValue(chunk, idx, rest).flatMap {
-          case Some((chunk, idx, rest, json)) => go(chunk, idx, rest, json :: chunkAcc)
-          case None                           => Pull.done
-        }
+        pullValue(chunk, idx, rest)
+          .handleErrorWith(t => Pull.output(Chunk.seq(chunkAcc.reverse)) >> Pull.raiseError(t))
+          .flatMap {
+            case Some((chunk, idx, rest, json)) => go(chunk, idx, rest, json :: chunkAcc)
+            case None                           => Pull.done
+          }
       }
     go(Chunk.empty, 0, s, Nil)
   }

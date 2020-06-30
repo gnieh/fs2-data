@@ -17,11 +17,16 @@ package fs2
 package data
 package json
 
+import scala.collection.immutable.VectorBuilder
+
 package object internals {
 
   private[internals] val hexa = "0123456789abcdef"
 
   private[json] type Result[F[_], Out] = Option[(Chunk[Token], Int, Stream[F, Token], Out)]
+
+  private[json] def emitChunk[T](chunkAcc: VectorBuilder[T]) =
+    Pull.output(Chunk.vector(chunkAcc.result()))
 
   private[json] def skipValue[F[_]](
       chunk: Chunk[Token],

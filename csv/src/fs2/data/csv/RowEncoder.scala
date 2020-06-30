@@ -18,8 +18,12 @@ package fs2.data.csv
 import cats._
 import cats.data.NonEmptyList
 
+import scala.annotation.implicitNotFound
+
 /** Describes how a row can be encoded from a value of the given type.
   */
+@implicitNotFound(
+  "No implicit RowEncoder found for type ${T}.\nYou can define one using RowEncoder.instance, by calling contramap on another RowEncoder or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val rowEncoder: RowEncoder[${T}] = deriveRowEncoder\nMake sure to have instances of CellEncoder for every member type in scope.\n")
 trait RowEncoder[T] {
   def apply(elem: T): NonEmptyList[String]
 
@@ -33,8 +37,11 @@ object RowEncoder extends ExportedRowEncoders {
       fa.contramap(f)
   }
 
+  @inline
   def apply[T: RowEncoder]: RowEncoder[T] = implicitly[RowEncoder[T]]
 
+  @inline
+  def instance[T](f: T => NonEmptyList[String]): RowEncoder[T] = f(_)
 }
 
 trait ExportedRowEncoders {

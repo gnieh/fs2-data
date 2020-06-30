@@ -10,6 +10,7 @@ class CellDecoderTest extends AnyFlatSpec with Matchers with EitherValues {
 
   "CellDecoder" should "have implicit instances available for standard types" in {
     CellDecoder[String]
+    CellDecoder[Array[Char]]
     CellDecoder[Boolean]
     CellDecoder[Unit]
     CellDecoder[Int]

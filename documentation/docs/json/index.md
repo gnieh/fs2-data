@@ -57,10 +57,14 @@ The `parseSelector` method implicitly comes from the `import fs2.data.json._` an
 The filter syntax is as follows:
   - `.` selects the root values, it is basically the identity filter.
   - `.f` selects the field named `f` in objects. It fails if the value it is applied to is not a JSON object.
-    - `f` must be a valid Java identifier, meaning it has to respect this regular expression: `[a-ZA-Z_][a-zA-Z0-9_]*`. If you wish to select a field that doesn't respect this regular expression, you can use the syntax `.["my non-identifier field"]` described below.
+    - `f` must be a valid Java identifier, meaning it has to respect this regular expression: `[a-zA-Z_][a-zA-Z0-9_]*`. If you wish to select a field that doesn't respect this regular expression, you can use the syntax `.["my non-identifier field"]` described below.
+    - name `f` can be immediately followed by a `!` to mark it as mandatory. Stream will fail if the end of the object the selector is applied to is reached and the field was not present in the object.
   - `.f?` is similar to `.f` but doesn't fail in case the value it is applied to is not a JSON object.
+    - both `!` and `?` can be combined as `.f!?` to indicate that if the value it is applied to is a JSON object, then the field must be in it.
   - `.["f1", "f2", ..., "fn"]` selects only fields `f1` to `fn` in objects. It fails if the value it is applied to is not an object.
+    - the field list can be immediately followed by a `!` to mark all fields as mandatory. Stream will fail if the end of the object the selector is applied to is reached and at least one field in the list was not present in the object.
   - `.["f1", "f2", ..., "fn"]?` is similar to `.["f1", "f2", ..., "fn"]` but doesn't fail if the value it is applied to is not an object.
+    - both `!` and `?` can be combined as `.["f1", "f2", ..., "fn"]!?` to indicate that if the value it is applied to is a JSON object, then all the specified fields must be in it.
   - `.[id1, idx2, ..., idxn]` selects only elements `idx1`, ..., `idxn` in arrays. It fails if the value it is applied to is not an array.
   - `.[idx1, idx2, ..., idxn]?` is similar to `.[idx1, idx2, ..., idxn]` but doesn't fail if the value it is applied to is not an array.
   - `.[idx1:idx2]` selects only elements between `idx1` (inclusive) and `idx2` (exclusive) in arrays. It fails if the value it is applied to is not an array.
@@ -69,7 +73,7 @@ The filter syntax is as follows:
   - `.[]?` is similar as `.[]` but doesn't fail if the value it is applied to is neither an array nor an object.
   - `sel1 sel2` applies selector `sel1` to the root value, and selector `sel2` to each selected value.
 
-By default, selected values are emitted in the stream as they are matched, resulting in a stream with several Json values.
+By default, selected values are emitted in the stream as they are matched, resulting in a stream with several JSON values.
 If this is not desired, you can wrap the elements into arrays and objects, from the root by calling `filter` with `wrap` set to `true`.
 
 ```scala mdoc
@@ -79,6 +83,15 @@ filteredWrapped.compile.toList
 
 If the selector selects elements in an array, then the resulting values are wrapped in an array.
 On the other hand, if it selects elements in an object, then emitted values are returned wrapped in an object, associated with the last selected keys.
+
+If you want to ensure that selected object keys are present in the JSON value, you can use the `!` operator described above. For instance if you want to select `field2` and fail the stream as soon as an object does not contain it, you can do:
+
+```scala mdoc
+val mandatorySelector = ".field2!".parseSelector[Either[Throwable, *]].toTry.get
+stream.through(filter(mandatorySelector)).compile.toList
+```
+
+The `filter` preserves the chunk structure, so that the stream fails as soon as an error is encountered in the chunk, but first emitting previously selected values in the same chunk.
 
 ### AST builder and tokenizer
 
@@ -97,7 +110,7 @@ If you provide an implicit [`Tokenizer[Json]`][tokenizer-api], which describes h
 implicit tokenizer: Tokenizer[SomeJsonType] = ...
 val transformed = stream.through(transform[Fallible, Json](selector, json => SomeJsonObject("test" -> json)))
 ```
-For concrete examples of provided `Builder`s and `Tokeizer`s, please refer to [the JSON library binding modules documentation][json-lib-doc]
+For concrete examples of provided `Builder`s and `Tokenizer`s, please refer to [the JSON library binding modules documentation][json-lib-doc]
 
 ### JSON Renderers
 
@@ -112,9 +125,9 @@ implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
 
 Blocker[IO].use { blocker =>
   stream
-    .lift[IO]
     .through(render.compact)
     .through(text.utf8Encode)
+    .lift[IO]
     .through(io.file.writeAll[IO](Paths.get("/some/path/to/file.json"), blocker))
     .compile
     .drain
