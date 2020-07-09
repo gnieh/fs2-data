@@ -405,3 +405,10 @@ def unidoc(ev: Evaluator) = T.command {
 
   ()
 }
+
+object scalafix extends ScalaModule with ScalafmtModule {
+  def scalaVersion = scala213
+
+  def ivyDeps = Agg(ivy"ch.epfl.scala::scalafix-core:0.9.17")
+
+}
