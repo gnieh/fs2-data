@@ -2,6 +2,8 @@ package fs2
 package data
 package json
 
+import selector._
+
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.Inside
@@ -9,7 +11,7 @@ import org.scalatest.Inside
 class JsonSelectorSpec extends AnyFlatSpec with Matchers with Inside {
 
   "mandatory fields" should "fail in the missing single case" in {
-    val selector = Selector.NameSelector("field", true, true)
+    val selector = root.field("field").!.compile
     val filtered = Stream(Token.StartObject, Token.Key("other-field"), Token.TrueValue, Token.EndObject)
       .through(filter[Fallible](selector))
       .compile
@@ -21,7 +23,7 @@ class JsonSelectorSpec extends AnyFlatSpec with Matchers with Inside {
   }
 
   it should "fail in case at least one is missing" in {
-    val selector = Selector.NameSelector(Set("field1", "field2", "field3"), true, true)
+    val selector = root.fields("field1", "field2", "field3").!.compile
     val filtered = Stream(Token.StartObject, Token.Key("field2"), Token.TrueValue, Token.EndObject)
       .through(filter[Fallible](selector))
       .compile
@@ -33,7 +35,7 @@ class JsonSelectorSpec extends AnyFlatSpec with Matchers with Inside {
   }
 
   it should "fail in missing nested cases" in {
-    val selector = Selector.PipeSelector(Selector.IteratorSelector(true), Selector.NameSelector("field", true, true))
+    val selector = root.iterate.field("field").!.compile
     val filtered = Stream(Token.StartArray,
                           Token.StartObject,
                           Token.Key("other-field"),
@@ -50,8 +52,7 @@ class JsonSelectorSpec extends AnyFlatSpec with Matchers with Inside {
   }
 
   it should "fail on outermost error in case of nested missing keys" in {
-    val selector =
-      Selector.PipeSelector(Selector.NameSelector("field1", true, true), Selector.NameSelector("field2", true, true))
+    val selector = root.field("field1").!.field("field2").!.compile
     val filtered =
       Stream(Token.StartObject, Token.Key("other-field"), Token.StartObject, Token.EndObject, Token.EndObject)
         .through(filter[Fallible](selector))
@@ -64,7 +65,7 @@ class JsonSelectorSpec extends AnyFlatSpec with Matchers with Inside {
   }
 
   it should "success if all mandatory fields are present" in {
-    val selector = Selector.NameSelector(Set("field1", "field2", "field3"), true, true)
+    val selector = root.fields("field1", "field2", "field3").!.compile
     val filtered = Stream(
       Token.StartObject,
       Token.Key("field2"),
