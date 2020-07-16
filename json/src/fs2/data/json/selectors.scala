@@ -84,6 +84,15 @@ object Selector {
     * only the values selected by `right` are.
     */
   case class PipeSelector(left: Selector, right: Selector) extends Selector
+
+  object PipeSelector {
+    def from(left: Selector, right: Selector): Selector =
+      (left, right) match {
+        case (ThisSelector, _) => right
+        case (_, ThisSelector) => left
+        case (_, _)            => PipeSelector(left, right)
+      }
+  }
 }
 
 sealed trait NamePredicate extends (String => Boolean) {
