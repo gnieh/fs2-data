@@ -17,24 +17,25 @@ package fs2.data.xml
 
 import fs2._
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import weaver._
 
-class XmlExceptionSpec extends AnyFlatSpec with Matchers {
+object XmlExceptionSpec extends SimpleIOSuite {
 
-  "previous valid events" should "be emitted before Exception" in {
+  pureTest("previous valid events should be emitted before Exception") {
 
     val input = """<a><b>c</a>"""
 
     val stream = Stream.emit(input).through(events[Fallible, String]).attempt
 
-    stream.compile.toList should matchPattern {
+    expect(stream.compile.toList match {
       case Right(
             List(Right(XmlEvent.StartTag(QName(None, "a"), Nil, false)),
                  Right(XmlEvent.StartTag(QName(None, "b"), Nil, false)),
                  Right(XmlEvent.XmlString("c", false)),
                  Left(_: XmlException))) =>
-    }
+        true
+      case _ => false
+    })
 
   }
 

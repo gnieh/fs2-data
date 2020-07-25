@@ -21,7 +21,7 @@ import diffson.circe._
 
 import io.circe.Json
 
-class CirceJsonMergePatchTest extends JsonMergePatchTest[Json] {
+object CirceJsonMergePatchTest extends JsonMergePatchTest[Json] {
   def makeInt(i: Int): Json = Json.fromInt(i)
 
   def makeString(s: String): Json = Json.fromString(s)

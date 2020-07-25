@@ -18,4 +18,4 @@ package circe
 
 import io.circe.Json
 
-class CirceJsonSelectorSpec extends JsonSelectorSpec[Json]
+object CirceJsonSelectorSpec extends JsonSelectorSpec[Json]

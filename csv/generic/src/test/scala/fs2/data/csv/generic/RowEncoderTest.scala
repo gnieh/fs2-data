@@ -20,11 +20,11 @@ import hlist._
 import semiauto._
 
 import cats.data.NonEmptyList
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 import shapeless._
 
-class RowEncoderTest extends AnyFlatSpec with Matchers {
+import weaver._
+
+object RowEncoderTest extends SimpleIOSuite {
 
   val csvRow = NonEmptyList.of("1", "test", "42")
   val csvRowEmptyI = NonEmptyList.of("", "test", "42")
@@ -40,33 +40,29 @@ class RowEncoderTest extends AnyFlatSpec with Matchers {
   val testOptIEncoder = deriveRowEncoder[TestOptI]
   val testOptJEncoder = deriveRowEncoder[TestOptJ]
 
-  "case class" should "be handled with positional fields" in {
-    testEncoder(Test(1, "test", 42)) shouldBe csvRow
+  pureTest("case class should be handled with positional fields") {
+    expect(testEncoder(Test(1, "test", 42)) == csvRow)
   }
 
-  it should "be handled properly with optional fields" in {
-    testOptIEncoder(TestOptI(Some(1), "test", 42)) shouldBe csvRow
-
-    testOptIEncoder(TestOptI(None, "test", 42)) shouldBe csvRowEmptyI
-
-    testOptJEncoder(TestOptJ(1, "test", Some(42))) shouldBe csvRow
-
-    testOptJEncoder(TestOptJ(1, "test", None)) shouldBe csvRowEmptyJ
+  pureTest("case class should be handled properly with optional fields") {
+    expect(testOptIEncoder(TestOptI(Some(1), "test", 42)) == csvRow) and
+      expect(testOptIEncoder(TestOptI(None, "test", 42)) == csvRowEmptyI) and
+      expect(testOptJEncoder(TestOptJ(1, "test", Some(42))) == csvRow) and
+      expect(testOptJEncoder(TestOptJ(1, "test", None)) == csvRowEmptyJ)
   }
 
-  "hlist" should "be handled properly" in {
-    RowEncoder[Int :: String :: Int :: HNil]
-      .apply(1 :: "test" :: 42 :: HNil) shouldBe csvRow
+  pureTest("hlist should be handled properly") {
+    expect(
+      RowEncoder[Int :: String :: Int :: HNil]
+        .apply(1 :: "test" :: 42 :: HNil) == csvRow)
   }
 
-  it should "be handled properly with optional columns" in {
+  pureTest("hlist should be handled properly with optional columns") {
     val encoder = RowEncoder[Option[Int] :: String :: Option[Int] :: HNil]
 
-    encoder(Some(1) :: "test" :: Some(42) :: HNil) shouldBe csvRow
-
-    encoder(None :: "test" :: Some(42) :: HNil) shouldBe csvRowEmptyI
-
-    encoder(Some(1) :: "test" :: None :: HNil) shouldBe csvRowEmptyJ
+    expect(encoder(Some(1) :: "test" :: Some(42) :: HNil) == csvRow) and
+      expect(encoder(None :: "test" :: Some(42) :: HNil) == csvRowEmptyI) and
+      expect(encoder(Some(1) :: "test" :: None :: HNil) == csvRowEmptyJ)
   }
 
 }

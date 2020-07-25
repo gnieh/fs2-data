@@ -18,7 +18,7 @@ package circe
 
 import io.circe._
 
-class CirceJsonParserSpec extends JsonParserTest[Json] {
+object CirceJsonParserSpec extends JsonParserTest[Json] {
   def parse(content: String): Either[Throwable, Json] =
     parser.parse(content)
 }

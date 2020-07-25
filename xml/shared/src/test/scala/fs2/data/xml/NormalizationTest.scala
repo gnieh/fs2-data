@@ -19,15 +19,14 @@ package xml
 
 import fs2._
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import weaver._
 
-class NormalizationTest extends AnyFlatSpec with Matchers {
+object NormalizationTest extends SimpleIOSuite {
 
   def start(name: String) = XmlEvent.StartTag(QName(name), Nil, false)
   def text(s: String) = XmlEvent.XmlString(s, false)
 
-  "consecutive non CDATA string" should "be merged" in {
+  pureTest("consecutive non CDATA string should be  merged") {
     val input = Stream.emits(
       List(XmlEvent.XmlString("This", false),
            XmlEvent.XmlString(" is ", false),
@@ -35,37 +34,41 @@ class NormalizationTest extends AnyFlatSpec with Matchers {
 
     val actual = input.through(normalize).compile.toList
 
-    actual should be(List(XmlEvent.XmlString("This is a string.", false)))
+    expect(actual == List(XmlEvent.XmlString("This is a string.", false)))
 
   }
 
-  it should "be merged no matter how deep it is" in {
+  pureTest("consecutive non CDATA string should be merged no matter how deep it is") {
     val input = Stream.emits(
       List(start("test"), start("test"), text("Text"), text("."), start("test"), text("More "), text("text")))
 
     val actual = input.through(normalize).compile.toList
 
-    actual should be(List(start("test"), start("test"), text("Text."), start("test"), text("More text")))
+    expect(actual == List(start("test"), start("test"), text("Text."), start("test"), text("More text")))
   }
 
-  it should "also be merged in attribute values" in {
-    val attr = Attr(QName("a"), List(XmlEvent.XmlString("attribute ", false), XmlEvent.XmlString("value", false)))
-    val input = Stream.emits(List(XmlEvent.StartTag(QName("test"), List(attr), true)))
+  pureTest("consecutive non CDATA string should also be merged in attribute values") {
+    val input = Stream.emits(
+      List(
+        XmlEvent.StartTag(
+          QName("test"),
+          List(Attr(QName("a"), List(XmlEvent.XmlString("attribute ", false), XmlEvent.XmlString("value", false)))),
+          true)))
 
     val actual = input.through(normalize).compile.toList
 
-    actual should be(
-      List(XmlEvent
+    expect(
+      actual == List(XmlEvent
         .StartTag(QName("test"), List(Attr(QName("a"), List(XmlEvent.XmlString("attribute value", false)))), true)))
   }
 
-  "mixed CDATA and non CDATA strings" should "not be merged" in {
+  pureTest("mixed CDATA and non CDATA strings should not be merged") {
     val input =
       List(XmlEvent.XmlString("This", false), XmlEvent.XmlString(" is ", true), XmlEvent.XmlString("a string.", false))
 
     val actual = Stream.emits(input).through(normalize).compile.toList
 
-    actual should be(input)
+    expect(actual == input)
 
   }
 

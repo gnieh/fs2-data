@@ -13,28 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.json
+package fs2
+package data
+package json
 
 import ast._
 
-import fs2._
+import weaver._
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+abstract class TokenizerSpec[Json](implicit builder: Builder[Json], tokenizer: Tokenizer[Json]) extends SimpleIOSuite {
 
-abstract class TokenizerSpec[Json](implicit builder: Builder[Json], tokenizer: Tokenizer[Json])
-    extends AnyFlatSpec
-    with Matchers {
+  pureTest("`tokenize` and `values` should work well together") {
 
-  "`tokenize` and `values`" should "work well together" in {
+    val input = Stream.emit("""true {"field1": "test", "field2": 23}""")
 
-    val input = Stream.emits("""true {"field1": "test", "field2": 23}""")
-
-    val toks = input.through(tokens[Fallible, Char])
+    val toks = input.through(tokens[Fallible, String])
 
     val roundtrip = toks.through(values).through(tokenize)
 
-    toks.compile.toList shouldBe roundtrip.compile.toList
+    expect(toks.compile.toList == roundtrip.compile.toList)
 
   }
 

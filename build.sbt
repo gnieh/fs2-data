@@ -29,11 +29,11 @@ val commonSettings = List(
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.2.0",
-    "org.scalatest" %%% "scalatest" % "3.2.2" % "test",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "co.fs2" %% "fs2-io" % fs2Version % "test",
-    "com.github.pathikrit" %% "better-files" % "3.9.1" % "test"
+    "com.disneystreaming" %%% "weaver-framework" % "0.5.0-RC2" % "test"
   ),
+  testFrameworks += new TestFramework("weaver.framework.TestFramework"),
   scmInfo := Some(ScmInfo(url("https://github.com/satabin/fs2-data"), "scm:git:git@github.com:satabin/fs2-data.git"))
 )
 

@@ -13,33 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.json
+package fs2
+package data
+package json
 package mergepatch
 
-import ast.Tokenizer
+import ast._
+
+import diffson._
 import diffson.jsonmergepatch.JsonMergePatch
 
-import fs2._
+import weaver._
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
-import diffson.Jsony
+abstract class JsonMergePatchTest[Json](implicit Json: Jsony[Json], tokenizer: Tokenizer[Json], builder: Builder[Json])
+    extends SimpleIOSuite {
 
-abstract class JsonMergePatchTest[Json](implicit Json: Jsony[Json], tokenizer: Tokenizer[Json])
-    extends AnyFlatSpec
-    with Matchers {
-
-  def makeInt(i: Int): Json
-
-  def makeString(s: String): Json
-
-  def makeTrue: Json
-
-  val valuePatch = JsonMergePatch.Value(makeInt(5))
+  val valuePatch = JsonMergePatch.Value(builder.makeNumber("5"))
   val nullPatch = JsonMergePatch.Value(Json.Null)
   val objectPatch = JsonMergePatch.Object(
-    Map("key1" -> makeInt(3),
-        "key2" -> Json.makeObject(Map("nested" -> makeString("s"), "new" -> makeTrue, "deleted" -> Json.Null))))
+    Map(
+      "key1" -> builder.makeNumber("3"),
+      "key2" -> builder.makeObject(
+        List("nested" -> builder.makeString("s"), "new" -> builder.makeTrue, "deleted" -> builder.makeNull))
+    ))
   val objectPatchTokens = List(
     Token.StartObject,
     Token.Key("key1"),
@@ -56,18 +52,18 @@ abstract class JsonMergePatchTest[Json](implicit Json: Jsony[Json], tokenizer: T
     Token.EndObject
   )
 
-  "a value patch" should "replace a simple value" in {
+  pureTest("a value patch should replace a simple value") {
     val patched =
       Stream
-        .emits("true")
-        .through(tokens[Fallible, Char])
+        .emit("true")
+        .through(tokens[Fallible, String])
         .through(patch(valuePatch))
         .compile
         .toList
-    patched shouldBe Right(List(Token.NumberValue("5")))
+    expect(patched == Right(List(Token.NumberValue("5"))))
   }
 
-  it should "replace an object value" in {
+  pureTest("a value patch should replace an object value") {
     val patched =
       Stream
         .emits("""{"key": 4}""")
@@ -75,76 +71,76 @@ abstract class JsonMergePatchTest[Json](implicit Json: Jsony[Json], tokenizer: T
         .through(patch(valuePatch))
         .compile
         .toList
-    patched shouldBe Right(List(Token.NumberValue("5")))
+    expect(patched == Right(List(Token.NumberValue("5"))))
   }
 
-  it should "replace an array value" in {
+  pureTest("replace an array value") {
     val patched =
       Stream
-        .emits("""[1, 2, 3]""")
-        .through(tokens[Fallible, Char])
+        .emit("""[1, 2, 3]""")
+        .through(tokens[Fallible, String])
         .through(patch(valuePatch))
         .compile
         .toList
-    patched shouldBe Right(List(Token.NumberValue("5")))
+    expect(patched == Right(List(Token.NumberValue("5"))))
   }
 
-  "a null patch" should "remove a simple value" in {
+  pureTest("a null patch should remove a simple value") {
     val patched =
       Stream
-        .emits("true")
-        .through(tokens[Fallible, Char])
+        .emit("true")
+        .through(tokens[Fallible, String])
         .through(patch(nullPatch))
         .compile
         .toList
-    patched shouldBe Right(Nil)
+    expect(patched == Right(Nil))
   }
 
-  it should "remove an object value" in {
+  pureTest("a null patch should remove an object value") {
     val patched =
       Stream
-        .emits("""{"key": 4}""")
-        .through(tokens[Fallible, Char])
+        .emit("""{"key": 4}""")
+        .through(tokens[Fallible, String])
         .through(patch(nullPatch))
         .compile
         .toList
-    patched shouldBe Right(Nil)
+    expect(patched == Right(Nil))
   }
 
-  it should "remove an array value" in {
+  pureTest("a null patch should remove an array value") {
     val patched =
       Stream
-        .emits("""[1, 2, 3]""")
-        .through(tokens[Fallible, Char])
+        .emit("""[1, 2, 3]""")
+        .through(tokens[Fallible, String])
         .through(patch(nullPatch))
         .compile
         .toList
-    patched shouldBe Right(Nil)
+    expect(patched == Right(Nil))
   }
 
-  "an object patch" should "replace a simple value" in {
+  pureTest("an object patch should replace a simple value") {
     val patched =
       Stream
-        .emits("true")
-        .through(tokens[Fallible, Char])
+        .emit("true")
+        .through(tokens[Fallible, String])
         .through(patch(objectPatch))
         .compile
         .toList
-    patched shouldBe Right(objectPatchTokens)
+    expect(patched == Right(objectPatchTokens))
   }
 
-  it should "replace an array value" in {
+  pureTest("an object patch replace an array value") {
     val patched =
       Stream
-        .emits("""[1, 2, 3]""")
-        .through(tokens[Fallible, Char])
+        .emit("""[1, 2, 3]""")
+        .through(tokens[Fallible, String])
         .through(patch(objectPatch))
         .compile
         .toList
-    patched shouldBe Right(objectPatchTokens)
+    expect(patched == Right(objectPatchTokens))
   }
 
-  it should "be applied recursively to an object value" in {
+  pureTest("an object patch be applied recursively to an object value") {
 
     val objectTokens = List(
       Token.StartObject,
@@ -165,13 +161,13 @@ abstract class JsonMergePatchTest[Json](implicit Json: Jsony[Json], tokenizer: T
     )
     val patched =
       Stream
-        .emits(
+        .emit(
           """{"untouched1": 32, "key2": {"nested": "test string", "deleted": false, "untouched2": "another string"}, "key1": true}""")
-        .through(tokens[Fallible, Char])
+        .through(tokens[Fallible, String])
         .through(patch(objectPatch))
         .compile
         .toList
-    patched shouldBe Right(objectTokens)
+    expect(patched == Right(objectTokens))
   }
 
 }

@@ -18,4 +18,4 @@ package circe
 
 import io.circe.Json
 
-class CirceTokenizerSpec extends TokenizerSpec[Json]
+object CirceTokenizerSpec extends TokenizerSpec[Json]

@@ -16,61 +16,62 @@
 package fs2.data.csv
 
 import io.circe.parser._
+
 import fs2._
 import fs2.io._
 
 import cats.effect._
+import cats.implicits._
 
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import weaver._
 
-import scala.concurrent._
+import java.nio.file.Paths
 
-import better.files.{Resource => _, _}
+object CsvParserTest extends IOSuite {
 
-import java.util.concurrent._
-import cats.data.NonEmptyList
+  override type Res = Blocker
+  def sharedResource: Resource[IO, Res] = Blocker[IO]
 
-class CsvParserTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
+  private val testFileDir = Paths.get("csv/jvm/src/test/resources/csv-spectrum/csvs/")
 
-  private var executor: ExecutorService = _
-  private var blocker: Blocker = _
-
-  implicit val cs = IO.contextShift(ExecutionContext.global)
-
-  override def beforeAll(): Unit = {
-    executor = Executors.newFixedThreadPool(2)
-    blocker = Blocker.liftExecutorService(executor)
-  }
-
-  override def afterAll(): Unit = {
-    executor.shutdown()
-  }
-
-  private val testFileDir: File = File("csv/jvm/src/test/resources/csv-spectrum/csvs/")
-  for (path <- testFileDir.list) {
-    val expected =
-      parse(File(s"csv/jvm/src/test/resources/csv-spectrum/json/${path.nameWithoutExtension}.json").contentAsString)
-        .flatMap(_.as[List[Map[String, String]]])
-        .toTry
-        .get
-    s"File ${testFileDir.relativize(path).toString}" should "be parsed correctly" in {
-      val actual =
+  def allExpected(blocker: Blocker) =
+    file
+      .directoryStream[IO](blocker, testFileDir)
+      .evalMap { path =>
+        val name = path.getFileName.toFile.getName.stripSuffix(".csv")
         file
-          .readAll[IO](path.path, blocker, 1024)
+          .readAll[IO](Paths.get(s"csv/jvm/src/test/resources/csv-spectrum/json/$name.json"), blocker, 1024)
+          .through(text.utf8Decode)
+          .compile
+          .string
+          .flatMap { rawExpected =>
+            parse(rawExpected)
+              .flatMap(_.as[List[Map[String, String]]])
+              .liftTo[IO]
+          }
+          .map(path -> _)
+      }
+
+  test("Standard test suite should pass") { blocker =>
+    allExpected(blocker)
+      .evalMap { case (path, expected) =>
+        file
+          .readAll[IO](path, blocker, 1024)
           .through(fs2.text.utf8Decode)
           .through(rows())
           .through(headers[IO, String])
           .compile
           .toList
-          .unsafeRunSync()
-          .map(_.toMap)
-      actual should be(expected)
-    }
+          .map(_.map(_.toMap))
+          .map(actual => expect(actual == expected, s"Invalid file $path").toExpectations)
+      }
+      .compile
+      .foldMonoid
+  }
 
-    it should "be encoded and parsed correctly" in {
-      val reencoded =
+  test("Standard test suite files should be encoded and parsed correctly") { blocker =>
+    allExpected(blocker)
+      .evalMap { case (path, expected) =>
         Stream
           .emits(expected)
           .map(m => CsvRow.fromListHeaders(m.toList))
@@ -81,37 +82,14 @@ class CsvParserTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
           .through(headers[IO, String])
           .compile
           .toList
-          .unsafeRunSync()
-          .map(_.toMap)
-
-      reencoded should be(expected)
-    }
+          .map(_.map(_.toMap))
+          .map(reencoded => expect(reencoded == expected, s"Invalid file $path").toExpectations)
+      }
+      .compile
+      .foldMonoid
   }
 
-  "Row parser" should "check row length against header length" in {
-    val rows = Stream.emits(
-      List(NonEmptyList.of("header1", "header2"),
-           NonEmptyList.of("c11", "c12"),
-           NonEmptyList.of("c21", "c22", "c23"),
-           NonEmptyList.of("c31", "c32")))
-
-    val compiled = rows.through(headers[Fallible, String]).compile.drain
-
-    compiled should matchPattern { case Left(_: CsvException) =>
-    }
-  }
-
-  it should "fail decoding if row length doesn't match header length" in {
-    val headers = NonEmptyList.of("header1", "header2")
-    val rows = Stream.emits(List(NonEmptyList.of("c11", "c12"), NonEmptyList.of("c21"), NonEmptyList.of("c31", "c32")))
-
-    val compiled = rows.through(withHeaders[Fallible, String](headers)).compile.drain
-
-    compiled should matchPattern { case Left(_: CsvException) =>
-    }
-  }
-
-  it should "handle literal quotes if specified" in {
+  test("Parser should handle literal quotes if specified") {
     val content =
       """name,age,description
         |John Doe,47,no quotes
@@ -127,17 +105,14 @@ class CsvParserTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
       Map("name" -> "Alice Grey", "age" -> "78", "description" -> "contains \"a quote")
     )
 
-    val reencoded =
-      Stream
-        .emit(content)
-        .covary[IO]
-        .through(rows[IO, String](',', QuoteHandling.Literal))
-        .through(headers[IO, String])
-        .compile
-        .toList
-        .unsafeRunSync()
-        .map(_.toMap)
-
-    reencoded should be(expected)
+    Stream
+      .emit(content)
+      .covary[IO]
+      .through(rows[IO, String](',', QuoteHandling.Literal))
+      .through(headers[IO, String])
+      .compile
+      .toList
+      .map(_.map(_.toMap))
+      .map(actual => expect(actual == expected).toExpectations)
   }
 }

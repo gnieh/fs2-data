@@ -58,8 +58,10 @@ private[json] object TokenParser {
             }
           case StringState.Normal =>
             if (c == '"')
-              Pull.pure(Some(
-                (T.advance(context), chunkAcc += (if (key) Token.Key(acc.result()) else Token.StringValue(acc.result())))))
+              Pull.pure(
+                Some(
+                  (T.advance(context),
+                   chunkAcc += (if (key) Token.Key(acc.result()) else Token.StringValue(acc.result())))))
             else if (c == '\\')
               string_(T.advance(context), key, StringState.SeenBackslash, 0, acc, chunkAcc)
             else if (c >= 0x20 && c <= 0x10ffff)
