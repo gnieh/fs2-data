@@ -42,14 +42,20 @@ The pipe validates the JSON structure while parsing. It reads all the json value
 
 ### Selectors
 
-Selectors can be used to select a subset of a JSON token stream.
+Selectors can be used to select a subset of a JSON token stream. There are several ways to create selectors:
+ - build the selector using the constructors, which can be quite verbose and cumbersome;
+ - parse a string with the selector syntax;
+ - use the selector DSL.
+
+#### Parsing a string using the selector syntax
 
 For instance, to select and enumerate elements that are in the `field3` array, you can create this selector. Only the tokens describing the values in `field3` will be emitted as a result.
 
 ```scala mdoc
-val selector = ".field3.[]".parseSelector[Either[Throwable, *]].fold(throw _, identity)
-val filtered = stream.through(filter(selector))
-filtered.compile.toList
+
+type ThrowableEither[T] = Either[Throwable, T]
+
+val selector = ".field3.[]".parseSelector[ThrowableEither].toTry.get
 ```
 
 The `parseSelector` method implicitly comes from the `import fs2.data.json._` and wraps the result in anything that has an [`MonadError` with error type `Throwable`][monad-error] to catch potential parsing errors. If you prefer not to have this wrapping and don't mind an extra dependency, you can have a look at [the interpolator][interpolator-doc].
@@ -72,6 +78,47 @@ The filter syntax is as follows:
   - `.[]` selects and enumerates elements from arrays or objects. It fails if the value it is applied to is not an array or an object.
   - `.[]?` is similar as `.[]` but doesn't fail if the value it is applied to is neither an array nor an object.
   - `sel1 sel2` applies selector `sel1` to the root value, and selector `sel2` to each selected value.
+
+#### Using the selector DSL
+
+The selector DSL is a nice way to describe selectors without using any string parsing. They also allow for programmatically building selectors.
+The DSL resides within the `fs2.data.json.selector` package, and you start a selector using the `root` builder.
+The selector above can be written like this with the DSL:
+
+```scala mdoc
+import fs2.data.json.selector._
+
+val selectorFromDsl = root.field("field3").iterate.compile
+```
+
+The `.compile` in the end transforms the previous selector builder from the DSL into the final selector. Builders are safe to reuse, re-compose and compile several times.
+
+You can express the same selectors as with the syntax described above. For instance to make the field mandatory and the iteration lenient you can do:
+
+```scala mdoc:nest
+val selectorFromDsl = root.field("field3").!.iterate.?.compile
+```
+
+The DSL is typesafe, so that you cannot write invalid selectors. Any attempt to do so results in a compilation error.
+
+```scala mdoc:fail
+// array index selection cannot be made mandatory
+root.index(1).!
+```
+
+```scala mdoc:fail
+// you cannot use the same flag twice
+root.index(1).?.?
+```
+
+#### Using JSON selectors
+
+Using the selector defined above, we can filter the stream of tokens, to only emit selected tokens downstream. This can be used to drastically reduce the amount of emitted data, to only the parts that are of interest for you.
+
+```scala mdoc
+val filtered = stream.through(filter(selector))
+filtered.compile.toList
+```
 
 By default, selected values are emitted in the stream as they are matched, resulting in a stream with several JSON values.
 If this is not desired, you can wrap the elements into arrays and objects, from the root by calling `filter` with `wrap` set to `true`.

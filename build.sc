@@ -370,6 +370,7 @@ def unidoc(ev: Evaluator) = T.command {
     "-skip-packages",
     "better",
     "-groups",
+    "-implicits",
     "-sourcepath",
     base
   ) ++ pluginOptions ++ scalacOptions
