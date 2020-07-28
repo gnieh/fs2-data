@@ -51,13 +51,13 @@ sealed abstract class SelectorBuilder[M, S] private[selector] {
     * The resulting selector is strict and will fail if the element is not an object.
     */
   def field(f: String): NamesBuilder[Optional, Strict] =
-    NamesBuilder[Optional, Strict](NamePredicate.Single(f), true, false, this)
+    NamesBuilder[Optional, Strict](NamePredicate.Single(f), strict = true, mandatory = false, this)
 
   /** Creates a fields selector, that will select only the element at the given fields in the currently selected object.
     * The resulting selector is strict and will fail if the element is not an object.
     */
   def fields(f: String, fs: String*): NamesBuilder[Optional, Strict] =
-    NamesBuilder[Optional, Strict](NamePredicate.Several(fs.toSet + f), true, false, this)
+    NamesBuilder[Optional, Strict](NamePredicate.Several(fs.toSet + f), strict = true, mandatory = false, this)
 
   /** Compiles the current builder into its final selector representation. */
   def compile: Selector
