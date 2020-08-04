@@ -27,10 +27,31 @@ package object csv {
 
   type DecoderResult[T] = Either[DecoderError, T]
 
+  sealed trait QuoteHandling
+  object QuoteHandling {
+
+    /** Treats quotation marks as the start of a quoted value if the first
+      * character of a value is a quotation mark, otherwise treats the value
+      * literally (this is the historic and default behavior)
+      *
+      * For example, "hello, world" would be parsed as unquoted `hello, world`
+      */
+    case object Adaptive extends QuoteHandling
+
+    /** Treats values as raw strings and does not treat quotation marks with
+      * any particular meaning
+      *
+      * For example, "hello, world" would be parsed as the still-quoted
+      * `"hello, world"`
+      */
+    case object Disabled extends QuoteHandling
+  }
+
   /** Transforms a stream of characters into a stream of CSV rows.
     */
-  def rows[F[_]](separator: Char = ',')(implicit F: RaiseThrowable[F]): Pipe[F, Char, NonEmptyList[String]] =
-    RowParser.pipe[F](separator)
+  def rows[F[_]](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.Adaptive)(
+      implicit F: RaiseThrowable[F]): Pipe[F, Char, NonEmptyList[String]] =
+    RowParser.pipe[F](separator, quoteHandling)
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
   def headers[F[_], Header](implicit F: RaiseThrowable[F],

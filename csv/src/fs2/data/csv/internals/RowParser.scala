@@ -18,11 +18,11 @@ package data
 package csv
 package internals
 
-import cats.data.{State => _, _}
-
 private[csv] object RowParser {
 
-  def pipe[F[_]](separator: Char)(implicit F: RaiseThrowable[F]): Pipe[F, Char, NonEmptyList[String]] = {
+  def pipe[F[_]](separator: Char,
+                 quoteHandling: QuoteHandling = QuoteHandling.Adaptive)(
+      implicit F: RaiseThrowable[F]): Pipe[F, Char, NonEmptyList[String]] = {
 
     def row(chunk: Chunk[Char],
             currentField: StringBuilder,
@@ -77,7 +77,7 @@ private[csv] object RowParser {
               Pull.raiseError[F](new CsvException(s"unexpected character '$c'"))
             }
           case State.BeginningOfField =>
-            if (c == '"') {
+            if (c == '"' && quoteHandling == QuoteHandling.Adaptive) {
               // start a quoted field
               row(chunk, currentField, tail, State.InQuoted, idx + 1)
             } else if (c == separator) {
