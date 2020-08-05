@@ -36,7 +36,7 @@ package object csv {
       *
       * For example, "hello, world" would be parsed as unquoted `hello, world`
       */
-    case object Adaptive extends QuoteHandling
+    case object RFCCompliant extends QuoteHandling
 
     /** Treats values as raw strings and does not treat quotation marks with
       * any particular meaning
@@ -44,12 +44,12 @@ package object csv {
       * For example, "hello, world" would be parsed as the still-quoted
       * `"hello, world"`
       */
-    case object Disabled extends QuoteHandling
+    case object Literal extends QuoteHandling
   }
 
   /** Transforms a stream of characters into a stream of CSV rows.
     */
-  def rows[F[_]](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.Adaptive)(
+  def rows[F[_]](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(
       implicit F: RaiseThrowable[F]): Pipe[F, Char, NonEmptyList[String]] =
     RowParser.pipe[F](separator, quoteHandling)
 
