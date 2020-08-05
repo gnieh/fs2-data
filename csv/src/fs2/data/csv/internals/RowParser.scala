@@ -22,8 +22,7 @@ import cats.data.{State => _, _}
 
 private[csv] object RowParser {
 
-  def pipe[F[_]](separator: Char,
-                 quoteHandling: QuoteHandling = QuoteHandling.Adaptive)(
+  def pipe[F[_]](separator: Char, quoteHandling: QuoteHandling)(
       implicit F: RaiseThrowable[F]): Pipe[F, Char, NonEmptyList[String]] = {
 
     def row(chunk: Chunk[Char],
