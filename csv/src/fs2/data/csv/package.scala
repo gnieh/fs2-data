@@ -48,6 +48,13 @@ package object csv {
   }
 
   /** Transforms a stream of characters into a stream of CSV rows.
+    *
+    * @param separator character to use to separate fields in the CSV
+    * @param quoteHandling use [[QuoteHandling.RFCCompliant]] for RFC-4180
+    *                      handling of quotation marks (optionally quoted
+    *                      if the value begins with a quotation mark; the
+    *                      default) or [[QuoteHandling.Literal]] if quotation
+    *                      marks should be treated literally
     */
   def rows[F[_]](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(
       implicit F: RaiseThrowable[F]): Pipe[F, Char, NonEmptyList[String]] =

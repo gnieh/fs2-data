@@ -19,6 +19,7 @@ import io.circe.parser._
 import fs2._
 import fs2.io._
 import cats.effect._
+
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -46,8 +47,7 @@ class CsvParserTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
   private val testFileDir: File = File("csv/test/resources/csv-spectrum/csvs/")
   for (path <- testFileDir.list) {
     val expected =
-      parse(File(
-        s"csv/test/resources/csv-spectrum/json/${path.nameWithoutExtension}.json").contentAsString)
+      parse(File(s"csv/test/resources/csv-spectrum/json/${path.nameWithoutExtension}.json").contentAsString)
         .flatMap(_.as[List[Map[String, String]]])
         .toTry
         .get
@@ -84,5 +84,36 @@ class CsvParserTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
 
       reencoded should be(expected)
     }
+  }
+
+  it should "handle literal quotes if specified" in {
+    val content =
+      """name,age,description
+        |John Doe,47,no quotes
+        |Jane Doe,50,"entirely quoted"
+        |Bob Smith,80,"starts with" a quote
+        |Alice Grey,78,contains "a quote
+        |""".stripMargin
+
+    val expected = List(
+      Map("name" -> "John Doe", "age" -> "47", "description" -> "no quotes"),
+      Map("name" -> "Jane Doe", "age" -> "50", "description" -> "\"entirely quoted\""),
+      Map("name" -> "Bob Smith", "age" -> "80", "description" -> "\"starts with\" a quote"),
+      Map("name" -> "Alice Grey", "age" -> "78", "description" -> "contains \"a quote")
+    )
+
+    val reencoded =
+      Stream
+        .emit(content)
+        .covary[IO]
+        .flatMap(Stream.emits(_))
+        .through(rows[IO](',', QuoteHandling.Literal))
+        .through(headers[IO, String])
+        .compile
+        .toList
+        .unsafeRunSync()
+        .map(_.toMap)
+
+    reencoded should be(expected)
   }
 }
