@@ -18,6 +18,8 @@ package data
 package csv
 package internals
 
+import cats.data.{State => _, _}
+
 private[csv] object RowParser {
 
   def pipe[F[_]](separator: Char,
@@ -77,7 +79,7 @@ private[csv] object RowParser {
               Pull.raiseError[F](new CsvException(s"unexpected character '$c'"))
             }
           case State.BeginningOfField =>
-            if (c == '"' && quoteHandling == QuoteHandling.Adaptive) {
+            if (c == '"' && quoteHandling == QuoteHandling.RFCCompliant) {
               // start a quoted field
               row(chunk, currentField, tail, State.InQuoted, idx + 1)
             } else if (c == separator) {
