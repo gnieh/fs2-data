@@ -27,10 +27,38 @@ package object csv {
 
   type DecoderResult[T] = Either[DecoderError, T]
 
+  sealed trait QuoteHandling
+  object QuoteHandling {
+
+    /** Treats quotation marks as the start of a quoted value if the first
+      * character of a value is a quotation mark, otherwise treats the value
+      * literally (this is the historic and default behavior)
+      *
+      * For example, "hello, world" would be parsed as unquoted `hello, world`
+      */
+    case object RFCCompliant extends QuoteHandling
+
+    /** Treats values as raw strings and does not treat quotation marks with
+      * any particular meaning
+      *
+      * For example, "hello, world" would be parsed as the still-quoted
+      * `"hello, world"`
+      */
+    case object Literal extends QuoteHandling
+  }
+
   /** Transforms a stream of characters into a stream of CSV rows.
+    *
+    * @param separator character to use to separate fields in the CSV
+    * @param quoteHandling use [[QuoteHandling.RFCCompliant]] for RFC-4180
+    *                      handling of quotation marks (optionally quoted
+    *                      if the value begins with a quotation mark; the
+    *                      default) or [[QuoteHandling.Literal]] if quotation
+    *                      marks should be treated literally
     */
-  def rows[F[_]](separator: Char = ',')(implicit F: RaiseThrowable[F]): Pipe[F, Char, NonEmptyList[String]] =
-    RowParser.pipe[F](separator)
+  def rows[F[_]](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(
+      implicit F: RaiseThrowable[F]): Pipe[F, Char, NonEmptyList[String]] =
+    RowParser.pipe[F](separator, quoteHandling)
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
   def headers[F[_], Header](implicit F: RaiseThrowable[F],
