@@ -42,6 +42,21 @@ val stream2 = Stream.emits(input2).through(rows[IO](';'))
 stream2.compile.toList.unsafeRunSync()
 ```
 
+Often, CSVs don't conform to RFC4180 and quotation marks should be treated as literal quotation marks rather than denoting a quoted value. You are able to specify quote-handling behavior to the `rows` pipe as well. For instance:
+
+```scala mdoc
+val input3 =
+  """name,age,description
+    |John Doe,47,no quotes
+    |Jane Doe,50,"entirely quoted"
+    |Bob Smith,80,"starts with" a quote
+    |Alice Grey,78,contains "a quote""".stripMargin
+
+// default quote-handling is QuoteHandling.RFCCompliant
+val stream3 = Stream.emits(input3).through(rows[IO](',', QuoteHandling.Literal))
+stream3.compile.toList.unsafeRunSync()
+```
+
 ### CSV rows with or without headers
 
 Rows can be converted to a `Row` or `CsvRow[Header]` for some `Header` type. These classes provides higher-level utilities to manipulate rows.
