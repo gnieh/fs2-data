@@ -12,11 +12,10 @@ This page covers the following libraries:
 
 Examples on this page use the following input:
 
-```scala mdoc:silent
-import cats.effect._
-
-import fs2.Stream
+```scala mdoc
+import fs2.{Stream, Fallible}
 import fs2.data.json._
+import fs2.data.json.selector._
 
 val input = """{
               |  "field1": 0,
@@ -28,11 +27,11 @@ val input = """{
               |  "field3": []
               |}""".stripMargin
 
-val stream = Stream.emits(input).through(tokens[IO])
+val stream = Stream.emits(input).through(tokens[Fallible])
 
-val selector = ".field3.[]".parseSelector[IO].unsafeRunSync()
+val sel = root.field("field3").iterate.compile
 
-val filtered = stream.through(filter(selector))
+val filtered = stream.through(filter(sel))
 ```
 
 ### Circe
@@ -46,11 +45,24 @@ For instance both examples from the [core module documentation][json-doc] with c
 import fs2.data.json.circe._
 import io.circe._
 
-val asts = stream.through(values[IO, Json])
-asts.compile.toList.unsafeRunSync()
+val asts = stream.through(values[Fallible, Json])
+asts.compile.toList
 
-val transformed = stream.through(transform[IO, Json](selector, json => Json.obj("test" -> json)))
-transformed.through(values[IO, Json]).compile.toList.unsafeRunSync()
+val transformed = stream.through(transform[Fallible, Json](sel, json => Json.obj("test" -> json)))
+transformed.compile.to(collector.pretty())
+```
+
+If you want to only keep `field1` if it is greater than `1`, you can use the `transformOpt` pipe for this.
+
+```scala mdoc:nest
+import fs2.data.json.circe._
+import io.circe._
+import cats.implicits._
+
+val f1 = root.field("field1").compile
+
+val transformed = stream.through(transformOpt[Fallible, Json](f1, json => json.as[Int].toOption.filter(_ > 1).as(json)))
+transformed.compile.to(collector.pretty())
 ```
 
 [json-doc]: /documentation/json/

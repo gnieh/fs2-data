@@ -1,12 +1,17 @@
-package fs2
-package data
+package fs2.data
 package json
 
+import io.circe.Json
+
 import selector._
+import circe._
+
+import fs2._
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.Inside
+import cats.effect.SyncIO
 
 class JsonSelectorSpec extends AnyFlatSpec with Matchers with Inside {
 
@@ -80,6 +85,84 @@ class JsonSelectorSpec extends AnyFlatSpec with Matchers with Inside {
     ).through(filter[Fallible](selector)).compile.drain
 
     filtered shouldBe Right(())
+  }
+
+  "transformOpt" should "only transform the select element" in {
+    val selector = root.field("f").compile
+    val transformed =
+      Stream(Token.StartObject,
+             Token.Key("f"),
+             Token.TrueValue,
+             Token.Key("g"),
+             Token.StringValue("test"),
+             Token.EndObject)
+        .through(transformOpt[Fallible, Json](selector, _ => Some(Json.False)))
+        .compile
+        .toList
+    transformed shouldBe Right(
+      List(Token.StartObject,
+           Token.Key("f"),
+           Token.FalseValue,
+           Token.Key("g"),
+           Token.StringValue("test"),
+           Token.EndObject))
+  }
+
+  it should "filter out the value if it returns None" in {
+    val selector = root.field("f").compile
+    val transformed =
+      Stream(Token.StartObject,
+             Token.Key("f"),
+             Token.TrueValue,
+             Token.Key("g"),
+             Token.StringValue("test"),
+             Token.EndObject)
+        .through(transformOpt[Fallible, Json](selector, _ => None))
+        .compile
+        .toList
+    transformed shouldBe Right(List(Token.StartObject, Token.Key("g"), Token.StringValue("test"), Token.EndObject))
+  }
+
+  it should "filter out the innermost value if it returns None" in {
+    val selector = root.field("f").field("g").compile
+    val transformed =
+      Stream(
+        Token.StartObject,
+        Token.Key("f"),
+        Token.StartObject,
+        Token.Key("g"),
+        Token.TrueValue,
+        Token.EndObject,
+        Token.Key("g"),
+        Token.StringValue("test"),
+        Token.EndObject
+      ).through(transformOpt[Fallible, Json](selector, _ => None)).compile.toList
+    transformed shouldBe Right(
+      List(Token.StartObject,
+           Token.Key("f"),
+           Token.StartObject,
+           Token.EndObject,
+           Token.Key("g"),
+           Token.StringValue("test"),
+           Token.EndObject))
+  }
+
+  "transformF" should "fail the stream if one value fails" in {
+    val selector = root.field("f").compile
+    val exn = new Exception
+    val transformed =
+      Stream(Token.StartObject,
+             Token.Key("f"),
+             Token.TrueValue,
+             Token.Key("g"),
+             Token.StringValue("test"),
+             Token.EndObject)
+        .through(transformF[SyncIO, Json](selector, _ => SyncIO.raiseError(exn)))
+        .attempt
+        .compile
+        .toList
+        .unsafeRunSync()
+    transformed shouldBe List(Right(Token.StartObject), Right(Token.Key("f")), Left(exn))
   }
 
 }
