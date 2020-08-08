@@ -52,7 +52,36 @@ package object json {
   def transform[F[_], Json](selector: Selector, f: Json => Json)(implicit F: RaiseThrowable[F],
                                                                  builder: Builder[Json],
                                                                  tokenizer: Tokenizer[Json]): Pipe[F, Token, Token] =
+    TokenSelector.transformPipe[F, Json](selector, f.andThen(Some(_)))
+
+  /** Transforms a stream of token into another one. The transformation function `f` is
+    * called on every selected value from upstream, and the resulting value replaces it.
+    * If the function returns `None`, then the entire value is dropped (and the object key it
+    * is located at, if any).
+    * The rest of the stream is left unchanged.
+    *
+    * This operator locally creates Json AST values using the [[Builder]], and
+    * returns tokens as emitted by the [[Tokenizer]] on the resulting value.
+    */
+  def transformOpt[F[_], Json](selector: Selector, f: Json => Option[Json])(
+      implicit F: RaiseThrowable[F],
+      builder: Builder[Json],
+      tokenizer: Tokenizer[Json]): Pipe[F, Token, Token] =
     TokenSelector.transformPipe[F, Json](selector, f)
+
+  /** Transforms a stream of token into another one. The transformation function `f` is
+    * called on every selected value from upstream, and the resulting value replaces it.
+    * The rest of the stream is left unchanged. The operation can fail, in case the returned
+    * `F` is failed at one step.
+    *
+    * This operator locally creates Json AST values using the [[Builder]], and
+    * returns tokens as emitted by the [[Tokenizer]] on the resulting value.
+    */
+  def transformF[F[_], Json](selector: Selector, f: Json => F[Json])(
+      implicit F: RaiseThrowable[F],
+      builder: Builder[Json],
+      tokenizer: Tokenizer[Json]): Pipe[F, Token, Token] =
+    TokenSelector.transformPipeF[F, Json](selector, f)
 
   /** Transforms a stream of Json tokens into a stream of json values.
     */

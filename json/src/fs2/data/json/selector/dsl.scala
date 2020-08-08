@@ -51,13 +51,13 @@ sealed abstract class SelectorBuilder[M, S] private[selector] {
     * The resulting selector is strict and will fail if the element is not an object.
     */
   def field(f: String): NamesBuilder[Optional, Strict] =
-    NamesBuilder[Optional, Strict](NamePredicate.Single(f), true, false, this)
+    NamesBuilder[Optional, Strict](NamePredicate.Single(f), strict = true, mandatory = false, this)
 
   /** Creates a fields selector, that will select only the element at the given fields in the currently selected object.
     * The resulting selector is strict and will fail if the element is not an object.
     */
   def fields(f: String, fs: String*): NamesBuilder[Optional, Strict] =
-    NamesBuilder[Optional, Strict](NamePredicate.Several(fs.toSet + f), true, false, this)
+    NamesBuilder[Optional, Strict](NamePredicate.Several(fs.toSet + f), strict = true, mandatory = false, this)
 
   /** Compiles the current builder into its final selector representation. */
   def compile: Selector
@@ -97,10 +97,10 @@ object IteratorBuilder {
 
   implicit def LenientableIterator: Lenientable.Aux[IteratorBuilder[Strict], IteratorBuilder[Lenient], NotApplicable] =
     new Lenientable[IteratorBuilder[Strict], NotApplicable] {
-    type Out = IteratorBuilder[Lenient]
-    def makeLenient(builder: IteratorBuilder[Strict]): IteratorBuilder[Lenient] =
-      builder.copy(strict = false)
-  }
+      type Out = IteratorBuilder[Lenient]
+      def makeLenient(builder: IteratorBuilder[Strict]): IteratorBuilder[Lenient] =
+        builder.copy(strict = false)
+    }
 
 }
 
@@ -149,12 +149,16 @@ object NamesBuilder {
 
 /** Marker class to notify that a given selector builder capability is not applicable for this case. */
 class NotApplicable private {}
+
 /** Marker class to notify that a selector '''doesn't''' require the elements it selects to be present. */
 class Optional private {}
+
 /** Marker class to notify that a selector requires the elements it selects to be present. */
 class Mandatory private {}
+
 /** Marker class to notify that a selector requires the type of the element it is applied to to be the expected one (array or object) */
 class Strict private {}
+
 /** Marker class to notify that a selector '''doesn't''' require the type of the element it is applied to to be the expected one (array or object) */
 class Lenient private {}
 

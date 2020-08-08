@@ -26,8 +26,9 @@ import scala.collection.immutable.VectorBuilder
 
 private[csv] object RowParser {
 
-  def pipe[F[_], T](separator: Char)(implicit F: RaiseThrowable[F],
-                                     T: CharLikeChunks[F, T]): Pipe[F, T, NonEmptyList[String]] = {
+  def pipe[F[_], T](separator: Char, quoteHandling: QuoteHandling)(
+      implicit F: RaiseThrowable[F],
+      T: CharLikeChunks[F, T]): Pipe[F, T, NonEmptyList[String]] = {
 
     def rows(context: T.Context,
              currentField: StringBuilder,
@@ -103,7 +104,7 @@ private[csv] object RowParser {
                 new CsvException(s"unexpected character '$c'"))
             }
           case State.BeginningOfField =>
-            if (c == '"') {
+            if (c == '"' && quoteHandling == QuoteHandling.RFCCompliant) {
               // start a quoted field
               rows(T.advance(context), currentField, tail, State.InQuoted, chunkAcc)
             } else if (c == separator) {

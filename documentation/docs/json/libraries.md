@@ -18,6 +18,7 @@ import cats.implicits._
 
 import fs2.{Fallible, Stream}
 import fs2.data.json._
+import fs2.data.json.selector._
 
 val input = """{
               |  "field1": 0,
@@ -31,7 +32,9 @@ val input = """{
 
 val stream = Stream.emit(input).through(tokens[Fallible, String])
 
-val selector = ".field3.[]".parseSelector[Either[Throwable, *]].fold(throw _, identity)
+val sel = root.field("field3").iterate.compile
+
+val filtered = stream.through(filter(sel))
 ```
 
 ### Circe
@@ -48,8 +51,21 @@ import io.circe._
 val asts = stream.through(values[Fallible, Json])
 asts.compile.toList
 
-val transformed = stream.through(transform[Fallible, Json](selector, json => Json.obj("test" -> json)))
-transformed.through(values[Fallible, Json]).compile.toList
+val transformed = stream.through(transform[Fallible, Json](sel, json => Json.obj("test" -> json)))
+transformed.compile.to(collector.pretty())
+```
+
+If you want to only keep `field1` if it is greater than `1`, you can use the `transformOpt` pipe for this.
+
+```scala mdoc:nest
+import fs2.data.json.circe._
+import io.circe._
+import cats.implicits._
+
+val f1 = root.field("field1").compile
+
+val transformed = stream.through(transformOpt[Fallible, Json](f1, json => json.as[Int].toOption.filter(_ > 1).as(json)))
+transformed.compile.to(collector.pretty())
 ```
 
 [json-doc]: /documentation/json/

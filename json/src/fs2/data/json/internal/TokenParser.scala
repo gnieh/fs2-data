@@ -58,10 +58,8 @@ private[json] object TokenParser {
             }
           case StringState.Normal =>
             if (c == '"')
-              Pull.pure(
-                Some(
-                  (T.advance(context),
-                   chunkAcc += (if (key) Token.Key(acc.result) else Token.StringValue(acc.result)))))
+              Pull.pure(Some(
+                (T.advance(context), chunkAcc += (if (key) Token.Key(acc.result) else Token.StringValue(acc.result)))))
             else if (c == '\\')
               string_(T.advance(context), key, StringState.SeenBackslash, 0, acc, chunkAcc)
             else if (c >= 0x20 && c <= 0x10ffff)
@@ -197,7 +195,8 @@ private[json] object TokenParser {
           else
             keyword_(T.advance(context), expected, eidx + 1, token, chunkAcc)
         } else {
-          emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected character '$c' (expected $expected)"))
+          emitChunk(chunkAcc) >> Pull.raiseError[F](
+            new JsonException(s"unexpected character '$c' (expected $expected)"))
         }
       }
     }
@@ -262,19 +261,22 @@ private[json] object TokenParser {
                       .flatMap(res => continue(State.AfterObjectKey)(res))
                   case '}' =>
                     Pull.pure(Some((T.advance(context), chunkAcc += Token.EndObject)))
-                  case _ => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
+                  case _ =>
+                    emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
                 }
               case State.ExpectObjectKey =>
                 (c: @switch) match {
                   case '"' =>
                     string_(T.advance(context), true, StringState.Normal, 0, new StringBuilder, chunkAcc)
                       .flatMap(res => continue(State.AfterObjectKey)(res))
-                  case _ => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
+                  case _ =>
+                    emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
                 }
               case State.AfterObjectKey =>
                 (c: @switch) match {
                   case ':' => go_(T.advance(context), State.BeforeObjectValue, chunkAcc)
-                  case c   => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object key"))
+                  case c =>
+                    emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object key"))
                 }
               case State.BeforeObjectValue =>
                 value_(context, State.AfterObjectValue, chunkAcc)
@@ -285,7 +287,8 @@ private[json] object TokenParser {
                     go_(T.advance(context), State.ExpectObjectKey, chunkAcc)
                   case '}' =>
                     Pull.pure(Some((T.advance(context), chunkAcc += Token.EndObject)))
-                  case c => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object value"))
+                  case c =>
+                    emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object value"))
                 }
               case State.ExpectArrayValue =>
                 value_(context, State.AfterArrayValue, chunkAcc)
@@ -304,7 +307,8 @@ private[json] object TokenParser {
                     Pull.pure(Some((T.advance(context), chunkAcc += Token.EndArray)))
                   case ',' =>
                     go_(T.advance(context), State.ExpectArrayValue, chunkAcc)
-                  case c => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after array value"))
+                  case c =>
+                    emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after array value"))
                 }
             }
         }

@@ -25,14 +25,37 @@ private[json] object TokenSelector {
   private def transformValue[F[_], Json](chunk: Chunk[Token],
                                          idx: Int,
                                          rest: Stream[F, Token],
-                                         f: Json => Json,
-                                         chunkAcc: List[Token])(
+                                         f: Json => Option[Json],
+                                         chunkAcc: List[Token],
+                                         key: Option[String])(
       implicit F: RaiseThrowable[F],
       builder: Builder[Json],
       tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, List[Token]]] =
     ValueParser.pullValue(chunk, idx, rest).flatMap {
       case Some((chunk, idx, rest, json)) =>
-        Pull.pure(Some((chunk, idx, rest, tokenizer.tokenize(f(json)).toList reverse_::: chunkAcc)))
+        val chunkAcc1 = f(json) match {
+          case Some(json) => tokenizer.tokenize(json).toList reverse_::: key.map(Token.Key(_)).toList ::: chunkAcc
+          case None       => chunkAcc
+        }
+        Pull.pure(Some((chunk, idx, rest, chunkAcc1)))
+      case None => Pull.pure(None)
+    }
+
+  private def transformValueF[F[_], Json](chunk: Chunk[Token],
+                                          idx: Int,
+                                          rest: Stream[F, Token],
+                                          f: Json => F[Json],
+                                          chunkAcc: List[Token],
+                                          key: Option[String])(
+      implicit F: RaiseThrowable[F],
+      builder: Builder[Json],
+      tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, List[Token]]] =
+    ValueParser.pullValue(chunk, idx, rest).flatMap {
+      case Some((chunk, idx, rest, json)) =>
+        Pull
+          .eval(f(json))
+          .handleErrorWith(t => Pull.output(Chunk.seq(chunkAcc.reverse)) >> Pull.raiseError(t))
+          .map(transformed => Some((chunk, idx, rest, tokenizer.tokenize(transformed).toList reverse_::: chunkAcc)))
       case None => Pull.pure(None)
     }
 
@@ -42,14 +65,20 @@ private[json] object TokenSelector {
       rest: Stream[F, Token],
       emitNonSelected: Boolean,
       wrap: Boolean,
+      emitEarly: Boolean,
       toSelect: String => Boolean,
       mandatories: Set[String],
-      onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, List[Token]]],
+      onSelect: (Chunk[Token],
+                 Int,
+                 Stream[F, Token],
+                 List[Token],
+                 Option[String]) => Pull[F, Token, Result[F, List[Token]]],
       chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
-        case Some((hd, tl)) => selectName(hd, 0, tl, emitNonSelected, wrap, toSelect, mandatories, onSelect, Nil)
-        case None           => Pull.raiseError[F](new JsonException("unexpected end of input"))
+        case Some((hd, tl)) =>
+          selectName(hd, 0, tl, emitNonSelected, wrap, emitEarly, toSelect, mandatories, onSelect, Nil)
+        case None => Pull.raiseError[F](new JsonException("unexpected end of input"))
       }
     } else
       chunk(idx) match {
@@ -57,8 +86,8 @@ private[json] object TokenSelector {
           val action =
             if (toSelect(name)) {
               // name is to be selected, then continue
-              val chunkAcc1 = if (wrap) key :: chunkAcc else chunkAcc
-              onSelect(chunk, idx + 1, rest, chunkAcc1)
+              val chunkAcc1 = if (wrap && emitEarly) key :: chunkAcc else chunkAcc
+              onSelect(chunk, idx + 1, rest, chunkAcc1, Some(name))
             } else if (emitNonSelected) {
               val chunkAcc1 = if (wrap) key :: chunkAcc else chunkAcc
               emitValue(chunk, idx + 1, rest, 0, chunkAcc1)
@@ -68,7 +97,16 @@ private[json] object TokenSelector {
             }
           action.flatMap {
             case Some((chunk, idx, rest, chunkAcc)) =>
-              selectName(chunk, idx, rest, emitNonSelected, wrap, toSelect, mandatories - name, onSelect, chunkAcc)
+              selectName(chunk,
+                         idx,
+                         rest,
+                         emitNonSelected,
+                         wrap,
+                         emitEarly,
+                         toSelect,
+                         mandatories - name,
+                         onSelect,
+                         chunkAcc)
             case None =>
               Pull.raiseError[F](new JsonException("unexpected end of input"))
           }
@@ -95,7 +133,11 @@ private[json] object TokenSelector {
       wrap: Boolean,
       arrIdx: Int,
       toSelect: Int => Boolean,
-      onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, List[Token]]],
+      onSelect: (Chunk[Token],
+                 Int,
+                 Stream[F, Token],
+                 List[Token],
+                 Option[String]) => Pull[F, Token, Result[F, List[Token]]],
       chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
@@ -112,7 +154,7 @@ private[json] object TokenSelector {
           val action =
             if (toSelect(arrIdx))
               // index is to be selected, then continue
-              onSelect(chunk, idx, rest, chunkAcc)
+              onSelect(chunk, idx, rest, chunkAcc, None)
             else if (emitNonSelected)
               emitValue(chunk, idx, rest, 0, chunkAcc)
             else
@@ -132,26 +174,42 @@ private[json] object TokenSelector {
       selector: Selector,
       emitNonSelected: Boolean,
       wrap: Boolean,
-      onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, List[Token]]],
-      chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
+      emitEarly: Boolean,
+      onSelect: (Chunk[Token],
+                 Int,
+                 Stream[F, Token],
+                 List[Token],
+                 Option[String]) => Pull[F, Token, Result[F, List[Token]]],
+      chunkAcc: List[Token],
+      key: Option[String])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
-        case Some((hd, tl)) => filterChunk(hd, 0, tl, selector, emitNonSelected, wrap, onSelect, Nil)
+        case Some((hd, tl)) => filterChunk(hd, 0, tl, selector, emitNonSelected, wrap, emitEarly, onSelect, Nil, key)
         case None           => Pull.pure(None)
       }
     } else {
       selector match {
         case Selector.ThisSelector =>
-          onSelect(chunk, idx, rest, chunkAcc)
+          onSelect(chunk, idx, rest, chunkAcc, key)
         case Selector.NameSelector(pred, strict, mandatory) =>
           chunk(idx) match {
             case Token.StartObject =>
               // enter the object context and go down to the name
               val chunkAcc1 = if (wrap) Token.StartObject :: chunkAcc else chunkAcc
-              selectName(chunk, idx + 1, rest, emitNonSelected, wrap, pred, pred.values, onSelect, chunkAcc1)
+              selectName(chunk,
+                         idx + 1,
+                         rest,
+                         emitNonSelected,
+                         wrap,
+                         emitEarly,
+                         pred,
+                         if (mandatory) pred.values else Set.empty,
+                         onSelect,
+                         chunkAcc1)
             case token =>
               if (strict)
-                Pull.output(Chunk.seq(chunkAcc.reverse)) >> Pull.raiseError[F](new JsonException(s"cannot ${token.kind} number with string"))
+                Pull.output(Chunk.seq(chunkAcc.reverse)) >> Pull.raiseError[F](
+                  new JsonException(s"cannot ${token.kind} number with string"))
               else if (emitNonSelected)
                 emitValue(chunk, idx, rest, 0, chunkAcc)
               else
@@ -166,7 +224,8 @@ private[json] object TokenSelector {
               selectIndex(chunk, idx + 1, rest, emitNonSelected, wrap, 0, pred, onSelect, chunkAcc1)
             case token =>
               if (strict)
-                Pull.output(Chunk.seq(chunkAcc.reverse)) >> Pull.raiseError[F](new JsonException(s"cannot index ${token.kind} with number"))
+                Pull.output(Chunk.seq(chunkAcc.reverse)) >> Pull.raiseError[F](
+                  new JsonException(s"cannot index ${token.kind} with number"))
               else if (emitNonSelected)
                 emitValue(chunk, idx, rest, 0, chunkAcc)
               else
@@ -182,10 +241,20 @@ private[json] object TokenSelector {
             case Token.StartObject =>
               // enter the object context and go down to the name
               val chunkAcc1 = if (wrap) Token.StartObject :: chunkAcc else chunkAcc
-              selectName(chunk, idx + 1, rest, emitNonSelected, wrap, NamePredicate.All, Set.empty, onSelect, chunkAcc1)
+              selectName(chunk,
+                         idx + 1,
+                         rest,
+                         emitNonSelected,
+                         wrap,
+                         emitEarly,
+                         NamePredicate.All,
+                         Set.empty,
+                         onSelect,
+                         chunkAcc1)
             case token =>
               if (strict)
-                Pull.output(Chunk.seq(chunkAcc.reverse)) >> Pull.raiseError[F](new JsonException(s"cannot iterate over ${token.kind}"))
+                Pull.output(Chunk.seq(chunkAcc.reverse)) >> Pull.raiseError[F](
+                  new JsonException(s"cannot iterate over ${token.kind}"))
               else if (emitNonSelected)
                 emitValue(chunk, idx, rest, 0, chunkAcc)
               else
@@ -193,47 +262,73 @@ private[json] object TokenSelector {
                 skipValue(chunk, idx, rest, 0, chunkAcc)
           }
         case Selector.PipeSelector(left, right) =>
-          filterChunk(chunk,
-                      idx,
-                      rest,
-                      left,
-                      emitNonSelected,
-                      wrap,
-                      filterChunk(_, _, _, right, emitNonSelected, wrap, onSelect, _),
-                      chunkAcc)
+          filterChunk(
+            chunk,
+            idx,
+            rest,
+            left,
+            emitNonSelected,
+            wrap,
+            true,
+            filterChunk(_, _, _, right, emitNonSelected, wrap, emitEarly, onSelect, _, _),
+            chunkAcc,
+            key
+          )
       }
     }
 
-  private def go[F[_]](
-      chunk: Chunk[Token],
-      idx: Int,
-      rest: Stream[F, Token],
-      selector: Selector,
-      emitNonSelected: Boolean,
-      wrap: Boolean,
-      onSelect: (Chunk[Token], Int, Stream[F, Token], List[Token]) => Pull[F, Token, Result[F, List[Token]]],
-      chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Unit] =
-    filterChunk(chunk, idx, rest, selector, emitNonSelected, wrap, onSelect, chunkAcc).flatMap {
+  private def go[F[_]](chunk: Chunk[Token],
+                       idx: Int,
+                       rest: Stream[F, Token],
+                       selector: Selector,
+                       emitNonSelected: Boolean,
+                       wrap: Boolean,
+                       emitEarly: Boolean,
+                       onSelect: (Chunk[Token],
+                                  Int,
+                                  Stream[F, Token],
+                                  List[Token],
+                                  Option[String]) => Pull[F, Token, Result[F, List[Token]]],
+                       chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Unit] =
+    filterChunk(chunk, idx, rest, selector, emitNonSelected, wrap, emitEarly, onSelect, chunkAcc, None).flatMap {
       case Some((chunk, idx, rest, chunkAcc)) =>
-        go(chunk, idx, rest, selector, emitNonSelected, wrap, onSelect, chunkAcc)
+        go(chunk, idx, rest, selector, emitNonSelected, wrap, emitEarly, onSelect, chunkAcc)
       case None =>
         Pull.done
     }
 
   def pipe[F[_]](selector: Selector, wrap: Boolean)(implicit F: RaiseThrowable[F]): Pipe[F, Token, Token] =
-    s => go(Chunk.empty, 0, s, selector, false, wrap, emit[F], Nil).stream
+    s => go(Chunk.empty, 0, s, selector, false, wrap, true, emit[F], Nil).stream
 
-  def transformPipe[F[_], Json: Builder: Tokenizer](selector: Selector, f: Json => Json)(
+  def transformPipe[F[_], Json: Builder: Tokenizer](selector: Selector, f: Json => Option[Json])(
       implicit F: RaiseThrowable[F]): Pipe[F, Token, Token] =
-    s => go(Chunk.empty, 0, s, selector, true, true, transform[F, Json](f), Nil).stream
+    s => go(Chunk.empty, 0, s, selector, true, true, false, transform[F, Json](f), Nil).stream
 
-  private def emit[F[_]](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], chunkAcc: List[Token])(
-      implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
+  def transformPipeF[F[_], Json: Builder: Tokenizer](selector: Selector, f: Json => F[Json])(
+      implicit F: RaiseThrowable[F]): Pipe[F, Token, Token] =
+    s => go(Chunk.empty, 0, s, selector, true, true, true, transformF[F, Json](f), Nil).stream
+
+  private def emit[F[_]](chunk: Chunk[Token],
+                         idx: Int,
+                         rest: Stream[F, Token],
+                         chunkAcc: List[Token],
+                         key: Option[String])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
     emitValue[F](chunk, idx, rest, 0, chunkAcc)
 
-  private def transform[F[_], Json: Builder: Tokenizer](
-      f: Json => Json)(chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], chunkAcc: List[Token])(
-      implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
-    transformValue(chunk, idx, rest, f, chunkAcc)
+  private def transform[F[_], Json: Builder: Tokenizer](f: Json => Option[Json])(
+      chunk: Chunk[Token],
+      idx: Int,
+      rest: Stream[F, Token],
+      chunkAcc: List[Token],
+      key: Option[String])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
+    transformValue(chunk, idx, rest, f, chunkAcc, key)
+
+  private def transformF[F[_], Json: Builder: Tokenizer](f: Json => F[Json])(
+      chunk: Chunk[Token],
+      idx: Int,
+      rest: Stream[F, Token],
+      chunkAcc: List[Token],
+      key: Option[String])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
+    transformValueF(chunk, idx, rest, f, chunkAcc, key)
 
 }
