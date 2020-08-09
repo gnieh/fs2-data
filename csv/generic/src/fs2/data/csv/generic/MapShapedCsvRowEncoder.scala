@@ -29,7 +29,7 @@ object MapShapedCsvRowEncoder extends LowPrioMapShapedCsvRowEncoderImplicits {
       ev: <:<[Anno, Option[CsvName]],
       witness: Witness.Aux[Key]): WithAnnotations[Wrapped, FieldType[Key, Repr] :: HNil, Anno :: HNil] =
     (row: Repr :: HNil, annotation: Anno :: HNil) =>
-      CsvRow(NonEmptyList.one(Last(row.head)), NonEmptyList.one(annotation.head.fold(witness.value.name)(_.name)))
+      new CsvRow(NonEmptyList.one(Last(row.head)), NonEmptyList.one(annotation.head.fold(witness.value.name)(_.name)))
 
 }
 
@@ -51,7 +51,7 @@ trait LowPrioMapShapedCsvRowEncoderImplicits {
       : WithAnnotations[Wrapped, FieldType[Key, Head] :: Tail, Anno :: AnnoTail] =
     (row: FieldType[Key, Head] :: Tail, annotation: Anno :: AnnoTail) => {
       val tailRow = Tail.value.fromWithAnnotation(row.tail, annotation.tail)
-      CsvRow(NonEmptyList(Head(row.head), tailRow.values.toList),
-             NonEmptyList(annotation.head.fold(witness.value.name)(_.name), tailRow.headers.toList))
+      new CsvRow(NonEmptyList(Head(row.head), tailRow.values.toList),
+                 NonEmptyList(annotation.head.fold(witness.value.name)(_.name), tailRow.headers.toList))
     }
 }

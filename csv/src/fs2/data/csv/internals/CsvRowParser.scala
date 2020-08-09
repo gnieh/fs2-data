@@ -33,7 +33,12 @@ private[csv] object CsvRowParser {
             val error = new HeaderError(
               s"Got ${headers.length} headers, but ${firstRow.length} columns. Both numbers must match!")
             Pull.raiseError[F](error)
-          case Right(headers) => tail.map(CsvRow[Header](_, headers)).pull.echo
+          case Right(headers) =>
+            tail
+              .map(CsvRow(_, headers))
+              .rethrow
+              .pull
+              .echo
         }
       case None => Pull.done
     }.stream
