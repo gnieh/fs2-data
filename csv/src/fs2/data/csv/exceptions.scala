@@ -20,3 +20,7 @@ class CsvException(msg: String, inner: Throwable = null) extends Exception(msg, 
 class DecoderError(msg: String, inner: Throwable = null) extends CsvException(msg, inner)
 
 class HeaderError(msg: String, inner: Throwable = null) extends CsvException(msg, inner)
+
+/** Raised when processing a Csv row whose width doesn't match the width of the Csv header row */
+class HeaderSizeError(msg: String, val expectedColumns: Int, val actualColumns: Int, inner: Throwable = null)
+    extends HeaderError(msg, inner)
