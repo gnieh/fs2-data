@@ -18,7 +18,19 @@ package fs2.data.csv
 import cats.data._
 import cats.implicits._
 
-class Row(val values: NonEmptyList[String]) {
+sealed trait Position
+object Position {
+  case class Line(line: Long) extends Position
+  case class LineRange(startLine: Long, endLine: Long) extends Position
+
+  def from(start: Long, end: Long): Position =
+    if (start == end)
+      Line(start)
+    else
+      LineRange(start, end)
+}
+
+class Row(val values: NonEmptyList[String], val position: Option[Position]) {
 
   /** Number of cells in the row. */
   def size: Int = values.size
@@ -52,7 +64,7 @@ class Row(val values: NonEmptyList[String]) {
             f(cell)
           else
             cell
-      })
+      }, position)
 
   /** Returns the row with the cell at `idx` set to `value`. */
   def updated(idx: Int, value: String): Row =
@@ -66,20 +78,22 @@ class Row(val values: NonEmptyList[String]) {
       Some(this)
     } else {
       val (before, after) = values.toList.splitAt(idx)
-      NonEmptyList.fromList(before ++ after.tail).map(new Row(_))
+      NonEmptyList.fromList(before ++ after.tail).map(new Row(_, position))
     }
 }
 
 object Row {
-  def apply(values: NonEmptyList[String]): Row = new Row(values)
+  def apply(values: NonEmptyList[String], position: Option[Position] = None): Row = new Row(values, position)
 }
 
 /** A CSV row with headers, that can be used to access the cell values.
   *
   * '''Note:''' the following invariant holds when using this class: `values` and `headers` have the same size.
   */
-case class CsvRow[Header] private[csv] (override val values: NonEmptyList[String], headers: NonEmptyList[Header])
-    extends Row(values) {
+case class CsvRow[Header] private[csv] (override val values: NonEmptyList[String],
+                                        headers: NonEmptyList[Header],
+                                        override val position: Option[Position])
+    extends Row(values, position) {
 
   private lazy val byHeader: Map[Header, String] =
     headers.toList.zip(values.toList).toMap
@@ -87,7 +101,7 @@ case class CsvRow[Header] private[csv] (override val values: NonEmptyList[String
   /** Modifies the cell content at the given `idx` using the function `f`.
     */
   override def modify(idx: Int)(f: String => String): CsvRow[Header] =
-    new CsvRow(super.modify(idx)(f).values, headers)
+    new CsvRow(super.modify(idx)(f).values, headers, position)
 
   /** Modifies the cell content at the given `header` using the function `f`.
     *
@@ -120,7 +134,8 @@ case class CsvRow[Header] private[csv] (override val values: NonEmptyList[String
     } else {
       val (before, after) = values.toList.splitAt(idx)
       val (h1, h2) = headers.toList.splitAt(idx)
-      (NonEmptyList.fromList(before ++ after.tail), NonEmptyList.fromList(h1 ++ h2.tail)).mapN(new CsvRow(_, _))
+      (NonEmptyList.fromList(before ++ after.tail), NonEmptyList.fromList(h1 ++ h2.tail))
+        .mapN(new CsvRow(_, _, position))
     }
 
   /** Returns the row without the cell at the given `header`.
@@ -161,22 +176,24 @@ case class CsvRow[Header] private[csv] (override val values: NonEmptyList[String
 object CsvRow {
 
   /** Constructs a [[CsvRow]] and checks that the size of values and headers match. */
-  def apply[Header](values: NonEmptyList[String], headers: NonEmptyList[Header]): Either[CsvException, CsvRow[Header]] =
+  def apply[Header](values: NonEmptyList[String],
+                    headers: NonEmptyList[Header],
+                    position: Option[Position] = None): Either[CsvException, CsvRow[Header]] =
     if (values.length =!= headers.length)
       Left(
-        new CsvException(
-          s"Headers have size ${headers.length} but row has size ${values.length}. Both numbers must match!"))
+        new RowError(s"Headers have size ${headers.length} but row has size ${values.length}. Both numbers must match!",
+                     position))
     else
-      Right(new CsvRow(values, headers))
+      Right(new CsvRow(values, headers, position))
 
-  def fromListHeaders[Header](l: List[(Header, String)]): Option[CsvRow[Header]] = {
+  def fromListHeaders[Header](l: List[(Header, String)], position: Option[Position] = None): Option[CsvRow[Header]] = {
     val (hs, vs) = l.unzip
-    (NonEmptyList.fromList(vs), NonEmptyList.fromList(hs)).mapN(new CsvRow(_, _))
+    (NonEmptyList.fromList(vs), NonEmptyList.fromList(hs)).mapN(new CsvRow(_, _, position))
   }
 
-  def fromNelHeaders[Header](nel: NonEmptyList[(Header, String)]): CsvRow[Header] = {
+  def fromNelHeaders[Header](nel: NonEmptyList[(Header, String)], position: Option[Position] = None): CsvRow[Header] = {
     val (hs, vs) = nel.toList.unzip
-    new CsvRow(NonEmptyList.fromListUnsafe(vs), NonEmptyList.fromListUnsafe(hs))
+    new CsvRow(NonEmptyList.fromListUnsafe(vs), NonEmptyList.fromListUnsafe(hs), position)
   }
 
 }

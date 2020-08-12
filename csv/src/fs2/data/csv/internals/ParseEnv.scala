@@ -18,4 +18,9 @@ package data
 package csv
 package internals
 
-private[internals] case class ParseEnv(currentField: StringBuilder, tail: List[String], state: State, idx: Int)
+private[internals] case class ParseEnv(currentField: StringBuilder,
+                                       tail: List[String],
+                                       state: State,
+                                       idx: Int,
+                                       start: Long,
+                                       current: Long)

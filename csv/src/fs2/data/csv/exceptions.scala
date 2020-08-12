@@ -15,11 +15,15 @@
  */
 package fs2.data.csv
 
-class CsvException(msg: String, inner: Throwable = null) extends Exception(msg, inner)
+abstract class CsvException(msg: String, inner: Throwable = null) extends Exception(msg, inner)
 
 class DecoderError(msg: String, inner: Throwable = null) extends CsvException(msg, inner)
 
 class HeaderError(msg: String, inner: Throwable = null) extends CsvException(msg, inner)
+
+class ParseError(msg: String, val line: Long, inner: Throwable = null) extends CsvException(msg, inner)
+
+class RowError(msg: String, val position: Option[Position], inner: Throwable = null) extends CsvException(msg, inner)
 
 /** Raised when processing a Csv row whose width doesn't match the width of the Csv header row */
 class HeaderSizeError(msg: String, val expectedColumns: Int, val actualColumns: Int, inner: Throwable = null)

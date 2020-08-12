@@ -58,25 +58,44 @@ package object csv {
     */
   def rows[F[_]](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(
       implicit F: RaiseThrowable[F]): Pipe[F, Char, NonEmptyList[String]] =
+    _.through(rowsPositioned(separator = separator, quoteHandling = quoteHandling)).map(_._1)
+
+  def rowsPositioned[F[_]](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(
+      implicit F: RaiseThrowable[F]): Pipe[F, Char, (NonEmptyList[String], Long, Long)] =
     RowParser.pipe[F](separator, quoteHandling)
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
   def headers[F[_], Header](implicit F: RaiseThrowable[F],
                             Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
+    _.map(_ -> None).through(headersPositioned[F, Header])
+
+  def headersPositioned[F[_], Header](
+      implicit F: RaiseThrowable[F],
+      Header: ParseableHeader[Header]): Pipe[F, (NonEmptyList[String], Option[(Long, Long)]), CsvRow[Header]] =
     CsvRowParser.pipe[F, Header]
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with given headers. */
   def withHeaders[F[_], Header](headers: NonEmptyList[Header])(
       implicit F: RaiseThrowable[F]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
-    _.map(CsvRow(_, headers)).rethrow
+    _.map(CsvRow(_, headers, None)).rethrow
+
+  def withHeadersPositioned[F[_], Header](headers: NonEmptyList[Header])(
+      implicit F: RaiseThrowable[F]): Pipe[F, (NonEmptyList[String], Long, Long), CsvRow[Header]] =
+    _.map { case (values, start, end) => CsvRow(values, headers, Some(Position.from(start, end))) }.rethrow
 
   /** Transforms a stream of raw CSV rows into rows. */
   def noHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
-    _.map(new Row(_))
+    _.map(new Row(_, None))
+
+  def noHeadersPositioned[F[_]]: Pipe[F, (NonEmptyList[String], Long, Long), Row] =
+    _.map { case (values, start, end) => new Row(values, Some(Position.from(start, end))) }
 
   /** Transforms a stream of raw CSV rows into rows, skipping the first row to ignore the headers. */
   def skipHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
-    _.tail.map(new Row(_))
+    _.tail.map(new Row(_, None))
+
+  def skipHeadersPositioned[F[_]]: Pipe[F, (NonEmptyList[String], Long, Long), Row] =
+    _.tail.map { case (values, start, end) => new Row(values, Some(Position.from(start, end))) }
 
   def decode[F[_], R](implicit F: RaiseThrowable[F], R: RowDecoder[R]): Pipe[F, Row, R] =
     _.map(row => R(row.values)).rethrow
@@ -120,7 +139,9 @@ package object csv {
   }
 
   def encode[F[_], R](implicit R: RowEncoder[R]): Pipe[F, R, Row] =
-    _.map(row => new Row(R(row)))
+    _.map { row =>
+      new Row(R(row), None)
+    }
 
   def encodeRow[F[_], Header, R](implicit R: CsvRowEncoder[R, Header]): Pipe[F, R, CsvRow[Header]] =
     _.map(R(_))
@@ -128,7 +149,7 @@ package object csv {
   def encodeRowWithFirstHeaders[F[_], Header](
       implicit H: WriteableHeader[Header]): Pipe[F, CsvRow[Header], NonEmptyList[String]] =
     _.pull.peek1.flatMap {
-      case Some((CsvRow(_, headers), stream)) =>
+      case Some((CsvRow(_, headers, _), stream)) =>
         Pull.output1(H(headers)) >> stream.map(_.values).pull.echo
       case None => Pull.done
     }.stream

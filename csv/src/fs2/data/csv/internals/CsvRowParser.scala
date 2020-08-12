@@ -23,10 +23,11 @@ import cats.data._
 
 private[csv] object CsvRowParser {
 
-  def pipe[F[_], Header](implicit F: RaiseThrowable[F],
-                         Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
+  def pipe[F[_], Header](
+      implicit F: RaiseThrowable[F],
+      Header: ParseableHeader[Header]): Pipe[F, (NonEmptyList[String], Option[(Long, Long)]), CsvRow[Header]] =
     _.pull.uncons1.flatMap {
-      case Some((currentRow, tail)) =>
+      case Some(((currentRow, startEnd), tail)) =>
         Header(currentRow) match {
           case Left(error) => Pull.raiseError[F](error)
           case Right(headers) if headers.length =!= currentRow.length =>
@@ -37,7 +38,10 @@ private[csv] object CsvRowParser {
             Pull.raiseError[F](error)
           case Right(headers) =>
             tail
-              .map(CsvRow(_, headers))
+              .map {
+                case (values, startEnd) =>
+                  CsvRow(values, headers, startEnd.map { case (start, end) => Position.from(start, end) })
+              }
               .rethrow
               .pull
               .echo
