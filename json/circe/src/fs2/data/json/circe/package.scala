@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2
-package data
-package json
+package fs2.data.json
 
 import ast._
 
@@ -54,5 +52,11 @@ package object circe {
         o => tokenizeObject(o.toList)
       )
   }
+
+  implicit def tokenizerForEncoder[T](implicit encoder: Encoder[T]): Tokenizer[T] =
+    new Tokenizer[T] {
+      def tokenize(json: T): NonEmptyList[Token] =
+        CirceTokenizer.tokenize(json.asJson)
+    }
 
 }

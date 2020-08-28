@@ -194,6 +194,7 @@ lazy val documentation = project
     libraryDependencies ++= List(
       "com.beachape" %% "enumeratum" % "1.5.15",
       "org.gnieh" %% "diffson-circe" % "4.0.3",
+      "io.circe" %% "circe-generic-extras" % circeVersion,
       "co.fs2" %% "fs2-io" % fs2Version
     )
   )
