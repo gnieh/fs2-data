@@ -235,7 +235,7 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
       } else {
         val c = input.charAt(idx)
         if (c == '"') {
-          F.pure((acc.result, idx + 1))
+          F.pure((acc.result(), idx + 1))
         } else if (c == '\\') {
           if (idx + 1 >= input.size) {
             F.raiseError(new JsonSelectorException("unexpected end of input", idx + 1))
@@ -282,13 +282,13 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
   private def name(idx: Int, fst: Char): F[(String, Int)] = {
     def loop(idx: Int, acc: StringBuilder): F[(String, Int)] =
       if (idx >= input.length) {
-        F.pure((acc.result, idx))
+        F.pure((acc.result(), idx))
       } else {
         val c = input.charAt(idx)
         if (c == '_' || c.isLetter || c.isDigit)
           loop(idx + 1, acc.append(c))
         else
-          F.pure((acc.result, idx))
+          F.pure((acc.result(), idx))
       }
 
     loop(idx, new StringBuilder().append(fst))

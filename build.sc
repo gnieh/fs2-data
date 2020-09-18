@@ -13,9 +13,9 @@ import ammonite.ops._
 import mill.modules.Jvm.runSubprocess
 
 val scala212 = "2.12.11"
-val scala213 = "2.13.2"
+val scala213 = "2.13.3"
 
-val fs2Version = "2.4.1"
+val fs2Version = "2.4.2"
 val circeVersion = "0.13.0"
 val shapelessVersion = "2.3.3"
 

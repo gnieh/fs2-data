@@ -54,7 +54,7 @@ private[xml] object Normalizer {
       values match {
         case Nil =>
           current match {
-            case Some(sb) => (XmlEvent.XmlString(sb.result, false) :: acc).reverse
+            case Some(sb) => (XmlEvent.XmlString(sb.result(), false) :: acc).reverse
             case None     => acc.reverse
           }
         case XmlEvent.XmlString(s, false) :: tail =>
@@ -62,7 +62,7 @@ private[xml] object Normalizer {
           loop(tail, acc, Some(sb.append(s)))
         case evt :: tail =>
           current match {
-            case Some(sb) => loop(tail, evt :: XmlEvent.XmlString(sb.result, false) :: acc, None)
+            case Some(sb) => loop(tail, evt :: XmlEvent.XmlString(sb.result(), false) :: acc, None)
             case None     => loop(tail, evt :: acc, None)
           }
       }

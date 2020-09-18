@@ -35,7 +35,7 @@ private[json] object ValueParser {
     } else {
       chunk(idx) match {
         case Token.EndArray =>
-          Pull.pure(Some((chunk, idx + 1, rest, builder.makeArray(acc.result))))
+          Pull.pure(Some((chunk, idx + 1, rest, builder.makeArray(acc.result()))))
         case _ =>
           Pull.suspend(pullValue(chunk, idx, rest).flatMap {
             case Some((chunk, idx, rest, json)) => pullArray(chunk, idx, rest, acc += json)
@@ -58,7 +58,7 @@ private[json] object ValueParser {
     } else {
       chunk(idx) match {
         case Token.EndObject =>
-          Pull.pure(Some((chunk, idx + 1, rest, builder.makeObject(acc.result))))
+          Pull.pure(Some((chunk, idx + 1, rest, builder.makeObject(acc.result()))))
         case Token.Key(key) =>
           pullValue(chunk, idx + 1, rest).flatMap {
             case Some((chunk, idx, rest, json)) => pullObject(chunk, idx, rest, acc += (key -> json))
