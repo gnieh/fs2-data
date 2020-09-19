@@ -55,7 +55,7 @@ private[json] object TokenParser {
         case StringState.Normal =>
           if (c == '"')
             Pull.pure(Some(
-              (chunk, idx + 1, rest, (if (key) Token.Key(acc.result) else Token.StringValue(acc.result)) :: chunkAcc)))
+              (chunk, idx + 1, rest, (if (key) Token.Key(acc.result()) else Token.StringValue(acc.result())) :: chunkAcc)))
           else if (c == '\\')
             string_(chunk, idx + 1, rest, key, StringState.SeenBackslash, 0, acc, chunkAcc)
           else if (c >= 0x20 && c <= 0x10ffff)
@@ -156,7 +156,7 @@ private[json] object TokenParser {
         case Some((chunk, rest)) => number_(chunk, 0, rest, state, acc, Nil)
         case None =>
           if (NumberState.isFinal(state))
-            Pull.output1(Token.NumberValue(acc.result)) >> Pull.pure(None)
+            Pull.output1(Token.NumberValue(acc.result())) >> Pull.pure(None)
           else
             Pull.raiseError[F](new JsonException("unexpected end of input"))
       } else {
@@ -164,7 +164,7 @@ private[json] object TokenParser {
       (step(c, state): @switch) match {
         case NumberState.Invalid =>
           if (NumberState.isFinal(state))
-            Pull.pure(Some((chunk, idx, rest, Token.NumberValue(acc.result) :: chunkAcc)))
+            Pull.pure(Some((chunk, idx, rest, Token.NumberValue(acc.result()) :: chunkAcc)))
           else
             emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid number character '$c'"))
         case state =>

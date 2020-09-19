@@ -33,7 +33,7 @@ private[csv] object RowWriter {
           case c   => sb.append(c)
         }
         sb.append("\"")
-        sb.result
+        sb.result()
       } else {
         in
       }
