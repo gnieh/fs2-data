@@ -103,8 +103,7 @@ class CsvParserTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
 
   it should "fail decoding if row length doesn't match header length" in {
     val headers = NonEmptyList.of("header1", "header2")
-    val rows = Stream.emits(
-      List(NonEmptyList.of("c11", "c12"), NonEmptyList.of("c21"), NonEmptyList.of("c31", "c32")))
+    val rows = Stream.emits(List(NonEmptyList.of("c11", "c12"), NonEmptyList.of("c21"), NonEmptyList.of("c31", "c32")))
 
     val compiled = rows.through(withHeaders[Fallible, String](headers)).compile.drain
 

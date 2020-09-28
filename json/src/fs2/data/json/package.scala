@@ -62,9 +62,10 @@ package object json {
     * This operator locally creates Json AST values using the [[Builder]], and
     * returns tokens as emitted by the [[Tokenizer]] on the resulting value.
     */
-  def transformOpt[F[_], Json](selector: Selector, f: Json => Option[Json])(implicit F: RaiseThrowable[F],
-                                                                 builder: Builder[Json],
-                                                                 tokenizer: Tokenizer[Json]): Pipe[F, Token, Token] =
+  def transformOpt[F[_], Json](selector: Selector, f: Json => Option[Json])(
+      implicit F: RaiseThrowable[F],
+      builder: Builder[Json],
+      tokenizer: Tokenizer[Json]): Pipe[F, Token, Token] =
     TokenSelector.transformPipe[F, Json](selector, f)
 
   /** Transforms a stream of token into another one. The transformation function `f` is

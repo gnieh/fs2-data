@@ -7,12 +7,12 @@ For more details and documentation, please visit [the website][website]
 
 ## Development
 
-This project builds using [mill][mill]. You can install `mill` yourself or use the provided `millw` wrapper, in this case replace `mill` with `./millw` in the following commands:
-* compile everything: `mill __.compile`
-* compile & run all tests: `mill __.test`
-* run benchmarks (you can provide [JMH][jmh] arguments in the end): `mill '__.benchmarks[2.13.2].runJmh'`
+This project builds using [sbt][sbt].
+* compile everything: `sbt compile`
+* compile & run all tests: `sbt test`
+* run benchmarks (you can provide [JMH][jmh] arguments in the end): `sbt benchmarks/jmh:run`
 
 [fs2]: https://fs2.io/
-[mill]: https://github.com/lihaoyi/mill
+[sbt]: https://scala-sbt.org
 [jmh]: https://openjdk.java.net/projects/code-tools/jmh/
 [website]: https://fs2-data.gnieh.org

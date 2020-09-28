@@ -1,8 +1,10 @@
 package fs2.data.csv
 
-import org.scalatest.{EitherValues, FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.EitherValues
 
-class LiteralDecodersTest extends FlatSpec with Matchers with EitherValues {
+class LiteralDecodersTest extends AnyFlatSpec with Matchers with EitherValues {
 
   "The literal decoders" should "be present implicitly" in {
     CellDecoder["foo"]

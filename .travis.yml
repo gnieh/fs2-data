@@ -1,23 +1,21 @@
 language: scala
-dist: xenial
+dist: bionic
+
+scala:
+  - 2.12.12
+  - 2.13.3
 
 jobs:
   include:
-    - name: Tests 2.12
-      script:
-        - ./millw all {json[2.12.11],xml[2.12.11],csv[2.12.11]}.__.test
-    - name: Tests 2.13
-      script:
-        - ./millw all {json[2.13.3],xml[2.13.3],csv[2.13.3]}.__.test
     - name: Documentation
-      scala: 2.12.11
       script:
-        - ./millw documentation.mdoc
+        - sbt documentation/mdoc
 
 cache:
   directories:
-    - $HOME/.coursier
-    - $HOME/.mill/download
+    - $HOME/.cache/coursier
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
 
 jdk:
   - openjdk11

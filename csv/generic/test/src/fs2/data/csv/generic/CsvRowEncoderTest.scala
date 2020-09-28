@@ -24,12 +24,9 @@ import org.scalatest.matchers.should.Matchers
 
 class CsvRowEncoderTest extends AnyFlatSpec with Matchers {
 
-  val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"),
-                          NonEmptyList.of("i", "s", "j"))
-  val csvRowK = new CsvRow(NonEmptyList.of("1", "test", "42"),
-    NonEmptyList.of("i", "s", "k"))
-  val csvRowDefaultI = new CsvRow(NonEmptyList.of("", "test", "42"),
-                                  NonEmptyList.of("i", "s", "j"))
+  val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
+  val csvRowK = new CsvRow(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "k"))
+  val csvRowDefaultI = new CsvRow(NonEmptyList.of("", "test", "42"), NonEmptyList.of("i", "s", "j"))
   val csvRowEmptyJ =
     new CsvRow(NonEmptyList.of("1", "test", ""), NonEmptyList.of("i", "s", "j"))
 
