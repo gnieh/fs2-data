@@ -43,19 +43,16 @@ class CellDecoderTest extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "derivation for unary products" should "work for standard types" in {
-    semiauto.deriveCellDecoder[IntResultWrapper].apply("7") shouldBe Right(
-      IntResultWrapper(Right(7)))
+    semiauto.deriveCellDecoder[IntResultWrapper].apply("7") shouldBe Right(IntResultWrapper(Right(7)))
   }
 
   it should "work for types with implicit decoder" in {
     implicit val thingDecoder: CellDecoder[Thing] =
       CellDecoder[String].map(Thing(_, 7))
-    semiauto.deriveCellDecoder[ThingWrapper].apply("cell") shouldBe Right(
-      ThingWrapper(Thing("cell", 7)))
+    semiauto.deriveCellDecoder[ThingWrapper].apply("cell") shouldBe Right(ThingWrapper(Thing("cell", 7)))
   }
 
   it should "work for types with arguments" in {
-    semiauto.deriveCellDecoder[Wrapper[Int]].apply("7") shouldBe Right(
-      Wrapper(7))
+    semiauto.deriveCellDecoder[Wrapper[Int]].apply("7") shouldBe Right(Wrapper(7))
   }
 }

@@ -14,30 +14,11 @@
  * limitations under the License.
  */
 package fs2.data.json
+package circe
 
-import ast._
+import io.circe._
 
-import cats.effect._
-
-import fs2._
-
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
-
-abstract class TokenizerSpec[Json](implicit builder: Builder[Json], tokenizer: Tokenizer[Json])
-    extends AnyFlatSpec
-    with Matchers {
-
-  "`tokenize` and `values`" should "work well together" in {
-
-    val input = Stream.emits("""true {"field1": "test", "field2": 23}""")
-
-    val toks = input.through(tokens[IO])
-
-    val roundtrip = toks.through(values).through(tokenize)
-
-    toks.compile.toList.unsafeRunSync() shouldBe roundtrip.compile.toList.unsafeRunSync()
-
-  }
-
+class CirceJsonParserSpec extends JsonParserTest[Json] {
+  def parse(content: String): Either[Throwable, Json] =
+    parser.parse(content)
 }

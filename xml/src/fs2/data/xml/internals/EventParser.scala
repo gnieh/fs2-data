@@ -746,7 +746,9 @@ private[xml] object EventParser {
             ctx <- accept(ctx, delimiter, "80", "'encoding' attribute value must end with proper delimiter")
           } yield (ctx, (false, Some(sb.result())))
         } else {
-          fail[F, Result[F, (Boolean, Option[String])]]("80", "expected space before 'encoding' attribute", ctx.chunkAcc)
+          fail[F, Result[F, (Boolean, Option[String])]]("80",
+                                                        "expected space before 'encoding' attribute",
+                                                        ctx.chunkAcc)
         }
       case Some((ctx, _)) =>
         Pull.pure((ctx, (hasSpace, None)))
@@ -852,7 +854,9 @@ private[xml] object EventParser {
           // we are done reading that content
           Pull.pure(ctx.accumulate(last))
         case XmlEvent.EndTag(n) =>
-          fail[F, Context[F]]("GIMatch", s"unexpected closing tag '</${n.render}>' (expected '</${name.render}>')", ctx.chunkAcc)
+          fail[F, Context[F]]("GIMatch",
+                              s"unexpected closing tag '</${n.render}>' (expected '</${name.render}>')",
+                              ctx.chunkAcc)
         case XmlEvent.StartTag(name1, _, false) =>
           // parse child element, and continue
           readContent(ctx.accumulate(last), is11, name1).flatMap(ctx => readContent(ctx, is11, name))

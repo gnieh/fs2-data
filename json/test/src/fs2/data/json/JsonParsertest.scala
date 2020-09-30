@@ -15,12 +15,9 @@
  */
 package fs2.data.json
 
-import circe._
-
-import io.circe.parser._
-
 import fs2._
 import fs2.io._
+import ast.Builder
 
 import cats.effect._
 
@@ -40,7 +37,10 @@ object Expectation {
   case object Invalid extends Expectation
   case object ImplementationDefined extends Expectation
 }
-class JsonParserTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
+abstract class JsonParserTest[Json](implicit builder: Builder[Json])
+    extends AnyFlatSpec
+    with Matchers
+    with BeforeAndAfterAll {
 
   private var executor: ExecutorService = _
   private var blocker: Blocker = _
@@ -92,4 +92,6 @@ class JsonParserTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
       }
     }
   }
+
+  def parse(content: String): Either[Throwable, Json]
 }

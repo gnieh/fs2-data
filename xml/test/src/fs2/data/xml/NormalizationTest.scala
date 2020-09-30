@@ -28,7 +28,10 @@ class NormalizationTest extends AnyFlatSpec with Matchers {
   def text(s: String) = XmlEvent.XmlString(s, false)
 
   "consecutive non CDATA string" should "be merged" in {
-    val input = Stream.emits(List(XmlEvent.XmlString("This", false), XmlEvent.XmlString(" is ", false), XmlEvent.XmlString("a string.", false)))
+    val input = Stream.emits(
+      List(XmlEvent.XmlString("This", false),
+           XmlEvent.XmlString(" is ", false),
+           XmlEvent.XmlString("a string.", false)))
 
     val actual = input.through(normalize).compile.toList
 
@@ -37,7 +40,8 @@ class NormalizationTest extends AnyFlatSpec with Matchers {
   }
 
   it should "be merged no matter how deep it is" in {
-    val input = Stream.emits(List(start("test"), start("test"), text("Text"), text("."), start("test"), text("More "), text("text")))
+    val input = Stream.emits(
+      List(start("test"), start("test"), text("Text"), text("."), start("test"), text("More "), text("text")))
 
     val actual = input.through(normalize).compile.toList
 
@@ -45,15 +49,19 @@ class NormalizationTest extends AnyFlatSpec with Matchers {
   }
 
   it should "also be merged in attribute values" in {
-    val input = Stream.emits(List(XmlEvent.StartTag(QName("test"), List(Attr(QName("a"), List(XmlEvent.XmlString("attribute ", false), XmlEvent.XmlString("value", false)))), true)))
+    val attr = Attr(QName("a"), List(XmlEvent.XmlString("attribute ", false), XmlEvent.XmlString("value", false)))
+    val input = Stream.emits(List(XmlEvent.StartTag(QName("test"), List(attr), true)))
 
     val actual = input.through(normalize).compile.toList
 
-    actual should be(List(XmlEvent.StartTag(QName("test"), List(Attr(QName("a"), List(XmlEvent.XmlString("attribute value", false)))), true)))
+    actual should be(
+      List(XmlEvent
+        .StartTag(QName("test"), List(Attr(QName("a"), List(XmlEvent.XmlString("attribute value", false)))), true)))
   }
 
   "mixed CDATA and non CDATA strings" should "not be merged" in {
-    val input = List(XmlEvent.XmlString("This", false), XmlEvent.XmlString(" is ", true), XmlEvent.XmlString("a string.", false))
+    val input =
+      List(XmlEvent.XmlString("This", false), XmlEvent.XmlString(" is ", true), XmlEvent.XmlString("a string.", false))
 
     val actual = Stream.emits(input).through(normalize).compile.toList
 

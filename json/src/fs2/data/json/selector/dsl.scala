@@ -97,10 +97,10 @@ object IteratorBuilder {
 
   implicit def LenientableIterator: Lenientable.Aux[IteratorBuilder[Strict], IteratorBuilder[Lenient], NotApplicable] =
     new Lenientable[IteratorBuilder[Strict], NotApplicable] {
-    type Out = IteratorBuilder[Lenient]
-    def makeLenient(builder: IteratorBuilder[Strict]): IteratorBuilder[Lenient] =
-      builder.copy(strict = false)
-  }
+      type Out = IteratorBuilder[Lenient]
+      def makeLenient(builder: IteratorBuilder[Strict]): IteratorBuilder[Lenient] =
+        builder.copy(strict = false)
+    }
 
 }
 
@@ -149,12 +149,16 @@ object NamesBuilder {
 
 /** Marker class to notify that a given selector builder capability is not applicable for this case. */
 class NotApplicable private {}
+
 /** Marker class to notify that a selector '''doesn't''' require the elements it selects to be present. */
 class Optional private {}
+
 /** Marker class to notify that a selector requires the elements it selects to be present. */
 class Mandatory private {}
+
 /** Marker class to notify that a selector requires the type of the element it is applied to to be the expected one (array or object) */
 class Strict private {}
+
 /** Marker class to notify that a selector '''doesn't''' require the type of the element it is applied to to be the expected one (array or object) */
 class Lenient private {}
 
