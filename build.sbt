@@ -133,7 +133,7 @@ lazy val json = project
   .settings(publishSettings)
   .settings(name := "fs2-data-json",
             description := "Streaming JSON manipulation library",
-            libraryDependencies ++= List("org.gnieh" %% "diffson-circe" % "4.0.2" % "test"))
+            libraryDependencies ++= List("org.gnieh" %% "diffson-circe" % "4.0.3" % "test"))
 
 lazy val jsonCirce = project
   .in(file("json/circe"))
