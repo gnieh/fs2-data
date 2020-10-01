@@ -16,7 +16,6 @@
 package fs2.data.csv
 package generic
 
-import cats.implicits._
 import shapeless._
 import shapeless.labelled._
 import shapeless.ops.hlist.IsHCons

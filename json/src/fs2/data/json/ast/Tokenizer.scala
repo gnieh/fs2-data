@@ -27,3 +27,11 @@ trait Tokenizer[Json] {
   def tokenize(json: Json): NonEmptyList[Token]
 
 }
+
+object Tokenizer {
+
+  implicit object NELTokenizer extends Tokenizer[NonEmptyList[Token]] {
+    def tokenize(json: NonEmptyList[Token]): NonEmptyList[Token] = json
+  }
+
+}

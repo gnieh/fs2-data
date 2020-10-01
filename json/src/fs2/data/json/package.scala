@@ -94,6 +94,45 @@ package object json {
   def tokenize[F[_], Json](implicit tokenizer: Tokenizer[Json]): Pipe[F, Json, Token] =
     _.flatMap(value => Stream.emits(tokenizer.tokenize(value).toList))
 
+  /** A collection of pipes to wrap streams inside objects. */
+  object wrap {
+
+    /** Wraps the stream elements as an array inside an object at the given `at` key.
+      * The object also contains the keys from the `in` map if any.
+      * If `mapFirst` is true, then the map elements are emitted first, then the stream, otherwise the stream is emitted first.
+      *
+      * The resulting token stream is a valid single JSON object stream, iff the original
+      * stream is a valid stream of JSON values.
+      */
+    def asArrayInObject[F[_], Json](
+        at: String,
+        in: Map[String, Json] = Map.empty[String, Json],
+        mapFirst: Boolean = true)(implicit tokenizer: Tokenizer[Json]): Pipe[F, Token, Token] =
+      ObjectWrapper.pipe[F, Json](at, in, mapFirst, false)
+
+    /** Wraps the stream element as a single value inside an object at the given `at` key.
+      * The object also contains the keys from the `in` map if any.
+      * If `mapFirst` is true, then the map elements are emitted first, then the stream, otherwise the stream is emitted first.
+      *
+      * The resulting token stream is a valid single JSON object stream, iff the original
+      * stream is a valid stream of a **single** JSON value.
+      */
+    def asValueInObject[F[_], Json](
+        at: String,
+        in: Map[String, Json] = Map.empty[String, Json],
+        mapFirst: Boolean = true)(implicit tokenizer: Tokenizer[Json]): Pipe[F, Token, Token] =
+      ObjectWrapper.pipe[F, Json](at, in, mapFirst, true)
+
+    /** Wraps the stream elements as an array at top-level.
+      *
+      * The resulting token stream is a valid single JSON array stream, iff the original
+      * stream is a valid stream of JSON values.
+      */
+    def asTopLevelArray[F[_]]: Pipe[F, Token, Token] =
+      s => Stream.emit(Token.StartArray) ++ s ++ Stream.emit(Token.EndArray)
+
+  }
+
   /** Json Token stream pipes to render Json values. */
   object render {
 
