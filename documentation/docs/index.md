@@ -104,4 +104,4 @@ Blocker[IO].use { blocker =>
 [pipe-doc]: https://fs2.io/guide.html#statefully-transforming-streams
 [sax]: https://en.wikipedia.org/wiki/Simple_API_for_XML
 [fs2-decoders]: https://javadoc.io/doc/co.fs2/fs2-core_2.13/latest/fs2/text$.html
-[fs2-data-text-api]: https://fs2-data.gnieh.org/api/fs2/data/index/text.html
+[fs2-data-text-api]: /api/fs2/data/text/index.html
