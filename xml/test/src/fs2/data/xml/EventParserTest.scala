@@ -48,7 +48,8 @@ class EventParserTest extends AnyFlatSpec with Matchers with EitherValues with B
 
   val testFileDir = File("xml/test/resources/xmlconf")
   // valid tests
-  for (path <- File(testFileDir, "xmltest/valid/").list(_.name.endsWith(".xml")) ++ File(testFileDir, "sun/valid/").list) {
+  for (path <- File(testFileDir, "xmltest/valid/").list(_.name.endsWith(".xml")) ++ File(testFileDir,
+                                                                                         "sun/valid/").list) {
     s"File ${testFileDir.relativize(path).toString}" should "be parsed correctly" in {
       file
         .readAll[IO](path.path, blocker, 1024)

@@ -53,7 +53,7 @@ private[xml] class ReferenceResolver[F[_]](entities: Map[String, String])(implic
         case (acc, XmlEvent.XmlString(v, _)) =>
           F.pure(acc.append(v))
       }
-      .map(_.result)
+      .map(_.result())
 
 }
 

@@ -34,7 +34,6 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   *
   * Actually, `CellDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
   * instance. To get the full power of it, import `cats.implicits._`.
-  *
   */
 @implicitNotFound(
   "No implicit CellDecoder found for type ${T}.\nYou can define one using CellDecoder.instance, by calling map on another CellDecoder or by using generic derivation for coproducts and unary products.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val cellDecoder: CellDecoder[${T}] = deriveCellDecoder\n\n")

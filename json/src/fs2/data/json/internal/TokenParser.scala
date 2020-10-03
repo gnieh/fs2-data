@@ -201,8 +201,8 @@ private[json] object TokenParser {
       }
     }
 
-    def value_(context: T.Context, state: Int, chunkAcc: VectorBuilder[Token])(
-        implicit F: RaiseThrowable[F]): Pull[F, Token, Option[(T.Context, VectorBuilder[Token])]] =
+    def value_(context: T.Context, state: Int, chunkAcc: VectorBuilder[Token])(implicit
+        F: RaiseThrowable[F]): Pull[F, Token, Option[(T.Context, VectorBuilder[Token])]] =
       if (T.needsPull(context)) {
         emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
           case Some(context) =>

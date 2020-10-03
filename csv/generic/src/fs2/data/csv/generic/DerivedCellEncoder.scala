@@ -16,7 +16,6 @@
 package fs2.data.csv
 package generic
 
-import cats.implicits._
 import shapeless._
 import shapeless.labelled._
 import shapeless.ops.hlist.IsHCons
@@ -28,22 +27,21 @@ object DerivedCellEncoder extends DerivedCellEncoderInstances0 {
   // Unary Products
 
   final implicit def unaryProductEncoder[A <: Product, L <: HList, H](implicit
-                                                                      gen: Generic.Aux[A, L],
-                                                                      ev: IsHCons.Aux[L, H, HNil],
-                                                                      cc: CellEncoder[H]): DerivedCellEncoder[A] =
+      gen: Generic.Aux[A, L],
+      ev: IsHCons.Aux[L, H, HNil],
+      cc: CellEncoder[H]): DerivedCellEncoder[A] =
     a => cc.contramap[A](gen.to(_).head).apply(a)
 
   // Coproducts
 
   final implicit def coproductEncoder[T, Repr <: Coproduct](implicit
-                                                            gen: LabelledGeneric.Aux[T, Repr],
-                                                            cc: Lazy[DerivedCellEncoder[Repr]]): DerivedCellEncoder[T] =
+      gen: LabelledGeneric.Aux[T, Repr],
+      cc: Lazy[DerivedCellEncoder[Repr]]): DerivedCellEncoder[T] =
     t => cc.value.contramap(gen.to)(t)
 
   final implicit val encodeCNil: DerivedCellEncoder[CNil] = (_: CNil) => sys.error("Can't happen")
 
-  final implicit def encodeCCons[K <: Symbol, L, R <: Coproduct](
-      implicit
+  final implicit def encodeCCons[K <: Symbol, L, R <: Coproduct](implicit
       encodeL: CellEncoder[L],
       encodeR: Lazy[DerivedCellEncoder[R]]): DerivedCellEncoder[FieldType[K, L] :+: R] = {
     case Inl(head) => encodeL(head)
@@ -53,8 +51,7 @@ object DerivedCellEncoder extends DerivedCellEncoderInstances0 {
 }
 
 trait DerivedCellEncoderInstances0 extends DerivedCellEncoderInstances1 {
-  final implicit def encodeCConsObjAnnotated[K <: Symbol, L, R <: Coproduct](
-      implicit
+  final implicit def encodeCConsObjAnnotated[K <: Symbol, L, R <: Coproduct](implicit
       annotation: Annotation[CsvValue, L],
       encodeR: Lazy[DerivedCellEncoder[R]]): DerivedCellEncoder[FieldType[K, L] :+: R] = {
     case Inl(_)    => annotation().value
@@ -63,8 +60,7 @@ trait DerivedCellEncoderInstances0 extends DerivedCellEncoderInstances1 {
 }
 
 trait DerivedCellEncoderInstances1 {
-  final implicit def encodeCConsObj[K <: Symbol, L, R <: Coproduct](
-      implicit
+  final implicit def encodeCConsObj[K <: Symbol, L, R <: Coproduct](implicit
       witK: Witness.Aux[K],
       encodeR: Lazy[DerivedCellEncoder[R]]): DerivedCellEncoder[FieldType[K, L] :+: R] = {
     case Inl(_)    => witK.value.name

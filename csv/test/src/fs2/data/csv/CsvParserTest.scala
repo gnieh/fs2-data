@@ -30,6 +30,7 @@ import scala.concurrent._
 import better.files.{Resource => _, _}
 
 import java.util.concurrent._
+import cats.data.NonEmptyList
 
 class CsvParserTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
 
@@ -84,6 +85,29 @@ class CsvParserTest extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
           .map(_.toMap)
 
       reencoded should be(expected)
+    }
+  }
+
+  "Row parser" should "check row length against header length" in {
+    val rows = Stream.emits(
+      List(NonEmptyList.of("header1", "header2"),
+           NonEmptyList.of("c11", "c12"),
+           NonEmptyList.of("c21", "c22", "c23"),
+           NonEmptyList.of("c31", "c32")))
+
+    val compiled = rows.through(headers[Fallible, String]).compile.drain
+
+    compiled should matchPattern { case Left(_: CsvException) =>
+    }
+  }
+
+  it should "fail decoding if row length doesn't match header length" in {
+    val headers = NonEmptyList.of("header1", "header2")
+    val rows = Stream.emits(List(NonEmptyList.of("c11", "c12"), NonEmptyList.of("c21"), NonEmptyList.of("c31", "c32")))
+
+    val compiled = rows.through(withHeaders[Fallible, String](headers)).compile.drain
+
+    compiled should matchPattern { case Left(_: CsvException) =>
     }
   }
 

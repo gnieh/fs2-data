@@ -91,13 +91,12 @@ private[xml] class NamespaceResolver[F[_]](implicit F: MonadError[F, Throwable])
 
   private def checkDuplicates(attrs: List[Attr]): F[Unit] =
     attrs
-      .foldM(Set.empty[QName]) {
-        case (seen, Attr(name, _)) =>
-          if (seen.contains(name))
-            F.raiseError[Set[QName]](
-              new XmlException(NSCAttributesUnique, s"duplicate attribute with resolved name ${name.render}"))
-          else
-            F.pure(seen + name)
+      .foldM(Set.empty[QName]) { case (seen, Attr(name, _)) =>
+        if (seen.contains(name))
+          F.raiseError[Set[QName]](
+            new XmlException(NSCAttributesUnique, s"duplicate attribute with resolved name ${name.render}"))
+        else
+          F.pure(seen + name)
       }
       .void
 

@@ -24,8 +24,7 @@ trait DerivedCsvRowEncoder[T] extends CsvRowEncoder[T, String]
 
 object DerivedCsvRowEncoder {
 
-  final implicit def productWriter[T, Repr <: HList, AnnoRepr <: HList](
-      implicit
+  final implicit def productWriter[T, Repr <: HList, AnnoRepr <: HList](implicit
       gen: LabelledGeneric.Aux[T, Repr],
       annotations: Annotations.Aux[CsvName, T, AnnoRepr],
       cc: Lazy[MapShapedCsvRowEncoder.WithAnnotations[T, Repr, AnnoRepr]]): DerivedCsvRowEncoder[T] =

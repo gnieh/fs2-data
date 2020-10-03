@@ -46,12 +46,11 @@ class Row(val values: NonEmptyList[String]) {
     if (idx < 0 || idx >= values.size)
       this
     else
-      new Row(values.zipWithIndex.map {
-        case (cell, i) =>
-          if (i === idx)
-            f(cell)
-          else
-            cell
+      new Row(values.zipWithIndex.map { case (cell, i) =>
+        if (i === idx)
+          f(cell)
+        else
+          cell
       })
 
   /** Returns the row with the cell at `idx` set to `value`. */
@@ -74,7 +73,11 @@ object Row {
   def apply(values: NonEmptyList[String]): Row = new Row(values)
 }
 
-case class CsvRow[Header](override val values: NonEmptyList[String], headers: NonEmptyList[Header])
+/** A CSV row with headers, that can be used to access the cell values.
+  *
+  * '''Note:''' the following invariant holds when using this class: `values` and `headers` have the same size.
+  */
+case class CsvRow[Header] private[csv] (override val values: NonEmptyList[String], headers: NonEmptyList[Header])
     extends Row(values) {
 
   private lazy val byHeader: Map[Header, String] =
@@ -83,7 +86,7 @@ case class CsvRow[Header](override val values: NonEmptyList[String], headers: No
   /** Modifies the cell content at the given `idx` using the function `f`.
     */
   override def modify(idx: Int)(f: String => String): CsvRow[Header] =
-    copy(values = super.modify(idx)(f).values)
+    new CsvRow(super.modify(idx)(f).values, headers)
 
   /** Modifies the cell content at the given `header` using the function `f`.
     *
@@ -155,6 +158,15 @@ case class CsvRow[Header](override val values: NonEmptyList[String], headers: No
 }
 
 object CsvRow {
+
+  /** Constructs a [[CsvRow]] and checks that the size of values and headers match. */
+  def apply[Header](values: NonEmptyList[String], headers: NonEmptyList[Header]): Either[CsvException, CsvRow[Header]] =
+    if (values.length =!= headers.length)
+      Left(
+        new CsvException(
+          s"Headers have size ${headers.length} but row has size ${values.length}. Both numbers must match!"))
+    else
+      Right(new CsvRow(values, headers))
 
   def fromListHeaders[Header](l: List[(Header, String)]): Option[CsvRow[Header]] = {
     val (hs, vs) = l.unzip

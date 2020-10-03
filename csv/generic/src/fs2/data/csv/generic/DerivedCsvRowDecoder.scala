@@ -24,8 +24,7 @@ trait DerivedCsvRowDecoder[T] extends CsvRowDecoder[T, String]
 
 object DerivedCsvRowDecoder {
 
-  final implicit def productReader[T, Repr <: HList, DefaultRepr <: HList, AnnoRepr <: HList](
-      implicit
+  final implicit def productReader[T, Repr <: HList, DefaultRepr <: HList, AnnoRepr <: HList](implicit
       gen: LabelledGeneric.Aux[T, Repr],
       defaults: Default.AsOptions.Aux[T, DefaultRepr],
       annotations: Annotations.Aux[CsvName, T, AnnoRepr],

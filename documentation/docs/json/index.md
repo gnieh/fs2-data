@@ -13,7 +13,7 @@ This page covers the following topics:
 * Contents
 {:toc}
 
-### Basic usage
+### JSON parsing
 
 To create a stream of JSON tokens from an input stream, use the `tokens` pipe in `fs2.data.json` package. This pipe accepts a stream of characters and returns a stream of JSON tokens. This produces a stream of structurally valid tokens forming the JSON documents.
 
@@ -196,9 +196,71 @@ stream.compile.to(collector.pretty())
 stream.compile.to(collector.pretty("\t"))
 ```
 
+### Generating JSON streams
+
+Another use case of the library can be to generate a JSON token stream. This comes in handy if you are developing a web service that returns some big JSON in chunks.
+
+To this end you can use the pipes in `wrap` which allow you to wrap a stream into an object structure.
+
+For instance imagine you have a store of events which can return a stream of events, and you have a way to serialize the events into JSON.
+```scala mdoc
+sealed trait Event
+case class CreateCounter(name: String, initialValue: Int) extends Event
+case class RemoveCounter(name: String) extends Event
+case class IncreaseCounter(name: String) extends Event
+
+object Event {
+  import _root_.io.circe.Encoder
+  import _root_.io.circe.generic.extras.Configuration
+  import _root_.io.circe.generic.extras.semiauto._
+  implicit val configuration = Configuration.default.withDiscriminator("type")
+
+  implicit val encoder: Encoder[Event] = deriveConfiguredEncoder
+}
+
+val events = Stream.emits(
+  List[Event](
+    CreateCounter("counter1", 0),
+    IncreaseCounter("counter1"),
+    CreateCounter("counter2", 0),
+    RemoveCounter("counter2")
+  )
+)
+```
+
+You can generate a stream of JSON token wrapped in an object at a key named `events` like this:
+
+```scala mdoc
+import fs2.data.json.circe._
+
+val wrappedTokens = events.through(tokenize).through(wrap.asArrayInObject(at = "events"))
+```
+
+You can use the renderers described above to generate the rendered chunks to send to the client.
+
+```scala mdoc
+wrappedTokens.through(render.compact).compile.toList
+```
+
+You can also add other fields to the the generated object stream. For instance, let's assume we can know how big the stream will be in advance from our event store, we can send this piece of data in the first chunks, so that the client can react accordingly.
+
+```scala mdoc
+import _root_.io.circe.Json
+
+events
+  .through(tokenize)
+  .through(wrap.asArrayInObject(at = "events", in = Map("size" -> Json.fromInt(4))))
+  .through(render.compact)
+  .compile
+  .toList
+```
+
+For more pipes and options, please refer to the [API documentation][wrap-api].
+
 [json-lib-doc]: /documentation/json/libraries
 [interpolator-doc]: /documentation/json/libraries
 [builder-api]: /api/fs2/data/json/ast/Builder.html
 [tokenizer-api]: /api/fs2/data/json/ast/Tokenizer.html
+[wrap-api]: /api/fs2/data/json/package$$wrap$.html
 [monad-error]: https://typelevel.org/cats/api/cats/MonadError.html
 [collector-doc]: https://oss.sonatype.org/service/local/repositories/releases/archive/co/fs2/fs2-core_2.13/2.3.0/fs2-core_2.13-2.3.0-javadoc.jar/!/fs2/Collector.html

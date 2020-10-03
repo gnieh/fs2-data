@@ -57,3 +57,4 @@ site/output
 
 .metals/
 .bloop/
+metals.sbt

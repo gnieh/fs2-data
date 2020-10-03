@@ -30,10 +30,10 @@ class XmlExceptionSpec extends AnyFlatSpec with Matchers {
 
     stream.compile.toList should matchPattern {
       case Right(
-          List(Right(XmlEvent.StartTag(QName(None, "a"), Nil, false)),
-               Right(XmlEvent.StartTag(QName(None, "b"), Nil, false)),
-               Right(XmlEvent.XmlString("c", false)),
-               Left(_: XmlException))) =>
+            List(Right(XmlEvent.StartTag(QName(None, "a"), Nil, false)),
+                 Right(XmlEvent.StartTag(QName(None, "b"), Nil, false)),
+                 Right(XmlEvent.XmlString("c", false)),
+                 Left(_: XmlException))) =>
     }
 
   }

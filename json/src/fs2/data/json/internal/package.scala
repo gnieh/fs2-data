@@ -28,12 +28,12 @@ package object internals {
   private[json] def emitChunk[T](chunkAcc: VectorBuilder[T]) =
     Pull.output(Chunk.vector(chunkAcc.result()))
 
-  private[json] def skipValue[F[_]](
-      chunk: Chunk[Token],
-      idx: Int,
-      rest: Stream[F, Token],
-      depth: Int,
-      chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
+  private[json] def skipValue[F[_]](chunk: Chunk[Token],
+                                    idx: Int,
+                                    rest: Stream[F, Token],
+                                    depth: Int,
+                                    chunkAcc: List[Token])(implicit
+      F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >>
         rest.pull.uncons.flatMap {
@@ -61,12 +61,12 @@ package object internals {
             skipValue(chunk, idx + 1, rest, depth, chunkAcc)
       }
 
-  private[json] def emitValue[F[_]](
-      chunk: Chunk[Token],
-      idx: Int,
-      rest: Stream[F, Token],
-      depth: Int,
-      chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
+  private[json] def emitValue[F[_]](chunk: Chunk[Token],
+                                    idx: Int,
+                                    rest: Stream[F, Token],
+                                    depth: Int,
+                                    chunkAcc: List[Token])(implicit
+      F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >>
         rest.pull.uncons.flatMap {

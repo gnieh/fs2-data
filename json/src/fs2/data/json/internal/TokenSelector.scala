@@ -27,8 +27,8 @@ private[json] object TokenSelector {
                                          rest: Stream[F, Token],
                                          f: Json => Option[Json],
                                          chunkAcc: List[Token],
-                                         key: Option[String])(
-      implicit F: RaiseThrowable[F],
+                                         key: Option[String])(implicit
+      F: RaiseThrowable[F],
       builder: Builder[Json],
       tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, List[Token]]] =
     ValueParser.pullValue(chunk, idx, rest).flatMap {
@@ -46,8 +46,8 @@ private[json] object TokenSelector {
                                           rest: Stream[F, Token],
                                           f: Json => F[Json],
                                           chunkAcc: List[Token],
-                                          key: Option[String])(
-      implicit F: RaiseThrowable[F],
+                                          key: Option[String])(implicit
+      F: RaiseThrowable[F],
       builder: Builder[Json],
       tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, List[Token]]] =
     ValueParser.pullValue(chunk, idx, rest).flatMap {
@@ -59,21 +59,21 @@ private[json] object TokenSelector {
       case None => Pull.pure(None)
     }
 
-  private def selectName[F[_]](
-      chunk: Chunk[Token],
-      idx: Int,
-      rest: Stream[F, Token],
-      emitNonSelected: Boolean,
-      wrap: Boolean,
-      emitEarly: Boolean,
-      toSelect: String => Boolean,
-      mandatories: Set[String],
-      onSelect: (Chunk[Token],
-                 Int,
-                 Stream[F, Token],
-                 List[Token],
-                 Option[String]) => Pull[F, Token, Result[F, List[Token]]],
-      chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
+  private def selectName[F[_]](chunk: Chunk[Token],
+                               idx: Int,
+                               rest: Stream[F, Token],
+                               emitNonSelected: Boolean,
+                               wrap: Boolean,
+                               emitEarly: Boolean,
+                               toSelect: String => Boolean,
+                               mandatories: Set[String],
+                               onSelect: (Chunk[Token],
+                                          Int,
+                                          Stream[F, Token],
+                                          List[Token],
+                                          Option[String]) => Pull[F, Token, Result[F, List[Token]]],
+                               chunkAcc: List[Token])(implicit
+      F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) =>
@@ -125,20 +125,20 @@ private[json] object TokenSelector {
           Pull.output(Chunk.seq(chunkAcc.reverse)) >> Pull.raiseError[F](new JsonException("malformed json"))
       }
 
-  private def selectIndex[F[_]](
-      chunk: Chunk[Token],
-      idx: Int,
-      rest: Stream[F, Token],
-      emitNonSelected: Boolean,
-      wrap: Boolean,
-      arrIdx: Int,
-      toSelect: Int => Boolean,
-      onSelect: (Chunk[Token],
-                 Int,
-                 Stream[F, Token],
-                 List[Token],
-                 Option[String]) => Pull[F, Token, Result[F, List[Token]]],
-      chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
+  private def selectIndex[F[_]](chunk: Chunk[Token],
+                                idx: Int,
+                                rest: Stream[F, Token],
+                                emitNonSelected: Boolean,
+                                wrap: Boolean,
+                                arrIdx: Int,
+                                toSelect: Int => Boolean,
+                                onSelect: (Chunk[Token],
+                                           Int,
+                                           Stream[F, Token],
+                                           List[Token],
+                                           Option[String]) => Pull[F, Token, Result[F, List[Token]]],
+                                chunkAcc: List[Token])(implicit
+      F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => selectIndex(hd, 0, tl, emitNonSelected, wrap, arrIdx, toSelect, onSelect, Nil)
@@ -167,21 +167,21 @@ private[json] object TokenSelector {
           }
       }
 
-  private def filterChunk[F[_]](
-      chunk: Chunk[Token],
-      idx: Int,
-      rest: Stream[F, Token],
-      selector: Selector,
-      emitNonSelected: Boolean,
-      wrap: Boolean,
-      emitEarly: Boolean,
-      onSelect: (Chunk[Token],
-                 Int,
-                 Stream[F, Token],
-                 List[Token],
-                 Option[String]) => Pull[F, Token, Result[F, List[Token]]],
-      chunkAcc: List[Token],
-      key: Option[String])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
+  private def filterChunk[F[_]](chunk: Chunk[Token],
+                                idx: Int,
+                                rest: Stream[F, Token],
+                                selector: Selector,
+                                emitNonSelected: Boolean,
+                                wrap: Boolean,
+                                emitEarly: Boolean,
+                                onSelect: (Chunk[Token],
+                                           Int,
+                                           Stream[F, Token],
+                                           List[Token],
+                                           Option[String]) => Pull[F, Token, Result[F, List[Token]]],
+                                chunkAcc: List[Token],
+                                key: Option[String])(implicit
+      F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => filterChunk(hd, 0, tl, selector, emitNonSelected, wrap, emitEarly, onSelect, Nil, key)
@@ -300,12 +300,12 @@ private[json] object TokenSelector {
   def pipe[F[_]](selector: Selector, wrap: Boolean)(implicit F: RaiseThrowable[F]): Pipe[F, Token, Token] =
     s => go(Chunk.empty, 0, s, selector, false, wrap, true, emit[F], Nil).stream
 
-  def transformPipe[F[_], Json: Builder: Tokenizer](selector: Selector, f: Json => Option[Json])(
-      implicit F: RaiseThrowable[F]): Pipe[F, Token, Token] =
+  def transformPipe[F[_], Json: Builder: Tokenizer](selector: Selector, f: Json => Option[Json])(implicit
+      F: RaiseThrowable[F]): Pipe[F, Token, Token] =
     s => go(Chunk.empty, 0, s, selector, true, true, false, transform[F, Json](f), Nil).stream
 
-  def transformPipeF[F[_], Json: Builder: Tokenizer](selector: Selector, f: Json => F[Json])(
-      implicit F: RaiseThrowable[F]): Pipe[F, Token, Token] =
+  def transformPipeF[F[_], Json: Builder: Tokenizer](selector: Selector, f: Json => F[Json])(implicit
+      F: RaiseThrowable[F]): Pipe[F, Token, Token] =
     s => go(Chunk.empty, 0, s, selector, true, true, true, transformF[F, Json](f), Nil).stream
 
   private def emit[F[_]](chunk: Chunk[Token],
@@ -315,20 +315,20 @@ private[json] object TokenSelector {
                          key: Option[String])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
     emitValue[F](chunk, idx, rest, 0, chunkAcc)
 
-  private def transform[F[_], Json: Builder: Tokenizer](f: Json => Option[Json])(
-      chunk: Chunk[Token],
-      idx: Int,
-      rest: Stream[F, Token],
-      chunkAcc: List[Token],
-      key: Option[String])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
+  private def transform[F[_], Json: Builder: Tokenizer](f: Json => Option[Json])(chunk: Chunk[Token],
+                                                                                 idx: Int,
+                                                                                 rest: Stream[F, Token],
+                                                                                 chunkAcc: List[Token],
+                                                                                 key: Option[String])(implicit
+      F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
     transformValue(chunk, idx, rest, f, chunkAcc, key)
 
-  private def transformF[F[_], Json: Builder: Tokenizer](f: Json => F[Json])(
-      chunk: Chunk[Token],
-      idx: Int,
-      rest: Stream[F, Token],
-      chunkAcc: List[Token],
-      key: Option[String])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
+  private def transformF[F[_], Json: Builder: Tokenizer](f: Json => F[Json])(chunk: Chunk[Token],
+                                                                             idx: Int,
+                                                                             rest: Stream[F, Token],
+                                                                             chunkAcc: List[Token],
+                                                                             key: Option[String])(implicit
+      F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
     transformValueF(chunk, idx, rest, f, chunkAcc, key)
 
 }

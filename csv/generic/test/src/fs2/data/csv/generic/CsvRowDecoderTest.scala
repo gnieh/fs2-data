@@ -24,10 +24,8 @@ import org.scalatest.matchers.should.Matchers
 
 class CsvRowDecoderTest extends AnyFlatSpec with Matchers {
 
-  val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"),
-                          NonEmptyList.of("i", "s", "j"))
-  val csvRowDefaultI = new CsvRow(NonEmptyList.of("", "test", "42"),
-                                  NonEmptyList.of("i", "s", "j"))
+  val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
+  val csvRowDefaultI = new CsvRow(NonEmptyList.of("", "test", "42"), NonEmptyList.of("i", "s", "j"))
   val csvRowNoI =
     new CsvRow(NonEmptyList.of("test", "42"), NonEmptyList.of("s", "j"))
   val csvRowEmptyJ =
@@ -72,10 +70,8 @@ class CsvRowDecoderTest extends AnyFlatSpec with Matchers {
   }
 
   it should "be decoded according to their field renames if value is optional" in {
-    testOptionRenameDecoder(csvRow) shouldBe Right(
-      TestOptionRename("test", Some(42), 1))
-    testOptionRenameDecoder(csvRowNoJ) shouldBe Right(
-      TestOptionRename("test", None, 1))
+    testOptionRenameDecoder(csvRow) shouldBe Right(TestOptionRename("test", Some(42), 1))
+    testOptionRenameDecoder(csvRowNoJ) shouldBe Right(TestOptionRename("test", None, 1))
   }
 
 }

@@ -16,17 +16,14 @@
 package fs2.data.json
 
 import fs2._
-
-import circe._
+import ast.Builder
 
 import cats.implicits._
-
-import _root_.io.circe.Json
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class JsonExceptionSpec extends AnyFlatSpec with Matchers {
+abstract class JsonExceptionSpec[Json](implicit builder: Builder[Json]) extends AnyFlatSpec with Matchers {
 
   "previous valid tokens" should "be emitted before Exception" in {
 
@@ -60,7 +57,8 @@ class JsonExceptionSpec extends AnyFlatSpec with Matchers {
     val stream = Stream.emit(input).through(tokens[Fallible, String]).through(values).attempt
 
     stream.compile.toList should matchPattern {
-      case Right(List(Right(o), Left(_: JsonException))) if o == Json.obj("key" -> Json.fromString("value")) =>
+      case Right(List(Right(o), Left(_: JsonException)))
+          if o == builder.makeObject(List("key" -> builder.makeString("value"))) =>
     }
 
   }

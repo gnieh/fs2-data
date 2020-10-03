@@ -64,8 +64,7 @@ class RowDecoderTest extends AnyFlatSpec with Matchers {
   }
 
   "hlist" should "be handled properly" in {
-    RowDecoder[Int :: String :: Int :: HNil].apply(csvRow) shouldBe Right(
-      1 :: "test" :: 42 :: HNil)
+    RowDecoder[Int :: String :: Int :: HNil].apply(csvRow) shouldBe Right(1 :: "test" :: 42 :: HNil)
   }
 
   it should "be handled properly with optional columns" in {

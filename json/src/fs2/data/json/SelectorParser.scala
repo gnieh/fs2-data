@@ -157,12 +157,11 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
               else
                 F.raiseError(new JsonSelectorException("unexpected end of input", input.length))
           }
-        maker.flatMap {
-          case (maker, idx) =>
-            next(idx).map {
-              case Some((QuestionMark(_), idx)) => (maker(false), idx)
-              case _                            => (maker(true), idx)
-            }
+        maker.flatMap { case (maker, idx) =>
+          next(idx).map {
+            case Some((QuestionMark(_), idx)) => (maker(false), idx)
+            case _                            => (maker(true), idx)
+          }
         }
       case Some((token, _)) =>
         F.raiseError(new JsonSelectorException(s"invalid selector token '$token'", token.idx))
@@ -173,11 +172,10 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
   private def parseTail(idx: Int, left: Selector): F[(Selector, Int)] =
     next(idx).flatMap {
       case Some((_, _)) =>
-        parseSelector(idx, false).flatMap {
-          case (s, idx) =>
-            parseTail(idx, s).map {
-              case (tail, idx) => (Selector.PipeSelector(left, tail), idx)
-            }
+        parseSelector(idx, false).flatMap { case (s, idx) =>
+          parseTail(idx, s).map { case (tail, idx) =>
+            (Selector.PipeSelector(left, tail), idx)
+          }
         }
       case None =>
         F.pure((left, idx))
@@ -185,8 +183,8 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
 
   def parse(): F[Selector] =
     parseSelector(0, true)
-      .flatMap {
-        case (f, idx) => parseTail(idx, f)
+      .flatMap { case (f, idx) =>
+        parseTail(idx, f)
       }
       .map(_._1)
 
@@ -209,17 +207,17 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
           case '?' => F.pure(Some((QuestionMark(idx), if (peek) idx else idx + 1)))
           case '!' => F.pure(Some((Bang(idx), if (peek) idx else idx + 1)))
           case '"' =>
-            string(idx + 1).map {
-              case (str, idx1) => Some((Str(str, idx), if (peek) idx else idx1))
+            string(idx + 1).map { case (str, idx1) =>
+              Some((Str(str, idx), if (peek) idx else idx1))
             }
           case _ =>
             if (c.isDigit) {
-              integer(idx + 1, c).map {
-                case (i, idx1) => Some((Integer(i, idx), if (peek) idx else idx1))
+              integer(idx + 1, c).map { case (i, idx1) =>
+                Some((Integer(i, idx), if (peek) idx else idx1))
               }
             } else if (c.isLetter || c == '_') {
-              name(idx + 1, c).map {
-                case (n, idx1) => Some((Name(n, idx), if (peek) idx else idx1))
+              name(idx + 1, c).map { case (n, idx1) =>
+                Some((Name(n, idx), if (peek) idx else idx1))
               }
             } else {
               F.raiseError(new JsonSelectorException(s"invalid selector character '$c'", idx))
@@ -235,7 +233,7 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
       } else {
         val c = input.charAt(idx)
         if (c == '"') {
-          F.pure((acc.result, idx + 1))
+          F.pure((acc.result(), idx + 1))
         } else if (c == '\\') {
           if (idx + 1 >= input.size) {
             F.raiseError(new JsonSelectorException("unexpected end of input", idx + 1))
@@ -252,19 +250,18 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
               case 't'  => loop(idx + 2, acc.append('\t'))
               case 'u' =>
                 val unicode =
-                  (2 to 5).toList.foldLeftM(0) {
-                    case (n, i) =>
-                      if (idx + i >= input.length) {
-                        F.raiseError[Int](new JsonSelectorException("unexpected end of input", input.length))
-                      } else {
-                        val c = input.charAt(idx + i).toLower
-                        if (c >= '0' && c <= '9')
-                          F.pure((n << 4) | (0x0000000f & (c - '0')))
-                        else if (c >= 'a' && c <= 'f')
-                          F.pure((n << 4) | (0x0000000f & (c + 10 - 'a')))
-                        else
-                          F.raiseError[Int](new JsonSelectorException("malformed escaped unicode sequence", idx + i))
-                      }
+                  (2 to 5).toList.foldLeftM(0) { case (n, i) =>
+                    if (idx + i >= input.length) {
+                      F.raiseError[Int](new JsonSelectorException("unexpected end of input", input.length))
+                    } else {
+                      val c = input.charAt(idx + i).toLower
+                      if (c >= '0' && c <= '9')
+                        F.pure((n << 4) | (0x0000000f & (c - '0')))
+                      else if (c >= 'a' && c <= 'f')
+                        F.pure((n << 4) | (0x0000000f & (c + 10 - 'a')))
+                      else
+                        F.raiseError[Int](new JsonSelectorException("malformed escaped unicode sequence", idx + i))
+                    }
                   }
                 unicode.flatMap(u => loop(idx + 6, acc.appendAll(Character.toChars(u))))
               case _ => F.raiseError(new JsonSelectorException(s"unknown escaped character '$c'", idx + 1))
@@ -282,13 +279,13 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
   private def name(idx: Int, fst: Char): F[(String, Int)] = {
     def loop(idx: Int, acc: StringBuilder): F[(String, Int)] =
       if (idx >= input.length) {
-        F.pure((acc.result, idx))
+        F.pure((acc.result(), idx))
       } else {
         val c = input.charAt(idx)
         if (c == '_' || c.isLetter || c.isDigit)
           loop(idx + 1, acc.append(c))
         else
-          F.pure((acc.result, idx))
+          F.pure((acc.result(), idx))
       }
 
     loop(idx, new StringBuilder().append(fst))

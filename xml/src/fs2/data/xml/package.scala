@@ -39,8 +39,8 @@ package object xml {
     * Entities are already defined and validated (especially no recursion),
     * hence the `entities` map contains the resolved text to replace the entity by.
     */
-  def referenceResolver[F[_]](entities: Map[String, String] = xmlEntities)(
-      implicit F: MonadError[F, Throwable]): Pipe[F, XmlEvent, XmlEvent] =
+  def referenceResolver[F[_]](entities: Map[String, String] = xmlEntities)(implicit
+      F: MonadError[F, Throwable]): Pipe[F, XmlEvent, XmlEvent] =
     ReferenceResolver[F](entities).pipe
 
   /** Resolves all prefixes in [[QName]]s.

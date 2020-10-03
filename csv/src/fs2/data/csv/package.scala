@@ -57,19 +57,21 @@ package object csv {
     *                      default) or [[QuoteHandling.Literal]] if quotation
     *                      marks should be treated literally
     */
-  def rows[F[_], T](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(
-      implicit F: RaiseThrowable[F],
+  def rows[F[_], T](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
+      F: RaiseThrowable[F],
       T: CharLikeChunks[F, T]): Pipe[F, T, NonEmptyList[String]] =
     RowParser.pipe[F, T](separator, quoteHandling)
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
-  def headers[F[_], Header](implicit F: RaiseThrowable[F],
-                            Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
+  def headers[F[_], Header](implicit
+      F: RaiseThrowable[F],
+      Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
     CsvRowParser.pipe[F, Header]
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with given headers. */
-  def withHeaders[F[_], Header](headers: NonEmptyList[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
-    _.map(CsvRow(_, headers))
+  def withHeaders[F[_], Header](headers: NonEmptyList[Header])(implicit
+      F: RaiseThrowable[F]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
+    _.map(CsvRow(_, headers)).rethrow
 
   /** Transforms a stream of raw CSV rows into rows. */
   def noHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
@@ -85,16 +87,17 @@ package object csv {
   def attemptDecode[F[_], R](implicit R: RowDecoder[R]): Pipe[F, Row, DecoderResult[R]] =
     _.map(row => R(row.values))
 
-  def decodeRow[F[_], Header, R](implicit F: RaiseThrowable[F],
-                                 R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], R] =
+  def decodeRow[F[_], Header, R](implicit
+      F: RaiseThrowable[F],
+      R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], R] =
     _.map(R(_)).rethrow
 
-  def attemptDecodeRow[F[_], Header, R](
-      implicit R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], DecoderResult[R]] =
+  def attemptDecodeRow[F[_], Header, R](implicit
+      R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], DecoderResult[R]] =
     _.map(R(_))
 
-  def writeWithHeaders[F[_], Header](headers: NonEmptyList[Header])(
-      implicit H: WriteableHeader[Header]): Pipe[F, Row, NonEmptyList[String]] =
+  def writeWithHeaders[F[_], Header](headers: NonEmptyList[Header])(implicit
+      H: WriteableHeader[Header]): Pipe[F, Row, NonEmptyList[String]] =
     Stream(H(headers)) ++ _.map(_.values)
 
   def writeWithoutHeaders[F[_]]: Pipe[F, Row, NonEmptyList[String]] =
@@ -103,12 +106,11 @@ package object csv {
   def toStrings[F[_]](separator: Char = ',',
                       newline: String = "\n",
                       escape: EscapeMode = EscapeMode.Auto): Pipe[F, NonEmptyList[String], String] = {
-    _.flatMap(
-      nel =>
-        Stream
-          .emits(nel.toList)
-          .map(RowWriter.encodeColumn(separator, escape))
-          .intersperse(separator.toString) ++ Stream(newline))
+    _.flatMap(nel =>
+      Stream
+        .emits(nel.toList)
+        .map(RowWriter.encodeColumn(separator, escape))
+        .intersperse(separator.toString) ++ Stream(newline))
   }
 
   def toRowStrings[F[_]](separator: Char = ',',
@@ -126,8 +128,8 @@ package object csv {
   def encodeRow[F[_], Header, R](implicit R: CsvRowEncoder[R, Header]): Pipe[F, R, CsvRow[Header]] =
     _.map(R(_))
 
-  def encodeRowWithFirstHeaders[F[_], Header](
-      implicit H: WriteableHeader[Header]): Pipe[F, CsvRow[Header], NonEmptyList[String]] =
+  def encodeRowWithFirstHeaders[F[_], Header](implicit
+      H: WriteableHeader[Header]): Pipe[F, CsvRow[Header], NonEmptyList[String]] =
     _.pull.peek1.flatMap {
       case Some((CsvRow(_, headers), stream)) =>
         Pull.output1(H(headers)) >> stream.map(_.values).pull.echo

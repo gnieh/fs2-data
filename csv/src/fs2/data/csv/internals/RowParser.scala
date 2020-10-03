@@ -26,8 +26,8 @@ import scala.collection.immutable.VectorBuilder
 
 private[csv] object RowParser {
 
-  def pipe[F[_], T](separator: Char, quoteHandling: QuoteHandling)(
-      implicit F: RaiseThrowable[F],
+  def pipe[F[_], T](separator: Char, quoteHandling: QuoteHandling)(implicit
+      F: RaiseThrowable[F],
       T: CharLikeChunks[F, T]): Pipe[F, T, NonEmptyList[String]] = {
 
     def rows(context: T.Context,
@@ -71,12 +71,12 @@ private[csv] object RowParser {
               rows(T.advance(context), currentField.append(c), tail, State.InQuoted, chunkAcc)
             } else if (c == separator) {
               // end of quoted field, go to next
-              val field = currentField.result
-              currentField.clear
+              val field = currentField.result()
+              currentField.clear()
               rows(T.advance(context), currentField, field :: tail, State.BeginningOfField, chunkAcc)
             } else if (c == '\n') {
-              val field = currentField.result
-              currentField.clear
+              val field = currentField.result()
+              currentField.clear()
               rows(T.advance(context),
                    currentField,
                    Nil,
@@ -91,8 +91,8 @@ private[csv] object RowParser {
             }
           case State.ExpectNewLine =>
             if (c == '\n') {
-              val field = currentField.result
-              currentField.clear
+              val field = currentField.result()
+              currentField.clear()
               rows(T.advance(context),
                    currentField,
                    Nil,
@@ -129,13 +129,13 @@ private[csv] object RowParser {
           case State.InUnquoted =>
             if (c == separator) {
               // this is the end of the field, not the row
-              val field = currentField.result
-              currentField.clear
+              val field = currentField.result()
+              currentField.clear()
               rows(T.advance(context), currentField, field :: tail, State.BeginningOfField, chunkAcc)
             } else if (c == '\n') {
               // a new line, emit row and continue
-              val field = currentField.result
-              currentField.clear
+              val field = currentField.result()
+              currentField.clear()
               rows(T.advance(context),
                    currentField,
                    Nil,
@@ -149,8 +149,8 @@ private[csv] object RowParser {
           case State.InUnquotedSeenCr =>
             if (c == '\n') {
               // a new line, emit row if not empty and continue
-              val field = currentField.result
-              currentField.clear
+              val field = currentField.result()
+              currentField.clear()
               rows(T.advance(context),
                    currentField,
                    Nil,
@@ -160,8 +160,8 @@ private[csv] object RowParser {
               currentField.append('\r')
               if (c == separator) {
                 // this is the end of the field, not the row
-                val field = currentField.result
-                currentField.clear
+                val field = currentField.result()
+                currentField.clear()
                 rows(T.advance(context), currentField, field :: tail, State.BeginningOfField, chunkAcc)
               } else {
                 // continue parsing field

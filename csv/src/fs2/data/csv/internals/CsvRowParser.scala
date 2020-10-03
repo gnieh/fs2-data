@@ -23,17 +23,25 @@ import cats.data._
 
 private[csv] object CsvRowParser {
 
-  def pipe[F[_], Header](implicit F: RaiseThrowable[F],
-                         Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
+  def pipe[F[_], Header](implicit
+      F: RaiseThrowable[F],
+      Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
     _.pull.uncons1.flatMap {
-      case Some((firstRow, tail)) =>
-        Header(firstRow) match {
+      case Some((currentRow, tail)) =>
+        Header(currentRow) match {
           case Left(error) => Pull.raiseError[F](error)
-          case Right(headers) if headers.length =!= firstRow.length =>
-            val error = new HeaderError(
-              s"Got ${headers.length} headers, but ${firstRow.length} columns. Both numbers must match!")
+          case Right(headers) if headers.length =!= currentRow.length =>
+            val error = new HeaderSizeError(
+              s"Got ${headers.length} headers, but ${currentRow.length} columns. Both numbers must match!",
+              expectedColumns = headers.length,
+              actualColumns = currentRow.length)
             Pull.raiseError[F](error)
-          case Right(headers) => tail.map(CsvRow[Header](_, headers)).pull.echo
+          case Right(headers) =>
+            tail
+              .map(CsvRow(_, headers))
+              .rethrow
+              .pull
+              .echo
         }
       case None => Pull.done
     }.stream

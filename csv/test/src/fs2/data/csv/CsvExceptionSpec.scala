@@ -33,9 +33,9 @@ class CsvExceptionSpec extends AnyFlatSpec with Matchers {
 
     stream.compile.toList should matchPattern {
       case Right(
-          List(Right(NonEmptyList("1", List("2", "3"))),
-               Right(NonEmptyList("a", List("b", "c"))),
-               Left(_: CsvException))) =>
+            List(Right(NonEmptyList("1", List("2", "3"))),
+                 Right(NonEmptyList("a", List("b", "c"))),
+                 Left(_: CsvException))) =>
     }
 
   }

@@ -25,7 +25,8 @@ import scala.collection.immutable.VectorBuilder
 private[json] object ValueParser {
 
   private def pullArray[F[_], Json](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], acc: VectorBuilder[Json])(
-      implicit F: RaiseThrowable[F],
+      implicit
+      F: RaiseThrowable[F],
       builder: Builder[Json]): Pull[F, INothing, Result[F, Json]] =
     if (idx >= chunk.size) {
       rest.pull.uncons.flatMap {
@@ -35,7 +36,7 @@ private[json] object ValueParser {
     } else {
       chunk(idx) match {
         case Token.EndArray =>
-          Pull.pure(Some((chunk, idx + 1, rest, builder.makeArray(acc.result))))
+          Pull.pure(Some((chunk, idx + 1, rest, builder.makeArray(acc.result()))))
         case _ =>
           Pull.suspend(pullValue(chunk, idx, rest).flatMap {
             case Some((chunk, idx, rest, json)) => pullArray(chunk, idx, rest, acc += json)
@@ -47,8 +48,8 @@ private[json] object ValueParser {
   private def pullObject[F[_], Json](chunk: Chunk[Token],
                                      idx: Int,
                                      rest: Stream[F, Token],
-                                     acc: VectorBuilder[(String, Json)])(
-      implicit F: RaiseThrowable[F],
+                                     acc: VectorBuilder[(String, Json)])(implicit
+      F: RaiseThrowable[F],
       builder: Builder[Json]): Pull[F, INothing, Result[F, Json]] =
     if (idx >= chunk.size) {
       rest.pull.uncons.flatMap {
@@ -58,7 +59,7 @@ private[json] object ValueParser {
     } else {
       chunk(idx) match {
         case Token.EndObject =>
-          Pull.pure(Some((chunk, idx + 1, rest, builder.makeObject(acc.result))))
+          Pull.pure(Some((chunk, idx + 1, rest, builder.makeObject(acc.result()))))
         case Token.Key(key) =>
           pullValue(chunk, idx + 1, rest).flatMap {
             case Some((chunk, idx, rest, json)) => pullObject(chunk, idx, rest, acc += (key -> json))
@@ -69,8 +70,8 @@ private[json] object ValueParser {
       }
     }
 
-  def pullValue[F[_], Json](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token])(
-      implicit F: RaiseThrowable[F],
+  def pullValue[F[_], Json](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token])(implicit
+      F: RaiseThrowable[F],
       builder: Builder[Json]): Pull[F, INothing, Result[F, Json]] =
     if (idx >= chunk.size) {
       rest.pull.uncons.flatMap {
@@ -93,8 +94,8 @@ private[json] object ValueParser {
   /** Pulls one json value from the stream if any, builds the AST for it
     * and returns it with the rest stream.
     */
-  def pullOne[F[_], Json](s: Stream[F, Token])(
-      implicit F: RaiseThrowable[F],
+  def pullOne[F[_], Json](s: Stream[F, Token])(implicit
+      F: RaiseThrowable[F],
       builder: Builder[Json]): Pull[F, INothing, Option[(Json, Stream[F, Token])]] =
     s.pull.uncons.flatMap {
       case Some((hd, tl)) =>
@@ -107,8 +108,8 @@ private[json] object ValueParser {
 
   /** Pulls and emits all json values from the stream if any, builds the AST foreach value.
     */
-  def pullAll[F[_], Json](s: Stream[F, Token])(implicit F: RaiseThrowable[F],
-                                               builder: Builder[Json]): Pull[F, Json, Unit] = {
+  def pullAll[F[_], Json](
+      s: Stream[F, Token])(implicit F: RaiseThrowable[F], builder: Builder[Json]): Pull[F, Json, Unit] = {
     def go(chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], chunkAcc: List[Json]): Pull[F, Json, Unit] =
       if (idx >= chunk.size) {
         Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {

@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2
-package data
-package json
+package fs2.data.json
 
 import ast._
 
@@ -41,9 +39,10 @@ package object circe {
     private def tokenizeArray(values: Vector[Json]) =
       NonEmptyList(Token.StartArray, values.toList.flatMap(tokenize(_).toList)).append(Token.EndArray)
     private def tokenizeObject(fields: List[(String, Json)]) =
-      NonEmptyList(Token.StartObject, fields.flatMap {
-        case (k, v) => Token.Key(k) :: tokenize(v).toList
-      }).append(Token.EndObject)
+      NonEmptyList(Token.StartObject,
+                   fields.flatMap { case (k, v) =>
+                     Token.Key(k) :: tokenize(v).toList
+                   }).append(Token.EndObject)
     def tokenize(json: Json): NonEmptyList[Token] =
       json.fold(
         one(Token.NullValue),
@@ -54,5 +53,11 @@ package object circe {
         o => tokenizeObject(o.toList)
       )
   }
+
+  implicit def tokenizerForEncoder[T](implicit encoder: Encoder[T]): Tokenizer[T] =
+    new Tokenizer[T] {
+      def tokenize(json: T): NonEmptyList[Token] =
+        CirceTokenizer.tokenize(json.asJson)
+    }
 
 }

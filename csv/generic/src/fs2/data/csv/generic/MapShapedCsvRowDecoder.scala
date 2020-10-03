@@ -39,10 +39,11 @@ object MapShapedCsvRowDecoder extends LowPriorityMapShapedCsvRowDecoder1 {
                                      Tail <: HList,
                                      DefaultTail <: HList,
                                      Anno,
-                                     AnnoTail <: HList](implicit witness: Witness.Aux[Key],
-                                                        Head: CellDecoder[Head],
-                                                        ev: <:<[Anno, Option[CsvName]],
-                                                        Tail: Lazy[WithDefaults[Wrapped, Tail, DefaultTail, AnnoTail]])
+                                     AnnoTail <: HList](implicit
+      witness: Witness.Aux[Key],
+      Head: CellDecoder[Head],
+      ev: <:<[Anno, Option[CsvName]],
+      Tail: Lazy[WithDefaults[Wrapped, Tail, DefaultTail, AnnoTail]])
       : WithDefaults[Wrapped,
                      FieldType[Key, Option[Head]] :: Tail,
                      Option[Option[Head]] :: DefaultTail,
@@ -79,10 +80,11 @@ trait LowPriorityMapShapedCsvRowDecoder1 {
                                Tail <: HList,
                                DefaultTail <: HList,
                                Anno,
-                               AnnoTail <: HList](implicit witness: Witness.Aux[Key],
-                                                  Head: CellDecoder[Head],
-                                                  ev: <:<[Anno, Option[CsvName]],
-                                                  Tail: Lazy[WithDefaults[Wrapped, Tail, DefaultTail, AnnoTail]])
+                               AnnoTail <: HList](implicit
+      witness: Witness.Aux[Key],
+      Head: CellDecoder[Head],
+      ev: <:<[Anno, Option[CsvName]],
+      Tail: Lazy[WithDefaults[Wrapped, Tail, DefaultTail, AnnoTail]])
       : WithDefaults[Wrapped, FieldType[Key, Head] :: Tail, Option[Head] :: DefaultTail, Anno :: AnnoTail] =
     new WithDefaults[Wrapped, FieldType[Key, Head] :: Tail, Option[Head] :: DefaultTail, Anno :: AnnoTail] {
       def fromWithDefault(row: CsvRow[String],

@@ -29,22 +29,21 @@ object DerivedCellDecoder extends DerivedCellDecoderInstances0 {
   // Unary Products
 
   final implicit def unaryProductDecoder[A <: Product, L <: HList, H](implicit
-                                                                      gen: Generic.Aux[A, L],
-                                                                      ev: =:=[H :: HNil, L],
-                                                                      cc: CellDecoder[H]): DerivedCellDecoder[A] =
+      gen: Generic.Aux[A, L],
+      ev: =:=[H :: HNil, L],
+      cc: CellDecoder[H]): DerivedCellDecoder[A] =
     s => cc(s).map(v => gen.from(v :: HNil))
 
   // Coproducts
 
   final implicit def coproductDecoder[T, Repr <: Coproduct](implicit
-                                                            gen: LabelledGeneric.Aux[T, Repr],
-                                                            cc: Lazy[DerivedCellDecoder[Repr]]): DerivedCellDecoder[T] =
+      gen: LabelledGeneric.Aux[T, Repr],
+      cc: Lazy[DerivedCellDecoder[Repr]]): DerivedCellDecoder[T] =
     s => cc.value(s).map(gen.from(_))
 
   final implicit val decodeCNil: DerivedCellDecoder[CNil] = (_: String) => Left(new DecoderError("CNil"))
 
-  final implicit def decodeCCons[K <: Symbol, L, R <: Coproduct](
-      implicit
+  final implicit def decodeCCons[K <: Symbol, L, R <: Coproduct](implicit
       witK: Witness.Aux[K],
       decodeL: CellDecoder[L],
       decodeR: Lazy[DerivedCellDecoder[R]]): DerivedCellDecoder[FieldType[K, L] :+: R] =
@@ -56,8 +55,7 @@ object DerivedCellDecoder extends DerivedCellDecoderInstances0 {
 }
 
 trait DerivedCellDecoderInstances0 extends DerivedCellDecoderInstances1 {
-  final implicit def decodeCConsObjAnnotated[K <: Symbol, L, R <: Coproduct](
-      implicit
+  final implicit def decodeCConsObjAnnotated[K <: Symbol, L, R <: Coproduct](implicit
       witK: Witness.Aux[K],
       witL: Witness.Aux[L],
       annotation: Annotation[CsvValue, L],
@@ -69,8 +67,7 @@ trait DerivedCellDecoderInstances0 extends DerivedCellDecoderInstances1 {
 }
 
 trait DerivedCellDecoderInstances1 {
-  final implicit def decodeCConsObj[K <: Symbol, L, R <: Coproduct](
-      implicit
+  final implicit def decodeCConsObj[K <: Symbol, L, R <: Coproduct](implicit
       witK: Witness.Aux[K],
       witL: Witness.Aux[L],
       gen: Generic.Aux[L, HNil],

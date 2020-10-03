@@ -16,25 +16,32 @@
 package fs2.data.json
 package mergepatch
 
-import circe._
+import cats.effect._
 
+import ast.Tokenizer
 import diffson.jsonmergepatch.JsonMergePatch
-import diffson.circe._
-
-import io.circe._
 
 import fs2._
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import diffson.Jsony
 
-class JsonMergePatchTest extends AnyFlatSpec with Matchers {
+abstract class JsonMergePatchTest[Json](implicit Json: Jsony[Json], tokenizer: Tokenizer[Json])
+    extends AnyFlatSpec
+    with Matchers {
 
-  val valuePatch = JsonMergePatch.Value(Json.fromInt(5))
+  def makeInt(i: Int): Json
+
+  def makeString(s: String): Json
+
+  def makeTrue: Json
+
+  val valuePatch = JsonMergePatch.Value(makeInt(5))
   val nullPatch = JsonMergePatch.Value(Json.Null)
   val objectPatch = JsonMergePatch.Object(
-    Map("key1" -> Json.fromInt(3),
-        "key2" -> Json.obj("nested" -> Json.fromString("s"), "new" -> Json.True, "deleted" -> Json.Null)))
+    Map("key1" -> makeInt(3),
+        "key2" -> Json.makeObject(Map("nested" -> makeString("s"), "new" -> makeTrue, "deleted" -> Json.Null))))
   val objectPatchTokens = List(
     Token.StartObject,
     Token.Key("key1"),

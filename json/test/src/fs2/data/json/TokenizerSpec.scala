@@ -15,14 +15,16 @@
  */
 package fs2.data.json
 
-import circe._
+import ast._
 
 import fs2._
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class TokenizerSpec extends AnyFlatSpec with Matchers {
+abstract class TokenizerSpec[Json](implicit builder: Builder[Json], tokenizer: Tokenizer[Json])
+    extends AnyFlatSpec
+    with Matchers {
 
   "`tokenize` and `values`" should "work well together" in {
 

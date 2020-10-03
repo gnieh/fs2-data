@@ -1,10 +1,8 @@
 package fs2.data
 package json
 
-import io.circe.Json
-
+import ast._
 import selector._
-import circe._
 
 import fs2._
 
@@ -13,7 +11,10 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.Inside
 import cats.effect.SyncIO
 
-class JsonSelectorSpec extends AnyFlatSpec with Matchers with Inside {
+abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer: Tokenizer[Json])
+    extends AnyFlatSpec
+    with Matchers
+    with Inside {
 
   "mandatory fields" should "fail in the missing single case" in {
     val selector = root.field("field").!.compile
@@ -22,8 +23,8 @@ class JsonSelectorSpec extends AnyFlatSpec with Matchers with Inside {
       .compile
       .drain
 
-    inside(filtered) {
-      case Left(e: JsonMissingFieldException) => e.missing shouldBe Set("field")
+    inside(filtered) { case Left(e: JsonMissingFieldException) =>
+      e.missing shouldBe Set("field")
     }
   }
 
@@ -34,8 +35,8 @@ class JsonSelectorSpec extends AnyFlatSpec with Matchers with Inside {
       .compile
       .drain
 
-    inside(filtered) {
-      case Left(e: JsonMissingFieldException) => e.missing shouldBe Set("field1", "field3")
+    inside(filtered) { case Left(e: JsonMissingFieldException) =>
+      e.missing shouldBe Set("field1", "field3")
     }
   }
 
@@ -51,8 +52,8 @@ class JsonSelectorSpec extends AnyFlatSpec with Matchers with Inside {
       .compile
       .drain
 
-    inside(filtered) {
-      case Left(e: JsonMissingFieldException) => e.missing shouldBe Set("field")
+    inside(filtered) { case Left(e: JsonMissingFieldException) =>
+      e.missing shouldBe Set("field")
     }
   }
 
@@ -64,8 +65,8 @@ class JsonSelectorSpec extends AnyFlatSpec with Matchers with Inside {
         .compile
         .drain
 
-    inside(filtered) {
-      case Left(e: JsonMissingFieldException) => e.missing shouldBe Set("field1")
+    inside(filtered) { case Left(e: JsonMissingFieldException) =>
+      e.missing shouldBe Set("field1")
     }
   }
 
@@ -96,7 +97,7 @@ class JsonSelectorSpec extends AnyFlatSpec with Matchers with Inside {
              Token.Key("g"),
              Token.StringValue("test"),
              Token.EndObject)
-        .through(transformOpt[Fallible, Json](selector, _ => Some(Json.False)))
+        .through(transformOpt[Fallible, Json](selector, _ => Some(builder.makeFalse)))
         .compile
         .toList
     transformed shouldBe Right(

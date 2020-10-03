@@ -80,12 +80,11 @@ private class CharLikeCharChunks[F[_]] extends CharLikeChunks[F, Char] {
     ctx.idx >= ctx.chunk.size
 
   def pullNext(ctx: CharContext): Pull[F, INothing, Option[CharContext]] =
-    ctx.rest.pull.uncons.map(_.map {
-      case (hd, tl) =>
-        ctx.chunk = hd
-        ctx.idx = 0
-        ctx.rest = tl
-        ctx
+    ctx.rest.pull.uncons.map(_.map { case (hd, tl) =>
+      ctx.chunk = hd
+      ctx.idx = 0
+      ctx.rest = tl
+      ctx
     })
 
   def advance(ctx: Context): Context = {
@@ -110,12 +109,11 @@ private class CharLikeStringChunks[F[_]] extends CharLikeChunks[F, String] {
     ctx.sidx >= ctx.string.size
 
   def pullNext(ctx: StringContext): Pull[F, INothing, Option[StringContext]] =
-    ctx.rest.pull.uncons1.map(_.map {
-      case (hd, tl) =>
-        ctx.string = hd
-        ctx.sidx = 0
-        ctx.rest = tl
-        ctx
+    ctx.rest.pull.uncons1.map(_.map { case (hd, tl) =>
+      ctx.string = hd
+      ctx.sidx = 0
+      ctx.rest = tl
+      ctx
     })
 
   def advance(ctx: Context): Context = {
@@ -142,14 +140,13 @@ private class CharLikeSingleByteChunks[F[_]](charset: Charset) extends CharLikeC
     ctx.idx >= ctx.chunk.size
 
   def pullNext(ctx: Context): Pull[F, INothing, Option[Context]] =
-    ctx.rest.pull.uncons.map(_.map {
-      case (hd, tl) =>
-        // This code is pure. The constructor replaces malformed input
-        // with the charset default replacement string, so this never throws
-        ctx.chunk = new String(hd.toArray[Byte], charset)
-        ctx.idx = 0
-        ctx.rest = tl
-        ctx
+    ctx.rest.pull.uncons.map(_.map { case (hd, tl) =>
+      // This code is pure. The constructor replaces malformed input
+      // with the charset default replacement string, so this never throws
+      ctx.chunk = new String(hd.toArray[Byte], charset)
+      ctx.idx = 0
+      ctx.rest = tl
+      ctx
     })
 
   def advance(ctx: Context): Context = {

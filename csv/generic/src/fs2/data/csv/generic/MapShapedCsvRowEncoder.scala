@@ -24,12 +24,12 @@ trait MapShapedCsvRowEncoder[Repr] extends CsvRowEncoder[Repr, String]
 
 object MapShapedCsvRowEncoder extends LowPrioMapShapedCsvRowEncoderImplicits {
 
-  implicit def lastElemRowEncoder[Wrapped, Repr, Anno, Key <: Symbol](
-      implicit Last: CellEncoder[Repr],
+  implicit def lastElemRowEncoder[Wrapped, Repr, Anno, Key <: Symbol](implicit
+      Last: CellEncoder[Repr],
       ev: <:<[Anno, Option[CsvName]],
       witness: Witness.Aux[Key]): WithAnnotations[Wrapped, FieldType[Key, Repr] :: HNil, Anno :: HNil] =
     (row: Repr :: HNil, annotation: Anno :: HNil) =>
-      CsvRow(NonEmptyList.one(Last(row.head)), NonEmptyList.one(annotation.head.fold(witness.value.name)(_.name)))
+      new CsvRow(NonEmptyList.one(Last(row.head)), NonEmptyList.one(annotation.head.fold(witness.value.name)(_.name)))
 
 }
 
@@ -44,14 +44,15 @@ trait LowPrioMapShapedCsvRowEncoderImplicits {
                                Tail <: HList,
                                DefaultTail <: HList,
                                Anno,
-                               AnnoTail <: HList](implicit witness: Witness.Aux[Key],
-                                                  Head: CellEncoder[Head],
-                                                  ev: <:<[Anno, Option[CsvName]],
-                                                  Tail: Lazy[WithAnnotations[Wrapped, Tail, AnnoTail]])
+                               AnnoTail <: HList](implicit
+      witness: Witness.Aux[Key],
+      Head: CellEncoder[Head],
+      ev: <:<[Anno, Option[CsvName]],
+      Tail: Lazy[WithAnnotations[Wrapped, Tail, AnnoTail]])
       : WithAnnotations[Wrapped, FieldType[Key, Head] :: Tail, Anno :: AnnoTail] =
     (row: FieldType[Key, Head] :: Tail, annotation: Anno :: AnnoTail) => {
       val tailRow = Tail.value.fromWithAnnotation(row.tail, annotation.tail)
-      CsvRow(NonEmptyList(Head(row.head), tailRow.values.toList),
-             NonEmptyList(annotation.head.fold(witness.value.name)(_.name), tailRow.headers.toList))
+      new CsvRow(NonEmptyList(Head(row.head), tailRow.values.toList),
+                 NonEmptyList(annotation.head.fold(witness.value.name)(_.name), tailRow.headers.toList))
     }
 }

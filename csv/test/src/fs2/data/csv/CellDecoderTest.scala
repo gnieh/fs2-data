@@ -39,7 +39,8 @@ class CellDecoderTest extends AnyFlatSpec with Matchers with EitherValues {
     CellDecoder[FiniteDuration].apply("2 seconds") shouldBe Right(2.seconds)
 
     CellDecoder[java.net.URL].apply("http://localhost:8080/path?a=b").isRight shouldBe true
-    CellDecoder[java.util.UUID].apply("6f55090e-a807-49c2-a142-2a0db1f079df").map(_.toString) shouldBe Right("6f55090e-a807-49c2-a142-2a0db1f079df")
+    CellDecoder[java.util.UUID].apply("6f55090e-a807-49c2-a142-2a0db1f079df").map(_.toString) shouldBe Right(
+      "6f55090e-a807-49c2-a142-2a0db1f079df")
     CellDecoder[java.time.LocalTime].apply("13:04:29") shouldBe Right(java.time.LocalTime.of(13, 4, 29))
   }
 

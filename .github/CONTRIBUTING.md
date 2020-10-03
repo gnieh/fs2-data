@@ -17,7 +17,7 @@ All scala code snippets must be valid, they are compiled and executed using [mdo
 To verify that your snippets work, run:
 
 ```shell
-$ mill documentation.mdoc
+$ sbt documentation/mdoc
 ```
 
 ## Code formatting
@@ -25,7 +25,7 @@ $ mill documentation.mdoc
 `fs2-data` uses [scalafmt][scalafmt] to format its code. Before submitting code contribution, be sure to have proper formatting by running
 
 ```shell
-$ mill __.reformat
+$ sbt scalafmtAll
 ```
 
 and check the result.

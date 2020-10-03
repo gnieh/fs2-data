@@ -191,9 +191,8 @@ private[xml] object EventParser {
         val c = T.current(ctx)
         if (isNCNameStart(c)) {
           val sb = new StringBuilder
-          untilChar(T.advance(ctx), c => !isNCNameChar(c), sb.append(c), chunkAcc).map {
-            case (ctx, chunkAcc) =>
-              (ctx, chunkAcc, sb.result)
+          untilChar(T.advance(ctx), c => !isNCNameChar(c), sb.append(c), chunkAcc).map { case (ctx, chunkAcc) =>
+            (ctx, chunkAcc, sb.result)
           }
         } else {
           fail("5", s"character '$c' cannot start a NCName", Some(chunkAcc))
@@ -202,31 +201,29 @@ private[xml] object EventParser {
 
     def readQName(ctx: T.Context,
                   chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], QName)] =
-      readNCName(ctx, chunkAcc).flatMap {
-        case (ctx, chunkAcc, part1) =>
-          def readPart2(
-              ctx: T.Context,
-              chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], QName)] =
-            if (T.needsPull(ctx)) {
-              emitChunk(Some(chunkAcc)) >> T.pullNext(ctx).flatMap {
-                case Some(ctx) =>
-                  chunkAcc.clear()
-                  readPart2(ctx, chunkAcc)
-                case None =>
-                  Pull.pure((eos, new VectorBuilder[XmlEvent], QName(None, part1)))
-              }
-            } else {
-              T.current(ctx) match {
-                case ':' =>
-                  readNCName(T.advance(ctx), chunkAcc).map {
-                    case (ctx, chunkAcc, part2) =>
-                      (ctx, chunkAcc, QName(Some(part1), part2))
-                  }
-                case _ =>
-                  Pull.pure((ctx, chunkAcc, QName(None, part1)))
-              }
+      readNCName(ctx, chunkAcc).flatMap { case (ctx, chunkAcc, part1) =>
+        def readPart2(
+            ctx: T.Context,
+            chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], QName)] =
+          if (T.needsPull(ctx)) {
+            emitChunk(Some(chunkAcc)) >> T.pullNext(ctx).flatMap {
+              case Some(ctx) =>
+                chunkAcc.clear()
+                readPart2(ctx, chunkAcc)
+              case None =>
+                Pull.pure((eos, new VectorBuilder[XmlEvent], QName(None, part1)))
             }
-          readPart2(ctx, chunkAcc)
+          } else {
+            T.current(ctx) match {
+              case ':' =>
+                readNCName(T.advance(ctx), chunkAcc).map { case (ctx, chunkAcc, part2) =>
+                  (ctx, chunkAcc, QName(Some(part1), part2))
+                }
+              case _ =>
+                Pull.pure((ctx, chunkAcc, QName(None, part1)))
+            }
+          }
+        readPart2(ctx, chunkAcc)
       }
 
     def space(ctx: T.Context,
@@ -249,110 +246,102 @@ private[xml] object EventParser {
     def readMarkupToken(
         ctx: T.Context,
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], MarkupToken)] =
-      acceptChar(ctx, '<', "43", "expected token start", chunkAcc).flatMap {
-        case (ctx, chunkAcc) =>
-          def read(
-              ctx: T.Context,
-              chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], MarkupToken)] =
-            if (T.needsPull(ctx)) {
-              emitChunk(Some(chunkAcc)) >> T.pullNext(ctx).flatMap {
-                case Some(ctx) =>
-                  chunkAcc.clear()
-                  read(ctx, chunkAcc)
-                case None => fail("1", "unexpected end of input", None)
-              }
-            } else {
-              T.current(ctx) match {
-                case '/' =>
-                  for {
-                    (ctx, chunkAcc, qname) <- readQName(T.advance(ctx), chunkAcc)
-                    (ctx, chunkAcc) <- space(ctx, chunkAcc)
-                    (ctx, chunkAcc) <- acceptChar(ctx, '>', "42", "missing '>' at the end of closing tag", chunkAcc)
-                  } yield (ctx, chunkAcc, MarkupToken.EndToken(qname))
-                case '?' =>
-                  readNCName(T.advance(ctx), chunkAcc).map {
-                    case (ctx, chunkAcc, name) => (ctx, chunkAcc, MarkupToken.PIToken(name))
-                  }
-                case '!' =>
-                  peekChar(T.advance(ctx), chunkAcc).flatMap {
-                    case Some((ctx, chunkAcc, '-')) =>
-                      skipComment(T.advance(ctx), chunkAcc)
-                    case Some((ctx, chunkAcc, '[')) =>
-                      readCDATA(T.advance(ctx), chunkAcc)
-                    case Some((ctx, chunkAcc, _)) =>
-                      readNCName(ctx, chunkAcc).map {
-                        case (ctx, chunkAcc, name) =>
-                          (ctx, chunkAcc, MarkupToken.DeclToken(name))
-                      }
-                    case None =>
-                      fail("1", "unexpected end of input", None)
-                  }
-                case _ =>
-                  readQName(ctx, chunkAcc).map {
-                    case (ctx, chunkAcc, name) => (ctx, chunkAcc, MarkupToken.StartToken(name))
-                  }
-              }
+      acceptChar(ctx, '<', "43", "expected token start", chunkAcc).flatMap { case (ctx, chunkAcc) =>
+        def read(
+            ctx: T.Context,
+            chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], MarkupToken)] =
+          if (T.needsPull(ctx)) {
+            emitChunk(Some(chunkAcc)) >> T.pullNext(ctx).flatMap {
+              case Some(ctx) =>
+                chunkAcc.clear()
+                read(ctx, chunkAcc)
+              case None => fail("1", "unexpected end of input", None)
             }
-          read(ctx, chunkAcc)
+          } else {
+            T.current(ctx) match {
+              case '/' =>
+                for {
+                  (ctx, chunkAcc, qname) <- readQName(T.advance(ctx), chunkAcc)
+                  (ctx, chunkAcc) <- space(ctx, chunkAcc)
+                  (ctx, chunkAcc) <- acceptChar(ctx, '>', "42", "missing '>' at the end of closing tag", chunkAcc)
+                } yield (ctx, chunkAcc, MarkupToken.EndToken(qname))
+              case '?' =>
+                readNCName(T.advance(ctx), chunkAcc).map { case (ctx, chunkAcc, name) =>
+                  (ctx, chunkAcc, MarkupToken.PIToken(name))
+                }
+              case '!' =>
+                peekChar(T.advance(ctx), chunkAcc).flatMap {
+                  case Some((ctx, chunkAcc, '-')) =>
+                    skipComment(T.advance(ctx), chunkAcc)
+                  case Some((ctx, chunkAcc, '[')) =>
+                    readCDATA(T.advance(ctx), chunkAcc)
+                  case Some((ctx, chunkAcc, _)) =>
+                    readNCName(ctx, chunkAcc).map { case (ctx, chunkAcc, name) =>
+                      (ctx, chunkAcc, MarkupToken.DeclToken(name))
+                    }
+                  case None =>
+                    fail("1", "unexpected end of input", None)
+                }
+              case _ =>
+                readQName(ctx, chunkAcc).map { case (ctx, chunkAcc, name) =>
+                  (ctx, chunkAcc, MarkupToken.StartToken(name))
+                }
+            }
+          }
+        read(ctx, chunkAcc)
       }
 
     /** We have read '<!-' so far */
     def skipComment(
         ctx: T.Context,
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], MarkupToken)] =
-      acceptChar(ctx, '-', "15", "second dash missing to open comment", chunkAcc).flatMap {
-        case (ctx, chunkAcc) =>
-          def loop(ctx: T.Context,
-                   chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
-            nextChar(ctx, chunkAcc).flatMap {
-              case (ctx, chunkAcc, '-') =>
-                nextChar(ctx, chunkAcc).flatMap {
-                  case (ctx, chunkAcc, '-') =>
-                    acceptChar(ctx, '>', "15", "'--' is not inside comments", chunkAcc)
-                  case (ctx, chunkAcc, _) =>
-                    loop(ctx, chunkAcc)
-                }
-              case (ctx, chunkAcc, _) =>
-                loop(ctx, chunkAcc)
-            }
-          loop(ctx, chunkAcc).map {
-            case (ctx, chunkAcc) =>
-              (ctx, chunkAcc, MarkupToken.CommentToken)
+      acceptChar(ctx, '-', "15", "second dash missing to open comment", chunkAcc).flatMap { case (ctx, chunkAcc) =>
+        def loop(ctx: T.Context,
+                 chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
+          nextChar(ctx, chunkAcc).flatMap {
+            case (ctx, chunkAcc, '-') =>
+              nextChar(ctx, chunkAcc).flatMap {
+                case (ctx, chunkAcc, '-') =>
+                  acceptChar(ctx, '>', "15", "'--' is not inside comments", chunkAcc)
+                case (ctx, chunkAcc, _) =>
+                  loop(ctx, chunkAcc)
+              }
+            case (ctx, chunkAcc, _) =>
+              loop(ctx, chunkAcc)
           }
+        loop(ctx, chunkAcc).map { case (ctx, chunkAcc) =>
+          (ctx, chunkAcc, MarkupToken.CommentToken)
+        }
       }
 
     /** We have read '<![' so far */
     def readCDATA(
         ctx: T.Context,
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], MarkupToken)] =
-      acceptString(ctx, "CDATA[", "19", "'CDATA[' expected", chunkAcc).map {
-        case (ctx, chunkAcc) =>
-          (ctx, chunkAcc, MarkupToken.CDataToken)
+      acceptString(ctx, "CDATA[", "19", "'CDATA[' expected", chunkAcc).map { case (ctx, chunkAcc) =>
+        (ctx, chunkAcc, MarkupToken.CDataToken)
       }
 
     /** We have just read the PI target */
     def readPIBody(ctx: T.Context,
                    chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], String)] =
-      space(ctx, chunkAcc).flatMap {
-        case (ctx, chunkAcc) =>
-          def loop(ctx: T.Context,
-                   sb: StringBuilder,
-                   chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], String)] =
-            untilChar(ctx, c => c == '?', sb, chunkAcc).flatMap {
-              case (ctx, chunkAcc) =>
-                acceptChar(ctx, '?', "16", "unexpected end of input", chunkAcc).flatMap {
-                  case (ctx, chunkAcc) =>
-                    peekChar(ctx, chunkAcc).flatMap {
-                      case Some((ctx, chunkAcc, '>')) =>
-                        Pull.pure((T.advance(ctx), chunkAcc, sb.result))
-                      case Some((ctx, chunkAcc, _)) =>
-                        loop(ctx, sb.append('?'), chunkAcc)
-                      case None =>
-                        fail("16", "unexpected end of input", None)
-                    }
-                }
+      space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
+        def loop(ctx: T.Context,
+                 sb: StringBuilder,
+                 chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], String)] =
+          untilChar(ctx, c => c == '?', sb, chunkAcc).flatMap { case (ctx, chunkAcc) =>
+            acceptChar(ctx, '?', "16", "unexpected end of input", chunkAcc).flatMap { case (ctx, chunkAcc) =>
+              peekChar(ctx, chunkAcc).flatMap {
+                case Some((ctx, chunkAcc, '>')) =>
+                  Pull.pure((T.advance(ctx), chunkAcc, sb.result))
+                case Some((ctx, chunkAcc, _)) =>
+                  loop(ctx, sb.append('?'), chunkAcc)
+                case None =>
+                  fail("16", "unexpected end of input", None)
+              }
             }
-          loop(ctx, new StringBuilder, chunkAcc)
+          }
+        loop(ctx, new StringBuilder, chunkAcc)
       }
 
     /** We read the beginning of internal DTD subset, read until final ']>' */
@@ -370,76 +359,71 @@ private[xml] object EventParser {
     def readExternalID(
         ctx: T.Context,
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], String)] =
-      readNCName(ctx, chunkAcc).flatMap {
-        case (ctx, chunkAcc, sysOrPub) =>
-          assert(ctx, isXmlWhitespace(_), "75", "space required after SYSTEM or PUBLIC", chunkAcc).flatMap {
-            case (ctx, chunkAcc, _) =>
-              sysOrPub match {
-                case "SYSTEM" =>
-                  readQuoted(ctx, false, "11", chunkAcc)
-                case "PUBLIC" =>
-                  for {
-                    (ctx, chunkAcc, _) <- readQuoted(ctx, true, "12", chunkAcc)
-                    (ctx, chunkAcc, _) <- assert(ctx,
-                                                 isXmlWhitespace(_),
-                                                 "12",
-                                                 "space required after PubidLiteral",
-                                                 chunkAcc)
-                    res <- readQuoted(ctx, false, "12", chunkAcc)
-                  } yield res
-                case _ =>
-                  fail("75", "SYSTEM or PUBLIC expected", Some(chunkAcc))
-              }
-          }
+      readNCName(ctx, chunkAcc).flatMap { case (ctx, chunkAcc, sysOrPub) =>
+        assert(ctx, isXmlWhitespace(_), "75", "space required after SYSTEM or PUBLIC", chunkAcc).flatMap {
+          case (ctx, chunkAcc, _) =>
+            sysOrPub match {
+              case "SYSTEM" =>
+                readQuoted(ctx, false, "11", chunkAcc)
+              case "PUBLIC" =>
+                for {
+                  (ctx, chunkAcc, _) <- readQuoted(ctx, true, "12", chunkAcc)
+                  (ctx, chunkAcc, _) <- assert(ctx,
+                                               isXmlWhitespace(_),
+                                               "12",
+                                               "space required after PubidLiteral",
+                                               chunkAcc)
+                  res <- readQuoted(ctx, false, "12", chunkAcc)
+                } yield res
+              case _ =>
+                fail("75", "SYSTEM or PUBLIC expected", Some(chunkAcc))
+            }
+        }
       }
 
     def readQuoted(ctx: T.Context,
                    pub: Boolean,
                    error: String,
                    chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], String)] =
-      space(ctx, chunkAcc).flatMap {
-        case (ctx, chunkAcc) =>
-          assert(ctx, c => c == '"' || c == '\'', error, "single or double quote expected", chunkAcc)
-            .flatMap {
-              case (ctx, chunkAcc, delimiter) =>
-                val pred: Char => Boolean =
-                  if (pub)
-                    if (delimiter == '\'')
-                      c =>
-                        !(c == 0x20 || c == 0xd || c == 0xa || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || "-'()+,./:=?;!*#@$_%"
-                          .contains(c))
-                    else
-                      c =>
-                        !(c == 0x20 || c == 0xd || c == 0xa || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || "-()+,./:=?;!*#@$_%"
-                          .contains(c))
-                  else
-                    c => c == delimiter
+      space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
+        assert(ctx, c => c == '"' || c == '\'', error, "single or double quote expected", chunkAcc)
+          .flatMap { case (ctx, chunkAcc, delimiter) =>
+            val pred: Char => Boolean =
+              if (pub)
+                if (delimiter == '\'')
+                  c =>
+                    !(c == 0x20 || c == 0xd || c == 0xa || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || "-'()+,./:=?;!*#@$_%"
+                      .contains(c))
+                else
+                  c =>
+                    !(c == 0x20 || c == 0xd || c == 0xa || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || "-()+,./:=?;!*#@$_%"
+                      .contains(c))
+              else
+                c => c == delimiter
 
-                val sb = new StringBuilder
-                untilChar(ctx, pred, sb, chunkAcc).flatMap {
-                  case (ctx, chunkAcc) =>
-                    Pull.pure((T.advance(ctx), chunkAcc, sb.result))
-                }
+            val sb = new StringBuilder
+            untilChar(ctx, pred, sb, chunkAcc).flatMap { case (ctx, chunkAcc) =>
+              Pull.pure((T.advance(ctx), chunkAcc, sb.result))
             }
+          }
       }
 
     def scanMisc(ctx: T.Context, chunkAcc: VectorBuilder[XmlEvent])
         : Pull[F, XmlEvent, Option[(T.Context, VectorBuilder[XmlEvent], MarkupToken)]] =
-      space(ctx, chunkAcc).flatMap {
-        case (ctx, chunkAcc) =>
-          peekChar(ctx, chunkAcc).flatMap {
-            case Some((ctx, chunkAcc, '<')) =>
-              readMarkupToken(ctx, chunkAcc).flatMap {
-                case (ctx, chunkAcc, MarkupToken.CommentToken) => scanMisc(ctx, chunkAcc)
-                case res @ (_, _, MarkupToken.PIToken(_))      => Pull.pure(Some(res))
-                case res @ (_, _, MarkupToken.DeclToken(_))    => Pull.pure(Some(res))
-                case res @ (_, _, MarkupToken.StartToken(_))   => Pull.pure(Some(res))
-                case (_, chunkAcc, t)                          => fail("22", s"unexpected token '$t'", Some(chunkAcc))
-              }
-            case Some((_, chunkAcc, c)) =>
-              fail("22", s"unexpected character '$c'", Some(chunkAcc))
-            case None => Pull.pure(None)
-          }
+      space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
+        peekChar(ctx, chunkAcc).flatMap {
+          case Some((ctx, chunkAcc, '<')) =>
+            readMarkupToken(ctx, chunkAcc).flatMap {
+              case (ctx, chunkAcc, MarkupToken.CommentToken) => scanMisc(ctx, chunkAcc)
+              case res @ (_, _, MarkupToken.PIToken(_))      => Pull.pure(Some(res))
+              case res @ (_, _, MarkupToken.DeclToken(_))    => Pull.pure(Some(res))
+              case res @ (_, _, MarkupToken.StartToken(_))   => Pull.pure(Some(res))
+              case (_, chunkAcc, t)                          => fail("22", s"unexpected token '$t'", Some(chunkAcc))
+            }
+          case Some((_, chunkAcc, c)) =>
+            fail("22", s"unexpected character '$c'", Some(chunkAcc))
+          case None => Pull.pure(None)
+        }
       }
 
     /** We read '&#' so far */
@@ -458,12 +442,12 @@ private[xml] object EventParser {
         }
       peekChar(ctx, chunkAcc).flatMap {
         case Some((ctx, chunkAcc, 'x')) =>
-          readNum(T.advance(ctx), 16, chunkAcc).flatMap {
-            case (ctx, chunkAcc, n) => postlude(ctx, n, chunkAcc)
+          readNum(T.advance(ctx), 16, chunkAcc).flatMap { case (ctx, chunkAcc, n) =>
+            postlude(ctx, n, chunkAcc)
           }
         case Some((ctx, chunkAcc, _)) =>
-          readNum(ctx, 10, chunkAcc).flatMap {
-            case (ctx, chunkAcc, n) => postlude(ctx, n, chunkAcc)
+          readNum(ctx, 10, chunkAcc).flatMap { case (ctx, chunkAcc, n) =>
+            postlude(ctx, n, chunkAcc)
           }
         case None => fail("66", "unexpected end of input", None)
       }
@@ -512,31 +496,30 @@ private[xml] object EventParser {
       def loop(ctx: T.Context,
                attributes: VectorBuilder[Attr],
                chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], List[Attr])] =
-        space(ctx, chunkAcc).flatMap {
-          case (ctx, chunkAcc) =>
-            peekChar(ctx, chunkAcc).flatMap {
-              case Some((ctx, chunkAcc, c)) if isNCNameStart(c) =>
-                for {
-                  (ctx, chunkAcc, name) <- readQName(ctx, chunkAcc)
-                  (ctx, chunkAcc) <- space(ctx, chunkAcc)
-                  (ctx, chunkAcc) <- acceptChar(ctx, '=', "25", "'=' character expected", chunkAcc)
-                  (ctx, chunkAcc) <- space(ctx, chunkAcc)
-                  (ctx, chunkAcc, delimiter) <- assert(ctx,
-                                                       c => c == '"' || c == '\'',
-                                                       "10",
-                                                       "single or double quote expected around attribute value",
-                                                       chunkAcc)
-                  (ctx, chunkAcc, value) <- readAttributeValue(ctx,
-                                                               is11,
-                                                               Some(delimiter),
-                                                               new StringBuilder,
-                                                               new VectorBuilder,
-                                                               chunkAcc)
-                  res <- loop(ctx, attributes += Attr(name, value), chunkAcc)
-                } yield res
-              case Some((ctx, chunkAcc, _)) => Pull.pure((ctx, chunkAcc, attributes.result.toList))
-              case None                     => fail("1", "unexpected end of input", None)
-            }
+        space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
+          peekChar(ctx, chunkAcc).flatMap {
+            case Some((ctx, chunkAcc, c)) if isNCNameStart(c) =>
+              for {
+                (ctx, chunkAcc, name) <- readQName(ctx, chunkAcc)
+                (ctx, chunkAcc) <- space(ctx, chunkAcc)
+                (ctx, chunkAcc) <- acceptChar(ctx, '=', "25", "'=' character expected", chunkAcc)
+                (ctx, chunkAcc) <- space(ctx, chunkAcc)
+                (ctx, chunkAcc, delimiter) <- assert(ctx,
+                                                     c => c == '"' || c == '\'',
+                                                     "10",
+                                                     "single or double quote expected around attribute value",
+                                                     chunkAcc)
+                (ctx, chunkAcc, value) <- readAttributeValue(ctx,
+                                                             is11,
+                                                             Some(delimiter),
+                                                             new StringBuilder,
+                                                             new VectorBuilder,
+                                                             chunkAcc)
+                res <- loop(ctx, attributes += Attr(name, value), chunkAcc)
+              } yield res
+            case Some((ctx, chunkAcc, _)) => Pull.pure((ctx, chunkAcc, attributes.result.toList))
+            case None                     => fail("1", "unexpected end of input", None)
+          }
         }
       loop(ctx, new VectorBuilder, chunkAcc)
     }
@@ -549,55 +532,50 @@ private[xml] object EventParser {
                            chunkAcc: VectorBuilder[XmlEvent])
         : Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], List[XmlEvent.XmlTexty])] = {
       val delimiters = delim.fold(valueDelimiters)(valueDelimiters + _)
-      untilChar(ctx, delimiters.contains(_), current, chunkAcc).flatMap {
-        case (ctx, chunkAcc) =>
-          nextChar(ctx, chunkAcc).flatMap {
-            case (ctx, chunkAcc, c) if Some(c) == delim =>
-              if (!current.isEmpty)
-                builder += XmlEvent.XmlString(current.toString, false)
-              Pull.pure((ctx, chunkAcc, builder.result.toList))
-            case (ctx, chunkAcc, '\r') =>
-              nextChar(ctx, chunkAcc).flatMap {
-                case (ctx, chunkAcc, '\n') =>
-                  readAttributeValue(ctx, is11, delim, current.append('\n'), builder, chunkAcc)
-                case (ctx, chunkAcc, c) =>
-                  readAttributeValue(ctx, is11, delim, current.append(' '), builder, chunkAcc)
-              }
-            case (ctx, chunkAcc, c) if isXmlWhitespace(c) =>
-              readAttributeValue(ctx, is11, delim, current.append(' '), builder, chunkAcc)
-            case (ctx, chunkAcc, '&') =>
+      untilChar(ctx, delimiters.contains(_), current, chunkAcc).flatMap { case (ctx, chunkAcc) =>
+        nextChar(ctx, chunkAcc).flatMap {
+          case (ctx, chunkAcc, c) if Some(c) == delim =>
+            if (!current.isEmpty)
               builder += XmlEvent.XmlString(current.toString, false)
-              peekChar(ctx, chunkAcc).flatMap {
-                case Some((ctx, chunkAcc, '#')) =>
-                  readCharRef(T.advance(ctx), is11, chunkAcc).flatMap {
-                    case (ctx, chunkAcc, n) =>
-                      builder += XmlEvent.XmlCharRef(n)
-                      readAttributeValue(ctx, is11, delim, new StringBuilder, builder, chunkAcc)
-                  }
-                case Some((ctx, chunkAcc, _)) =>
-                  readNamedEntity(ctx, chunkAcc).flatMap {
-                    case (ctx, chunkAcc, s) =>
-                      builder += XmlEvent.XmlEntityRef(s)
-                      readAttributeValue(ctx, is11, delim, new StringBuilder, builder, chunkAcc)
-                  }
-                case None =>
-                  fail("1", "unexpected end of input", None)
-              }
-            case (_, chunkAcc, c) =>
-              fail("10", s"unexpected character '$c'", Some(chunkAcc))
-          }
+            Pull.pure((ctx, chunkAcc, builder.result.toList))
+          case (ctx, chunkAcc, '\r') =>
+            nextChar(ctx, chunkAcc).flatMap {
+              case (ctx, chunkAcc, '\n') =>
+                readAttributeValue(ctx, is11, delim, current.append('\n'), builder, chunkAcc)
+              case (ctx, chunkAcc, c) =>
+                readAttributeValue(ctx, is11, delim, current.append(' '), builder, chunkAcc)
+            }
+          case (ctx, chunkAcc, c) if isXmlWhitespace(c) =>
+            readAttributeValue(ctx, is11, delim, current.append(' '), builder, chunkAcc)
+          case (ctx, chunkAcc, '&') =>
+            builder += XmlEvent.XmlString(current.toString, false)
+            peekChar(ctx, chunkAcc).flatMap {
+              case Some((ctx, chunkAcc, '#')) =>
+                readCharRef(T.advance(ctx), is11, chunkAcc).flatMap { case (ctx, chunkAcc, n) =>
+                  builder += XmlEvent.XmlCharRef(n)
+                  readAttributeValue(ctx, is11, delim, new StringBuilder, builder, chunkAcc)
+                }
+              case Some((ctx, chunkAcc, _)) =>
+                readNamedEntity(ctx, chunkAcc).flatMap { case (ctx, chunkAcc, s) =>
+                  builder += XmlEvent.XmlEntityRef(s)
+                  readAttributeValue(ctx, is11, delim, new StringBuilder, builder, chunkAcc)
+                }
+              case None =>
+                fail("1", "unexpected end of input", None)
+            }
+          case (_, chunkAcc, c) =>
+            fail("10", s"unexpected character '$c'", Some(chunkAcc))
+        }
       }
     }
 
     def readNamedEntity(
         ctx: T.Context,
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], String)] =
-      readNCName(ctx, chunkAcc).flatMap {
-        case (ctx, chunkAcc, name) =>
-          acceptChar(ctx, ';', "68", "named entity must end with a semicolon", chunkAcc).map {
-            case (ctx, chunkAcc) =>
-              (ctx, chunkAcc, name)
-          }
+      readNCName(ctx, chunkAcc).flatMap { case (ctx, chunkAcc, name) =>
+        acceptChar(ctx, ';', "68", "named entity must end with a semicolon", chunkAcc).map { case (ctx, chunkAcc) =>
+          (ctx, chunkAcc, name)
+        }
       }
 
     def completeStartTag(
@@ -605,19 +583,17 @@ private[xml] object EventParser {
         is11: Boolean,
         name: QName,
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], XmlEvent.StartTag)] =
-      readAttributes(ctx, is11, name, chunkAcc).flatMap {
-        case (ctx, chunkAcc, attributes) =>
-          space(ctx, chunkAcc).flatMap {
-            case (ctx, chunkAcc) =>
-              for {
-                (ctx, chunkAcc, isEmpty) <- peekChar(ctx, chunkAcc).flatMap {
-                  case Some((ctx, chunkAcc, '/')) => Pull.pure((T.advance(ctx), chunkAcc, true))
-                  case Some((ctx, chunkAcc, _))   => Pull.pure((ctx, chunkAcc, false))
-                  case None                       => fail("44", "unexpected end of input", None)
-                }
-                (ctx, chunkAcc) <- acceptChar(ctx, '>', "44", "missing closing '>'", chunkAcc)
-              } yield (ctx, chunkAcc, XmlEvent.StartTag(name, attributes, isEmpty))
-          }
+      readAttributes(ctx, is11, name, chunkAcc).flatMap { case (ctx, chunkAcc, attributes) =>
+        space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
+          for {
+            (ctx, chunkAcc, isEmpty) <- peekChar(ctx, chunkAcc).flatMap {
+              case Some((ctx, chunkAcc, '/')) => Pull.pure((T.advance(ctx), chunkAcc, true))
+              case Some((ctx, chunkAcc, _))   => Pull.pure((ctx, chunkAcc, false))
+              case None                       => fail("44", "unexpected end of input", None)
+            }
+            (ctx, chunkAcc) <- acceptChar(ctx, '>', "44", "missing closing '>'", chunkAcc)
+          } yield (ctx, chunkAcc, XmlEvent.StartTag(name, attributes, isEmpty))
+        }
       }
 
     /** We read '<[CDATA[' so far */
@@ -643,16 +619,15 @@ private[xml] object EventParser {
                   fail("1", "unexpected end of input", None)
               }
             case (ctx, chunkAcc, '&') =>
-              accept(ctx, "gt;", chunkAcc).flatMap {
-                case (ctx, chunkAcc, n) =>
-                  if (n == 3) {
-                    sb.append('>')
-                  } else {
-                    sb.append('&')
-                    for (i <- 0 until n)
-                      sb.append("gt;".charAt(i))
-                  }
-                  readCDATABody(ctx, sb, chunkAcc)
+              accept(ctx, "gt;", chunkAcc).flatMap { case (ctx, chunkAcc, n) =>
+                if (n == 3) {
+                  sb.append('>')
+                } else {
+                  sb.append('&')
+                  for (i <- 0 until n)
+                    sb.append("gt;".charAt(i))
+                }
+                readCDATABody(ctx, sb, chunkAcc)
               }
             case (ctx, chunkAcc, _) =>
               // must be '\r'
@@ -697,17 +672,16 @@ private[xml] object EventParser {
             case (ctx, chunkAcc, MarkupToken.DeclToken(n)) =>
               fail("14", s"unexpected declaration '$n'", Some(chunkAcc))
             case (ctx, chunkAcc, MarkupToken.CDataToken) =>
-              readCDATABody(ctx, new StringBuilder, chunkAcc).map {
-                case (ctx, chunkAcc, body) => (ctx, chunkAcc, XmlEvent.XmlString(body, true))
+              readCDATABody(ctx, new StringBuilder, chunkAcc).map { case (ctx, chunkAcc, body) =>
+                (ctx, chunkAcc, XmlEvent.XmlString(body, true))
               }
             case (ctx, chunkAcc, MarkupToken.EndToken(name)) =>
               Pull.pure((ctx, chunkAcc, XmlEvent.EndTag(name)))
             case (ctx, chunkAcc, MarkupToken.StartToken(name)) =>
               completeStartTag(ctx, is11, name, chunkAcc)
             case (ctx, chunkAcc, MarkupToken.PIToken(target)) if !target.equalsIgnoreCase("xml") =>
-              readPIBody(ctx, chunkAcc).flatMap {
-                case (ctx, chunkAcc, body) =>
-                  Pull.pure((ctx, chunkAcc, XmlEvent.XmlPI(target, body)))
+              readPIBody(ctx, chunkAcc).flatMap { case (ctx, chunkAcc, body) =>
+                Pull.pure((ctx, chunkAcc, XmlEvent.XmlPI(target, body)))
               }
             case (_, chunkAcc, t) =>
               fail("43", s"unexpected token ${t.render}", Some(chunkAcc))
@@ -715,12 +689,12 @@ private[xml] object EventParser {
         case Some((ctx, chunkAcc, '&')) =>
           peekChar(T.advance(ctx), chunkAcc).flatMap {
             case Some((ctx, chunkAcc, '#')) =>
-              readCharRef(T.advance(ctx), is11, chunkAcc).map {
-                case (ctx, chunkAcc, n) => (ctx, chunkAcc, XmlEvent.XmlCharRef(n))
+              readCharRef(T.advance(ctx), is11, chunkAcc).map { case (ctx, chunkAcc, n) =>
+                (ctx, chunkAcc, XmlEvent.XmlCharRef(n))
               }
             case Some((ctx, chunkAcc, _)) =>
-              readNamedEntity(ctx, chunkAcc).map {
-                case (ctx, chunkAcc, v) => (ctx, chunkAcc, XmlEvent.XmlEntityRef(v))
+              readNamedEntity(ctx, chunkAcc).map { case (ctx, chunkAcc, v) =>
+                (ctx, chunkAcc, XmlEvent.XmlEntityRef(v))
               }
             case None =>
               fail("1", "unexpected end of input", None)
@@ -733,24 +707,23 @@ private[xml] object EventParser {
 
     def slowPath(ctx: T.Context, sb: StringBuilder, chunkAcc: VectorBuilder[XmlEvent])
         : Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], XmlEvent.XmlString)] =
-      untilChar(ctx, c => c == '<' || c == '&' || c == '\r', sb, chunkAcc).flatMap {
-        case (ctx, chunkAcc) =>
-          peekChar(ctx, chunkAcc).flatMap {
-            case Some((ctx, chunkAcc, '<')) => Pull.pure((ctx, chunkAcc, XmlEvent.XmlString(sb.toString, false)))
-            case None                       => Pull.pure((ctx, chunkAcc, XmlEvent.XmlString(sb.toString, false)))
-            case Some((ctx, chunkAcc, '&')) => Pull.pure((ctx, chunkAcc, XmlEvent.XmlString(sb.toString, false)))
-            case Some((ctx, chunkAcc, _)) =>
-              peekChar(T.advance(ctx), chunkAcc).flatMap {
-                case Some((ctx, chunkAcc, '\n')) =>
-                  sb.append('\n')
-                  slowPath(T.advance(ctx), sb, chunkAcc)
-                case Some((ctx, chunkAcc, _)) =>
-                  sb.append('\n')
-                  slowPath(ctx, sb, chunkAcc)
-                case None =>
-                  fail("14", "unexpected end of input", None)
-              }
-          }
+      untilChar(ctx, c => c == '<' || c == '&' || c == '\r', sb, chunkAcc).flatMap { case (ctx, chunkAcc) =>
+        peekChar(ctx, chunkAcc).flatMap {
+          case Some((ctx, chunkAcc, '<')) => Pull.pure((ctx, chunkAcc, XmlEvent.XmlString(sb.toString, false)))
+          case None                       => Pull.pure((ctx, chunkAcc, XmlEvent.XmlString(sb.toString, false)))
+          case Some((ctx, chunkAcc, '&')) => Pull.pure((ctx, chunkAcc, XmlEvent.XmlString(sb.toString, false)))
+          case Some((ctx, chunkAcc, _)) =>
+            peekChar(T.advance(ctx), chunkAcc).flatMap {
+              case Some((ctx, chunkAcc, '\n')) =>
+                sb.append('\n')
+                slowPath(T.advance(ctx), sb, chunkAcc)
+              case Some((ctx, chunkAcc, _)) =>
+                sb.append('\n')
+                slowPath(ctx, sb, chunkAcc)
+              case None =>
+                fail("14", "unexpected end of input", None)
+            }
+        }
 
       }
 
@@ -763,17 +736,16 @@ private[xml] object EventParser {
         case Some((ctx, chunkAcc, '<')) =>
           readMarkupToken(ctx, chunkAcc).flatMap {
             case (ctx, chunkAcc, MarkupToken.PIToken(name)) if name.equalsIgnoreCase("xml") =>
-              handleXmlDecl(ctx, chunkAcc).flatMap {
-                case (ctx, chunkAcc, (is11, decl)) => scanPrologToken1(ctx, is11, chunkAcc += decl)
+              handleXmlDecl(ctx, chunkAcc).flatMap { case (ctx, chunkAcc, (is11, decl)) =>
+                scanPrologToken1(ctx, is11, chunkAcc += decl)
               }
             case (ctx, chunkAcc, MarkupToken.PIToken(name)) =>
-              readPIBody(ctx, chunkAcc).flatMap {
-                case (ctx, chunkAcc, body) =>
-                  scanPrologToken1(ctx, false, chunkAcc += XmlEvent.XmlPI(name, body))
+              readPIBody(ctx, chunkAcc).flatMap { case (ctx, chunkAcc, body) =>
+                scanPrologToken1(ctx, false, chunkAcc += XmlEvent.XmlPI(name, body))
               }
             case (ctx, chunkAcc, MarkupToken.DeclToken(name)) =>
-              handleDecl(ctx, name, chunkAcc).flatMap {
-                case (ctx, chunkAcc) => scanPrologToken2(ctx, false, chunkAcc)
+              handleDecl(ctx, name, chunkAcc).flatMap { case (ctx, chunkAcc) =>
+                scanPrologToken2(ctx, false, chunkAcc)
               }
             case (ctx, chunkAcc, MarkupToken.StartToken(name)) =>
               readElement(ctx, false, name, chunkAcc).map(Some(_))
@@ -794,12 +766,12 @@ private[xml] object EventParser {
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, Option[(T.Context, VectorBuilder[XmlEvent])]] =
       scanMisc(ctx, chunkAcc).flatMap {
         case Some((ctx, chunkAcc, MarkupToken.PIToken(name))) if !name.equalsIgnoreCase("xml") =>
-          readPIBody(ctx, chunkAcc).flatMap {
-            case (ctx, chunkAcc, body) => scanPrologToken1(ctx, is11, chunkAcc += XmlEvent.XmlPI(name, body))
+          readPIBody(ctx, chunkAcc).flatMap { case (ctx, chunkAcc, body) =>
+            scanPrologToken1(ctx, is11, chunkAcc += XmlEvent.XmlPI(name, body))
           }
         case Some((ctx, chunkAcc, MarkupToken.DeclToken(name))) =>
-          handleDecl(ctx, name, chunkAcc).flatMap {
-            case (ctx, chunkAcc) => scanPrologToken2(ctx, is11, chunkAcc)
+          handleDecl(ctx, name, chunkAcc).flatMap { case (ctx, chunkAcc) =>
+            scanPrologToken2(ctx, is11, chunkAcc)
           }
         case Some((ctx, chunkAcc, MarkupToken.StartToken(name))) =>
           readElement(ctx, is11, name, chunkAcc).map(Some(_))
@@ -828,21 +800,22 @@ private[xml] object EventParser {
         sb = new StringBuilder("1.")
         (ctx, chunkAcc) <- untilChar(ctx, !_.isDigit, sb, chunkAcc)
         version = sb.result
-        res <- if (version.length == 2) {
-          fail("26", "expected non empty minor version", Some(chunkAcc))
-        } else {
-          for {
-            (ctx, chunkAcc) <- acceptChar(ctx,
-                                          delimiter,
-                                          "24",
-                                          "expected delimiter to close version attribute value",
-                                          chunkAcc)
-            (ctx, chunkAcc, (hasSpace, encoding)) <- readEncoding(ctx, false, chunkAcc)
-            (ctx, chunkAcc, standalone) <- readStandalone(ctx, hasSpace, chunkAcc)
-            (ctx, chunkAcc) <- space(ctx, chunkAcc)
-            (ctx, chunkAcc) <- acceptString(ctx, "?>", "23", "expected end of PI", chunkAcc)
-          } yield (ctx, chunkAcc, (version == "1.1", XmlEvent.XmlDecl(version, encoding, standalone)))
-        }
+        res <-
+          if (version.length == 2) {
+            fail("26", "expected non empty minor version", Some(chunkAcc))
+          } else {
+            for {
+              (ctx, chunkAcc) <- acceptChar(ctx,
+                                            delimiter,
+                                            "24",
+                                            "expected delimiter to close version attribute value",
+                                            chunkAcc)
+              (ctx, chunkAcc, (hasSpace, encoding)) <- readEncoding(ctx, false, chunkAcc)
+              (ctx, chunkAcc, standalone) <- readStandalone(ctx, hasSpace, chunkAcc)
+              (ctx, chunkAcc) <- space(ctx, chunkAcc)
+              (ctx, chunkAcc) <- acceptString(ctx, "?>", "23", "expected end of PI", chunkAcc)
+            } yield (ctx, chunkAcc, (version == "1.1", XmlEvent.XmlDecl(version, encoding, standalone)))
+          }
       } yield res
 
     def readEncoding(ctx: T.Context, hasSpace: Boolean, chunkAcc: VectorBuilder[XmlEvent])
@@ -910,14 +883,12 @@ private[xml] object EventParser {
                                                    chunkAcc)
               (ctx, chunkAcc, sa) <- nextChar(ctx, chunkAcc).flatMap {
                 case (ctx, chunkAcc, 'y') =>
-                  acceptString(ctx, "es", "32", "expected 'yes' or 'no'", chunkAcc).map {
-                    case (ctx, chunkAcc) =>
-                      (ctx, chunkAcc, true)
+                  acceptString(ctx, "es", "32", "expected 'yes' or 'no'", chunkAcc).map { case (ctx, chunkAcc) =>
+                    (ctx, chunkAcc, true)
                   }
                 case (ctx, chunkAcc, 'n') =>
-                  acceptChar(ctx, 'o', "32", "expected 'yes' or 'no'", chunkAcc).map {
-                    case (ctx, chunkAcc) =>
-                      (ctx, chunkAcc, false)
+                  acceptChar(ctx, 'o', "32", "expected 'yes' or 'no'", chunkAcc).map { case (ctx, chunkAcc) =>
+                    (ctx, chunkAcc, false)
                   }
                 case (_, chunkAcc, _) => fail("32", "expected 'yes' or 'no'", Some(chunkAcc))
               }
@@ -956,9 +927,8 @@ private[xml] object EventParser {
                 // done
                 Pull.pure(ctx, chunkAcc += XmlEvent.XmlDoctype(name, docname, systemid))
               case (ctx, chunkAcc, '[') =>
-                skipInternalDTD(ctx, chunkAcc).map {
-                  case (ctx, chunkAcc) =>
-                    (ctx, chunkAcc += XmlEvent.XmlDoctype(name, docname, systemid))
+                skipInternalDTD(ctx, chunkAcc).map { case (ctx, chunkAcc) =>
+                  (ctx, chunkAcc += XmlEvent.XmlDoctype(name, docname, systemid))
                 }
               case (_, chunkAcc, c) =>
                 fail("28", s"end of doctype or internal DTD expected but got $c", Some(chunkAcc))
@@ -974,8 +944,8 @@ private[xml] object EventParser {
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, Option[(T.Context, VectorBuilder[XmlEvent])]] =
       scanMisc(ctx, chunkAcc).flatMap {
         case Some((ctx, chunkAcc, MarkupToken.PIToken(name))) =>
-          readPIBody(ctx, chunkAcc).flatMap {
-            case (ctx, chunkAcc, body) => scanPrologToken2(ctx, is11, chunkAcc += XmlEvent.XmlPI(name, body))
+          readPIBody(ctx, chunkAcc).flatMap { case (ctx, chunkAcc, body) =>
+            scanPrologToken2(ctx, is11, chunkAcc += XmlEvent.XmlPI(name, body))
           }
         case Some((ctx, chunkAcc, MarkupToken.StartToken(name))) =>
           readElement(ctx, is11, name, chunkAcc).map(Some(_))
@@ -991,10 +961,11 @@ private[xml] object EventParser {
                     chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
       for {
         (ctx, chunkAcc, startTag) <- completeStartTag(ctx, is11, name, chunkAcc)
-        res <- if (startTag.isEmpty)
-          Pull.pure((ctx, chunkAcc += startTag += XmlEvent.EndTag(name)))
-        else
-          readContent(ctx, is11, name, chunkAcc += startTag)
+        res <-
+          if (startTag.isEmpty)
+            Pull.pure((ctx, chunkAcc += startTag += XmlEvent.EndTag(name)))
+          else
+            readContent(ctx, is11, name, chunkAcc += startTag)
       } yield res
 
     def readContent(ctx: T.Context,
@@ -1011,8 +982,8 @@ private[xml] object EventParser {
             fail("GIMatch", s"unexpected closing tag '</${n.render}>' (expected '</${name.render}>')", Some(chunkAcc))
           case XmlEvent.StartTag(name1, _, false) =>
             // parse child element, and continue
-            readContent(ctx, is11, name1, chunkAcc += last).flatMap {
-              case (ctx, chunkAcc) => readContent(ctx, is11, name, chunkAcc)
+            readContent(ctx, is11, name1, chunkAcc += last).flatMap { case (ctx, chunkAcc) =>
+              readContent(ctx, is11, name, chunkAcc)
             }
           case XmlEvent.StartTag(name1, _, true) =>
             // parse child element, and continue

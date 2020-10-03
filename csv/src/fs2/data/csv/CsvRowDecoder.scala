@@ -27,7 +27,6 @@ import scala.annotation.{implicitNotFound, tailrec}
   *
   * Actually, `CsvRowDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
   * instance. To get the full power of it, import `cats.implicits._`.
-  *
   */
 @implicitNotFound(
   "No implicit CsvRowDecoder found for type ${T}.\nYou can define one using CsvRowDecoder.instance, by calling map on another CsvRowDecoder or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val csvRowDecoder: CsvRowDecoder[${T}] = deriveCsvRowDecoder\nMake sure to have instances of CellDecoder for every member type in scope.\n")
@@ -139,6 +138,6 @@ object CsvRowDecoder extends ExportedCsvRowDecoders {
 }
 
 trait ExportedCsvRowDecoders {
-  implicit def exportedCsvRowDecoders[A](
-      implicit exported: Exported[CsvRowDecoder[A, String]]): CsvRowDecoder[A, String] = exported.instance
+  implicit def exportedCsvRowDecoders[A](implicit
+      exported: Exported[CsvRowDecoder[A, String]]): CsvRowDecoder[A, String] = exported.instance
 }

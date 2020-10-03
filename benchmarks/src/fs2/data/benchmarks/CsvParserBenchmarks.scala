@@ -20,7 +20,7 @@ class CsvParserBenchmarks {
 
   @Setup
   def readCsv(): Unit = csvContent = {
-    File("../../../../../benchmarks/resources/benchmark.csv").contentAsString.grouped(4096).toList
+    File("resources/benchmark.csv").contentAsString.grouped(4096).toList
   }
 
   def csvStream: Stream[SyncIO, String] = Stream.emits(csvContent).covary[SyncIO]

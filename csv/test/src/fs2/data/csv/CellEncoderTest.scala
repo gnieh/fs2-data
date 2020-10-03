@@ -37,10 +37,10 @@ class CellEncoderTest extends AnyFlatSpec with Matchers with EitherValues {
     CellEncoder[String].apply("foobar") shouldBe "foobar"
     CellEncoder[FiniteDuration].apply(2.seconds) shouldBe "2 seconds"
 
-    CellEncoder[java.net.URL].apply(new java.net.URL(
-      "http://localhost:8080/path?a=b")) shouldBe "http://localhost:8080/path?a=b"
-    CellEncoder[java.util.UUID].apply(UUID.fromString(
-      "6f55090e-a807-49c2-a142-2a0db1f079df")) shouldBe "6f55090e-a807-49c2-a142-2a0db1f079df"
+    CellEncoder[java.net.URL]
+      .apply(new java.net.URL("http://localhost:8080/path?a=b")) shouldBe "http://localhost:8080/path?a=b"
+    CellEncoder[java.util.UUID]
+      .apply(UUID.fromString("6f55090e-a807-49c2-a142-2a0db1f079df")) shouldBe "6f55090e-a807-49c2-a142-2a0db1f079df"
     CellEncoder[java.time.LocalTime]
       .apply(java.time.LocalTime.of(13, 4, 29)) shouldBe "13:04:29"
   }
