@@ -5,6 +5,8 @@ text_extensions: [ 'adoc', 'asciidoc', 'atom', 'coffee', 'css', 'erb', 'haml', '
 
 base_url: https://fs2-data.gnieh.org
 
+output_dir: "../target/nanoc"
+
 prune:
   auto_prune: true
   exclude: [ '.git' ]

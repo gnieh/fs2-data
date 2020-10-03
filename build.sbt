@@ -37,7 +37,8 @@ val commonSettings = List(
   Compile / scalaSource := baseDirectory.value / "src",
   Compile / resourceDirectory := baseDirectory.value / "resources",
   Test / scalaSource := baseDirectory.value / "test" / "src",
-  Test / resourceDirectory := baseDirectory.value / "test" / "resources"
+  Test / resourceDirectory := baseDirectory.value / "test" / "resources",
+  scmInfo := Some(ScmInfo(url("https://github.com/satabin/fs2-data"), "scm:git:git@github.com:satabin/fs2-data.git"))
 )
 
 val publishSettings = List(
@@ -53,20 +54,13 @@ val publishSettings = List(
   pomIncludeRepository := { x =>
     false
   },
+  developers := List(
+    Developer(id = "satabin",
+              name = "Lucas Satabin",
+              email = "lucas.satabin@gnieh.org",
+              url = url("https://github.com/satabin"))
+  ),
   pomExtra := (
-    <scm>
-      <url>https://github.com/satabin/fs2-data</url>
-      <connection>scm:git:git://github.com/satabin/fs2-data.git</connection>
-      <developerConnection>scm:git:git@github.com:satabin/fs2-data.git</developerConnection>
-      <tag>HEAD</tag>
-    </scm>
-    <developers>
-      <developer>
-        <id>satabin</id>
-        <name>Lucas Satabin</name>
-        <email>lucas.satabin@gnieh.org</email>
-      </developer>
-    </developers>
     <ciManagement>
       <system>travis</system>
       <url>https://travis-ci.org/#!/satabin/fs2-data</url>
@@ -80,11 +74,17 @@ val publishSettings = List(
 
 val root = (project in file("."))
   .settings(commonSettings)
-  .enablePlugins(ScalaUnidocPlugin)
+  .enablePlugins(ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin, GhpagesPlugin)
   .settings(
     name := "fs2-data",
     publishArtifact := false,
-    skip in publish := true
+    skip in publish := true,
+    unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(benchmarks),
+    siteSubdirName in ScalaUnidoc := "api",
+    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
+    Nanoc / sourceDirectory := file("site"),
+    git.remoteRepo := scmInfo.value.get.connection.replace("scm:git:", ""),
+    ghpagesNoJekyll := true
   )
   .aggregate(csv, csvGeneric, json, jsonCirce, jsonDiffson, jsonInterpolators, xml)
 
