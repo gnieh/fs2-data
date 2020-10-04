@@ -35,7 +35,11 @@ trait CellEncoder[T] {
   def contramap[B](f: B => T): CellEncoder[B] = (cell: B) => apply(f(cell))
 }
 
-object CellEncoder extends CellEncoderInstances1 with LiteralCellEncoders with ExportedCellEncoders {
+object CellEncoder
+    extends CellEncoderInstances1
+    with LiteralCellEncoders
+    with ExportedCellEncoders
+    with PlatformCellEncoders {
 
   implicit object CellEncoderInstances extends Contravariant[CellEncoder] {
     override def contramap[A, B](fa: CellEncoder[A])(f: B => A): CellEncoder[B] = fa.contramap(f)
@@ -70,7 +74,7 @@ object CellEncoder extends CellEncoderInstances1 with LiteralCellEncoders with E
   // Standard Library types
   implicit val finiteDurationEncoder: CellEncoder[FiniteDuration] =
     durationEncoder.narrow
-  implicit val javaUrlEncoder: CellEncoder[URI] = fromToString(_)
+  implicit val javaUriEncoder: CellEncoder[URI] = fromToString(_)
   implicit val uuidEncoder: CellEncoder[UUID] = fromToString(_)
 
   // Java Time

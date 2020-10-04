@@ -40,6 +40,7 @@ class AutoDerivationTest extends AnyFlatSpec with Matchers {
   }
 
   it should "prefer custom decoders over derived ones" in {
+    import auto._
     implicit val customDe: CsvRowDecoder[Test, String] = _ => Right(Test(0, "", 0))
     implicit val customEn: CsvRowEncoder[Test, String] = _ => csvRow
     CsvRowDecoder[Test, String].apply(csvRow) shouldBe Right(Test(0, "", 0))
@@ -59,6 +60,7 @@ class AutoDerivationTest extends AnyFlatSpec with Matchers {
   }
 
   it should "prefer custom decoders over derived ones" in {
+    import auto._
     implicit val customDe: RowDecoder[Test] = _ => Right(Test(0, "", 0))
     implicit val customEn: RowEncoder[Test] = _ => plainRow.values
     RowDecoder[Test].apply(plainRow.values) shouldBe Right(Test(0, "", 0))

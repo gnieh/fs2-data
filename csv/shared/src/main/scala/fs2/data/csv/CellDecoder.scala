@@ -101,7 +101,11 @@ trait CellDecoder[T] {
       }
 }
 
-object CellDecoder extends CellDecoderInstances1 with LiteralCellDecoders with ExportedCellDecoders {
+object CellDecoder
+    extends CellDecoderInstances1
+    with LiteralCellDecoders
+    with ExportedCellDecoders
+    with PlatformCellDecoders {
 
   implicit object CellDecoderInstances extends MonadError[CellDecoder, DecoderError] with SemigroupK[CellDecoder] {
 
@@ -191,7 +195,7 @@ object CellDecoder extends CellDecoderInstances1 with LiteralCellDecoders with E
       case d                  => new DecoderError(s"parsed duration isn't finite: $d").asLeft
     }
 
-  implicit val javaUrlDecoder: CellDecoder[URI] = s =>
+  implicit override val javaUriDecoder: CellDecoder[URI] = s =>
     Either
       .catchOnly[MalformedURLException](new URI(s))
       .leftMap(t => new DecoderError(s"couldn't parse URI", t))
