@@ -13,22 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.json
+package fs2
+package data
+package json
 
-import fs2.io._
-import ast.Builder
+import ast._
+import io._
 
 import cats.effect._
 
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
-
-import scala.concurrent._
-
-import better.files.{Resource => _, _}
-
-import java.util.concurrent._
+import weaver._
+import java.nio.file.Paths
 
 sealed trait Expectation
 object Expectation {
@@ -36,59 +31,53 @@ object Expectation {
   case object Invalid extends Expectation
   case object ImplementationDefined extends Expectation
 }
-abstract class JsonParserTest[Json](implicit builder: Builder[Json])
-    extends AnyFlatSpec
-    with Matchers
-    with BeforeAndAfterAll {
 
-  private var executor: ExecutorService = _
-  private var blocker: Blocker = _
+abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends IOSuite {
 
-  implicit val cs = IO.contextShift(ExecutionContext.global)
+  override type Res = Blocker
+  def sharedResource: Resource[IO, Blocker] = Blocker[IO]
 
-  override def beforeAll(): Unit = {
-    executor = Executors.newFixedThreadPool(2)
-    blocker = Blocker.liftExecutorService(executor)
-  }
+  private val testFileDir = Paths.get("json/jvm/src/test/resources/test-parsing/")
 
-  override def afterAll(): Unit = {
-    executor.shutdown()
-  }
+  test("Standard test suite files should be parsed correctly") { blocker =>
+    file
+      .directoryStream[IO](blocker, testFileDir)
+      .evalMap { path =>
+        val expectation =
+          if (path.toFile.getName.startsWith("y_"))
+            Expectation.Valid
+          else if (path.toFile.getName.startsWith("n_"))
+            Expectation.Invalid
+          else
+            Expectation.ImplementationDefined
 
-  private val testFileDir: File = File("json/test/resources/test-parsing/")
-  for (path <- testFileDir.list) {
-    s"File ${testFileDir.relativize(path).toString}" should "be parsed correctly" in {
-      val expectation =
-        if (path.name.startsWith("y_"))
-          Expectation.Valid
-        else if (path.name.startsWith("n_"))
-          Expectation.Invalid
-        else
-          Expectation.ImplementationDefined
+        val contentStream =
+          file
+            .readAll[IO](path, blocker, 1024)
+            .through(fs2.text.utf8Decode)
 
-      val actual =
-        file
-          .readAll[IO](path.path, blocker, 1024)
-          .through(fs2.text.utf8Decode)
+        contentStream
           .through(tokens)
           .through(values)
           .compile
           .toList
-          .map(l => if (l.size == 1) l.head else throw new Exception("a single value is expected"))
+          .flatMap(l =>
+            if (l.size == 1) IO.pure(l.head) else IO.raiseError(new Exception("a single value is expected")))
           .attempt
-          .unsafeRunSync()
-
-      expectation match {
-        case Expectation.Valid | Expectation.ImplementationDefined =>
-          val expected =
-            parse(path.contentAsString)
-          actual.isRight shouldBe expected.isRight
-          if (actual.isRight)
-            actual shouldBe expected
-        case Expectation.Invalid =>
-          actual.isLeft shouldBe true
+          .flatMap(actual =>
+            expectation match {
+              case Expectation.Valid | Expectation.ImplementationDefined =>
+                contentStream.compile.string.map { rawExpected =>
+                  val expected = parse(rawExpected)
+                  expect(actual.isRight == expected.isRight) and (if (actual.isRight) expect(actual == expected)
+                                                                  else success)
+                }
+              case Expectation.Invalid =>
+                expect(actual.isLeft == true)
+            })
       }
-    }
+      .compile
+      .foldMonoid
   }
 
   def parse(content: String): Either[Throwable, Json]

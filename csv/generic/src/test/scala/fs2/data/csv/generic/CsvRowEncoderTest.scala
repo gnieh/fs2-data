@@ -19,10 +19,10 @@ package generic
 import semiauto._
 
 import cats.data.NonEmptyList
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
-class CsvRowEncoderTest extends AnyFlatSpec with Matchers {
+import weaver._
+
+object CsvRowEncoderTest extends SimpleIOSuite {
 
   val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
   val csvRowK = new CsvRow(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "k"))
@@ -38,20 +38,20 @@ class CsvRowEncoderTest extends AnyFlatSpec with Matchers {
   val testRenameEncoder = deriveCsvRowEncoder[TestRename]
   val testOptionRenameEncoder = deriveCsvRowEncoder[TestOptionRename]
 
-  "case classes" should "be encoded properly" in {
-    testEncoder(Test(1, "test", Some(42))) shouldBe csvRow
+  pureTest("case classes should be encoded properly") {
+    expect(testEncoder(Test(1, "test", Some(42))) == csvRow)
   }
 
-  it should "be handled properly with optional value and empty cell" in {
-    testEncoder(Test(1, "test", None)) shouldBe csvRowEmptyJ
+  pureTest("case classes should be handled properly with optional value and empty cell") {
+    expect(testEncoder(Test(1, "test", None)) == csvRowEmptyJ)
   }
 
-  it should "be encoded according to their field renames" in {
-    testRenameEncoder(TestRename(1, "test", 42)) shouldBe csvRow
+  pureTest("case classes should be encoded according to their field renames") {
+    expect(testRenameEncoder(TestRename(1, "test", 42)) == csvRow)
   }
 
-  it should "be encoded according to their field renames if value is optional" in {
-    testOptionRenameEncoder(TestOptionRename(1, "test", Some(42))) shouldBe csvRow
+  pureTest("case classes should be encoded according to their field renames if value is optional") {
+    expect(testOptionRenameEncoder(TestOptionRename(1, "test", Some(42))) == csvRow)
   }
 
 }

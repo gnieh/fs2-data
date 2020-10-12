@@ -1,63 +1,60 @@
 package fs2.data.csv
 
-import org.scalatest.EitherValues
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import weaver._
 
 import scala.concurrent.duration._
 
-class CellDecoderTest extends AnyFlatSpec with Matchers with EitherValues {
+object CellDecoderTest extends SimpleIOSuite {
 
-  "CellDecoder" should "have implicit instances available for standard types" in {
-    CellDecoder[String]
-    CellDecoder[Array[Char]]
-    CellDecoder[Boolean]
-    CellDecoder[Unit]
-    CellDecoder[Int]
-    CellDecoder[BigDecimal]
-    CellDecoder[FiniteDuration]
-    CellDecoder[Duration]
+  // CellDecoder should have implicit instances available for standard types
+  CellDecoder[String]
+  CellDecoder[Array[Char]]
+  CellDecoder[Boolean]
+  CellDecoder[Unit]
+  CellDecoder[Int]
+  CellDecoder[BigDecimal]
+  CellDecoder[FiniteDuration]
+  CellDecoder[Duration]
 
-    CellDecoder[java.net.URI]
-    CellDecoder[java.util.UUID]
-    CellDecoder[java.time.Instant]
-    CellDecoder[java.time.LocalTime]
-    CellDecoder[java.time.ZonedDateTime]
+  CellDecoder[java.net.URI]
+  CellDecoder[java.util.UUID]
+  CellDecoder[java.time.Instant]
+  CellDecoder[java.time.LocalTime]
+  CellDecoder[java.time.ZonedDateTime]
 
-    CellDecoder[DecoderResult[Char]]
-    CellDecoder[Either[String, Char]]
+  CellDecoder[DecoderResult[Char]]
+  CellDecoder[Either[String, Char]]
+
+  test("CellDecoder should decode standard types correctly") {
+    expect(CellDecoder[Unit].apply("") == Right(())) and
+      expect(CellDecoder[Int].apply("78") == Right(78)) and
+      expect(CellDecoder[Boolean].apply("true") == Right(true)) and
+      expect(CellDecoder[Char].apply("C") == Right('C')) and
+      expect(CellDecoder[Double].apply("1.2") == Right(1.2)) and
+      expect(CellDecoder[BigDecimal].apply("1.2e456") == Right(BigDecimal("12e455"))) and
+      expect(CellDecoder[String].apply("foobar") == Right("foobar")) and
+      expect(CellDecoder[FiniteDuration].apply("2 seconds") == Right(2.seconds)) and
+      expect(CellDecoder[java.net.URI].apply("http://localhost:8080/path?a=b").isRight == true) and
+      expect(
+        CellDecoder[java.util.UUID].apply("6f55090e-a807-49c2-a142-2a0db1f079df").map(_.toString) == Right(
+          "6f55090e-a807-49c2-a142-2a0db1f079df")) and
+      expect(CellDecoder[java.time.LocalTime].apply("13:04:29") == Right(java.time.LocalTime.of(13, 4, 29)))
   }
 
-  it should "decode standard types correctly" in {
-    CellDecoder[Unit].apply("") shouldBe Right(())
-    CellDecoder[Int].apply("78") shouldBe Right(78)
-    CellDecoder[Boolean].apply("true") shouldBe Right(true)
-    CellDecoder[Char].apply("C") shouldBe Right('C')
-    CellDecoder[Double].apply("1.2") shouldBe Right(1.2)
-    CellDecoder[BigDecimal].apply("1.2e456") shouldBe Right(BigDecimal("12e455"))
-    CellDecoder[String].apply("foobar") shouldBe Right("foobar")
-    CellDecoder[FiniteDuration].apply("2 seconds") shouldBe Right(2.seconds)
-
-    CellDecoder[java.net.URI].apply("http://localhost:8080/path?a=b").isRight shouldBe true
-    CellDecoder[java.util.UUID].apply("6f55090e-a807-49c2-a142-2a0db1f079df").map(_.toString) shouldBe Right(
-      "6f55090e-a807-49c2-a142-2a0db1f079df")
-    CellDecoder[java.time.LocalTime].apply("13:04:29") shouldBe Right(java.time.LocalTime.of(13, 4, 29))
+  test("CellDecoder should handle container types properly") {
+    expect(CellDecoder[DecoderResult[Char]].apply("G") == Right(Right('G'))) and
+      expect(CellDecoder[DecoderResult[Char]].apply("").map(_.isLeft) == Right(true)) and
+      expect(CellDecoder[Either[String, Char]].apply("F") == Right(Right('F'))) and
+      expect(CellDecoder[Either[String, Char]].apply("hello") == Right(Left("hello")))
   }
 
-  it should "handle container types properly" in {
-    CellDecoder[DecoderResult[Char]].apply("G") shouldBe Right(Right('G'))
-    CellDecoder[DecoderResult[Char]].apply("").map(_.isLeft) shouldBe Right(true)
-    CellDecoder[Either[String, Char]].apply("F") shouldBe Right(Right('F'))
-    CellDecoder[Either[String, Char]].apply("hello") shouldBe Right(Left("hello"))
-  }
-
-  it should "fail on invalid inputs" in {
-    CellDecoder[Unit].apply("some random non empty string").isLeft shouldBe true
-    CellDecoder[Int].apply("asdf").isLeft shouldBe true
-    CellDecoder[Boolean].apply("maybe").isLeft shouldBe true
-    CellDecoder[Char].apply("Chars").isLeft shouldBe true
-    CellDecoder[Double].apply("-").isLeft shouldBe true
-    CellDecoder[FiniteDuration].apply("2 meters").isLeft shouldBe true
+  test("CellDecoder should fail on invalid inputs") {
+    expect(CellDecoder[Unit].apply("some random non empty string").isLeft == true) and
+      expect(CellDecoder[Int].apply("asdf").isLeft == true) and
+      expect(CellDecoder[Boolean].apply("maybe").isLeft == true) and
+      expect(CellDecoder[Char].apply("Chars").isLeft == true) and
+      expect(CellDecoder[Double].apply("-").isLeft == true) and
+      expect(CellDecoder[FiniteDuration].apply("2 meters").isLeft == true)
   }
 
 }

@@ -1,46 +1,53 @@
-package fs2.data
+package fs2
+package data
 package json
 
 import ast._
 import selector._
 
-import fs2._
-
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.Inside
-import cats.effect.SyncIO
+import weaver._
+import cats.effect.IO
 
 abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer: Tokenizer[Json])
-    extends AnyFlatSpec
-    with Matchers
-    with Inside {
+    extends SimpleIOSuite {
 
-  "mandatory fields" should "fail in the missing single case" in {
+  pureTest("mandatory fields should fail in the missing single case") {
     val selector = root.field("field").!.compile
     val filtered = Stream(Token.StartObject, Token.Key("other-field"), Token.TrueValue, Token.EndObject)
       .through(filter[Fallible](selector))
       .compile
       .drain
 
-    inside(filtered) { case Left(e: JsonMissingFieldException) =>
-      e.missing shouldBe Set("field")
-    }
+    expect(
+      filtered.left
+        .map {
+          case e: JsonMissingFieldException => e.missing == Set("field")
+          case _                            => false
+        }
+        .fold(identity, _ => false),
+      "Should be Left(JsonMissingFieldException)"
+    )
   }
 
-  it should "fail in case at least one is missing" in {
+  pureTest("mandatory fields should fail in case at least one is missing") {
     val selector = root.fields("field1", "field2", "field3").!.compile
     val filtered = Stream(Token.StartObject, Token.Key("field2"), Token.TrueValue, Token.EndObject)
       .through(filter[Fallible](selector))
       .compile
       .drain
 
-    inside(filtered) { case Left(e: JsonMissingFieldException) =>
-      e.missing shouldBe Set("field1", "field3")
-    }
+    expect(
+      filtered.left
+        .map {
+          case e: JsonMissingFieldException => e.missing == Set("field1", "field3")
+          case _                            => false
+        }
+        .fold(identity, _ => false),
+      "Should be Left(JsonMissingFieldException)"
+    )
   }
 
-  it should "fail in missing nested cases" in {
+  pureTest("mandatory fields should fail in missing nested cases") {
     val selector = root.iterate.field("field").!.compile
     val filtered = Stream(Token.StartArray,
                           Token.StartObject,
@@ -52,12 +59,18 @@ abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer
       .compile
       .drain
 
-    inside(filtered) { case Left(e: JsonMissingFieldException) =>
-      e.missing shouldBe Set("field")
-    }
+    expect(
+      filtered.left
+        .map {
+          case e: JsonMissingFieldException => e.missing == Set("field")
+          case _                            => false
+        }
+        .fold(identity, _ => false),
+      "Should be Left(JsonMissingFieldException)"
+    )
   }
 
-  it should "fail on outermost error in case of nested missing keys" in {
+  pureTest("mandatory fields should fail on outermost error in case of nested missing keys") {
     val selector = root.field("field1").!.field("field2").!.compile
     val filtered =
       Stream(Token.StartObject, Token.Key("other-field"), Token.StartObject, Token.EndObject, Token.EndObject)
@@ -65,12 +78,18 @@ abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer
         .compile
         .drain
 
-    inside(filtered) { case Left(e: JsonMissingFieldException) =>
-      e.missing shouldBe Set("field1")
-    }
+    expect(
+      filtered.left
+        .map {
+          case e: JsonMissingFieldException => e.missing == Set("field1")
+          case _                            => false
+        }
+        .fold(identity, _ => false),
+      "Should be Left(JsonMissingFieldException)"
+    )
   }
 
-  it should "success if all mandatory fields are present" in {
+  pureTest("mandatory fields should succeed if all mandatory fields are present") {
     val selector = root.fields("field1", "field2", "field3").!.compile
     val filtered = Stream(
       Token.StartObject,
@@ -85,10 +104,10 @@ abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer
       Token.EndObject
     ).through(filter[Fallible](selector)).compile.drain
 
-    filtered shouldBe Right(())
+    expect(filtered == Right(()))
   }
 
-  "transformOpt" should "only transform the select element" in {
+  pureTest("transformOpt should only transform the select element") {
     val selector = root.field("f").compile
     val transformed =
       Stream(Token.StartObject,
@@ -100,16 +119,17 @@ abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer
         .through(transformOpt[Fallible, Json](selector, _ => Some(builder.makeFalse)))
         .compile
         .toList
-    transformed shouldBe Right(
-      List(Token.StartObject,
-           Token.Key("f"),
-           Token.FalseValue,
-           Token.Key("g"),
-           Token.StringValue("test"),
-           Token.EndObject))
+    expect(
+      transformed == Right(
+        List(Token.StartObject,
+             Token.Key("f"),
+             Token.FalseValue,
+             Token.Key("g"),
+             Token.StringValue("test"),
+             Token.EndObject)))
   }
 
-  it should "filter out the value if it returns None" in {
+  pureTest("transformOpt should filter out the value if it returns None") {
     val selector = root.field("f").compile
     val transformed =
       Stream(Token.StartObject,
@@ -121,10 +141,10 @@ abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer
         .through(transformOpt[Fallible, Json](selector, _ => None))
         .compile
         .toList
-    transformed shouldBe Right(List(Token.StartObject, Token.Key("g"), Token.StringValue("test"), Token.EndObject))
+    expect(transformed == Right(List(Token.StartObject, Token.Key("g"), Token.StringValue("test"), Token.EndObject)))
   }
 
-  it should "filter out the innermost value if it returns None" in {
+  pureTest("transformOpt should filter out the innermost value if it returns None") {
     val selector = root.field("f").field("g").compile
     val transformed =
       Stream(
@@ -138,32 +158,32 @@ abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer
         Token.StringValue("test"),
         Token.EndObject
       ).through(transformOpt[Fallible, Json](selector, _ => None)).compile.toList
-    transformed shouldBe Right(
-      List(Token.StartObject,
-           Token.Key("f"),
-           Token.StartObject,
-           Token.EndObject,
-           Token.Key("g"),
-           Token.StringValue("test"),
-           Token.EndObject))
-  }
-
-  "transformF" should "fail the stream if one value fails" in {
-    val selector = root.field("f").compile
-    val exn = new Exception
-    val transformed =
-      Stream(Token.StartObject,
+    expect(
+      transformed == Right(
+        List(Token.StartObject,
              Token.Key("f"),
-             Token.TrueValue,
+             Token.StartObject,
+             Token.EndObject,
              Token.Key("g"),
              Token.StringValue("test"),
-             Token.EndObject)
-        .through(transformF[SyncIO, Json](selector, _ => SyncIO.raiseError(exn)))
-        .attempt
-        .compile
-        .toList
-        .unsafeRunSync()
-    transformed shouldBe List(Right(Token.StartObject), Right(Token.Key("f")), Left(exn))
+             Token.EndObject)))
+  }
+
+  test("transformF should fail the stream if one value fails") {
+    val selector = root.field("f").compile
+    val exn = new Exception
+    Stream(Token.StartObject,
+           Token.Key("f"),
+           Token.TrueValue,
+           Token.Key("g"),
+           Token.StringValue("test"),
+           Token.EndObject)
+      .through(transformF[IO, Json](selector, _ => IO.raiseError(exn)))
+      .attempt
+      .compile
+      .toList
+      .map(transformed =>
+        expect(transformed == List(Right(Token.StartObject), Right(Token.Key("f")), Left(exn))).toExpectations)
   }
 
 }

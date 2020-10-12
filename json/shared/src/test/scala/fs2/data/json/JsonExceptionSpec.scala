@@ -13,53 +13,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.json
+package fs2
+package data
+package json
 
-import fs2._
-import ast.Builder
+import ast._
 
 import cats.implicits._
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import weaver._
 
-abstract class JsonExceptionSpec[Json](implicit builder: Builder[Json]) extends AnyFlatSpec with Matchers {
+abstract class JsonExceptionSpec[Json](implicit builder: Builder[Json]) extends SimpleIOSuite {
 
-  "previous valid tokens" should "be emitted before Exception" in {
-
+  pureTest("previous valid tokens should be emitted before Exception") {
     val input = """{"key": }"""
 
     val stream = Stream.emit(input).through(tokens[Fallible, String]).attempt
 
-    stream.compile.toList should matchPattern {
-      case Right(List(Right(Token.StartObject), Right(Token.Key("key")), Left(_: JsonException))) =>
-    }
-
+    expect(stream.compile.toList match {
+      case Right(List(Right(Token.StartObject), Right(Token.Key("key")), Left(_: JsonException))) => true
+      case _                                                                                      => false
+    })
   }
 
-  "previous selected tokens" should "be emitted before Exception" in {
+  pureTest("previous selected tokens should be emitted before Exception") {
 
     val input = """{"key1": 1}[]"""
 
     val selector = ".key1".parseSelector[Either[Throwable, *]].fold(throw _, identity)
     val stream = Stream.emit(input).through(tokens[Fallible, String]).through(filter(selector)).attempt
 
-    stream.compile.toList should matchPattern {
-      case Right(List(Right(Token.NumberValue("1")), Left(_: JsonException))) =>
-    }
+    expect(stream.compile.toList match {
+      case Right(List(Right(Token.NumberValue("1")), Left(_: JsonException))) => true
+      case _                                                                  => false
+    })
 
   }
 
-  "previous valid values" should "be emitted before Exception" in {
+  pureTest("previous valid values should be emitted before Exception") {
 
     val input = """{"key": "value"}[1,"""
 
     val stream = Stream.emit(input).through(tokens[Fallible, String]).through(values).attempt
 
-    stream.compile.toList should matchPattern {
+    expect(stream.compile.toList match {
       case Right(List(Right(o), Left(_: JsonException)))
           if o == builder.makeObject(List("key" -> builder.makeString("value"))) =>
-    }
+        true
+      case _ => false
+    })
 
   }
 

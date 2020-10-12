@@ -19,12 +19,11 @@ import internals._
 
 import fs2._
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import weaver._
 
-class RenderSpec extends AnyFlatSpec with Matchers {
+object RenderSpec extends SimpleIOSuite {
 
-  "parsing and rendering" should "work well together in compact form" in {
+  pureTest("parsing and rendering should work well together in compact form") {
 
     val input = Stream.emits("""true {"field1": "test", "field2": [23, [true, null]]}""")
 
@@ -32,11 +31,11 @@ class RenderSpec extends AnyFlatSpec with Matchers {
 
     val roundtrip = toks.through(render.compact).flatMap(Stream.emits(_)).through(tokens)
 
-    toks.compile.toList shouldBe roundtrip.compile.toList
+    expect(toks.compile.toList == roundtrip.compile.toList)
 
   }
 
-  "parsing and rendering" should "work well together in pretty form" in {
+  pureTest("parsing and rendering should work well together in pretty form") {
 
     val input = Stream.emits("""true {"field1": "test", "field2": [23, [true, null]]}""")
 
@@ -44,18 +43,18 @@ class RenderSpec extends AnyFlatSpec with Matchers {
 
     val roundtrip = toks.through(render.pretty()).flatMap(Stream.emits(_)).through(tokens)
 
-    toks.compile.toList shouldBe roundtrip.compile.toList
+    expect(toks.compile.toList == roundtrip.compile.toList)
 
   }
 
-  "a Renderer" should "properly escape what needs to be escaped" in {
+  pureTest("a Renderer should properly escape what needs to be escaped") {
     val renderer = new Renderer(true, true, "")
 
     renderer += Chunk.singleton(Token.StringValue("some\ncharacters must\\be\"escaped\" like ß"))
 
     val res = renderer.result
 
-    res shouldBe "\"some\\ncharacters must\\\\be\\\"escaped\\\" like \\u00df\""
+    expect(res == "\"some\\ncharacters must\\\\be\\\"escaped\\\" like \\u00df\"")
 
   }
 

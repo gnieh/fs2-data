@@ -18,4 +18,4 @@ package circe
 
 import io.circe.Json
 
-class CirceJsonExceptionSpec extends JsonExceptionSpec[Json]
+object CirceJsonExceptionSpec extends JsonExceptionSpec[Json]

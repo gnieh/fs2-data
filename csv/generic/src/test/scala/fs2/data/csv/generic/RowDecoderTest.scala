@@ -20,13 +20,13 @@ package generic
 import semiauto._
 import hlist._
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 import shapeless._
 import cats.implicits._
 import cats.data.NonEmptyList
 
-class RowDecoderTest extends AnyFlatSpec with Matchers {
+import weaver._
+
+object RowDecoderTest extends SimpleIOSuite {
 
   val csvRow = NonEmptyList.of("1", "test", "42")
   val csvRowEmptyI = NonEmptyList.of("", "test", "42")
@@ -42,40 +42,28 @@ class RowDecoderTest extends AnyFlatSpec with Matchers {
   val testOptIDecoder = deriveRowDecoder[TestOptI]
   val testOptJDecoder = deriveRowDecoder[TestOptJ]
 
-  "case class" should "be handled with positional fields" in {
-    val res = testDecoder(csvRow)
-    res shouldBe Right(Test(1, "test", 42))
-
-    val fail: DecoderResult[TestOrder] = testOrderDecoder(csvRow)
-    fail.leftMap(_.getMessage) shouldBe Left("unable to decode 'test' as an integer")
+  pureTest("case class should be handled with positional fields") {
+    expect(testDecoder(csvRow) == Right(Test(1, "test", 42))) and
+      expect(testOrderDecoder(csvRow).isLeft)
   }
 
-  it should "be handled properly with optional fields" in {
-    val resi = testOptIDecoder(csvRow)
-    resi shouldBe Right(TestOptI(Some(1), "test", 42))
-
-    val resinone = testOptIDecoder(csvRowEmptyI)
-    resinone shouldBe Right(TestOptI(None, "test", 42))
-
-    val resj = testOptJDecoder(csvRow)
-    resj shouldBe Right(TestOptJ(1, "test", Some(42)))
-
-    val resjnone = testOptJDecoder(csvRowEmptyJ)
-    resjnone shouldBe Right(TestOptJ(1, "test", None))
+  pureTest("case class should be handled properly with optional fields") {
+    expect(testOptIDecoder(csvRow) == Right(TestOptI(Some(1), "test", 42))) and
+      expect(testOptIDecoder(csvRowEmptyI) == Right(TestOptI(None, "test", 42))) and
+      expect(testOptJDecoder(csvRow) == Right(TestOptJ(1, "test", Some(42)))) and
+      expect(testOptJDecoder(csvRowEmptyJ) == Right(TestOptJ(1, "test", None)))
   }
 
-  "hlist" should "be handled properly" in {
-    RowDecoder[Int :: String :: Int :: HNil].apply(csvRow) shouldBe Right(1 :: "test" :: 42 :: HNil)
+  pureTest("hlist should be handled properly") {
+    expect(RowDecoder[Int :: String :: Int :: HNil].apply(csvRow) == Right(1 :: "test" :: 42 :: HNil))
   }
 
-  it should "be handled properly with optional columns" in {
+  pureTest("hlist should be handled properly with optional columns") {
     val decoder = RowDecoder[Option[Int] :: String :: Option[Int] :: HNil]
 
-    decoder(csvRow) shouldBe Right(Some(1) :: "test" :: Some(42) :: HNil)
-
-    decoder(csvRowEmptyI) shouldBe Right(None :: "test" :: Some(42) :: HNil)
-
-    decoder(csvRowEmptyJ) shouldBe Right(Some(1) :: "test" :: None :: HNil)
+    expect(decoder(csvRow) == Right(Some(1) :: "test" :: Some(42) :: HNil)) and
+      expect(decoder(csvRowEmptyI) == Right(None :: "test" :: Some(42) :: HNil)) and
+      expect(decoder(csvRowEmptyJ) == Right(Some(1) :: "test" :: None :: HNil))
   }
 
 }

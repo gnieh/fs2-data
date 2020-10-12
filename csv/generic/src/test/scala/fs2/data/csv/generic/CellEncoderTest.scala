@@ -2,57 +2,56 @@ package fs2.data.csv.generic
 
 import cats.implicits._
 import fs2.data.csv.CellEncoder
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.EitherValues
-import org.scalatest.matchers.should.Matchers
 import shapeless.Annotation
+import weaver._
 
-class CellEncoderTest extends AnyFlatSpec with Matchers with EitherValues {
+object CellEncoderTest extends SimpleIOSuite {
 
-  "derivation for coproducts" should "work out of the box for enum-style sealed traits" in {
+  pureTest("derivation for coproducts should work out of the box for enum-style sealed traits") {
     val simpleEncoder: CellEncoder[Simple] = semiauto.deriveCellEncoder
 
-    simpleEncoder(On) shouldBe "On"
-    simpleEncoder(Off) shouldBe "Off"
+    expect(simpleEncoder(On) == "On") and
+      expect(simpleEncoder(Off) == "Off")
   }
 
-  it should "handle non-case object cases" in {
+  pureTest("derivation for coproducts should handle non-case object cases") {
     implicit val numberedEncoder: CellEncoder[Numbered] =
       CellEncoder[Int].contramap(_.n)
     implicit val unknownEncoder: CellEncoder[Unknown] =
       CellEncoder[String].contramap(_.state)
     val complexEncoder: CellEncoder[Complex] = semiauto.deriveCellEncoder
 
-    complexEncoder(Active) shouldBe "Active"
-    complexEncoder(Inactive) shouldBe "Inactive"
-    complexEncoder(Unknown("inactive")) shouldBe "inactive"
-    complexEncoder(Numbered(7)) shouldBe "7"
-    complexEncoder(Unknown("foo")) shouldBe "foo"
+    expect(complexEncoder(Active) == "Active") and
+      expect(complexEncoder(Inactive) == "Inactive") and
+      expect(complexEncoder(Unknown("inactive")) == "inactive") and
+      expect(complexEncoder(Numbered(7)) == "7") and
+      expect(complexEncoder(Unknown("foo")) == "foo")
   }
 
-  it should "respect @CsvValue annotations" in {
+  pureTest("derivation for coproducts should respect @CsvValue annotations") {
     val alphabetEncoder: CellEncoder[Alphabet] = semiauto.deriveCellEncoder
 
-    Annotation[CsvValue, Alpha.type].apply().value shouldBe "A"
+    Annotation[CsvValue, Alpha.type].apply().value == "A"
 
-    alphabetEncoder(Alpha) shouldBe "A"
-    alphabetEncoder(Beta) shouldBe "B"
-    alphabetEncoder(Gamma) shouldBe "Gamma"
+    expect(alphabetEncoder(Alpha) == "A") and
+      expect(alphabetEncoder(Beta) == "B") and
+      expect(alphabetEncoder(Gamma) == "Gamma")
   }
 
-  "derivation for unary products" should "work for standard types" in {
-    semiauto.deriveCellEncoder[IntWrapper].apply(IntWrapper(7)) shouldBe "7"
+  pureTest("derivation for unary products should work for standard types") {
+    expect(semiauto.deriveCellEncoder[IntWrapper].apply(IntWrapper(7)) == "7")
   }
 
-  it should "work for types with implicit encoder" in {
+  pureTest("derivation for unary products should work for types with implicit encoder") {
     implicit val thingEncoder: CellEncoder[Thing] =
       CellEncoder[String].contramap(_.value)
-    semiauto
-      .deriveCellEncoder[ThingWrapper]
-      .apply(ThingWrapper(Thing("cell", 7))) shouldBe "cell"
+    expect(
+      semiauto
+        .deriveCellEncoder[ThingWrapper]
+        .apply(ThingWrapper(Thing("cell", 7))) == "cell")
   }
 
-  it should "work for types with arguments" in {
-    semiauto.deriveCellEncoder[Wrapper[Int]].apply(Wrapper(7)) shouldBe "7"
+  pureTest("derivation for unary products should work for types with arguments") {
+    expect(semiauto.deriveCellEncoder[Wrapper[Int]].apply(Wrapper(7)) == "7")
   }
 }

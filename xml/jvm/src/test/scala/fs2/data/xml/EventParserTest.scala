@@ -20,47 +20,33 @@ import cats.effect._
 import fs2._
 import fs2.io._
 
-import org.scalatest.{BeforeAndAfterAll, EitherValues}
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import weaver._
+import java.nio.file.Paths
 
-import scala.concurrent._
+object EventParserTest extends IOSuite {
 
-import better.files.{Resource => _, _}
+  override type Res = Blocker
 
-import java.util.concurrent._
+  def sharedResource: Resource[IO, Blocker] = Blocker[IO]
 
-class EventParserTest extends AnyFlatSpec with Matchers with EitherValues with BeforeAndAfterAll {
-
-  private var executor: ExecutorService = _
-  private var blocker: Blocker = _
-
-  implicit val cs = IO.contextShift(ExecutionContext.global)
-
-  override def beforeAll(): Unit = {
-    executor = Executors.newFixedThreadPool(2)
-    blocker = Blocker.liftExecutorService(executor)
-  }
-
-  override def afterAll(): Unit = {
-    executor.shutdown()
-  }
-
-  val testFileDir = File("xml/shared/src/test/resources/xmlconf")
-  // valid tests
-  for (path <- File(testFileDir, "xmltest/valid/").list(_.name.endsWith(".xml")) ++ File(testFileDir,
-                                                                                         "sun/valid/").list) {
-    s"File ${testFileDir.relativize(path).toString}" should "be parsed correctly" in {
-      file
-        .readAll[IO](path.path, blocker, 1024)
-        .through(fs2.text.utf8Decode)
-        .flatMap(Stream.emits(_))
-        .through(events)
-        .compile
-        .toList
-        .unsafeRunSync()
-
-    }
+  val testFileDir = Paths.get("xml/jvm/src/test/resources/xmlconf")
+  test("Standard test suite should pass") { blocker =>
+    (file.walk[IO](blocker, testFileDir.resolve("xmltest/valid")).filter(_.toFile.getName.endsWith(".xml")) ++
+      file.directoryStream[IO](blocker, testFileDir.resolve("sun/valid")))
+      .evalMap { path =>
+        // valid tests
+        file
+          .readAll[IO](path, blocker, 1024)
+          .through(fs2.text.utf8Decode)
+          .flatMap(Stream.emits(_))
+          .through(events)
+          .compile
+          .drain
+          .attempt
+          .map(res => expect(res.isRight, s"Failed to parse $path").toExpectations)
+      }
+      .compile
+      .foldMonoid
   }
 
 }

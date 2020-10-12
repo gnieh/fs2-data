@@ -19,10 +19,10 @@ package generic
 
 import semiauto._
 import cats.data.NonEmptyList
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
-class CsvRowDecoderTest extends AnyFlatSpec with Matchers {
+import weaver._
+
+object CsvRowDecoderTest extends SimpleIOSuite {
 
   val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
   val csvRowDefaultI = new CsvRow(NonEmptyList.of("", "test", "42"), NonEmptyList.of("i", "s", "j"))
@@ -43,35 +43,34 @@ class CsvRowDecoderTest extends AnyFlatSpec with Matchers {
   val testRenameDecoder = deriveCsvRowDecoder[TestRename]
   val testOptionRenameDecoder = deriveCsvRowDecoder[TestOptionRename]
 
-  "case classes" should "be decoded properly by header name and not position" in {
-    testDecoder(csvRow) shouldBe Right(Test(1, "test", Some(42)))
-
-    testOrderDecoder(csvRow) shouldBe Right(TestOrder("test", 42, 1))
+  pureTest("case classes should be decoded properly by header name and not position") {
+    expect(testDecoder(csvRow) == Right(Test(1, "test", Some(42)))) and
+      expect(testOrderDecoder(csvRow) == Right(TestOrder("test", 42, 1)))
   }
 
-  it should "be handled properly with default value and empty cell" in {
-    testDecoder(csvRowDefaultI) shouldBe Right(Test(0, "test", Some(42)))
+  pureTest("case classes should be handled properly with default value and empty cell") {
+    expect(testDecoder(csvRowDefaultI) == Right(Test(0, "test", Some(42))))
   }
 
-  it should "be handled properly with default value and missing column" in {
-    testDecoder(csvRowNoI) shouldBe Right(Test(0, "test", Some(42)))
+  pureTest("case classes should be handled properly with default value and missing column") {
+    expect(testDecoder(csvRowNoI) == Right(Test(0, "test", Some(42))))
   }
 
-  it should "be handled properly with optional value and empty cell" in {
-    testDecoder(csvRowEmptyJ) shouldBe Right(Test(1, "test", None))
+  pureTest("case classes should be handled properly with optional value and empty cell") {
+    expect(testDecoder(csvRowEmptyJ) == Right(Test(1, "test", None)))
   }
 
-  it should "be handled properly with optional value and missing column" in {
-    testDecoder(csvRowNoJ) shouldBe Right(Test(1, "test", None))
+  pureTest("case classes should be handled properly with optional value and missing column") {
+    expect(testDecoder(csvRowNoJ) == Right(Test(1, "test", None)))
   }
 
-  it should "be decoded according to their field renames" in {
-    testRenameDecoder(csvRow) shouldBe Right(TestRename("test", 42, 1))
+  pureTest("case classes should be decoded according to their field renames") {
+    expect(testRenameDecoder(csvRow) == Right(TestRename("test", 42, 1)))
   }
 
-  it should "be decoded according to their field renames if value is optional" in {
-    testOptionRenameDecoder(csvRow) shouldBe Right(TestOptionRename("test", Some(42), 1))
-    testOptionRenameDecoder(csvRowNoJ) shouldBe Right(TestOptionRename("test", None, 1))
+  pureTest("case classes should be decoded according to their field renames if value is optional") {
+    expect(testOptionRenameDecoder(csvRow) == Right(TestOptionRename("test", Some(42), 1))) and
+      expect(testOptionRenameDecoder(csvRowNoJ) == Right(TestOptionRename("test", None, 1)))
   }
 
 }
