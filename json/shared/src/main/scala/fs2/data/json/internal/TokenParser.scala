@@ -23,20 +23,21 @@ import scala.annotation.switch
 private[json] object TokenParser {
 
   // the opening quote has already been read
-  def string_[F[_]](
-      chunk: Chunk[Char],
-      idx: Int,
-      rest: Stream[F, Char],
-      key: Boolean,
-      state: Int,
-      unicode: Int,
-      acc: StringBuilder,
-      chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Char, List[Token]]] = {
+  def string_[F[_]](chunk: Chunk[Char],
+                    idx: Int,
+                    rest: Stream[F, Char],
+                    key: Boolean,
+                    state: Int,
+                    unicode: Int,
+                    acc: StringBuilder,
+                    chunkAcc: List[Token])(implicit
+      F: RaiseThrowable[F]): Pull[F, Token, Result[F, Char, List[Token]]] = {
     if (idx >= chunk.size)
       emitChunk(chunkAcc) >> rest.pull.uncons.flatMap {
         case Some((chunk, rest)) => string_(chunk, 0, rest, key, state, unicode, acc, Nil)
         case None                => Pull.raiseError[F](new JsonException("unexpected end of input"))
-      } else {
+      }
+    else {
       val c = chunk(idx)
       (state: @switch) match {
         case StringState.SeenBackslash =>
@@ -89,13 +90,13 @@ private[json] object TokenParser {
     }
   }
 
-  def number_[F[_]](
-      chunk: Chunk[Char],
-      idx: Int,
-      rest: Stream[F, Char],
-      state: Int,
-      acc: StringBuilder,
-      chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Char, List[Token]]] = {
+  def number_[F[_]](chunk: Chunk[Char],
+                    idx: Int,
+                    rest: Stream[F, Char],
+                    state: Int,
+                    acc: StringBuilder,
+                    chunkAcc: List[Token])(implicit
+      F: RaiseThrowable[F]): Pull[F, Token, Result[F, Char, List[Token]]] = {
     def step(c: Char, state: Int): Int =
       (c: @switch) match {
         case '-' =>
@@ -163,7 +164,8 @@ private[json] object TokenParser {
             Pull.output1(Token.NumberValue(acc.result())) >> Pull.pure(None)
           else
             Pull.raiseError[F](new JsonException("unexpected end of input"))
-      } else {
+      }
+    else {
       val c = chunk(idx)
       (step(c, state): @switch) match {
         case NumberState.Invalid =>
@@ -177,14 +179,14 @@ private[json] object TokenParser {
     }
   }
 
-  def keyword_[F[_]](
-      chunk: Chunk[Char],
-      idx: Int,
-      rest: Stream[F, Char],
-      expected: String,
-      eidx: Int,
-      token: Token,
-      chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Char, List[Token]]] = {
+  def keyword_[F[_]](chunk: Chunk[Char],
+                     idx: Int,
+                     rest: Stream[F, Char],
+                     expected: String,
+                     eidx: Int,
+                     token: Token,
+                     chunkAcc: List[Token])(implicit
+      F: RaiseThrowable[F]): Pull[F, Token, Result[F, Char, List[Token]]] = {
     if (idx >= chunk.size) {
       emitChunk(chunkAcc) >> rest.pull.uncons.flatMap {
         case Some((chunk, rest)) => keyword_(chunk, 0, rest, expected, eidx, token, Nil)
@@ -203,8 +205,8 @@ private[json] object TokenParser {
     }
   }
 
-  def value_[F[_]](chunk: Chunk[Char], idx: Int, rest: Stream[F, Char], state: Int, chunkAcc: List[Token])(
-      implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Char, List[Token]]] =
+  def value_[F[_]](chunk: Chunk[Char], idx: Int, rest: Stream[F, Char], state: Int, chunkAcc: List[Token])(implicit
+      F: RaiseThrowable[F]): Pull[F, Token, Result[F, Char, List[Token]]] =
     if (idx >= chunk.size) {
       emitChunk(chunkAcc) >> rest.pull.uncons.flatMap {
         case Some((chunk, rest)) => value_(chunk, 0, rest, state, Nil)
@@ -214,9 +216,9 @@ private[json] object TokenParser {
       val c = chunk(idx)
       (c: @switch) match {
         case '{' =>
-          Pull.suspend(go_(chunk, idx + 1, rest, State.BeforeObjectKey, Nil, Token.StartObject :: chunkAcc))
+          Pull.suspend(go_(chunk, idx + 1, rest, State.BeforeObjectKey, Token.StartObject :: chunkAcc))
         case '[' =>
-          Pull.suspend(go_(chunk, idx + 1, rest, State.BeforeArrayValue, Nil, Token.StartArray :: chunkAcc))
+          Pull.suspend(go_(chunk, idx + 1, rest, State.BeforeArrayValue, Token.StartArray :: chunkAcc))
         case 't' => keyword_(chunk, idx, rest, "true", 0, Token.TrueValue, chunkAcc)
         case 'f' => keyword_(chunk, idx, rest, "false", 0, Token.FalseValue, chunkAcc)
         case 'n' => keyword_(chunk, idx, rest, "null", 0, Token.NullValue, chunkAcc)
@@ -227,52 +229,38 @@ private[json] object TokenParser {
       }
     }
 
-  def continue[F[_]](state: Int, history: List[Int])(result: Result[F, Char, List[Token]])(
-      implicit F: RaiseThrowable[F]) =
+  def continue[F[_]](state: Int)(result: Result[F, Char, List[Token]])(implicit F: RaiseThrowable[F]) =
     result match {
       case Some((chunk, idx, rest, chunkAcc)) =>
-        go_(chunk, idx, rest, state, history, chunkAcc)
+        go_(chunk, idx, rest, state, chunkAcc)
       case None =>
-        if (history.isEmpty)
-          Pull.pure(None)
-        else
-          Pull.raiseError[F](new JsonException("unexpected end of input"))
+        Pull.pure(None)
     }
 
-  def go_[F[_]](chunk: Chunk[Char],
-                idx: Int,
-                rest: Stream[F, Char],
-                state: Int,
-                history: List[Int],
-                chunkAcc: List[Token])(implicit F: RaiseThrowable[F]): Pull[F, Token, Result[F, Char, List[Token]]] = {
+  def go_[F[_]](chunk: Chunk[Char], idx: Int, rest: Stream[F, Char], state: Int, chunkAcc: List[Token])(implicit
+      F: RaiseThrowable[F]): Pull[F, Token, Result[F, Char, List[Token]]] = {
     val idx1 = idx //eatWhitespaces(idx, chunk)
     if (idx1 >= chunk.size) {
       emitChunk(chunkAcc) >> rest.pull.uncons.flatMap {
-        case Some((chunk, rest)) => go_(chunk, 0, rest, state, history, Nil)
+        case Some((chunk, rest)) => go_(chunk, 0, rest, state, Nil)
         case None =>
-          if (history.isEmpty)
-            Pull.pure(None)
-          else
-            Pull.raiseError[F](new JsonException("unexpected end of input"))
+          Pull.pure(None)
       }
     } else {
       val c = chunk(idx1)
       (c: @switch) match {
-        case ' ' | '\t' | '\r' | '\n' => go_(chunk: Chunk[Char], idx + 1, rest, state, history, chunkAcc)
+        case ' ' | '\t' | '\r' | '\n' => go_(chunk: Chunk[Char], idx + 1, rest, state, chunkAcc)
         case _ =>
           (state: @switch) match {
             case State.BeforeValue =>
-              value_(chunk, idx1, rest, state, chunkAcc).flatMap(continue(State.BeforeValue, history))
+              value_(chunk, idx1, rest, state, chunkAcc).flatMap(continue(State.BeforeValue))
             case State.BeforeObjectKey =>
               (c: @switch) match {
                 case '"' =>
                   string_(chunk, idx1 + 1, rest, true, StringState.Normal, 0, new StringBuilder, chunkAcc)
-                    .flatMap(continue(State.AfterObjectKey, history))
+                    .flatMap(continue(State.AfterObjectKey))
                 case '}' =>
-                  history match {
-                    case prev :: tail => go_(chunk, idx1 + 1, rest, prev, tail, Token.EndObject :: chunkAcc)
-                    case Nil          => Pull.pure(Some((chunk, idx1 + 1, rest, Token.EndObject :: chunkAcc)))
-                  }
+                  Pull.pure(Some((chunk, idx1 + 1, rest, Token.EndObject :: chunkAcc)))
                 case _ =>
                   emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
               }
@@ -280,54 +268,45 @@ private[json] object TokenParser {
               (c: @switch) match {
                 case '"' =>
                   string_(chunk, idx1 + 1, rest, true, StringState.Normal, 0, new StringBuilder, chunkAcc)
-                    .flatMap(continue(State.AfterObjectKey, history))
+                    .flatMap(continue(State.AfterObjectKey))
                 case _ =>
                   emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
               }
             case State.AfterObjectKey =>
               (c: @switch) match {
-                case ':' => go_(chunk, idx1 + 1, rest, State.BeforeObjectValue, history, chunkAcc)
+                case ':' => go_(chunk, idx1 + 1, rest, State.BeforeObjectValue, chunkAcc)
                 case c =>
                   emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object key"))
               }
             case State.BeforeObjectValue =>
               value_(chunk, idx1, rest, State.AfterObjectValue, chunkAcc)
-                .flatMap(continue(State.AfterObjectValue, history))
+                .flatMap(continue(State.AfterObjectValue))
             case State.AfterObjectValue =>
               (c: @switch) match {
                 case ',' =>
-                  go_(chunk, idx1 + 1, rest, State.ExpectObjectKey, history, chunkAcc)
+                  go_(chunk, idx1 + 1, rest, State.ExpectObjectKey, chunkAcc)
                 case '}' =>
-                  history match {
-                    case prev :: tail => go_(chunk, idx1 + 1, rest, prev, tail, Token.EndObject :: chunkAcc)
-                    case Nil          => Pull.pure(Some((chunk, idx1 + 1, rest, Token.EndObject :: chunkAcc)))
-                  }
+                  Pull.pure(Some((chunk, idx1 + 1, rest, Token.EndObject :: chunkAcc)))
                 case c =>
                   emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object value"))
               }
             case State.ExpectArrayValue =>
               value_(chunk, idx1, rest, State.AfterArrayValue, chunkAcc)
-                .flatMap(continue(State.AfterArrayValue, history))
+                .flatMap(continue(State.AfterArrayValue))
             case State.BeforeArrayValue =>
               (c: @switch) match {
                 case ']' =>
-                  history match {
-                    case prev :: tail => go_(chunk, idx1 + 1, rest, prev, tail, Token.EndArray :: chunkAcc)
-                    case Nil          => Pull.pure(Some((chunk, idx1 + 1, rest, Token.EndArray :: chunkAcc)))
-                  }
+                  Pull.pure(Some((chunk, idx1 + 1, rest, Token.EndArray :: chunkAcc)))
                 case c =>
                   value_(chunk, idx1, rest, State.AfterArrayValue, chunkAcc)
-                    .flatMap(continue(State.AfterArrayValue, history))
+                    .flatMap(continue(State.AfterArrayValue))
               }
             case State.AfterArrayValue =>
               (c: @switch) match {
                 case ']' =>
-                  history match {
-                    case prev :: tail => go_(chunk, idx1 + 1, rest, prev, tail, Token.EndArray :: chunkAcc)
-                    case Nil          => Pull.pure(Some((chunk, idx1 + 1, rest, Token.EndArray :: chunkAcc)))
-                  }
+                  Pull.pure(Some((chunk, idx1 + 1, rest, Token.EndArray :: chunkAcc)))
                 case ',' =>
-                  go_(chunk, idx1 + 1, rest, State.ExpectArrayValue, history, chunkAcc)
+                  go_(chunk, idx1 + 1, rest, State.ExpectArrayValue, chunkAcc)
                 case c =>
                   emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after array value"))
               }
@@ -337,5 +316,5 @@ private[json] object TokenParser {
   }
 
   def pipe[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Char, Token] =
-    s => go_(Chunk.empty, 0, s, State.BeforeValue, Nil, Nil).void.stream
+    s => go_(Chunk.empty, 0, s, State.BeforeValue, Nil).void.stream
 }
