@@ -78,10 +78,9 @@
 
 <p>Examples on this page use the following input:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
-
-<span class="k">import</span> <span class="nn">fs2.Stream</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.</span><span class="o">{</span><span class="nc">Stream</span><span class="o">,</span> <span class="nc">Fallible</span><span class="o">}</span>
 <span class="k">import</span> <span class="nn">fs2.data.json._</span>
+<span class="k">import</span> <span class="nn">fs2.data.json.selector._</span>
 
 <span class="k">val</span> <span class="nv">input</span> <span class="k">=</span> <span class="s">"""{
               |  "field1": 0,
@@ -92,62 +91,109 @@
               |  "field1": 2,
               |  "field3": []
               |}"""</span><span class="o">.</span><span class="py">stripMargin</span>
+<span class="c1">// input: String = """{</span>
+<span class="c1">//   "field1": 0,</span>
+<span class="c1">//   "field2": "test",</span>
+<span class="c1">//   "field3": [1, 2, 3]</span>
+<span class="c1">// }</span>
+<span class="c1">// {</span>
+<span class="c1">//   "field1": 2,</span>
+<span class="c1">//   "field3": []</span>
+<span class="c1">// }"""</span>
 
-<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">IO</span><span class="o">])</span>
+<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">])</span>
+<span class="c1">// stream: Stream[Fallible, Token] = Stream(..)</span>
 
-<span class="k">val</span> <span class="nv">selector</span> <span class="k">=</span> <span class="s">".field3.[]"</span><span class="o">.</span><span class="py">parseSelector</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="k">val</span> <span class="nv">sel</span> <span class="k">=</span> <span class="nv">root</span><span class="o">.</span><span class="py">field</span><span class="o">(</span><span class="s">"field3"</span><span class="o">).</span><span class="py">iterate</span><span class="o">.</span><span class="py">compile</span>
+<span class="c1">// sel: Selector = PipeSelector(</span>
+<span class="c1">//   NameSelector(Single("field3"), true, false),</span>
+<span class="c1">//   IteratorSelector(true)</span>
+<span class="c1">// )</span>
 
-<span class="k">val</span> <span class="nv">filtered</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">selector</span><span class="o">))</span>
+<span class="k">val</span> <span class="nv">filtered</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">sel</span><span class="o">))</span>
+<span class="c1">// filtered: Stream[Fallible[x], Token] = Stream(..)</span>
 </code></pre></div></div>
 
 <h3 id="circe">Circe</h3>
 
 <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-circe_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-circe_2.13.svg" alt="Maven Central" /></a></p>
 
-<p>The <code>fs2-data-json-circe</code> module provides <code>Builder</code> and <code>Tokenizer</code> instances for the <a href="https://circe.github.io/circe/">circe</a> <code>Json</code> type.<br />
+<p>The <code>fs2-data-json-circe</code> module provides <code>Builder</code> and <code>Tokenizer</code> instances for the <a href="https://circe.github.io/circe/">circe</a> <code>Json</code> type and a <code>Tokenizer</code> instance for each type <code>T</code> having an implicit <code>Encoder[T]</code> in scope.<br />
 For instance both examples from the <a href="/documentation/json/">core module documentation</a> with circe can be written that way:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
 <span class="k">import</span> <span class="nn">io.circe._</span>
 
-<span class="k">val</span> <span class="nv">asts</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">values</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Json</span><span class="o">])</span>
-<span class="c1">// asts: Stream[IO[x], Json] = Stream(..)</span>
-<span class="nv">asts</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
-<span class="c1">// res0: List[Json] = List(</span>
-<span class="c1">//   JObject(</span>
-<span class="c1">//     object[field1 -&gt; 0,field2 -&gt; "test",field3 -&gt; [</span>
+<span class="k">val</span> <span class="nv">asts</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">values</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">])</span>
+<span class="c1">// asts: Stream[Fallible[x], Json] = Stream(..)</span>
+<span class="nv">asts</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res0: Either[Throwable, List[Json]] = Right(</span>
+<span class="c1">//   List(</span>
+<span class="c1">//     JObject(</span>
+<span class="c1">//       object[field1 -&gt; 0,field2 -&gt; "test",field3 -&gt; [</span>
 <span class="c1">//   1,</span>
 <span class="c1">//   2,</span>
 <span class="c1">//   3</span>
 <span class="c1">// ]]</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   JObject(</span>
-<span class="c1">//     object[field1 -&gt; 2,field3 -&gt; [</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     JObject(</span>
+<span class="c1">//       object[field1 -&gt; 2,field3 -&gt; [</span>
 <span class="c1">// ]]</span>
+<span class="c1">//     )</span>
 <span class="c1">//   )</span>
 <span class="c1">// )</span>
 
-<span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">transform</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">selector</span><span class="o">,</span> <span class="n">json</span> <span class="k">=&gt;</span> <span class="nv">Json</span><span class="o">.</span><span class="py">obj</span><span class="o">(</span><span class="s">"test"</span> <span class="o">-&gt;</span> <span class="n">json</span><span class="o">)))</span>
-<span class="c1">// transformed: Stream[IO[x], Token] = Stream(..)</span>
-<span class="nv">transformed</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">values</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Json</span><span class="o">]).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
-<span class="c1">// res1: List[Json] = List(</span>
-<span class="c1">//   JObject(</span>
-<span class="c1">//     object[field1 -&gt; 0,field2 -&gt; "test",field3 -&gt; [</span>
-<span class="c1">//   {</span>
-<span class="c1">//     "test" : 1</span>
-<span class="c1">//   },</span>
-<span class="c1">//   {</span>
-<span class="c1">//     "test" : 2</span>
-<span class="c1">//   },</span>
-<span class="c1">//   {</span>
-<span class="c1">//     "test" : 3</span>
-<span class="c1">//   }</span>
-<span class="c1">// ]]</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   JObject(</span>
-<span class="c1">//     object[field1 -&gt; 2,field3 -&gt; [</span>
-<span class="c1">// ]]</span>
-<span class="c1">//   )</span>
+<span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">transform</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">sel</span><span class="o">,</span> <span class="n">json</span> <span class="k">=&gt;</span> <span class="nv">Json</span><span class="o">.</span><span class="py">obj</span><span class="o">(</span><span class="s">"test"</span> <span class="o">-&gt;</span> <span class="n">json</span><span class="o">)))</span>
+<span class="c1">// transformed: Stream[Fallible[x], Token] = Stream(..)</span>
+<span class="nv">transformed</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">())</span>
+<span class="c1">// res1: Either[Throwable, String] = Right(</span>
+<span class="c1">//   """{</span>
+<span class="c1">//   "field1": 0,</span>
+<span class="c1">//   "field2": "test",</span>
+<span class="c1">//   "field3": [</span>
+<span class="c1">//     {</span>
+<span class="c1">//       "test": 1</span>
+<span class="c1">//     },</span>
+<span class="c1">//     {</span>
+<span class="c1">//       "test": 2</span>
+<span class="c1">//     },</span>
+<span class="c1">//     {</span>
+<span class="c1">//       "test": 3</span>
+<span class="c1">//     }</span>
+<span class="c1">//   ]</span>
+<span class="c1">// }</span>
+<span class="c1">// {</span>
+<span class="c1">//   "field1": 2,</span>
+<span class="c1">//   "field3": []</span>
+<span class="c1">// }"""</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>If you want to only keep <code>field1</code> if it is greater than <code>1</code>, you can use the <code>transformOpt</code> pipe for this.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
+<span class="k">import</span> <span class="nn">io.circe._</span>
+<span class="k">import</span> <span class="nn">cats.implicits._</span>
+
+<span class="k">val</span> <span class="nv">f1</span> <span class="k">=</span> <span class="nv">root</span><span class="o">.</span><span class="py">field</span><span class="o">(</span><span class="s">"field1"</span><span class="o">).</span><span class="py">compile</span>
+<span class="c1">// f1: Selector = NameSelector(Single("field1"), true, false)</span>
+
+<span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">transformOpt</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">f1</span><span class="o">,</span> <span class="n">json</span> <span class="k">=&gt;</span> <span class="nv">json</span><span class="o">.</span><span class="py">as</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="py">toOption</span><span class="o">.</span><span class="py">filter</span><span class="o">(</span><span class="k">_</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="o">).</span><span class="py">as</span><span class="o">(</span><span class="n">json</span><span class="o">)))</span>
+<span class="c1">// transformed: Stream[Fallible[x], Token] = Stream(..)</span>
+<span class="nv">transformed</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">())</span>
+<span class="c1">// res2: Either[Throwable, String] = Right(</span>
+<span class="c1">//   """{</span>
+<span class="c1">//   "field2": "test",</span>
+<span class="c1">//   "field3": [</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     2,</span>
+<span class="c1">//     3</span>
+<span class="c1">//   ]</span>
+<span class="c1">// }</span>
+<span class="c1">// {</span>
+<span class="c1">//   "field1": 2,</span>
+<span class="c1">//   "field3": []</span>
+<span class="c1">// }"""</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 

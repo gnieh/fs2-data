@@ -75,13 +75,19 @@
 
 <p>This page covers the following topics:</p>
 <ul id="markdown-toc">
-  <li><a href="#basic-usage" id="markdown-toc-basic-usage">Basic usage</a></li>
-  <li><a href="#selectors" id="markdown-toc-selectors">Selectors</a></li>
+  <li><a href="#json-parsing" id="markdown-toc-json-parsing">JSON parsing</a></li>
+  <li><a href="#selectors" id="markdown-toc-selectors">Selectors</a>    <ul>
+      <li><a href="#parsing-a-string-using-the-selector-syntax" id="markdown-toc-parsing-a-string-using-the-selector-syntax">Parsing a string using the selector syntax</a></li>
+      <li><a href="#using-the-selector-dsl" id="markdown-toc-using-the-selector-dsl">Using the selector DSL</a></li>
+      <li><a href="#using-json-selectors" id="markdown-toc-using-json-selectors">Using JSON selectors</a></li>
+    </ul>
+  </li>
   <li><a href="#ast-builder-and-tokenizer" id="markdown-toc-ast-builder-and-tokenizer">AST builder and tokenizer</a></li>
   <li><a href="#json-renderers" id="markdown-toc-json-renderers">JSON Renderers</a></li>
+  <li><a href="#generating-json-streams" id="markdown-toc-generating-json-streams">Generating JSON streams</a></li>
 </ul>
 
-<h3 id="basic-usage">Basic usage</h3>
+<h3 id="json-parsing">JSON parsing</h3>
 
 <p>To create a stream of JSON tokens from an input stream, use the <code>tokens</code> pipe in <code>fs2.data.json</code> package. This pipe accepts a stream of characters and returns a stream of JSON tokens. This produces a stream of structurally valid tokens forming the JSON documents.</p>
 
@@ -109,29 +115,31 @@
 <span class="c1">//   "field3": []</span>
 <span class="c1">// }"""</span>
 
-<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">IO</span><span class="o">])</span>
-<span class="c1">// stream: Stream[IO, Token] = Stream(..)</span>
-<span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
-<span class="c1">// res0: List[Token] = List(</span>
-<span class="c1">//   StartObject,</span>
-<span class="c1">//   Key("field1"),</span>
-<span class="c1">//   NumberValue("0"),</span>
-<span class="c1">//   Key("field2"),</span>
-<span class="c1">//   StringValue("test"),</span>
-<span class="c1">//   Key("field3"),</span>
-<span class="c1">//   StartArray,</span>
-<span class="c1">//   NumberValue("1"),</span>
-<span class="c1">//   NumberValue("2"),</span>
-<span class="c1">//   NumberValue("3"),</span>
-<span class="c1">//   EndArray,</span>
-<span class="c1">//   EndObject,</span>
-<span class="c1">//   StartObject,</span>
-<span class="c1">//   Key("field1"),</span>
-<span class="c1">//   NumberValue("2"),</span>
-<span class="c1">//   Key("field3"),</span>
-<span class="c1">//   StartArray,</span>
-<span class="c1">//   EndArray,</span>
-<span class="c1">//   EndObject</span>
+<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">])</span>
+<span class="c1">// stream: Stream[Fallible, Token] = Stream(..)</span>
+<span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res0: Either[Throwable, List[Token]] = Right(</span>
+<span class="c1">//   List(</span>
+<span class="c1">//     StartObject,</span>
+<span class="c1">//     Key("field1"),</span>
+<span class="c1">//     NumberValue("0"),</span>
+<span class="c1">//     Key("field2"),</span>
+<span class="c1">//     StringValue("test"),</span>
+<span class="c1">//     Key("field3"),</span>
+<span class="c1">//     StartArray,</span>
+<span class="c1">//     NumberValue("1"),</span>
+<span class="c1">//     NumberValue("2"),</span>
+<span class="c1">//     NumberValue("3"),</span>
+<span class="c1">//     EndArray,</span>
+<span class="c1">//     EndObject,</span>
+<span class="c1">//     StartObject,</span>
+<span class="c1">//     Key("field1"),</span>
+<span class="c1">//     NumberValue("2"),</span>
+<span class="c1">//     Key("field3"),</span>
+<span class="c1">//     StartArray,</span>
+<span class="c1">//     EndArray,</span>
+<span class="c1">//     EndObject</span>
+<span class="c1">//   )</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -139,22 +147,25 @@
 
 <h3 id="selectors">Selectors</h3>
 
-<p>Selectors can be used to select a subset of a JSON token stream.</p>
+<p>Selectors can be used to select a subset of a JSON token stream. There are several ways to create selectors:</p>
+<ul>
+  <li>build the selector using the constructors, which can be quite verbose and cumbersome;</li>
+  <li>parse a string with the selector syntax;</li>
+  <li>use the selector DSL.</li>
+</ul>
+
+<h4 id="parsing-a-string-using-the-selector-syntax">Parsing a string using the selector syntax</h4>
 
 <p>For instance, to select and enumerate elements that are in the <code>field3</code> array, you can create this selector. Only the tokens describing the values in <code>field3</code> will be emitted as a result.</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">selector</span> <span class="k">=</span> <span class="s">".field3.[]"</span><span class="o">.</span><span class="py">parseSelector</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.implicits._</span>
+
+<span class="k">type</span> <span class="kt">ThrowableEither</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Either</span><span class="o">[</span><span class="kt">Throwable</span>, <span class="kt">T</span><span class="o">]</span>
+
+<span class="k">val</span> <span class="nv">selector</span> <span class="k">=</span> <span class="s">".field3.[]"</span><span class="o">.</span><span class="py">parseSelector</span><span class="o">[</span><span class="kt">ThrowableEither</span><span class="o">].</span><span class="py">toTry</span><span class="o">.</span><span class="py">get</span>
 <span class="c1">// selector: Selector = PipeSelector(</span>
-<span class="c1">//   NameSelector(Single("field3"), true),</span>
+<span class="c1">//   NameSelector(Single("field3"), true, false),</span>
 <span class="c1">//   IteratorSelector(true)</span>
-<span class="c1">// )</span>
-<span class="k">val</span> <span class="nv">filtered</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">selector</span><span class="o">))</span>
-<span class="c1">// filtered: Stream[IO[x], Token] = Stream(..)</span>
-<span class="nv">filtered</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
-<span class="c1">// res1: List[Token] = List(</span>
-<span class="c1">//   NumberValue("1"),</span>
-<span class="c1">//   NumberValue("2"),</span>
-<span class="c1">//   NumberValue("3")</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -165,12 +176,25 @@
   <li><code>.</code> selects the root values, it is basically the identity filter.</li>
   <li><code>.f</code> selects the field named <code>f</code> in objects. It fails if the value it is applied to is not a JSON object.
     <ul>
-      <li><code>f</code> must be a valid Java identifier, meaning it has to respect this regular expression: <code>[a-ZA-Z_][a-zA-Z0-9_]*</code>. If you wish to select a field that doesn’t respect this regular expression, you can use the syntax <code>.["my non-identifier field"]</code> described below.</li>
+      <li><code>f</code> must be a valid Java identifier, meaning it has to respect this regular expression: <code>[a-zA-Z_][a-zA-Z0-9_]*</code>. If you wish to select a field that doesn’t respect this regular expression, you can use the syntax <code>.["my non-identifier field"]</code> described below.</li>
+      <li>name <code>f</code> can be immediately followed by a <code>!</code> to mark it as mandatory. Stream will fail if the end of the object the selector is applied to is reached and the field was not present in the object.</li>
     </ul>
   </li>
-  <li><code>.f?</code> is similar to <code>.f</code> but doesn’t fail in case the value it is applied to is not a JSON object.</li>
-  <li><code>.["f1", "f2", ..., "fn"]</code> selects only fields <code>f1</code> to <code>fn</code> in objects. It fails if the value it is applied to is not an object.</li>
-  <li><code>.["f1", "f2", ..., "fn"]?</code> is similar to <code>.["f1", "f2", ..., "fn"]</code> but doesn’t fail if the value it is applied to is not an object.</li>
+  <li><code>.f?</code> is similar to <code>.f</code> but doesn’t fail in case the value it is applied to is not a JSON object.
+    <ul>
+      <li>both <code>!</code> and <code>?</code> can be combined as <code>.f!?</code> to indicate that if the value it is applied to is a JSON object, then the field must be in it.</li>
+    </ul>
+  </li>
+  <li><code>.["f1", "f2", ..., "fn"]</code> selects only fields <code>f1</code> to <code>fn</code> in objects. It fails if the value it is applied to is not an object.
+    <ul>
+      <li>the field list can be immediately followed by a <code>!</code> to mark all fields as mandatory. Stream will fail if the end of the object the selector is applied to is reached and at least one field in the list was not present in the object.</li>
+    </ul>
+  </li>
+  <li><code>.["f1", "f2", ..., "fn"]?</code> is similar to <code>.["f1", "f2", ..., "fn"]</code> but doesn’t fail if the value it is applied to is not an object.
+    <ul>
+      <li>both <code>!</code> and <code>?</code> can be combined as <code>.["f1", "f2", ..., "fn"]!?</code> to indicate that if the value it is applied to is a JSON object, then all the specified fields must be in it.</li>
+    </ul>
+  </li>
   <li><code>.[id1, idx2, ..., idxn]</code> selects only elements <code>idx1</code>, …, <code>idxn</code> in arrays. It fails if the value it is applied to is not an array.</li>
   <li><code>.[idx1, idx2, ..., idxn]?</code> is similar to <code>.[idx1, idx2, ..., idxn]</code> but doesn’t fail if the value it is applied to is not an array.</li>
   <li><code>.[idx1:idx2]</code> selects only elements between <code>idx1</code> (inclusive) and <code>idx2</code> (exclusive) in arrays. It fails if the value it is applied to is not an array.</li>
@@ -180,31 +204,99 @@
   <li><code>sel1 sel2</code> applies selector <code>sel1</code> to the root value, and selector <code>sel2</code> to each selected value.</li>
 </ul>
 
-<p>By default, selected values are emitted in the stream as they are matched, resulting in a stream with several Json values.<br />
+<h4 id="using-the-selector-dsl">Using the selector DSL</h4>
+
+<p>The selector DSL is a nice way to describe selectors without using any string parsing. They also allow for programmatically building selectors.<br />
+The DSL resides within the <code>fs2.data.json.selector</code> package, and you start a selector using the <code>root</code> builder.<br />
+The selector above can be written like this with the DSL:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.selector._</span>
+
+<span class="k">val</span> <span class="nv">selectorFromDsl</span> <span class="k">=</span> <span class="nv">root</span><span class="o">.</span><span class="py">field</span><span class="o">(</span><span class="s">"field3"</span><span class="o">).</span><span class="py">iterate</span><span class="o">.</span><span class="py">compile</span>
+<span class="c1">// selectorFromDsl: Selector = PipeSelector(</span>
+<span class="c1">//   NameSelector(Single("field3"), true, false),</span>
+<span class="c1">//   IteratorSelector(true)</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>The <code>.compile</code> in the end transforms the previous selector builder from the DSL into the final selector. Builders are safe to reuse, re-compose and compile several times.</p>
+
+<p>You can express the same selectors as with the syntax described above. For instance to make the field mandatory and the iteration lenient you can do:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">selectorFromDsl</span> <span class="k">=</span> <span class="nv">root</span><span class="o">.</span><span class="py">field</span><span class="o">(</span><span class="s">"field3"</span><span class="o">).!.</span><span class="py">iterate</span><span class="o">.?.</span><span class="py">compile</span>
+<span class="c1">// selectorFromDsl: Selector = PipeSelector(</span>
+<span class="c1">//   NameSelector(Single("field3"), true, true),</span>
+<span class="c1">//   IteratorSelector(false)</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>The DSL is typesafe, so that you cannot write invalid selectors. Any attempt to do so results in a compilation error.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// array index selection cannot be made mandatory</span>
+<span class="nv">root</span><span class="o">.</span><span class="py">index</span><span class="o">(</span><span class="mi">1</span><span class="o">).!</span>
+<span class="c1">// error: Only not yet mandatory field selectors can be made mandatory</span>
+<span class="c1">// root.index(1).!</span>
+<span class="c1">// ^^^^^^^^^^^^^^^</span>
+</code></pre></div></div>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// you cannot use the same flag twice</span>
+<span class="nv">root</span><span class="o">.</span><span class="py">index</span><span class="o">(</span><span class="mi">1</span><span class="o">).?.?</span>
+<span class="c1">// error: There seems to be no way to make this selector lenient. Is it already?</span>
+<span class="c1">// root.index(1).!</span>
+<span class="c1">// ^^^^^</span>
+</code></pre></div></div>
+
+<h4 id="using-json-selectors">Using JSON selectors</h4>
+
+<p>Using the selector defined above, we can filter the stream of tokens, to only emit selected tokens downstream. This can be used to drastically reduce the amount of emitted data, to only the parts that are of interest for you.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">filtered</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">selector</span><span class="o">))</span>
+<span class="c1">// filtered: Stream[Fallible[x], Token] = Stream(..)</span>
+<span class="nv">filtered</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res3: Either[Throwable, List[Token]] = Right(</span>
+<span class="c1">//   List(NumberValue("1"), NumberValue("2"), NumberValue("3"))</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>By default, selected values are emitted in the stream as they are matched, resulting in a stream with several JSON values.<br />
 If this is not desired, you can wrap the elements into arrays and objects, from the root by calling <code>filter</code> with <code>wrap</code> set to <code>true</code>.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">filteredWrapped</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">selector</span><span class="o">,</span> <span class="n">wrap</span> <span class="k">=</span> <span class="kc">true</span><span class="o">))</span>
-<span class="c1">// filteredWrapped: Stream[IO[x], Token] = Stream(..)</span>
-<span class="nv">filteredWrapped</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
-<span class="c1">// res2: List[Token] = List(</span>
-<span class="c1">//   StartObject,</span>
-<span class="c1">//   Key("field3"),</span>
-<span class="c1">//   StartArray,</span>
-<span class="c1">//   NumberValue("1"),</span>
-<span class="c1">//   NumberValue("2"),</span>
-<span class="c1">//   NumberValue("3"),</span>
-<span class="c1">//   EndArray,</span>
-<span class="c1">//   EndObject,</span>
-<span class="c1">//   StartObject,</span>
-<span class="c1">//   Key("field3"),</span>
-<span class="c1">//   StartArray,</span>
-<span class="c1">//   EndArray,</span>
-<span class="c1">//   EndObject</span>
+<span class="c1">// filteredWrapped: Stream[Fallible[x], Token] = Stream(..)</span>
+<span class="nv">filteredWrapped</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res4: Either[Throwable, List[Token]] = Right(</span>
+<span class="c1">//   List(</span>
+<span class="c1">//     StartObject,</span>
+<span class="c1">//     Key("field3"),</span>
+<span class="c1">//     StartArray,</span>
+<span class="c1">//     NumberValue("1"),</span>
+<span class="c1">//     NumberValue("2"),</span>
+<span class="c1">//     NumberValue("3"),</span>
+<span class="c1">//     EndArray,</span>
+<span class="c1">//     EndObject,</span>
+<span class="c1">//     StartObject,</span>
+<span class="c1">//     Key("field3"),</span>
+<span class="c1">//     StartArray,</span>
+<span class="c1">//     EndArray,</span>
+<span class="c1">//     EndObject</span>
+<span class="c1">//   )</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
 <p>If the selector selects elements in an array, then the resulting values are wrapped in an array.<br />
 On the other hand, if it selects elements in an object, then emitted values are returned wrapped in an object, associated with the last selected keys.</p>
+
+<p>If you want to ensure that selected object keys are present in the JSON value, you can use the <code>!</code> operator described above. For instance if you want to select <code>field2</code> and fail the stream as soon as an object does not contain it, you can do:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">mandatorySelector</span> <span class="k">=</span> <span class="s">".field2!"</span><span class="o">.</span><span class="py">parseSelector</span><span class="o">[</span><span class="kt">ThrowableEither</span><span class="o">].</span><span class="py">toTry</span><span class="o">.</span><span class="py">get</span>
+<span class="c1">// mandatorySelector: Selector = NameSelector(Single("field2"), true, true)</span>
+<span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">mandatorySelector</span><span class="o">)).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res5: Either[Throwable, List[Token]] = Left(</span>
+<span class="c1">//   fs2.data.json.JsonMissingFieldException: missing mandatory fields: field2</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>The <code>filter</code> preserves the chunk structure, so that the stream fails as soon as an error is encountered in the chunk, but first emitting previously selected values in the same chunk.</p>
 
 <h3 id="ast-builder-and-tokenizer">AST builder and tokenizer</h3>
 
@@ -219,9 +311,11 @@ On the other hand, if it selects elements in an object, then emitted values are 
 <p>If you provide an implicit <a href="/api/fs2/data/json/ast/Tokenizer.html"><code>Tokenizer[Json]</code></a>, which describes how a JSON AST is transformed into JSON tokens, you can apply transformations to the JSON stream. For instance, you can wrap all values in the <code>fields3</code> array by using this code:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">implicit</span> <span class="n">tokenizer</span><span class="k">:</span> <span class="kt">Tokenizer</span><span class="o">[</span><span class="kt">SomeJsonType</span><span class="o">]</span> <span class="k">=</span> <span class="o">...</span>
-<span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">transform</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">selector</span><span class="o">,</span> <span class="n">json</span> <span class="k">=&gt;</span> <span class="nc">SomeJsonObject</span><span class="o">(</span><span class="s">"test"</span> <span class="o">-&gt;</span> <span class="n">json</span><span class="o">)))</span>
+<span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">transform</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">selector</span><span class="o">,</span> <span class="n">json</span> <span class="k">=&gt;</span> <span class="nc">SomeJsonObject</span><span class="o">(</span><span class="s">"test"</span> <span class="o">-&gt;</span> <span class="n">json</span><span class="o">)))</span>
 </code></pre></div></div>
-<p>For concrete examples of provided <code>Builder</code>s and <code>Tokeizer</code>s, please refer to <a href="/documentation/json/libraries">the JSON library binding modules documentation</a></p>
+<p>For concrete examples of provided <code>Builder</code>s and <code>Tokenizer</code>s, please refer to <a href="/documentation/json/libraries">the JSON library binding modules documentation</a></p>
+
+<p>Sometimes you would like to delete some Json values from the input stream, based o some predicate at a given path, and keep the rest untouched. In this case, you can use the <code>transformOpt</code> pipe, and return <code>None</code> for values you want to remove from the stream.</p>
 
 <h3 id="json-renderers">JSON Renderers</h3>
 
@@ -237,6 +331,7 @@ On the other hand, if it selects elements in an object, then emitted values are 
   <span class="n">stream</span>
     <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">render</span><span class="o">.</span><span class="py">compact</span><span class="o">)</span>
     <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">text</span><span class="o">.</span><span class="py">utf8Encode</span><span class="o">)</span>
+    <span class="o">.</span><span class="py">lift</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
     <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">io</span><span class="o">.</span><span class="py">file</span><span class="o">.</span><span class="py">writeAll</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="nv">Paths</span><span class="o">.</span><span class="py">get</span><span class="o">(</span><span class="s">"/some/path/to/file.json"</span><span class="o">),</span> <span class="n">blocker</span><span class="o">))</span>
     <span class="o">.</span><span class="py">compile</span>
     <span class="o">.</span><span class="py">drain</span>
@@ -247,12 +342,15 @@ On the other hand, if it selects elements in an object, then emitted values are 
 
 <p>If you are interested in the String rendering as a value, the library also provides <a href="https://oss.sonatype.org/service/local/repositories/releases/archive/co/fs2/fs2-core_2.13/2.3.0/fs2-core_2.13-2.3.0-javadoc.jar/!/fs2/Collector.html"><code>Collector</code>s</a>:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">compact</span><span class="o">).</span><span class="py">unsafeRunSync</span><span class="o">()</span>
-<span class="c1">// res4: collector.compact.Out = "{\"field1\":0,\"field2\":\"test\",\"field3\":[1,2,3]}{\"field1\":2,\"field3\":[]}"</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">compact</span><span class="o">)</span>
+<span class="c1">// res7: Either[Throwable, collector.compact.Out] = Right(</span>
+<span class="c1">//   "{\"field1\":0,\"field2\":\"test\",\"field3\":[1,2,3]}{\"field1\":2,\"field3\":[]}"</span>
+<span class="c1">// )</span>
 
 <span class="c1">// default indentation is 2 spaces</span>
-<span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">()).</span><span class="py">unsafeRunSync</span><span class="o">()</span>
-<span class="c1">// res5: String = """{</span>
+<span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">())</span>
+<span class="c1">// res8: Either[Throwable, String] = Right(</span>
+<span class="c1">//   """{</span>
 <span class="c1">//   "field1": 0,</span>
 <span class="c1">//   "field2": "test",</span>
 <span class="c1">//   "field3": [</span>
@@ -265,9 +363,11 @@ On the other hand, if it selects elements in an object, then emitted values are 
 <span class="c1">//   "field1": 2,</span>
 <span class="c1">//   "field3": []</span>
 <span class="c1">// }"""</span>
+<span class="c1">// )</span>
 <span class="c1">// if you are more into tabs (or any other indentation size) you can change the indentation string</span>
-<span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">(</span><span class="s">"\t"</span><span class="o">)).</span><span class="py">unsafeRunSync</span><span class="o">()</span>
-<span class="c1">// res6: String = """{</span>
+<span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">(</span><span class="s">"\t"</span><span class="o">))</span>
+<span class="c1">// res9: Either[Throwable, String] = Right(</span>
+<span class="c1">//   """{</span>
 <span class="c1">// 	"field1": 0,</span>
 <span class="c1">// 	"field2": "test",</span>
 <span class="c1">// 	"field3": [</span>
@@ -280,7 +380,90 @@ On the other hand, if it selects elements in an object, then emitted values are 
 <span class="c1">// 	"field1": 2,</span>
 <span class="c1">// 	"field3": []</span>
 <span class="c1">// }"""</span>
+<span class="c1">// )</span>
 </code></pre></div></div>
+
+<h3 id="generating-json-streams">Generating JSON streams</h3>
+
+<p>Another use case of the library can be to generate a JSON token stream. This comes in handy if you are developing a web service that returns some big JSON in chunks.</p>
+
+<p>To this end you can use the pipes in <code>wrap</code> which allow you to wrap a stream into an object structure.</p>
+
+<p>For instance imagine you have a store of events which can return a stream of events, and you have a way to serialize the events into JSON.</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">Event</span>
+<span class="k">case</span> <span class="k">class</span> <span class="nc">CreateCounter</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">initialValue</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Event</span>
+<span class="k">case</span> <span class="k">class</span> <span class="nc">RemoveCounter</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Event</span>
+<span class="k">case</span> <span class="k">class</span> <span class="nc">IncreaseCounter</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Event</span>
+
+<span class="k">object</span> <span class="nc">Event</span> <span class="o">{</span>
+  <span class="k">import</span> <span class="nn">_root_.io.circe.Encoder</span>
+  <span class="k">import</span> <span class="nn">_root_.io.circe.generic.extras.Configuration</span>
+  <span class="k">import</span> <span class="nn">_root_.io.circe.generic.extras.semiauto._</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">configuration</span> <span class="k">=</span> <span class="nv">Configuration</span><span class="o">.</span><span class="py">default</span><span class="o">.</span><span class="py">withDiscriminator</span><span class="o">(</span><span class="s">"type"</span><span class="o">)</span>
+
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">encoder</span><span class="k">:</span> <span class="kt">Encoder</span><span class="o">[</span><span class="kt">Event</span><span class="o">]</span> <span class="k">=</span> <span class="n">deriveConfiguredEncoder</span>
+<span class="o">}</span>
+
+<span class="k">val</span> <span class="nv">events</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span>
+  <span class="nc">List</span><span class="o">[</span><span class="kt">Event</span><span class="o">](</span>
+    <span class="nc">CreateCounter</span><span class="o">(</span><span class="s">"counter1"</span><span class="o">,</span> <span class="mi">0</span><span class="o">),</span>
+    <span class="nc">IncreaseCounter</span><span class="o">(</span><span class="s">"counter1"</span><span class="o">),</span>
+    <span class="nc">CreateCounter</span><span class="o">(</span><span class="s">"counter2"</span><span class="o">,</span> <span class="mi">0</span><span class="o">),</span>
+    <span class="nc">RemoveCounter</span><span class="o">(</span><span class="s">"counter2"</span><span class="o">)</span>
+  <span class="o">)</span>
+<span class="o">)</span>
+<span class="c1">// events: Stream[Nothing, Event] = Stream(..)</span>
+</code></pre></div></div>
+
+<p>You can generate a stream of JSON token wrapped in an object at a key named <code>events</code> like this:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
+
+<span class="k">val</span> <span class="nv">wrappedTokens</span> <span class="k">=</span> <span class="nv">events</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">tokenize</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="nv">wrap</span><span class="o">.</span><span class="py">asArrayInObject</span><span class="o">(</span><span class="n">at</span> <span class="k">=</span> <span class="s">"events"</span><span class="o">))</span>
+<span class="c1">// wrappedTokens: Stream[Nothing, Token] = Stream(..)</span>
+</code></pre></div></div>
+
+<p>You can use the renderers described above to generate the rendered chunks to send to the client.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">wrappedTokens</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">render</span><span class="o">.</span><span class="py">compact</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res10: cats.package.Id[List[String]] = List(</span>
+<span class="c1">//   "{",</span>
+<span class="c1">//   "\"events\":",</span>
+<span class="c1">//   "[",</span>
+<span class="c1">//   "{\"name\":\"counter1\",\"initialValue\":0,\"type\":\"CreateCounter\"}",</span>
+<span class="c1">//   ",{\"name\":\"counter1\",\"type\":\"IncreaseCounter\"}",</span>
+<span class="c1">//   ",{\"name\":\"counter2\",\"initialValue\":0,\"type\":\"CreateCounter\"}",</span>
+<span class="c1">//   ",{\"name\":\"counter2\",\"type\":\"RemoveCounter\"}",</span>
+<span class="c1">//   "]",</span>
+<span class="c1">//   "}"</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>You can also add other fields to the the generated object stream. For instance, let’s assume we can know how big the stream will be in advance from our event store, we can send this piece of data in the first chunks, so that the client can react accordingly.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">_root_.io.circe.Json</span>
+
+<span class="n">events</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">tokenize</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">wrap</span><span class="o">.</span><span class="py">asArrayInObject</span><span class="o">(</span><span class="n">at</span> <span class="k">=</span> <span class="s">"events"</span><span class="o">,</span> <span class="n">in</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">(</span><span class="s">"size"</span> <span class="o">-&gt;</span> <span class="nv">Json</span><span class="o">.</span><span class="py">fromInt</span><span class="o">(</span><span class="mi">4</span><span class="o">))))</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">render</span><span class="o">.</span><span class="py">compact</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res11: cats.package.Id[List[String]] = List(</span>
+<span class="c1">//   "{",</span>
+<span class="c1">//   "\"size\":4",</span>
+<span class="c1">//   ",\"events\":",</span>
+<span class="c1">//   "[",</span>
+<span class="c1">//   "{\"name\":\"counter1\",\"initialValue\":0,\"type\":\"CreateCounter\"}",</span>
+<span class="c1">//   ",{\"name\":\"counter1\",\"type\":\"IncreaseCounter\"}",</span>
+<span class="c1">//   ",{\"name\":\"counter2\",\"initialValue\":0,\"type\":\"CreateCounter\"}",</span>
+<span class="c1">//   ",{\"name\":\"counter2\",\"type\":\"RemoveCounter\"}",</span>
+<span class="c1">//   "]",</span>
+<span class="c1">//   "}"</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>For more pipes and options, please refer to the <a href="/api/fs2/data/json/package$$wrap$.html">API documentation</a>.</p>
 
 
       </div>
