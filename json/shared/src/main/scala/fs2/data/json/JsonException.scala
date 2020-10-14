@@ -15,6 +15,7 @@
  */
 package fs2.data.json
 
-class JsonException(msg: String) extends Exception(msg)
+class JsonException(msg: String, val context: Option[JsonContext] = None, val inner: Throwable = null)
+    extends Exception(msg, inner)
 
 class JsonMissingFieldException(msg: String, val missing: Set[String]) extends Exception(msg)

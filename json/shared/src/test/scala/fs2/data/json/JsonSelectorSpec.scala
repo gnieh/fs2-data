@@ -163,7 +163,12 @@ abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer
         .compile
         .toList
         .unsafeRunSync()
-    transformed shouldBe List(Right(Token.StartObject), Right(Token.Key("f")), Left(exn))
+    transformed match {
+      case List(Right(Token.StartObject), Right(Token.Key("f")), Left(error: JsonException)) =>
+        error.context shouldBe Some(JsonContext.Key("f", JsonContext.Root))
+        error.inner shouldBe exn
+      case _ => fail()
+    }
   }
 
 }
