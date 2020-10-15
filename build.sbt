@@ -8,6 +8,7 @@ val commonSettings = List(
   scalaVersion := scala212,
   crossScalaVersions := Seq(scala213, scala212),
   organization := "org.gnieh",
+  headerLicense := Some(HeaderLicense.ALv2("2020", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
   scalacOptions ++= List("-feature",
@@ -15,7 +16,7 @@ val commonSettings = List(
                          "-unchecked",
                          "-Ypatmat-exhaust-depth",
                          "off",
-                         "-Ywarn-unused:imports"),
+                         "-Ywarn-unused:imports,privates"),
   scalacOptions ++= PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
       case Some((2, n)) if n < 13 =>
@@ -92,7 +93,9 @@ val root = (project in file("."))
     jsonDiffson.js,
     jsonInterpolators,
     xml.jvm,
-    xml.js
+    xml.js,
+    cbor.jvm,
+    cbor.js
   )
 
 lazy val csv = crossProject(JVMPlatform, JSPlatform)
@@ -197,6 +200,16 @@ lazy val xml = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "fs2-data-xml",
     description := "Streaming XML manipulation library"
+  )
+
+lazy val cbor = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Full)
+  .in(file("cbor"))
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "fs2-data-cbor",
+    description := "Streaming CBOR manipulation library"
   )
 
 lazy val documentation = project
