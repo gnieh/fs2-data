@@ -301,8 +301,11 @@ private[low] object ItemParser {
       case 23 =>
         Pull.pure((chunk, idx, rest, CborItem.Undefined :: chunkAcc))
       case 24 =>
-        requireOneByte(chunk, idx, rest, chunkAcc).map { case (chunk, idx, rest, chunkAcc, byte) =>
-          (chunk, idx, rest, CborItem.SimpleValue(byte) :: chunkAcc)
+        requireOneByte(chunk, idx, rest, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, byte) =>
+          if (byte < 32)
+            Pull.raiseError(new CborException(s""))
+          else
+            Pull.pure((chunk, idx, rest, CborItem.SimpleValue(byte) :: chunkAcc))
         }
       case 25 =>
         requireBytes(chunk, idx, rest, 2, Chunk.Queue.empty[Byte], chunkAcc).map {
@@ -319,8 +322,13 @@ private[low] object ItemParser {
           case (chunk, idx, rest, chunkAcc, bytes) =>
             (chunk, idx, rest, CborItem.Float64(bytes.toBitVector) :: chunkAcc)
         }
+      case 31 =>
+        Pull.raiseError(new CborException("unexpected break"))
       case _ =>
-        Pull.pure((chunk, idx, rest, CborItem.SimpleValue(additional) :: chunkAcc))
+        if (additional > 27)
+          Pull.raiseError(new CborException(s"unassigned 5-bits value $additional"))
+        else
+          Pull.pure((chunk, idx, rest, CborItem.SimpleValue(additional) :: chunkAcc))
     }
 
   def parseValue[F[_]](chunk: Chunk[Byte], idx: Int, rest: Stream[F, Byte], chunkAcc: List[CborItem])(implicit
