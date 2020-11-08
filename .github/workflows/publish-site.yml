@@ -6,35 +6,18 @@ on:
       - published
 
 jobs:
-  site:
-    runs-on: ubuntu-latest
+  publish:
+    env:
+      GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+    runs-on: ubuntu-18.04
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Checkout gh-pages branch in nanoc output
-        uses: actions/checkout@v2
-        with:
-          ref: gh-pages
-          path: site/output
-      - name: Setup git user
-        run: |
-          git config --global user.email "lucas.satabin@gnieh.org"
-          git config --global user.name "Lucas Satabin"
-      - name: Setup java environement
-        uses: actions/setup-java@v1
-        with:
-          java-version: 11
-      - name: Generate unified scaladoc
-        run: ./millw unidoc
-      - name: Generate documentation
-        run: ./millw documentation.mdoc
-      - name: Setup ruby environment
-        uses: actions/setup-ruby@v1
+      - uses: actions/checkout@v2.1.0
       - name: Install nanoc
         run: |
           gem install nanoc kramdown-parser-gfm rouge
-      - name: Generate and deploy site
-        run: |
-          cd site
-          nanoc
-          nanoc deploy
+      - name: "Compile documentation"
+        run: "sbt documentation/mdoc"
+      - name: "Build site"
+        run: "sbt makeSite"
+      - name: "Publish site"
+        run: "sbt ghpagesPushSite"
