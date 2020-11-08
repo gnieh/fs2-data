@@ -8,7 +8,6 @@ val commonSettings = List(
   scalaVersion := scala212,
   crossScalaVersions := Seq(scala213, scala212),
   organization := "org.gnieh",
-  version := "0.9.0-SNAPSHOT",
   licenses += ("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
   scalacOptions ++= List("-feature",
@@ -38,15 +37,7 @@ val commonSettings = List(
 )
 
 val publishSettings = List(
-  publishMavenStyle := true,
   publishArtifact in Test := false,
-  // The Nexus repo we're publishing to.
-  publishTo := Some(
-    if (isSnapshot.value)
-      Opts.resolver.sonatypeSnapshots
-    else
-      Opts.resolver.sonatypeStaging
-  ),
   pomIncludeRepository := { x =>
     false
   },
