@@ -24,7 +24,7 @@ sealed trait CborValue
 
 object CborValue {
 
-  case class Integer(value: Long) extends CborValue
+  case class Integer(value: BigInt) extends CborValue
   case class ByteString(bytes: BitVector) extends CborValue
   case class TextString(text: String) extends CborValue
   case class Array(values: List[CborValue]) extends CborValue
@@ -35,7 +35,6 @@ object CborValue {
   case object Null extends CborValue
   case object Undefined extends CborValue
   case class SimpleValue(value: Byte) extends CborValue
-  case class Float16(value: HalfFloat) extends CborValue
   case class Float32(value: Float) extends CborValue
   case class Float64(value: Double) extends CborValue
 

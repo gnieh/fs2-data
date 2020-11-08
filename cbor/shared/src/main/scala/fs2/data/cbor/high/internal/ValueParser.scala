@@ -79,7 +79,7 @@ object ValueParser {
     } else {
       chunk(idx) match {
         case CborItem.Break =>
-          Pull.pure((chunk, idx, rest, chunkAcc, CborValue.Array(acc.result())))
+          Pull.pure((chunk, idx + 1, rest, chunkAcc, CborValue.Array(acc.result())))
         case _ =>
           if (acc.size == Int.MaxValue) {
             raise(new CborException(s"array size is limited to max int (${Int.MaxValue}) elements"), chunkAcc)
@@ -137,7 +137,7 @@ object ValueParser {
     } else {
       chunk(idx) match {
         case CborItem.Break =>
-          Pull.pure((chunk, idx, rest, chunkAcc, CborValue.Map(acc.result())))
+          Pull.pure((chunk, idx + 1, rest, chunkAcc, CborValue.Map(acc.result())))
         case _ =>
           if (acc.size == Int.MaxValue) {
             raise(new CborException(s"map size is limited to max int (${Int.MaxValue}) elements"), chunkAcc)
@@ -222,6 +222,8 @@ object ValueParser {
       }
     }
 
+  private val minusOne = BigInt(-1)
+
   private def parseValue[F[_]](chunk: Chunk[CborItem], idx: Int, rest: Stream[F, CborItem], chunkAcc: List[CborValue])(
       implicit F: RaiseThrowable[F]): Pull[F, CborValue, Result[F, CborValue]] =
     parseTags(chunk, idx, rest, identity, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, tags) =>
@@ -239,19 +241,14 @@ object ValueParser {
           case CborItem.SimpleValue(value) =>
             Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.SimpleValue(value))))
           case CborItem.PositiveInt(bytes) =>
-            val long = bytes.toLong(signed = false)
-            if (long < 0)
-              raise(new CborException("positive integer cannot be bigger than MAX_LONG"), chunkAcc)
-            else
-              Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.Integer(long))))
+            val value = BigInt(bytes.toHex, 16)
+            Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.Integer(value))))
           case CborItem.NegativeInt(bytes) =>
-            val long = -1l - bytes.toLong(signed = false)
-            if (long >= 0)
-              raise(new CborException("negative integer cannot be smaller than MIN"), chunkAcc)
-            else
-              Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.Integer(long))))
+            val value = minusOne - BigInt(bytes.toHex, 16)
+            Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.Integer(value))))
           case CborItem.Float16(raw) =>
-            Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.Float16(HalfFloat.fromBits(raw)))))
+            Pull.pure(
+              (chunk, idx + 1, rest, chunkAcc, tags(CborValue.Float32(HalfFloat.toFloat(raw.toShort(signed = false))))))
           case CborItem.Float32(raw) =>
             Pull.pure(
               (chunk,

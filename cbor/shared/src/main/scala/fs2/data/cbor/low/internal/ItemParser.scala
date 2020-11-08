@@ -47,7 +47,11 @@ private[low] object ItemParser {
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => requireBytes(hd, 0, tl, n, acc, Nil)
-        case None           => Pull.raiseError(new CborException("unexpected end of input"))
+        case None =>
+          if (n == 0)
+            Pull.pure((Chunk.empty, 0, Stream.empty, Nil, Chunk.empty))
+          else
+            Pull.raiseError(new CborException("unexpected end of input"))
       }
     } else {
       val seg = chunk.drop(idx).take(n)
@@ -65,14 +69,14 @@ private[low] object ItemParser {
                                    rest: Stream[F, Byte],
                                    chunkAcc: List[CborItem],
                                    peek: Boolean = false)(implicit
-      F: RaiseThrowable[F]): Pull[F, CborItem, Result[F, Byte]] =
+      F: RaiseThrowable[F]): Pull[F, CborItem, Result[F, Integer]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => requireOneByte(hd, 0, tl, Nil)
         case None           => Pull.raiseError(new CborException("unexpected end of input"))
       }
     } else {
-      Pull.pure((chunk, if (peek) idx else idx + 1, rest, chunkAcc, chunk(idx)))
+      Pull.pure((chunk, if (peek) idx else idx + 1, rest, chunkAcc, chunk(idx) & 0xff))
     }
 
   private def parseInteger[F[_]](chunk: Chunk[Byte],
@@ -101,7 +105,7 @@ private[low] object ItemParser {
                                           chunkAcc: List[CborItem])(implicit
       F: RaiseThrowable[F]): Pull[F, CborItem, Context[F]] =
     requireOneByte(chunk, idx, rest, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, byte) =>
-      if (byte == 0x7f) {
+      if (byte == 0xff) {
         Pull.pure((chunk, idx, rest, CborItem.Break :: chunkAcc))
       } else {
         val major = (byte & 0xe0) >>> 5
@@ -110,11 +114,11 @@ private[low] object ItemParser {
           if (additional == 31)
             Pull.raiseError(new CborException("nested indefinite byte strings are not allowed"))
           else
-            parseByteString(chunk, idx, rest, additional, CborItem.StartIndefiniteByteString :: chunkAcc).flatMap {
-              case (chunk, idx, rest, chunkAcc) => parseInnerByteStrings(chunk, idx, rest, chunkAcc)
+            parseByteString(chunk, idx, rest, additional, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc) =>
+              parseInnerByteStrings(chunk, idx, rest, chunkAcc)
             }
         else
-          Pull.raiseError(new CborException("byte string major type expected"))
+          Pull.raiseError(new CborException(s"byte string major type expected but got $major"))
       }
     }
 
@@ -125,7 +129,7 @@ private[low] object ItemParser {
                                     chunkAcc: List[CborItem])(implicit
       F: RaiseThrowable[F]): Pull[F, CborItem, Context[F]] =
     if (additional == 31) {
-      parseInnerByteStrings(chunk, idx, rest, chunkAcc)
+      parseInnerByteStrings(chunk, idx, rest, CborItem.StartIndefiniteByteString :: chunkAcc)
     } else {
       parseInteger(chunk, idx, rest, additional, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, bytes) =>
         val size = asUnsignedNumber(bytes)
@@ -147,7 +151,7 @@ private[low] object ItemParser {
                                           chunkAcc: List[CborItem])(implicit
       F: RaiseThrowable[F]): Pull[F, CborItem, Context[F]] =
     requireOneByte(chunk, idx, rest, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, byte) =>
-      if (byte == 0x7f) {
+      if (byte == 0xff) {
         Pull.pure((chunk, idx, rest, CborItem.Break :: chunkAcc))
       } else {
         val major = (byte & 0xe0) >>> 5
@@ -156,8 +160,8 @@ private[low] object ItemParser {
           if (additional == 31)
             Pull.raiseError(new CborException("nested indefinite byte strings are not allowed"))
           else
-            parseTextString(chunk, idx, rest, additional, CborItem.StartIndefiniteTextString :: chunkAcc).flatMap {
-              case (chunk, idx, rest, chunkAcc) => parseInnerTextStrings(chunk, idx, rest, chunkAcc)
+            parseTextString(chunk, idx, rest, additional, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc) =>
+              parseInnerTextStrings(chunk, idx, rest, chunkAcc)
             }
         else
           Pull.raiseError(new CborException("text string major type expected"))
@@ -171,7 +175,7 @@ private[low] object ItemParser {
                                     chunkAcc: List[CborItem])(implicit
       F: RaiseThrowable[F]): Pull[F, CborItem, Context[F]] =
     if (additional == 31) {
-      parseInnerTextStrings(chunk, idx, rest, chunkAcc)
+      parseInnerTextStrings(chunk, idx, rest, CborItem.StartIndefiniteTextString :: chunkAcc)
     } else {
       parseInteger(chunk, idx, rest, additional, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, bytes) =>
         val size = asUnsignedNumber(bytes)
@@ -208,7 +212,7 @@ private[low] object ItemParser {
   private def parseValues[F[_]](chunk: Chunk[Byte], idx: Int, rest: Stream[F, Byte], chunkAcc: List[CborItem])(implicit
       F: RaiseThrowable[F]): Pull[F, CborItem, Context[F]] =
     requireOneByte(chunk, idx, rest, chunkAcc, peek = true).flatMap { case (chunk, idx, rest, chunkAcc, byte) =>
-      if (byte == 0x7f) {
+      if (byte == 0xff) {
         Pull.pure((chunk, idx + 1, rest, CborItem.Break :: chunkAcc))
       } else {
         parseValue(chunk, idx, rest, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc) =>
@@ -251,7 +255,7 @@ private[low] object ItemParser {
   private def parseKeyValues[F[_]](chunk: Chunk[Byte], idx: Int, rest: Stream[F, Byte], chunkAcc: List[CborItem])(
       implicit F: RaiseThrowable[F]): Pull[F, CborItem, Context[F]] =
     requireOneByte(chunk, idx, rest, chunkAcc, peek = true).flatMap { case (chunk, idx, rest, chunkAcc, byte) =>
-      if (byte == 0x7f) {
+      if (byte == 0xff) {
         Pull.pure((chunk, idx + 1, rest, CborItem.Break :: chunkAcc))
       } else {
         parseValue(chunk, idx, rest, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc) =>
@@ -266,11 +270,11 @@ private[low] object ItemParser {
                              additional: Byte,
                              chunkAcc: List[CborItem])(implicit F: RaiseThrowable[F]): Pull[F, CborItem, Context[F]] =
     if (additional == 31) {
-      parseKeyValues(chunk, idx, rest, CborItem.StartIndefiniteArray :: chunkAcc)
+      parseKeyValues(chunk, idx, rest, CborItem.StartIndefiniteMap :: chunkAcc)
     } else {
       parseInteger(chunk, idx, rest, additional, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, bytes) =>
         val size = asUnsignedNumber(bytes)
-        parseKeyValues(chunk, idx, rest, size, CborItem.StartArray(size) :: chunkAcc)
+        parseKeyValues(chunk, idx, rest, size, CborItem.StartMap(size) :: chunkAcc)
       }
     }
 
@@ -302,10 +306,10 @@ private[low] object ItemParser {
         Pull.pure((chunk, idx, rest, CborItem.Undefined :: chunkAcc))
       case 24 =>
         requireOneByte(chunk, idx, rest, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, byte) =>
-          if (byte < 32)
-            Pull.raiseError(new CborException(s""))
+          if (byte >= 0 && byte < 32)
+            Pull.raiseError(new CborException(s"invalid simple value additional byte $byte"))
           else
-            Pull.pure((chunk, idx, rest, CborItem.SimpleValue(byte) :: chunkAcc))
+            Pull.pure((chunk, idx, rest, CborItem.SimpleValue(byte.toByte) :: chunkAcc))
         }
       case 25 =>
         requireBytes(chunk, idx, rest, 2, Chunk.Queue.empty[Byte], chunkAcc).map {
@@ -338,19 +342,19 @@ private[low] object ItemParser {
       val additional = (byte & 0x1f).toByte
       (major: @switch) match {
         case MajorType.PositiveInteger =>
-          parseInteger(chunk, idx + 1, rest, additional, chunkAcc).map { case (chunk, idx, rest, chunkAcc, bytes) =>
+          parseInteger(chunk, idx, rest, additional, chunkAcc).map { case (chunk, idx, rest, chunkAcc, bytes) =>
             (chunk, idx, rest, CborItem.PositiveInt(bytes.toBitVector) :: chunkAcc)
           }
         case MajorType.NegativeInteger =>
-          parseInteger(chunk, idx + 1, rest, additional, chunkAcc).map { case (chunk, idx, rest, chunkAcc, bytes) =>
+          parseInteger(chunk, idx, rest, additional, chunkAcc).map { case (chunk, idx, rest, chunkAcc, bytes) =>
             (chunk, idx, rest, CborItem.NegativeInt(bytes.toBitVector) :: chunkAcc)
           }
-        case MajorType.ByteString  => parseByteString(chunk, idx + 1, rest, additional, chunkAcc)
-        case MajorType.TextString  => parseTextString(chunk, idx + 1, rest, additional, chunkAcc)
-        case MajorType.Array       => parseArray(chunk, idx + 1, rest, additional, chunkAcc)
-        case MajorType.Map         => parseMap(chunk, idx + 1, rest, additional, chunkAcc)
-        case MajorType.SemanticTag => parseTaggedValue(chunk, idx + 1, rest, additional, chunkAcc)
-        case MajorType.Simple      => parseSimple(chunk, idx + 1, rest, additional, chunkAcc)
+        case MajorType.ByteString  => parseByteString(chunk, idx, rest, additional, chunkAcc)
+        case MajorType.TextString  => parseTextString(chunk, idx, rest, additional, chunkAcc)
+        case MajorType.Array       => parseArray(chunk, idx, rest, additional, chunkAcc)
+        case MajorType.Map         => parseMap(chunk, idx, rest, additional, chunkAcc)
+        case MajorType.SemanticTag => parseTaggedValue(chunk, idx, rest, additional, chunkAcc)
+        case MajorType.Simple      => parseSimple(chunk, idx, rest, additional, chunkAcc)
         case _                     => Pull.raiseError(new CborException(s"unknown major $major"))
       }
     }
