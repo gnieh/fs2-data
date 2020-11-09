@@ -275,12 +275,12 @@
 <p>For <code>CellEncoder</code>, it is even easier to define your own as encoding can’t fail, so basically it’s just a function <code>A =&gt; String</code>. The easiest ways to roll your own are using Scala’s single abstract method sugar:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Wrapper</span><span class="o">(</span><span class="n">content</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">wrapperCellEncoder</span><span class="k">:</span> <span class="kt">CellEncoder</span><span class="o">[</span><span class="kt">Wrapper</span><span class="o">]</span> <span class="k">=</span> <span class="o">(</span><span class="n">w</span><span class="k">:</span> <span class="kt">Wrapper</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nv">w</span><span class="o">.</span><span class="py">content</span>
-<span class="c1">// wrapperCellEncoder: CellEncoder[Wrapper] = repl.MdocSession$App$$anonfun$22@54110a71</span>
+<span class="c1">// wrapperCellEncoder: CellEncoder[Wrapper] = repl.MdocSession$App$$anonfun$22@3301f26d</span>
 </code></pre></div></div>
 
 <p>or using <code>contramap</code> on an existing encoder:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="nv">wrapperCellEncoder2</span><span class="k">:</span> <span class="kt">CellEncoder</span><span class="o">[</span><span class="kt">Wrapper</span><span class="o">]</span> <span class="k">=</span> <span class="nc">CellEncoder</span><span class="o">[</span><span class="kt">String</span><span class="o">].</span><span class="py">contramap</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">content</span><span class="o">)</span>
-<span class="c1">// wrapperCellEncoder2: CellEncoder[Wrapper] = fs2.data.csv.CellEncoder$$anonfun$contramap$2@5aad587f</span>
+<span class="c1">// wrapperCellEncoder2: CellEncoder[Wrapper] = fs2.data.csv.CellEncoder$$anonfun$contramap$2@3dd75636</span>
 </code></pre></div></div>
 
 <h4 id="rowdecoder--rowencoder"><code>RowDecoder</code> &amp; <code>RowEncoder</code></h4>
@@ -324,7 +324,7 @@
 <span class="k">val</span> <span class="nv">row</span> <span class="k">=</span> <span class="nc">Stream</span><span class="o">(</span><span class="nc">Option</span><span class="o">(</span><span class="mi">3</span><span class="o">)</span> <span class="o">::</span> <span class="s">"test"</span> <span class="o">::</span> <span class="mi">42</span> <span class="o">::</span> <span class="nc">HNil</span><span class="o">)</span>
 <span class="c1">// row: Stream[Nothing, Option[Int] :: String :: Int :: HNil] = Stream(..)</span>
 <span class="nv">row</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">encode</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res8: cats.package.Id[List[Row]] = List(fs2.data.csv.Row@48597799)</span>
+<span class="c1">// res8: cats.package.Id[List[Row]] = List(fs2.data.csv.Row@65370da9)</span>
 </code></pre></div></div>
 
 <h4 id="csvrowdecoder--csvrowencoder"><code>CsvRowDecoder</code> &amp; <code>CsvRowEncoder</code></h4>

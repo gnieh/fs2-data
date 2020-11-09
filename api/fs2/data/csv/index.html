@@ -1041,6 +1041,22 @@ instance. To get the full power of it, import <code>cats.implicits._</code>.</p>
       </span>
       
       <p class="shortcomment cmt">Transforms a stream of raw CSV rows into parsed CSV rows with headers.</p>
+    </li><li name="fs2.data.csv#headersAttempt" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="headersAttempt[F[_],Header](implicitF:fs2.RaiseThrowable[F],implicitHeader:fs2.data.csv.ParseableHeader[Header]):fs2.Pipe[F,cats.data.NonEmptyList[String],Either[Throwable,fs2.data.csv.CsvRow[Header]]]"></a><a id="headersAttempt[F[_],Header](RaiseThrowable[F],ParseableHeader[Header]):Pipe[F,NonEmptyList[String],Either[Throwable,CsvRow[Header]]]"></a>
+      <span class="permalink">
+      <a href="../../../fs2/data/csv/index.html#headersAttempt[F[_],Header](implicitF:fs2.RaiseThrowable[F],implicitHeader:fs2.data.csv.ParseableHeader[Header]):fs2.Pipe[F,cats.data.NonEmptyList[String],Either[Throwable,fs2.data.csv.CsvRow[Header]]]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">headersAttempt</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>, <span name="Header">Header</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="F">F: <span class="extype" name="fs2.RaiseThrowable">RaiseThrowable</span>[<span class="extype" name="fs2.data.csv.headersAttempt.F">F</span>]</span>, <span name="Header">Header: <a href="ParseableHeader.html" class="extype" name="fs2.data.csv.ParseableHeader">ParseableHeader</a>[<span class="extype" name="fs2.data.csv.headersAttempt.Header">Header</span>]</span>)</span><span class="result">: <a href="../../index.html#Pipe[F[_],-I,+O]=fs2.Stream[F,I]=&gt;fs2.Stream[F,O]" class="extmbr" name="fs2.Pipe">Pipe</a>[<span class="extype" name="fs2.data.csv.headersAttempt.F">F</span>, <span class="extype" name="cats.data.NonEmptyList">NonEmptyList</span>[<span class="extype" name="scala.Predef.String">String</span>], <span class="extype" name="scala.Either">Either</span>[<span class="extype" name="scala.Throwable">Throwable</span>, <a href="CsvRow.html" class="extype" name="fs2.data.csv.CsvRow">CsvRow</a>[<span class="extype" name="fs2.data.csv.headersAttempt.Header">Header</span>]]]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Transforms a stream of raw CSV rows into parsed CSV rows with headers, with failures at the element level instead of failing the stream</p>
     </li><li name="fs2.data.csv#noHeaders" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="noHeaders[F[_]]:fs2.Pipe[F,cats.data.NonEmptyList[String],fs2.data.csv.Row]"></a><a id="noHeaders[F[_]]:Pipe[F,NonEmptyList[String],Row]"></a>
       <span class="permalink">
