@@ -13,6 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2.1.0
       - uses: olafurpg/setup-scala@v10
+      - uses: actions/setup-ruby@v1
       - name: Install nanoc
         run: |
           gem install nanoc kramdown-parser-gfm rouge
