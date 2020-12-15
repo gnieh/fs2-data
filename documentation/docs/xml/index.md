@@ -19,6 +19,7 @@ To create a stream of XML events from an input stream, use the `events` pipe in 
 
 ```scala mdoc
 import cats.effect._
+import cats.effect.unsafe.implicits.global
 
 import fs2._
 import fs2.data.xml._

@@ -168,19 +168,17 @@ Once you got a JSON token stream, selected and transformed what you needed in it
 For instance, let's say you want to write the resulting JSON stream to a file in compact form (i.e. with no space or new lines), you can do:
 
 ```scala mdoc:compile-only
+import fs2.io.file.Files
+
 import java.nio.file.Paths
 
-implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
-
-Blocker[IO].use { blocker =>
-  stream
-    .through(render.compact)
-    .through(text.utf8Encode)
-    .lift[IO]
-    .through(io.file.writeAll[IO](Paths.get("/some/path/to/file.json"), blocker))
-    .compile
-    .drain
-}
+stream
+  .through(render.compact)
+  .through(text.utf8Encode)
+  .lift[IO]
+  .through(Files[IO].writeAll(Paths.get("/some/path/to/file.json")))
+  .compile
+  .drain
 ```
 
 There exists also a `pretty()` renderer, that indents inner elements by the given indent string.

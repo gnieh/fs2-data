@@ -6,7 +6,7 @@ import weaver._
 
 object RowWriterTest extends SimpleIOSuite {
 
-  test("RowWriter should escape according to the given escape mode") {
+  pureTest("RowWriter should escape according to the given escape mode") {
     // separator
     expect(RowWriter.encodeColumn(',', EscapeMode.Auto)(",") == "\",\"") and
       expect(RowWriter.encodeColumn(',', EscapeMode.Always)(",") == "\",\"") and

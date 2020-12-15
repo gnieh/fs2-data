@@ -183,7 +183,7 @@ abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer
       .compile
       .toList
       .map(transformed =>
-        expect(transformed == List(Right(Token.StartObject), Right(Token.Key("f")), Left(exn))).toExpectations)
+        expect(transformed == List(Right(Token.StartObject), Right(Token.Key("f")), Left(exn))))
   }
 
 }

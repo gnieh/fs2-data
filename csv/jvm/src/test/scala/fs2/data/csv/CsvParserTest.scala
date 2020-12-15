@@ -18,7 +18,7 @@ package fs2.data.csv
 import io.circe.parser._
 
 import fs2._
-import fs2.io._
+import fs2.io.file.Files
 
 import cats.effect._
 import cats.implicits._
@@ -27,20 +27,17 @@ import weaver._
 
 import java.nio.file.Paths
 
-object CsvParserTest extends IOSuite {
-
-  override type Res = Blocker
-  def sharedResource: Resource[IO, Res] = Blocker[IO]
+object CsvParserTest extends SimpleIOSuite {
 
   private val testFileDir = Paths.get("csv/jvm/src/test/resources/csv-spectrum/csvs/")
 
-  def allExpected(blocker: Blocker) =
-    file
-      .directoryStream[IO](blocker, testFileDir)
+  def allExpected() =
+    Files[IO]
+      .directoryStream(testFileDir)
       .evalMap { path =>
         val name = path.getFileName.toFile.getName.stripSuffix(".csv")
-        file
-          .readAll[IO](Paths.get(s"csv/jvm/src/test/resources/csv-spectrum/json/$name.json"), blocker, 1024)
+        Files[IO]
+          .readAll(Paths.get(s"csv/jvm/src/test/resources/csv-spectrum/json/$name.json"), 1024)
           .through(text.utf8Decode)
           .compile
           .string
@@ -52,25 +49,25 @@ object CsvParserTest extends IOSuite {
           .map(path -> _)
       }
 
-  test("Standard test suite should pass") { blocker =>
-    allExpected(blocker)
+  test("Standard test suite should pass") {
+    allExpected()
       .evalMap { case (path, expected) =>
-        file
-          .readAll[IO](path, blocker, 1024)
+        Files[IO]
+          .readAll(path, 1024)
           .through(fs2.text.utf8Decode)
           .through(rows())
           .through(headers[IO, String])
           .compile
           .toList
           .map(_.map(_.toMap))
-          .map(actual => expect(actual == expected, s"Invalid file $path").toExpectations)
+          .map(actual => expect(actual == expected, s"Invalid file $path"))
       }
       .compile
       .foldMonoid
   }
 
-  test("Standard test suite files should be encoded and parsed correctly") { blocker =>
-    allExpected(blocker)
+  test("Standard test suite files should be encoded and parsed correctly") {
+    allExpected()
       .evalMap { case (path, expected) =>
         Stream
           .emits(expected)
@@ -83,7 +80,7 @@ object CsvParserTest extends IOSuite {
           .compile
           .toList
           .map(_.map(_.toMap))
-          .map(reencoded => expect(reencoded == expected, s"Invalid file $path").toExpectations)
+          .map(reencoded => expect(reencoded == expected, s"Invalid file $path"))
       }
       .compile
       .foldMonoid
@@ -113,6 +110,6 @@ object CsvParserTest extends IOSuite {
       .compile
       .toList
       .map(_.map(_.toMap))
-      .map(actual => expect(actual == expected).toExpectations)
+      .map(actual => expect(actual == expected))
   }
 }

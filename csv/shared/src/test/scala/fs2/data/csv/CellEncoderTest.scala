@@ -24,7 +24,7 @@ object CellEncoderTest extends SimpleIOSuite {
   CellEncoder[java.time.LocalTime]
   CellEncoder[java.time.ZonedDateTime]
 
-  test("CellEncoder should decode standard types correctly") {
+  pureTest("CellEncoder should decode standard types correctly") {
     expect(CellEncoder[Unit].apply(()) == "") and
       expect(CellEncoder[Int].apply(78) == "78") and
       expect(CellEncoder[Boolean].apply(true) == "true") and

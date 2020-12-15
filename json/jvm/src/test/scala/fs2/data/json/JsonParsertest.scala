@@ -18,7 +18,7 @@ package data
 package json
 
 import ast._
-import io._
+import io.file.Files
 
 import cats.effect._
 
@@ -32,16 +32,13 @@ object Expectation {
   case object ImplementationDefined extends Expectation
 }
 
-abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends IOSuite {
-
-  override type Res = Blocker
-  def sharedResource: Resource[IO, Blocker] = Blocker[IO]
+abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends SimpleIOSuite {
 
   private val testFileDir = Paths.get("json/jvm/src/test/resources/test-parsing/")
 
-  test("Standard test suite files should be parsed correctly") { blocker =>
-    file
-      .directoryStream[IO](blocker, testFileDir)
+  test("Standard test suite files should be parsed correctly") {
+    Files[IO]
+      .directoryStream(testFileDir)
       .evalMap { path =>
         val expectation =
           if (path.toFile.getName.startsWith("y_"))
@@ -52,8 +49,8 @@ abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends IOS
             Expectation.ImplementationDefined
 
         val contentStream =
-          file
-            .readAll[IO](path, blocker, 1024)
+          Files[IO]
+            .readAll(path, 1024)
             .through(fs2.text.utf8Decode)
 
         contentStream
@@ -73,7 +70,7 @@ abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends IOS
                                                                   else success)
                 }
               case Expectation.Invalid =>
-                expect(actual.isLeft == true)
+                IO.pure(expect(actual.isLeft == true))
             })
       }
       .compile
