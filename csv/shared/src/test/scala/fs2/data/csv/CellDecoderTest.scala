@@ -25,7 +25,7 @@ object CellDecoderTest extends SimpleIOSuite {
   CellDecoder[DecoderResult[Char]]
   CellDecoder[Either[String, Char]]
 
-  test("CellDecoder should decode standard types correctly") {
+  pureTest("CellDecoder should decode standard types correctly") {
     expect(CellDecoder[Unit].apply("") == Right(())) and
       expect(CellDecoder[Int].apply("78") == Right(78)) and
       expect(CellDecoder[Boolean].apply("true") == Right(true)) and
@@ -41,14 +41,14 @@ object CellDecoderTest extends SimpleIOSuite {
       expect(CellDecoder[java.time.LocalTime].apply("13:04:29") == Right(java.time.LocalTime.of(13, 4, 29)))
   }
 
-  test("CellDecoder should handle container types properly") {
+  pureTest("CellDecoder should handle container types properly") {
     expect(CellDecoder[DecoderResult[Char]].apply("G") == Right(Right('G'))) and
       expect(CellDecoder[DecoderResult[Char]].apply("").map(_.isLeft) == Right(true)) and
       expect(CellDecoder[Either[String, Char]].apply("F") == Right(Right('F'))) and
       expect(CellDecoder[Either[String, Char]].apply("hello") == Right(Left("hello")))
   }
 
-  test("CellDecoder should fail on invalid inputs") {
+  pureTest("CellDecoder should fail on invalid inputs") {
     expect(CellDecoder[Unit].apply("some random non empty string").isLeft == true) and
       expect(CellDecoder[Int].apply("asdf").isLeft == true) and
       expect(CellDecoder[Boolean].apply("maybe").isLeft == true) and

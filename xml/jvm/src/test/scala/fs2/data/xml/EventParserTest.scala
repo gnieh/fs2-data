@@ -18,32 +18,28 @@ package fs2.data.xml
 import cats.effect._
 
 import fs2._
-import fs2.io._
+import fs2.io.file.Files
 
 import weaver._
 import java.nio.file.Paths
 
-object EventParserTest extends IOSuite {
-
-  override type Res = Blocker
-
-  def sharedResource: Resource[IO, Blocker] = Blocker[IO]
+object EventParserTest extends SimpleIOSuite {
 
   val testFileDir = Paths.get("xml/jvm/src/test/resources/xmlconf")
-  test("Standard test suite should pass") { blocker =>
-    (file.walk[IO](blocker, testFileDir.resolve("xmltest/valid")).filter(_.toFile.getName.endsWith(".xml")) ++
-      file.directoryStream[IO](blocker, testFileDir.resolve("sun/valid")))
+  test("Standard test suite should pass") {
+    (Files[IO].walk(testFileDir.resolve("xmltest/valid")).filter(_.toFile.getName.endsWith(".xml")) ++
+      Files[IO].directoryStream(testFileDir.resolve("sun/valid")))
       .evalMap { path =>
         // valid tests
-        file
-          .readAll[IO](path, blocker, 1024)
+        Files[IO]
+          .readAll(path, 1024)
           .through(fs2.text.utf8Decode)
           .flatMap(Stream.emits(_))
           .through(events)
           .compile
           .drain
           .attempt
-          .map(res => expect(res.isRight, s"Failed to parse $path").toExpectations)
+          .map(res => expect(res.isRight, s"Failed to parse $path"))
       }
       .compile
       .foldMonoid

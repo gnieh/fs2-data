@@ -49,18 +49,15 @@ A common pattern when using this library to read data from a file is to start by
 import cats.effect._
 
 import fs2._
+import fs2.io.file.Files
 
 import java.nio.file.Paths
 
-implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
-
-Blocker[IO].use { blocker =>
-  io.file
-    .readAll[IO](Paths.get("/some/path/to/a/file.data"), blocker, 1024)
-    // perform your decoding, parsing, and transformation here
-    .compile
-    .drain
-}
+Files[IO]
+  .readAll(Paths.get("/some/path/to/a/file.data"), 1024)
+  // perform your decoding, parsing, and transformation here
+  .compile
+  .drain
 ```
 
 For textual data formats (JSON, XML, CSV, ...) this stream needs to be decoded according to the file encoding.
@@ -70,17 +67,15 @@ For textual data formats (JSON, XML, CSV, ...) this stream needs to be decoded a
 If your file is encoded in **UTF-8**, you can use the [`fs2.text` decoding pipes][fs2-decoders] to get a stream of strings, which can then be fed to the parsers:
 
 ```scala mdoc:silent
-Blocker[IO].use { blocker =>
-  io.file
-    .readAll[IO](Paths.get("/some/path/to/a/file.data"), blocker, 1024)
-    // extra decoding step is required since UTF-8 encodes character input
-    // up to 4 bytes, which might span several chunks
-    .through(text.utf8Decode)
-    // now that we have a stream of `String`, we can parse
-    .through(tokens)
-    .compile
-    .drain
-}
+Files[IO]
+  .readAll(Paths.get("/some/path/to/a/file.data"), 1024)
+  // extra decoding step is required since UTF-8 encodes character input
+  // up to 4 bytes, which might span several chunks
+  .through(text.utf8Decode)
+  // now that we have a stream of `String`, we can parse
+  .through(tokens)
+  .compile
+  .drain
 ```
 
 #### Single byte encoded (ISO-8859-1, ISO-8859-15, ASCII) inputs
@@ -91,14 +86,12 @@ If your file is encoded using a single-byte encoding, there is no built-in decod
 // for instance if your input is encoded in ISO-8859-1 aka latin1
 import fs2.data.text.latin1._
 
-Blocker[IO].use { blocker =>
-  io.file
-    .readAll[IO](Paths.get("/some/path/to/a/file.data"), blocker, 1024)
-    // decoding is done by the now in scope `CharLikeChunks[IO, Byte]` instance
-    .through(tokens)
-    .compile
-    .drain
-}
+Files[IO]
+  .readAll(Paths.get("/some/path/to/a/file.data"), 1024)
+  // decoding is done by the now in scope `CharLikeChunks[IO, Byte]` instance
+  .through(tokens)
+  .compile
+  .drain
 ```
 
 [pipe-doc]: https://fs2.io/guide.html#statefully-transforming-streams

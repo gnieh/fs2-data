@@ -14,7 +14,6 @@ Examples on this page use the following input:
 
 ```scala mdoc
 import cats.effect._
-import cats.implicits._
 
 import fs2.{Fallible, Stream}
 import fs2.data.json._
