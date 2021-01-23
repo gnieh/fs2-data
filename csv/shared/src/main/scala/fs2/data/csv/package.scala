@@ -16,13 +16,51 @@
 package fs2
 package data
 
-import text._
 import cats.Show
 import csv.internals._
 import cats.data._
 import cats.implicits._
+import fs2.data.text.CharLikeChunks
 
 package object csv {
+
+  type Row = RowF[NoHeaders, Int]
+  object Row {
+    def apply(values: NonEmptyList[String]): Row = new Row(values, new NoHeaders(values.length))
+    def unapply(arg: Row): Some[NonEmptyList[String]] = Some(arg.values)
+  }
+
+  type CsvRow[Header] = RowF[NelHeaders, Header]
+  object CsvRow {
+
+    /** Constructs a [[CsvRow]] and checks that the size of values and headers match. */
+    def apply[Header](values: NonEmptyList[String],
+                      headers: NonEmptyList[Header]): Either[CsvException, CsvRow[Header]] =
+      if (values.length =!= headers.length)
+        Left(
+          new CsvException(
+            s"Headers have size ${headers.length} but row has size ${values.length}. Both numbers must match!"))
+      else
+        Right(new CsvRow[Header](values, new NelHeaders(headers)))
+
+    def unsafe[Header](values: NonEmptyList[String], headers: NonEmptyList[Header]): CsvRow[Header] =
+      apply(values, headers).fold(throw _, identity)
+
+    def fromListHeaders[Header](l: List[(Header, String)]): Option[CsvRow[Header]] = {
+      val (hs, vs) = l.unzip
+      (NonEmptyList.fromList(vs), NonEmptyList.fromList(hs)).mapN { (values, headers) =>
+        new CsvRow[Header](values, new NelHeaders(headers))
+      }
+    }
+
+    def fromNelHeaders[Header](nel: NonEmptyList[(Header, String)]): CsvRow[Header] = {
+      val (hs, vs) = nel.toList.unzip
+      new CsvRow[Header](NonEmptyList.fromListUnsafe(vs), new NelHeaders(NonEmptyList.fromListUnsafe(hs)))
+    }
+
+    def unapply[Header](arg: CsvRow[Header]): Some[(NonEmptyList[String], NonEmptyList[Header])] =
+      Some((arg.values, arg.headers.headers))
+  }
 
   type HeaderResult[T] = Either[HeaderError, NonEmptyList[T]]
 
@@ -75,11 +113,11 @@ package object csv {
 
   /** Transforms a stream of raw CSV rows into rows. */
   def noHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
-    _.map(new Row(_))
+    _.map(Row(_))
 
   /** Transforms a stream of raw CSV rows into rows, skipping the first row to ignore the headers. */
   def skipHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
-    _.tail.map(new Row(_))
+    _.tail.map(Row(_))
 
   def decode[F[_], R](implicit F: RaiseThrowable[F], R: RowDecoder[R]): Pipe[F, Row, R] =
     _.map(row => R(row.values)).rethrow
@@ -123,7 +161,7 @@ package object csv {
   }
 
   def encode[F[_], R](implicit R: RowEncoder[R]): Pipe[F, R, Row] =
-    _.map(row => new Row(R(row)))
+    _.map(row => Row(R(row)))
 
   def encodeRow[F[_], Header, R](implicit R: CsvRowEncoder[R, Header]): Pipe[F, R, CsvRow[Header]] =
     _.map(R(_))

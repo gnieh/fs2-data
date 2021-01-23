@@ -22,8 +22,8 @@ import weaver._
 
 object AutoDerivationTest extends SimpleIOSuite {
 
-  val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
-  val plainRow = new Row(NonEmptyList.of("1", "test", "42"))
+  val csvRow = CsvRow.unsafe[String](NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
+  val plainRow = Row(NonEmptyList.of("1", "test", "42"))
 
   case class Test(i: Int, s: String, j: Int)
 
@@ -72,7 +72,7 @@ object AutoDerivationTest extends SimpleIOSuite {
 
     expect(CellDecoder[Simple].apply("On") == Right(On)) and
       expect(CellDecoder[Simple].apply("Off") == Right(Off)) and
-      expect(CellDecoder[Simple].apply("foo").isLeft == true) and
+      expect(CellDecoder[Simple].apply("foo").isLeft) and
       expect(CellEncoder[Simple].apply(On) == "On") and
       expect(CellEncoder[Simple].apply(Off) == "Off")
   }
@@ -83,7 +83,7 @@ object AutoDerivationTest extends SimpleIOSuite {
 
     expect(CellDecoder[Simple].apply("On") == Right(On)) and
       expect(CellDecoder[Simple].apply("Off") == Right(Off)) and
-      expect(CellDecoder[Simple].apply("foo").isLeft == true) and
+      expect(CellDecoder[Simple].apply("foo").isLeft) and
       expect(CellEncoder[Simple].apply(On) == "On") and
       expect(CellEncoder[Simple].apply(Off) == "Off")
   }

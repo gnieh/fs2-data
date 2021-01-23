@@ -24,14 +24,14 @@ import weaver._
 
 object CsvRowDecoderTest extends SimpleIOSuite {
 
-  val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
-  val csvRowDefaultI = new CsvRow(NonEmptyList.of("", "test", "42"), NonEmptyList.of("i", "s", "j"))
+  val csvRow = CsvRow.unsafe(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
+  val csvRowDefaultI = CsvRow.unsafe(NonEmptyList.of("", "test", "42"), NonEmptyList.of("i", "s", "j"))
   val csvRowNoI =
-    new CsvRow(NonEmptyList.of("test", "42"), NonEmptyList.of("s", "j"))
+    CsvRow.unsafe(NonEmptyList.of("test", "42"), NonEmptyList.of("s", "j"))
   val csvRowEmptyJ =
-    new CsvRow(NonEmptyList.of("1", "test", ""), NonEmptyList.of("i", "s", "j"))
+    CsvRow.unsafe(NonEmptyList.of("1", "test", ""), NonEmptyList.of("i", "s", "j"))
   val csvRowNoJ =
-    new CsvRow(NonEmptyList.of("1", "test"), NonEmptyList.of("i", "s"))
+    CsvRow.unsafe(NonEmptyList.of("1", "test"), NonEmptyList.of("i", "s"))
 
   case class Test(i: Int = 0, s: String, j: Option[Int])
   case class TestOrder(s: String, j: Int, i: Int)

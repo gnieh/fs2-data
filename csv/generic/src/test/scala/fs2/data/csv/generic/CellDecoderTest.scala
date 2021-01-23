@@ -12,7 +12,7 @@ object CellDecoderTest extends SimpleIOSuite {
 
     expect(simpleDecoder("On") == Right(On)) and
       expect(simpleDecoder("Off") == Right(Off)) and
-      expect(simpleDecoder("foo").isLeft == true)
+      expect(simpleDecoder("foo").isLeft)
   }
 
   pureTest("derivation for coproducts should handle non-case object cases") {
@@ -37,7 +37,7 @@ object CellDecoderTest extends SimpleIOSuite {
     expect(alphabetDecoder("A") == Right(Alpha)) and
       expect(alphabetDecoder("B") == Right(Beta)) and
       expect(alphabetDecoder("Gamma") == Right(Gamma)) and
-      expect(alphabetDecoder("foobar").isLeft == true)
+      expect(alphabetDecoder("foobar").isLeft)
   }
 
   pureTest("derivation for unary products should work for standard types") {
