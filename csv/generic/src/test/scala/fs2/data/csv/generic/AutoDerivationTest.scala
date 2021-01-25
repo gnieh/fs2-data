@@ -16,14 +16,23 @@
 package fs2.data.csv.generic
 
 import cats.data.NonEmptyList
-import fs2.data.csv.{CellDecoder, CellEncoder, CsvRow, CsvRowDecoder, CsvRowEncoder, Row, RowDecoder, RowEncoder}
-
+import fs2.data.csv.{
+  CellDecoder,
+  CellEncoder,
+  CsvRow,
+  CsvRowDecoder,
+  CsvRowEncoder,
+  Exported,
+  Row,
+  RowDecoder,
+  RowEncoder
+}
 import weaver._
 
 object AutoDerivationTest extends SimpleIOSuite {
 
-  val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
-  val plainRow = new Row(NonEmptyList.of("1", "test", "42"))
+  val csvRow = CsvRow.unsafe[String](NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
+  val plainRow = Row(NonEmptyList.of("1", "test", "42"))
 
   case class Test(i: Int, s: String, j: Int)
 
@@ -49,13 +58,13 @@ object AutoDerivationTest extends SimpleIOSuite {
 
   pureTest("auto derivation for Rows should work properly for a simple case class (importing auto._)") {
     import auto._
-    expect(RowDecoder[Test].apply(plainRow.values) == Right(Test(1, "test", 42))) and
+    expect(RowDecoder[Test].apply(plainRow) == Right(Test(1, "test", 42))) and
       expect(RowEncoder[Test].apply(Test(1, "test", 42)) == plainRow.values)
   }
 
   pureTest("auto derivation for Rows should work properly for a simple case class (importing auto.csvrow._)") {
     import auto.row._
-    expect(RowDecoder[Test].apply(plainRow.values) == Right(Test(1, "test", 42))) and
+    expect(RowDecoder[Test].apply(plainRow) == Right(Test(1, "test", 42))) and
       expect(RowEncoder[Test].apply(Test(1, "test", 42)) == plainRow.values)
   }
 
@@ -63,7 +72,7 @@ object AutoDerivationTest extends SimpleIOSuite {
     import auto._
     implicit val customDe: RowDecoder[Test] = _ => Right(Test(0, "", 0))
     implicit val customEn: RowEncoder[Test] = _ => plainRow.values
-    expect(RowDecoder[Test].apply(plainRow.values) == Right(Test(0, "", 0))) and
+    expect(RowDecoder[Test].apply(plainRow) == Right(Test(0, "", 0))) and
       expect(RowEncoder[Test].apply(Test(0, "", 0)) == plainRow.values)
   }
 

@@ -15,10 +15,11 @@
  */
 package fs2.data.csv
 
+import cats._
 import cats.data._
 import cats.implicits._
 
-class Row(val values: NonEmptyList[String]) {
+case class RowF[H[a] <: Option[a], Header](values: NonEmptyList[String], headers: H[NonEmptyList[Header]]) {
 
   /** Number of cells in the row. */
   def size: Int = values.size
@@ -42,51 +43,11 @@ class Row(val values: NonEmptyList[String]) {
 
   /** Modifies the cell content at the given `idx` using the function `f`.
     */
-  def modify(idx: Int)(f: String => String): Row =
+  def modify(idx: Int)(f: String => String): RowF[H, Header] =
     if (idx < 0 || idx >= values.size)
       this
     else
-      new Row(values.zipWithIndex.map { case (cell, i) =>
-        if (i === idx)
-          f(cell)
-        else
-          cell
-      })
-
-  /** Returns the row with the cell at `idx` set to `value`. */
-  def updated(idx: Int, value: String): Row =
-    modify(idx)(_ => value)
-
-  /** Returns the row without the cell at the given `idx`.
-    * If the resulting row is empty, returns `None`.
-    */
-  def delete(idx: Int): Option[Row] =
-    if (idx < 0 || idx >= values.size) {
-      Some(this)
-    } else {
-      val (before, after) = values.toList.splitAt(idx)
-      NonEmptyList.fromList(before ++ after.tail).map(new Row(_))
-    }
-}
-
-object Row {
-  def apply(values: NonEmptyList[String]): Row = new Row(values)
-}
-
-/** A CSV row with headers, that can be used to access the cell values.
-  *
-  * '''Note:''' the following invariant holds when using this class: `values` and `headers` have the same size.
-  */
-case class CsvRow[Header] private[csv] (override val values: NonEmptyList[String], headers: NonEmptyList[Header])
-    extends Row(values) {
-
-  private lazy val byHeader: Map[Header, String] =
-    headers.toList.zip(values.toList).toMap
-
-  /** Modifies the cell content at the given `idx` using the function `f`.
-    */
-  override def modify(idx: Int)(f: String => String): CsvRow[Header] =
-    new CsvRow(super.modify(idx)(f).values, headers)
+      new RowF[H, Header](values.zipWithIndex.map { case (cell, i) => if (i === idx) f(cell) else cell }, headers)
 
   /** Modifies the cell content at the given `header` using the function `f`.
     *
@@ -94,11 +55,11 @@ case class CsvRow[Header] private[csv] (override val values: NonEmptyList[String
     * will be modified. It shouldn't be a problem in the general case as headers
     * should not be duplicated.
     */
-  def modify(header: Header)(f: String => String): CsvRow[Header] =
-    modify(headers.toList.indexOf(header))(f)
+  def modify(header: Header)(f: String => String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] =
+    modify(headers.get.toList.indexOf(header))(f)
 
   /** Returns the row with the cell at `idx` modified to `value`. */
-  override def updated(idx: Int, value: String): CsvRow[Header] =
+  def updated(idx: Int, value: String): RowF[H, Header] =
     modify(idx)(_ => value)
 
   /** Returns the row with the cell at `header` modified to `value`.
@@ -107,19 +68,22 @@ case class CsvRow[Header] private[csv] (override val values: NonEmptyList[String
     * will be modified. It shouldn't be a problem in the general case as headers
     * should not be duplicated.
     */
-  def updated(header: Header, value: String): CsvRow[Header] =
-    updated(headers.toList.indexOf(header), value)
+  def updated(header: Header, value: String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] =
+    updated(headers.get.toList.indexOf(header), value)
 
   /** Returns the row without the cell at the given `idx`.
     * If the resulting row is empty, returns `None`.
     */
-  override def delete(idx: Int): Option[CsvRow[Header]] =
+  def delete(idx: Int): Option[RowF[H, Header]] =
     if (idx < 0 || idx >= values.size) {
       Some(this)
     } else {
       val (before, after) = values.toList.splitAt(idx)
-      val (h1, h2) = headers.toList.splitAt(idx)
-      (NonEmptyList.fromList(before ++ after.tail), NonEmptyList.fromList(h1 ++ h2.tail)).mapN(new CsvRow(_, _))
+      val nh = htraverse(headers) { headers =>
+        val (h1, h2) = headers.toList.splitAt(idx)
+        NonEmptyList.fromList(h1 ::: h2.tail)
+      }
+      (NonEmptyList.fromList(before ++ after.tail), nh).mapN(new RowF[H, Header](_, _))
     }
 
   /** Returns the row without the cell at the given `header`.
@@ -129,21 +93,21 @@ case class CsvRow[Header] private[csv] (override val values: NonEmptyList[String
     * will be deleted. It shouldn't be a problem in the general case as headers
     * should not be duplicated.
     */
-  def delete(header: Header): Option[CsvRow[Header]] =
-    delete(headers.toList.indexOf(header))
+  def delete(header: Header)(implicit hasHeaders: HasHeaders[H, Header]): Option[CsvRow[Header]] =
+    delete(headers.get.toList.indexOf(header)).map(hasHeaders)
 
   /** Returns the content of the cell at `header` if it exists.
     * Returns `None` if `header` does not exist for the row.
     * An empty cell value results in `Some("")`.
     */
-  def apply(header: Header): Option[String] =
+  def apply(header: Header)(implicit hasHeaders: HasHeaders[H, Header]): Option[String] =
     byHeader.get(header)
 
   /** Returns the decoded content of the cell at `header`.
     * Fails if the field doesn't exist or cannot be decoded
     * to the expected type.
     */
-  def as[T](header: Header)(implicit decoder: CellDecoder[T]): DecoderResult[T] =
+  def as[T](header: Header)(implicit hasHeaders: HasHeaders[H, Header], decoder: CellDecoder[T]): DecoderResult[T] =
     byHeader.get(header) match {
       case Some(v) => decoder(v)
       case None    => Left(new DecoderError(s"unknown field $header"))
@@ -152,30 +116,14 @@ case class CsvRow[Header] private[csv] (override val values: NonEmptyList[String
   /** Returns a map representation of this row if headers are defined, otherwise
     * returns `None`.
     */
-  def toMap: Map[Header, String] =
+  def toMap(implicit hasHeaders: HasHeaders[H, Header]): Map[Header, String] =
     byHeader
 
-}
+  private def byHeader(implicit hasHeaders: HasHeaders[H, Header]): Map[Header, String] =
+    headers.get.toList.zip(values.toList).toMap
 
-object CsvRow {
-
-  /** Constructs a [[CsvRow]] and checks that the size of values and headers match. */
-  def apply[Header](values: NonEmptyList[String], headers: NonEmptyList[Header]): Either[CsvException, CsvRow[Header]] =
-    if (values.length =!= headers.length)
-      Left(
-        new CsvException(
-          s"Headers have size ${headers.length} but row has size ${values.length}. Both numbers must match!"))
-    else
-      Right(new CsvRow(values, headers))
-
-  def fromListHeaders[Header](l: List[(Header, String)]): Option[CsvRow[Header]] = {
-    val (hs, vs) = l.unzip
-    (NonEmptyList.fromList(vs), NonEmptyList.fromList(hs)).mapN(new CsvRow(_, _))
+  private def htraverse[G[_]: Applicative, A, B](h: H[A])(f: A => G[B]): G[H[B]] = h match {
+    case Some(a) => f(a).map(Some(_)).asInstanceOf[G[H[B]]]
+    case _       => Applicative[G].pure(None).asInstanceOf[G[H[B]]]
   }
-
-  def fromNelHeaders[Header](nel: NonEmptyList[(Header, String)]): CsvRow[Header] = {
-    val (hs, vs) = nel.toList.unzip
-    new CsvRow(NonEmptyList.fromListUnsafe(vs), NonEmptyList.fromListUnsafe(hs))
-  }
-
 }

@@ -26,8 +26,8 @@ object hlist {
 
   final implicit def hlistDecoder[T <: HList](implicit cc: Lazy[SeqShapedRowDecoder[T]]): DerivedRowDecoder[T] =
     new DerivedRowDecoder[T] {
-      def apply(cells: NonEmptyList[String]): DecoderResult[T] =
-        cc.value(cells)
+      def apply(row: Row): DecoderResult[T] =
+        cc.value(row)
     }
 
   final implicit def hlistEncoder[T <: HList](implicit cc: Lazy[SeqShapedRowEncoder[T]]): DerivedRowEncoder[T] =
