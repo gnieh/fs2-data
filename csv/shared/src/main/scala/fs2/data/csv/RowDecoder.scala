@@ -30,14 +30,10 @@ import scala.annotation.{implicitNotFound, tailrec}
   * instance. To get the full power of it, import `cats.implicits._`.
   */
 
-object RowDecoder extends ExportedRowDecoders {
+object RowDecoder {
   @inline
   def apply[T: RowDecoder]: RowDecoder[T] = implicitly[RowDecoder[T]]
 
   @inline
   def instance[T](f: NonEmptyList[String] => DecoderResult[T]): RowDecoder[T] = row => f(row.values)
-}
-
-trait ExportedRowDecoders {
-  implicit def exportedRowDecoders[A](implicit exported: Exported[RowDecoder[A]]): RowDecoder[A] = exported.instance
 }

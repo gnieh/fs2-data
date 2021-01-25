@@ -26,9 +26,9 @@ import weaver._
 
 object RowEncoderTest extends SimpleIOSuite {
 
-  val csvRow = NonEmptyList.of("1", "test", "42")
-  val csvRowEmptyI = NonEmptyList.of("", "test", "42")
-  val csvRowEmptyJ = NonEmptyList.of("1", "test", "")
+  val csvRow = Row(NonEmptyList.of("1", "test", "42"))
+  val csvRowEmptyI = Row(NonEmptyList.of("", "test", "42"))
+  val csvRowEmptyJ = Row(NonEmptyList.of("1", "test", ""))
 
   case class Test(i: Int, s: String, j: Int)
   case class TestOrder(s: String, i: Int, j: Int)

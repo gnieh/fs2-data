@@ -15,11 +15,6 @@
  */
 package fs2.data.csv
 
-import cats._
-import cats.implicits._
-
-import scala.annotation.{implicitNotFound, tailrec}
-
 object CsvRowDecoder {
 
   @inline
@@ -28,9 +23,4 @@ object CsvRowDecoder {
   @inline
   def instance[T, Header](f: CsvRow[Header] => DecoderResult[T]): CsvRowDecoder[T, Header] = f(_)
 
-}
-
-trait ExportedCsvRowDecoders {
-  implicit def exportedCsvRowDecoders[A](implicit
-      exported: Exported[CsvRowDecoder[A, String]]): CsvRowDecoder[A, String] = exported.instance
 }

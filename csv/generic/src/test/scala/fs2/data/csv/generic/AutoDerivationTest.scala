@@ -13,20 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.csv.generic
+package fs2.data.csv
+package generic
 
 import cats.data.NonEmptyList
-import fs2.data.csv.{
-  CellDecoder,
-  CellEncoder,
-  CsvRow,
-  CsvRowDecoder,
-  CsvRowEncoder,
-  Exported,
-  Row,
-  RowDecoder,
-  RowEncoder
-}
 import weaver._
 
 object AutoDerivationTest extends SimpleIOSuite {
@@ -37,7 +27,7 @@ object AutoDerivationTest extends SimpleIOSuite {
   case class Test(i: Int, s: String, j: Int)
 
   pureTest("auto derivation for CsvRows should work properly for a simple case class (importing auto._)") {
-    import auto._
+    import fs2.data.csv.generic.auto._
     expect(CsvRowDecoder[Test, String].apply(csvRow) == Right(Test(1, "test", 42))) and
       expect(CsvRowEncoder[Test, String].apply(Test(1, "test", 42)) == csvRow)
   }
@@ -59,21 +49,21 @@ object AutoDerivationTest extends SimpleIOSuite {
   pureTest("auto derivation for Rows should work properly for a simple case class (importing auto._)") {
     import auto._
     expect(RowDecoder[Test].apply(plainRow) == Right(Test(1, "test", 42))) and
-      expect(RowEncoder[Test].apply(Test(1, "test", 42)) == plainRow.values)
+      expect(RowEncoder[Test].apply(Test(1, "test", 42)) == plainRow)
   }
 
   pureTest("auto derivation for Rows should work properly for a simple case class (importing auto.csvrow._)") {
     import auto.row._
     expect(RowDecoder[Test].apply(plainRow) == Right(Test(1, "test", 42))) and
-      expect(RowEncoder[Test].apply(Test(1, "test", 42)) == plainRow.values)
+      expect(RowEncoder[Test].apply(Test(1, "test", 42)) == plainRow)
   }
 
   pureTest("auto derivation for Rows should prefer custom decoders over derived ones") {
     import auto._
     implicit val customDe: RowDecoder[Test] = _ => Right(Test(0, "", 0))
-    implicit val customEn: RowEncoder[Test] = _ => plainRow.values
+    implicit val customEn: RowEncoder[Test] = _ => plainRow
     expect(RowDecoder[Test].apply(plainRow) == Right(Test(0, "", 0))) and
-      expect(RowEncoder[Test].apply(Test(0, "", 0)) == plainRow.values)
+      expect(RowEncoder[Test].apply(Test(0, "", 0)) == plainRow)
   }
 
   pureTest("auto derivation for coproduct cells should work out of the box for enum-style sealed traits") {

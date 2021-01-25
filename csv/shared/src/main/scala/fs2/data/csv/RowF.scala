@@ -19,7 +19,16 @@ import cats._
 import cats.data._
 import cats.implicits._
 
-case class RowF[H[a] <: Option[a], Header](values: NonEmptyList[String], headers: H[NonEmptyList[Header]]) {
+/** A CSV row with or without headers. The presence of headers is encoded via the first type param
+  * which is a subtype of [[scala.Option]]. By preserving this information in types, it's possible to define
+  * [[Row]] and [[CsvRow]] aliases as if they were plain case classes while keeping the code DRY.
+  *
+  * Operations on columns can always be performed using 0-based indices and additionally using a specified header value
+  * if headers are present (and this fact statically known).
+  *
+  * '''Note:''' the following invariant holds when using this class: `values` and `headers` have the same size if headers are present.
+  */
+case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String], headers: H[NonEmptyList[Header]]) {
 
   /** Number of cells in the row. */
   def size: Int = values.size
@@ -119,11 +128,24 @@ case class RowF[H[a] <: Option[a], Header](values: NonEmptyList[String], headers
   def toMap(implicit hasHeaders: HasHeaders[H, Header]): Map[Header, String] =
     byHeader
 
+  /**
+    * Drop all headers (if any).
+    * @return a row without headers, but same values
+    */
+  def dropHeaders: Row = Row(values)
+
   private def byHeader(implicit hasHeaders: HasHeaders[H, Header]): Map[Header, String] =
     headers.get.toList.zip(values.toList).toMap
 
+  // Like Traverse[Option], but preserves the H type
   private def htraverse[G[_]: Applicative, A, B](h: H[A])(f: A => G[B]): G[H[B]] = h match {
     case Some(a) => f(a).map(Some(_)).asInstanceOf[G[H[B]]]
     case _       => Applicative[G].pure(None).asInstanceOf[G[H[B]]]
+  }
+}
+
+object RowF {
+  implicit object functor extends Functor[CsvRow[*]] {
+    override def map[A, B](fa: CsvRow[A])(f: A => B): CsvRow[B] = fa.copy(headers = Some(fa.headers.get.map(f)))
   }
 }
