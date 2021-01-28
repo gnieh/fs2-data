@@ -16,7 +16,7 @@
 
 package fs2.data.cbor.high
 
-import scodec.bits.BitVector
+import scodec.bits.ByteVector
 
 import scala.collection.{Map => SMap}
 
@@ -25,7 +25,7 @@ sealed trait CborValue
 object CborValue {
 
   case class Integer(value: BigInt) extends CborValue
-  case class ByteString(bytes: BitVector) extends CborValue
+  case class ByteString(bytes: ByteVector) extends CborValue
   case class TextString(text: String) extends CborValue
   case class Array(values: List[CborValue]) extends CborValue
   case class Map(values: SMap[CborValue, CborValue]) extends CborValue

@@ -19,7 +19,7 @@ package data
 package cbor
 package low
 
-import scodec.bits.BitVector
+import scodec.bits.ByteVector
 
 /** A low-level CBOR item. Items are emitted as soon as they are complete
   * They can be used for reading/writing streamed CBOR data, including
@@ -29,10 +29,10 @@ sealed trait CborItem
 
 object CborItem {
 
-  case class PositiveInt(bytes: BitVector) extends CborItem
-  case class NegativeInt(bytes: BitVector) extends CborItem
+  case class PositiveInt(bytes: ByteVector) extends CborItem
+  case class NegativeInt(bytes: ByteVector) extends CborItem
 
-  case class ByteString(bytes: BitVector) extends CborItem
+  case class ByteString(bytes: ByteVector) extends CborItem
   case object StartIndefiniteByteString extends CborItem
 
   case class TextString(string: String) extends CborItem
@@ -52,9 +52,9 @@ object CborItem {
   case object Undefined extends CborItem
   case class SimpleValue(value: Byte) extends CborItem
 
-  case class Float16(raw: BitVector) extends CborItem
-  case class Float32(raw: BitVector) extends CborItem
-  case class Float64(raw: BitVector) extends CborItem
+  case class Float16(raw: ByteVector) extends CborItem
+  case class Float32(raw: ByteVector) extends CborItem
+  case class Float64(raw: ByteVector) extends CborItem
 
   case object Break extends CborItem
 

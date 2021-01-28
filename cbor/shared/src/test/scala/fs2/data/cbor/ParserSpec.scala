@@ -11,9 +11,8 @@ import cats.syntax.all._
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.EitherValues
 
-class ParserSpec extends AnyFlatSpec with Matchers with EitherValues {
+class ParserSpec extends AnyFlatSpec with Matchers {
 
   def valuesMatcher(
       matcher: PartialFunction[List[CborValue], Boolean]): Either[List[CborValue], List[CborValue] => Boolean] =
@@ -67,14 +66,14 @@ class ParserSpec extends AnyFlatSpec with Matchers with EitherValues {
         CborValue.TextString("2013-03-21T20:04:00Z"))).asLeft -> hex"c074323031332d30332d32315432303a30343a30305a",
     List(CborValue.Tagged(1, CborValue.Integer(1363896240))).asLeft -> hex"c11a514b67b0",
     List(CborValue.Tagged(1, CborValue.Float64(1363896240.5))).asLeft -> hex"c1fb41d452d9ec200000",
-    List(CborValue.Tagged(23, CborValue.ByteString(hex"01020304".toBitVector))).asLeft -> hex"d74401020304",
-    List(CborValue.Tagged(24, CborValue.ByteString(hex"6449455446".toBitVector))).asLeft -> hex"d818456449455446",
+    List(CborValue.Tagged(23, CborValue.ByteString(hex"01020304"))).asLeft -> hex"d74401020304",
+    List(CborValue.Tagged(24, CborValue.ByteString(hex"6449455446"))).asLeft -> hex"d818456449455446",
     List(
       CborValue.Tagged(32,
                        CborValue.TextString(
                          "http://www.example.com"))).asLeft -> hex"d82076687474703a2f2f7777772e6578616d706c652e636f6d",
-    List(CborValue.ByteString(BitVector.empty)).asLeft -> hex"40",
-    List(CborValue.ByteString(hex"01020304".toBitVector)).asLeft -> hex"4401020304",
+    List(CborValue.ByteString(ByteVector.empty)).asLeft -> hex"40",
+    List(CborValue.ByteString(hex"01020304")).asLeft -> hex"4401020304",
     List(CborValue.TextString("")).asLeft -> hex"60",
     List(CborValue.TextString("a")).asLeft -> hex"6161",
     List(CborValue.TextString("IETF")).asLeft -> hex"6449455446",
@@ -146,10 +145,10 @@ class ParserSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   val streamingTestCases = List(
     (List(CborItem.StartIndefiniteByteString,
-          CborItem.ByteString(hex"0102".toBitVector),
-          CborItem.ByteString(hex"030405".toBitVector),
+          CborItem.ByteString(hex"0102"),
+          CborItem.ByteString(hex"030405"),
           CborItem.Break),
-     List(CborValue.ByteString(hex"0102030405".toBitVector)),
+     List(CborValue.ByteString(hex"0102030405")),
      hex"5f42010243030405ff"),
     (List(CborItem.StartIndefiniteTextString,
           CborItem.TextString("strea"),
@@ -160,13 +159,13 @@ class ParserSpec extends AnyFlatSpec with Matchers with EitherValues {
     (List(CborItem.StartIndefiniteArray, CborItem.Break), List(CborValue.Array(Nil)), hex"9fff"),
     (List(
        CborItem.StartIndefiniteArray,
-       CborItem.PositiveInt(hex"01".toBitVector),
+       CborItem.PositiveInt(hex"01"),
        CborItem.StartArray(2),
-       CborItem.PositiveInt(hex"02".toBitVector),
-       CborItem.PositiveInt(hex"03".toBitVector),
+       CborItem.PositiveInt(hex"02"),
+       CborItem.PositiveInt(hex"03"),
        CborItem.StartIndefiniteArray,
-       CborItem.PositiveInt(hex"04".toBitVector),
-       CborItem.PositiveInt(hex"05".toBitVector),
+       CborItem.PositiveInt(hex"04"),
+       CborItem.PositiveInt(hex"05"),
        CborItem.Break,
        CborItem.Break
      ),
@@ -179,13 +178,13 @@ class ParserSpec extends AnyFlatSpec with Matchers with EitherValues {
      hex"9f018202039f0405ffff"),
     (List(
        CborItem.StartIndefiniteArray,
-       CborItem.PositiveInt(hex"01".toBitVector),
+       CborItem.PositiveInt(hex"01"),
        CborItem.StartArray(2),
-       CborItem.PositiveInt(hex"02".toBitVector),
-       CborItem.PositiveInt(hex"03".toBitVector),
+       CborItem.PositiveInt(hex"02"),
+       CborItem.PositiveInt(hex"03"),
        CborItem.StartArray(2),
-       CborItem.PositiveInt(hex"04".toBitVector),
-       CborItem.PositiveInt(hex"05".toBitVector),
+       CborItem.PositiveInt(hex"04"),
+       CborItem.PositiveInt(hex"05"),
        CborItem.Break
      ),
      List(
@@ -197,13 +196,13 @@ class ParserSpec extends AnyFlatSpec with Matchers with EitherValues {
      hex"9f01820203820405ff"),
     (List(
        CborItem.StartArray(3),
-       CborItem.PositiveInt(hex"01".toBitVector),
+       CborItem.PositiveInt(hex"01"),
        CborItem.StartArray(2),
-       CborItem.PositiveInt(hex"02".toBitVector),
-       CborItem.PositiveInt(hex"03".toBitVector),
+       CborItem.PositiveInt(hex"02"),
+       CborItem.PositiveInt(hex"03"),
        CborItem.StartIndefiniteArray,
-       CborItem.PositiveInt(hex"04".toBitVector),
-       CborItem.PositiveInt(hex"05".toBitVector),
+       CborItem.PositiveInt(hex"04"),
+       CborItem.PositiveInt(hex"05"),
        CborItem.Break
      ),
      List(
@@ -215,14 +214,14 @@ class ParserSpec extends AnyFlatSpec with Matchers with EitherValues {
      hex"83018202039f0405ff"),
     (List(
        CborItem.StartArray(3),
-       CborItem.PositiveInt(hex"01".toBitVector),
+       CborItem.PositiveInt(hex"01"),
        CborItem.StartIndefiniteArray,
-       CborItem.PositiveInt(hex"02".toBitVector),
-       CborItem.PositiveInt(hex"03".toBitVector),
+       CborItem.PositiveInt(hex"02"),
+       CborItem.PositiveInt(hex"03"),
        CborItem.Break,
        CborItem.StartArray(2),
-       CborItem.PositiveInt(hex"04".toBitVector),
-       CborItem.PositiveInt(hex"05".toBitVector)
+       CborItem.PositiveInt(hex"04"),
+       CborItem.PositiveInt(hex"05")
      ),
      List(
        CborValue.Array(List(
@@ -233,31 +232,31 @@ class ParserSpec extends AnyFlatSpec with Matchers with EitherValues {
      hex"83019f0203ff820405"),
     (List(
        CborItem.StartIndefiniteArray,
-       CborItem.PositiveInt(hex"01".toBitVector),
-       CborItem.PositiveInt(hex"02".toBitVector),
-       CborItem.PositiveInt(hex"03".toBitVector),
-       CborItem.PositiveInt(hex"04".toBitVector),
-       CborItem.PositiveInt(hex"05".toBitVector),
-       CborItem.PositiveInt(hex"06".toBitVector),
-       CborItem.PositiveInt(hex"07".toBitVector),
-       CborItem.PositiveInt(hex"08".toBitVector),
-       CborItem.PositiveInt(hex"09".toBitVector),
-       CborItem.PositiveInt(hex"0a".toBitVector),
-       CborItem.PositiveInt(hex"0b".toBitVector),
-       CborItem.PositiveInt(hex"0c".toBitVector),
-       CborItem.PositiveInt(hex"0d".toBitVector),
-       CborItem.PositiveInt(hex"0e".toBitVector),
-       CborItem.PositiveInt(hex"0f".toBitVector),
-       CborItem.PositiveInt(hex"10".toBitVector),
-       CborItem.PositiveInt(hex"11".toBitVector),
-       CborItem.PositiveInt(hex"12".toBitVector),
-       CborItem.PositiveInt(hex"13".toBitVector),
-       CborItem.PositiveInt(hex"14".toBitVector),
-       CborItem.PositiveInt(hex"15".toBitVector),
-       CborItem.PositiveInt(hex"16".toBitVector),
-       CborItem.PositiveInt(hex"17".toBitVector),
-       CborItem.PositiveInt(hex"18".toBitVector),
-       CborItem.PositiveInt(hex"19".toBitVector),
+       CborItem.PositiveInt(hex"01"),
+       CborItem.PositiveInt(hex"02"),
+       CborItem.PositiveInt(hex"03"),
+       CborItem.PositiveInt(hex"04"),
+       CborItem.PositiveInt(hex"05"),
+       CborItem.PositiveInt(hex"06"),
+       CborItem.PositiveInt(hex"07"),
+       CborItem.PositiveInt(hex"08"),
+       CborItem.PositiveInt(hex"09"),
+       CborItem.PositiveInt(hex"0a"),
+       CborItem.PositiveInt(hex"0b"),
+       CborItem.PositiveInt(hex"0c"),
+       CborItem.PositiveInt(hex"0d"),
+       CborItem.PositiveInt(hex"0e"),
+       CborItem.PositiveInt(hex"0f"),
+       CborItem.PositiveInt(hex"10"),
+       CborItem.PositiveInt(hex"11"),
+       CborItem.PositiveInt(hex"12"),
+       CborItem.PositiveInt(hex"13"),
+       CborItem.PositiveInt(hex"14"),
+       CborItem.PositiveInt(hex"15"),
+       CborItem.PositiveInt(hex"16"),
+       CborItem.PositiveInt(hex"17"),
+       CborItem.PositiveInt(hex"18"),
+       CborItem.PositiveInt(hex"19"),
        CborItem.Break
      ),
      List(
@@ -292,11 +291,11 @@ class ParserSpec extends AnyFlatSpec with Matchers with EitherValues {
     (List(
        CborItem.StartIndefiniteMap,
        CborItem.TextString("a"),
-       CborItem.PositiveInt(hex"01".toBitVector),
+       CborItem.PositiveInt(hex"01"),
        CborItem.TextString("b"),
        CborItem.StartIndefiniteArray,
-       CborItem.PositiveInt(hex"02".toBitVector),
-       CborItem.PositiveInt(hex"03".toBitVector),
+       CborItem.PositiveInt(hex"02"),
+       CborItem.PositiveInt(hex"03"),
        CborItem.Break,
        CborItem.Break
      ),
@@ -320,7 +319,7 @@ class ParserSpec extends AnyFlatSpec with Matchers with EitherValues {
        CborItem.TextString("Fun"),
        CborItem.True,
        CborItem.TextString("Amt"),
-       CborItem.NegativeInt(hex"01".toBitVector),
+       CborItem.NegativeInt(hex"01"),
        CborItem.Break
      ),
      List(
@@ -334,20 +333,50 @@ class ParserSpec extends AnyFlatSpec with Matchers with EitherValues {
       val result = Stream.chunk(Chunk.byteVector(input)).through(values[Fallible]).compile.toList
       expected match {
         case Left(expected) =>
-          result shouldBe (Right(expected))
+          result shouldBe Right(expected)
         case Right(f) =>
-          f(result.right.value) shouldBe true
+          result.map(f) shouldBe Right(true)
       }
     }
   }
 
   for ((expectedLow, expectedHigh, input) <- streamingTestCases) {
-    val bytes = Stream.chunk(Chunk.byteVector(input))
-    val low = bytes.through(items[Fallible]).compile.toList
-    val high = bytes.through(values[Fallible]).compile.toList
-    high.leftMap(_.printStackTrace())
-    low shouldBe Right(expectedLow)
-    high shouldBe Right(expectedHigh)
+    "CBOR value parser" should s"parse ${input.toHex} properly" in {
+      val bytes = Stream.chunk(Chunk.byteVector(input))
+      val low = bytes.through(items[Fallible]).compile.toList
+      val high = bytes.through(values[Fallible]).compile.toList
+      high.leftMap(_.printStackTrace())
+      low shouldBe Right(expectedLow)
+      high shouldBe Right(expectedHigh)
+    }
+  }
+
+  for ((_, input) <- testCases) {
+    "CBOR parsing/serializing" should s"be fix point for ${input.toHex}" in {
+      val roundtrip = Stream
+        .chunk(Chunk.byteVector(input))
+        .through(items[Fallible])
+        .through(toBinary)
+        .compile
+        .to(Chunk)
+        .map(_.toByteVector)
+
+      roundtrip shouldBe Right(input)
+    }
+  }
+
+  for ((_, _, input) <- streamingTestCases) {
+    "CBOR parsing/serializing" should s"be fix point for ${input.toHex}" in {
+      val roundtrip = Stream
+        .chunk(Chunk.byteVector(input))
+        .through(items[Fallible])
+        .through(toBinary)
+        .compile
+        .to(Chunk)
+        .map(_.toByteVector)
+
+      roundtrip shouldBe Right(input)
+    }
   }
 
 }

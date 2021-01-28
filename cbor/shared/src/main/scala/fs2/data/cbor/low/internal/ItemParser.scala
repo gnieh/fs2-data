@@ -136,7 +136,7 @@ private[low] object ItemParser {
         if (JLong.compareUnsigned(size, Int.MaxValue.toLong) <= 0) {
           requireBytes(chunk, idx, rest, size.toInt, Chunk.Queue.empty, chunkAcc).map {
             case (chunk, idx, rest, chunkAcc, bytes) =>
-              (chunk, idx, rest, CborItem.ByteString(bytes.toBitVector) :: chunkAcc)
+              (chunk, idx, rest, CborItem.ByteString(bytes.toByteVector) :: chunkAcc)
           }
         } else {
           Pull.raiseError(new CborException(
@@ -314,17 +314,17 @@ private[low] object ItemParser {
       case 25 =>
         requireBytes(chunk, idx, rest, 2, Chunk.Queue.empty[Byte], chunkAcc).map {
           case (chunk, idx, rest, chunkAcc, bytes) =>
-            (chunk, idx, rest, CborItem.Float16(bytes.toBitVector) :: chunkAcc)
+            (chunk, idx, rest, CborItem.Float16(bytes.toByteVector) :: chunkAcc)
         }
       case 26 =>
         requireBytes(chunk, idx, rest, 4, Chunk.Queue.empty[Byte], chunkAcc).map {
           case (chunk, idx, rest, chunkAcc, bytes) =>
-            (chunk, idx, rest, CborItem.Float32(bytes.toBitVector) :: chunkAcc)
+            (chunk, idx, rest, CborItem.Float32(bytes.toByteVector) :: chunkAcc)
         }
       case 27 =>
         requireBytes(chunk, idx, rest, 8, Chunk.Queue.empty[Byte], chunkAcc).map {
           case (chunk, idx, rest, chunkAcc, bytes) =>
-            (chunk, idx, rest, CborItem.Float64(bytes.toBitVector) :: chunkAcc)
+            (chunk, idx, rest, CborItem.Float64(bytes.toByteVector) :: chunkAcc)
         }
       case 31 =>
         Pull.raiseError(new CborException("unexpected break"))
@@ -343,11 +343,11 @@ private[low] object ItemParser {
       (major: @switch) match {
         case MajorType.PositiveInteger =>
           parseInteger(chunk, idx, rest, additional, chunkAcc).map { case (chunk, idx, rest, chunkAcc, bytes) =>
-            (chunk, idx, rest, CborItem.PositiveInt(bytes.toBitVector) :: chunkAcc)
+            (chunk, idx, rest, CborItem.PositiveInt(bytes.toByteVector) :: chunkAcc)
           }
         case MajorType.NegativeInteger =>
           parseInteger(chunk, idx, rest, additional, chunkAcc).map { case (chunk, idx, rest, chunkAcc, bytes) =>
-            (chunk, idx, rest, CborItem.NegativeInt(bytes.toBitVector) :: chunkAcc)
+            (chunk, idx, rest, CborItem.NegativeInt(bytes.toByteVector) :: chunkAcc)
           }
         case MajorType.ByteString  => parseByteString(chunk, idx, rest, additional, chunkAcc)
         case MajorType.TextString  => parseTextString(chunk, idx, rest, additional, chunkAcc)

@@ -25,7 +25,7 @@ import low.CborItem
 import scala.collection.mutable
 
 import java.lang.{Float => JFloat, Double => JDouble, Long => JLong}
-import scodec.bits.BitVector
+import scodec.bits.ByteVector
 
 object ValueParser {
 
@@ -155,7 +155,7 @@ object ValueParser {
   private def parseByteStrings[F[_]](chunk: Chunk[CborItem],
                                      idx: Int,
                                      rest: Stream[F, CborItem],
-                                     acc: BitVector,
+                                     acc: ByteVector,
                                      chunkAcc: List[CborValue])(implicit
       F: RaiseThrowable[F]): Pull[F, CborValue, Result[F, CborValue]] =
     if (idx >= chunk.size) {
@@ -266,7 +266,7 @@ object ValueParser {
           case CborItem.ByteString(bytes) =>
             Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.ByteString(bytes))))
           case CborItem.StartIndefiniteByteString =>
-            parseByteStrings(chunk, idx + 1, rest, BitVector.empty, chunkAcc).map {
+            parseByteStrings(chunk, idx + 1, rest, ByteVector.empty, chunkAcc).map {
               case (chunk, idx, rest, chunkAcc, bs) =>
                 (chunk, idx, rest, chunkAcc, tags(bs))
             }
