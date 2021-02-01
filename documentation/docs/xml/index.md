@@ -2,6 +2,7 @@
 title: XML
 description: XML parser and validator
 index: 0
+type: textual
 module: xml
 ---
 

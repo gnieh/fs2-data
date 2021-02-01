@@ -8,6 +8,8 @@ title: Documentation
 
 For each module, the entry point is an [fs2 `Pipe`][pipe-doc] transforming a stream of characters into some tokens or events. All parsers are streaming parsers, which means that the parsed tree is never constructed in memory by the parser, but instead, is emitted as a sequence of _tokens_ or _events_ (similar to [SAX][sax]), and that the input data is not fully held in memory either. The parsers read the input as it comes, and emit the tokens as soon as possible, discarding the input data that is not useful anymore.
 
+## Textual formats
+
 As the entry points operate on stream of characters, a common pattern when using this library to read data from a file is to start by building a `Stream[F, Char]` as follows:
 
 ```scala mdoc:compile-only
@@ -31,8 +33,11 @@ Blocker[IO].use { blocker =>
 ```
 
 Available data modules are:
-<% @items.find_all("/documentation/*/index.md").each do |sub| %>
- - [<%= sub[:title] %>](<%= sub.path %>) - <%= sub[:description] %>
+<% modules_by_type.each do |type,mods| %>
+ - <%= type %> format
+  <% mods.each do |sub| %>
+   - [<%= sub[:title] %>](<%= sub.path %>) - <%= sub[:description] %>
+  <% end %>
 <% end %>
 
 [pipe-doc]: https://fs2.io/guide.html#statefully-transforming-streams

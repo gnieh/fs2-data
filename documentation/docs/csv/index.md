@@ -2,6 +2,7 @@
 title: CSV
 description: CSV parser and codec
 index: 0
+type: textual
 module: csv
 ---
 

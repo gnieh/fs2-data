@@ -73,7 +73,8 @@ val root = (project in file("."))
                                                                                json.js,
                                                                                jsonCirce.js,
                                                                                jsonDiffson.js,
-                                                                               xml.js),
+                                                                               xml.js,
+                                                                               cbor.js),
     siteSubdirName in ScalaUnidoc := "api",
     addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
     Nanoc / sourceDirectory := file("site"),
@@ -226,7 +227,7 @@ lazy val documentation = project
       "co.fs2" %% "fs2-io" % fs2Version
     )
   )
-  .dependsOn(csv.jvm, csvGeneric.jvm, json.jvm, jsonDiffson.jvm, jsonCirce.jvm, jsonInterpolators, xml.jvm)
+  .dependsOn(csv.jvm, csvGeneric.jvm, json.jvm, jsonDiffson.jvm, jsonCirce.jvm, jsonInterpolators, xml.jvm, cbor.jvm)
 
 lazy val benchmarks = project
   .in(file("benchmarks"))
