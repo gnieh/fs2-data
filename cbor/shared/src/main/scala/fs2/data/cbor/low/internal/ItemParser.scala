@@ -51,7 +51,7 @@ private[low] object ItemParser {
           if (n == 0)
             Pull.pure((Chunk.empty, 0, Stream.empty, Nil, Chunk.empty))
           else
-            Pull.raiseError(new CborException("unexpected end of input"))
+            Pull.raiseError(new CborParsingException("unexpected end of input"))
       }
     } else {
       val seg = chunk.drop(idx).take(n)
@@ -73,7 +73,7 @@ private[low] object ItemParser {
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => requireOneByte(hd, 0, tl, Nil)
-        case None           => Pull.raiseError(new CborException("unexpected end of input"))
+        case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
       }
     } else {
       Pull.pure((chunk, if (peek) idx else idx + 1, rest, chunkAcc, chunk(idx) & 0xff))
@@ -96,7 +96,7 @@ private[low] object ItemParser {
     } else if (additional == 27) {
       requireBytes(chunk, idx, rest, 8, Chunk.Queue.empty, chunkAcc)
     } else {
-      Pull.raiseError(new CborException(s"unknown additional information $additional"))
+      Pull.raiseError(new CborParsingException(s"unknown additional information $additional"))
     }
 
   private def parseInnerByteStrings[F[_]](chunk: Chunk[Byte],
@@ -112,13 +112,13 @@ private[low] object ItemParser {
         val additional = (byte & 0x1f).toByte
         if (major == MajorType.ByteString)
           if (additional == 31)
-            Pull.raiseError(new CborException("nested indefinite byte strings are not allowed"))
+            Pull.raiseError(new CborParsingException("nested indefinite byte strings are not allowed"))
           else
             parseByteString(chunk, idx, rest, additional, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc) =>
               parseInnerByteStrings(chunk, idx, rest, chunkAcc)
             }
         else
-          Pull.raiseError(new CborException(s"byte string major type expected but got $major"))
+          Pull.raiseError(new CborParsingException(s"byte string major type expected but got $major"))
       }
     }
 
@@ -139,7 +139,7 @@ private[low] object ItemParser {
               (chunk, idx, rest, CborItem.ByteString(bytes.toByteVector) :: chunkAcc)
           }
         } else {
-          Pull.raiseError(new CborException(
+          Pull.raiseError(new CborParsingException(
             s"fixed size strings are limited to max int (${Int.MaxValue}) bytes but got ${JLong.toUnsignedString(size)}"))
         }
       }
@@ -158,13 +158,13 @@ private[low] object ItemParser {
         val additional = (byte & 0x1f).toByte
         if (major == MajorType.TextString)
           if (additional == 31)
-            Pull.raiseError(new CborException("nested indefinite byte strings are not allowed"))
+            Pull.raiseError(new CborParsingException("nested indefinite byte strings are not allowed"))
           else
             parseTextString(chunk, idx, rest, additional, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc) =>
               parseInnerTextStrings(chunk, idx, rest, chunkAcc)
             }
         else
-          Pull.raiseError(new CborException("text string major type expected"))
+          Pull.raiseError(new CborParsingException("text string major type expected"))
       }
     }
 
@@ -184,11 +184,11 @@ private[low] object ItemParser {
             case (chunk, idx, rest, chunkAcc, bytes) =>
               Either.catchNonFatal(new String(bytes.toArray, StandardCharsets.UTF_8)) match {
                 case Right(str) => Pull.pure((chunk, idx, rest, CborItem.TextString(str) :: chunkAcc))
-                case Left(exn)  => Pull.raiseError(new CborException("malformed text string", exn))
+                case Left(exn)  => Pull.raiseError(new CborParsingException("malformed text string", exn))
               }
           }
         } else {
-          Pull.raiseError(new CborException(
+          Pull.raiseError(new CborParsingException(
             s"fixed size strings are limited to max int (${Int.MaxValue}) bytes but got ${JLong.toUnsignedString(size)}"))
         }
       }
@@ -307,7 +307,7 @@ private[low] object ItemParser {
       case 24 =>
         requireOneByte(chunk, idx, rest, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, byte) =>
           if (byte >= 0 && byte < 32)
-            Pull.raiseError(new CborException(s"invalid simple value additional byte $byte"))
+            Pull.raiseError(new CborParsingException(s"invalid simple value additional byte $byte"))
           else
             Pull.pure((chunk, idx, rest, CborItem.SimpleValue(byte.toByte) :: chunkAcc))
         }
@@ -327,10 +327,10 @@ private[low] object ItemParser {
             (chunk, idx, rest, CborItem.Float64(bytes.toByteVector) :: chunkAcc)
         }
       case 31 =>
-        Pull.raiseError(new CborException("unexpected break"))
+        Pull.raiseError(new CborParsingException("unexpected break"))
       case _ =>
         if (additional > 27)
-          Pull.raiseError(new CborException(s"unassigned 5-bits value $additional"))
+          Pull.raiseError(new CborParsingException(s"unassigned 5-bits value $additional"))
         else
           Pull.pure((chunk, idx, rest, CborItem.SimpleValue(additional) :: chunkAcc))
     }
@@ -355,7 +355,7 @@ private[low] object ItemParser {
         case MajorType.Map         => parseMap(chunk, idx, rest, additional, chunkAcc)
         case MajorType.SemanticTag => parseTaggedValue(chunk, idx, rest, additional, chunkAcc)
         case MajorType.Simple      => parseSimple(chunk, idx, rest, additional, chunkAcc)
-        case _                     => Pull.raiseError(new CborException(s"unknown major $major"))
+        case _                     => Pull.raiseError(new CborParsingException(s"unknown major $major"))
       }
     }
 

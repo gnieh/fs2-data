@@ -31,7 +31,7 @@ object ValueParser {
 
   private type Result[F[_], T] = (Chunk[CborItem], Int, Stream[F, CborItem], List[CborValue], T)
 
-  private def raise[F[_]](e: CborException, chunkAcc: List[CborValue])(implicit
+  private def raise[F[_]](e: CborParsingException, chunkAcc: List[CborValue])(implicit
       F: RaiseThrowable[F]): Pull[F, CborValue, Nothing] =
     Pull.output(Chunk.seq(chunkAcc.reverse)) >> Pull.raiseError(e)
 
@@ -43,17 +43,17 @@ object ValueParser {
                                chunkAcc: List[CborValue])(implicit
       F: RaiseThrowable[F]): Pull[F, CborValue, Result[F, CborValue]] =
     if (size == 0l) {
-      Pull.pure((chunk, idx, rest, chunkAcc, CborValue.Array(acc.result())))
+      Pull.pure((chunk, idx, rest, chunkAcc, CborValue.Array(acc.result(), false)))
     } else {
       if (idx >= chunk.size) {
         Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) => parseArray(hd, 0, tl, size, acc, Nil)
-          case None           => Pull.raiseError(new CborException("unexpected end of input"))
+          case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
         }
       } else {
         if (JLong.compareUnsigned(size, Int.MaxValue.toLong) > 0) {
           raise(
-            new CborException(
+            new CborParsingException(
               s"array size is limited to max int (${Int.MaxValue}) elements but got ${JLong.toUnsignedString(size)}"),
             chunkAcc)
         } else {
@@ -74,15 +74,15 @@ object ValueParser {
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => parseIndefiniteArray(hd, 0, tl, acc, Nil)
-        case None           => Pull.raiseError(new CborException("unexpected end of input"))
+        case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
       }
     } else {
       chunk(idx) match {
         case CborItem.Break =>
-          Pull.pure((chunk, idx + 1, rest, chunkAcc, CborValue.Array(acc.result())))
+          Pull.pure((chunk, idx + 1, rest, chunkAcc, CborValue.Array(acc.result(), true)))
         case _ =>
           if (acc.size == Int.MaxValue) {
-            raise(new CborException(s"array size is limited to max int (${Int.MaxValue}) elements"), chunkAcc)
+            raise(new CborParsingException(s"array size is limited to max int (${Int.MaxValue}) elements"), chunkAcc)
           } else {
             parseValue(chunk, idx, rest, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, value) =>
               acc.append(value)
@@ -100,16 +100,16 @@ object ValueParser {
                              chunkAcc: List[CborValue])(implicit
       F: RaiseThrowable[F]): Pull[F, CborValue, Result[F, CborValue]] =
     if (size == 0l) {
-      Pull.pure((chunk, idx, rest, chunkAcc, CborValue.Map(acc.result())))
+      Pull.pure((chunk, idx, rest, chunkAcc, CborValue.Map(acc.result(), false)))
     } else {
       if (idx >= chunk.size) {
         Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) => parseMap(hd, 0, tl, size, acc, Nil)
-          case None           => Pull.raiseError(new CborException("unexpected end of input"))
+          case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
         }
       } else {
         if (JLong.compareUnsigned(size, Int.MaxValue.toLong) > 0) {
-          raise(new CborException(
+          raise(new CborParsingException(
                   s"map size is limited to max int (${Int.MaxValue}) elements but got ${JLong.toUnsignedString(size)}"),
                 chunkAcc)
         } else {
@@ -132,15 +132,15 @@ object ValueParser {
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => parseIndefiniteMap(hd, 0, tl, acc, Nil)
-        case None           => Pull.raiseError(new CborException("unexpected end of input"))
+        case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
       }
     } else {
       chunk(idx) match {
         case CborItem.Break =>
-          Pull.pure((chunk, idx + 1, rest, chunkAcc, CborValue.Map(acc.result())))
+          Pull.pure((chunk, idx + 1, rest, chunkAcc, CborValue.Map(acc.result(), true)))
         case _ =>
           if (acc.size == Int.MaxValue) {
-            raise(new CborException(s"map size is limited to max int (${Int.MaxValue}) elements"), chunkAcc)
+            raise(new CborParsingException(s"map size is limited to max int (${Int.MaxValue}) elements"), chunkAcc)
           } else {
             parseValue(chunk, idx, rest, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, key) =>
               parseValue(chunk, idx, rest, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, value) =>
@@ -161,7 +161,7 @@ object ValueParser {
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => parseByteStrings(hd, 0, tl, acc, Nil)
-        case None           => Pull.raiseError(new CborException("unexpected end of input"))
+        case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
       }
     } else {
       chunk(idx) match {
@@ -169,12 +169,12 @@ object ValueParser {
           Pull.pure((chunk, idx + 1, rest, chunkAcc, CborValue.ByteString(acc)))
         case CborItem.ByteString(bytes) =>
           if (acc.size + bytes.size < 0l) {
-            raise(new CborException(s"byte string size is limited to max long (${Long.MaxValue}) bits"), chunkAcc)
+            raise(new CborParsingException(s"byte string size is limited to max long (${Long.MaxValue}) bits"), chunkAcc)
           } else {
             parseByteStrings(chunk, idx + 1, rest, acc ++ bytes, chunkAcc)
           }
         case item =>
-          raise(new CborException(s"unexpected item $item"), chunkAcc)
+          raise(new CborParsingException(s"unexpected item $item"), chunkAcc)
       }
     }
 
@@ -187,7 +187,7 @@ object ValueParser {
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => parseTextStrings(hd, 0, tl, acc, Nil)
-        case None           => Pull.raiseError(new CborException("unexpected end of input"))
+        case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
       }
     } else {
       chunk(idx) match {
@@ -195,12 +195,12 @@ object ValueParser {
           Pull.pure((chunk, idx + 1, rest, chunkAcc, CborValue.TextString(acc.result())))
         case CborItem.TextString(text) =>
           if (acc.size + text.size < 0) {
-            raise(new CborException(s"text string size is limited to max int (${Int.MaxValue}) characters"), chunkAcc)
+            raise(new CborParsingException(s"text string size is limited to max int (${Int.MaxValue}) characters"), chunkAcc)
           } else {
             parseTextStrings(chunk, idx + 1, rest, acc.append(text), chunkAcc)
           }
         case item =>
-          raise(new CborException(s"unexpected item $item"), chunkAcc)
+          raise(new CborParsingException(s"unexpected item $item"), chunkAcc)
       }
     }
 
@@ -213,7 +213,7 @@ object ValueParser {
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => parseTags(hd, 0, tl, tags, Nil)
-        case None           => Pull.raiseError(new CborException("unexpected end of input"))
+        case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
       }
     } else {
       chunk(idx) match {
@@ -230,7 +230,7 @@ object ValueParser {
       if (idx >= chunk.size) {
         Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) => parseValue(hd, 0, tl, Nil)
-          case None           => Pull.raiseError(new CborException("unexpected end of input"))
+          case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
         }
       } else {
         chunk(idx) match {
@@ -294,7 +294,7 @@ object ValueParser {
               case (chunk, idx, rest, chunkAcc, array) => (chunk, idx, rest, chunkAcc, tags(array))
             }
           case item =>
-            raise(new CborException(s"unknown item $item"), chunkAcc)
+            raise(new CborParsingException(s"unknown item $item"), chunkAcc)
         }
       }
     }

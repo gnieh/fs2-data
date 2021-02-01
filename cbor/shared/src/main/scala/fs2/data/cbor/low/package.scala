@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 Lucas Satabin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package fs2
 package data
 package cbor
@@ -9,6 +25,20 @@ import scodec.bits._
 import java.nio.charset.StandardCharsets
 import java.lang.{Long => JLong}
 
+/** Low-level representation and tools for CBOR data streams.
+  *
+  * The low-level representation has two main goals:
+  *  - it is a flat representation of the input stream, which allows for
+  *    expressing collections that exceed the max size of `Int.MaxValue`
+*    - it doesn't interpret numbers, keeping their raw representation in
+*      memory.
+*
+*   This representation is useful when dealing with streams that may contain
+*   big collections or when it is not necessary to build an AST, as it is more
+*   efficient than the high-level one.
+*
+*   The data model follows closely the structure described in the RFC.
+  */
 package object low {
 
   /** Parses the input byte stream into a sequence of low-level CBOR items.
@@ -18,13 +48,33 @@ package object low {
   def items[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, CborItem] =
     ItemParser.pipe[F]
 
+  /** Validates the stream of CBOR items, emitting them unchanged.
+    *
+    * The resulting stream is failed as soon as a problem is encountered.
+    */
+  def validate[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, CborItem, CborItem] =
+    ItemValidator.pipe[F]
+
+  /** Transforms a stream of CBOR items into the binary representation.
+    *
+    * The resulting stream fails as soon as a problem is encounter.
+    */
+  def toBinary[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, CborItem, Byte] =
+    _.through(validate).through(toNonValidatedBinary)
+
   /** Transforms a stream of CBOR items into the binary representation.
     *
     * This produces a valid byte stream if the input item stream is well-formed,
     * otherwise result is uncertain and will eventually produce an invalid byte
     * sequence.
+    *
+    * Use this pipe if you are sure the stream is well-formed or if it does not
+    * matter to produce ill-formed streams.
+    *
+    * Since no validation is performed, this pipe is more efficient and allows for
+    * better throughput.
     */
-  def toBinary[F[_]]: Pipe[F, CborItem, Byte] =
+  def toNonValidatedBinary[F[_]]: Pipe[F, CborItem, Byte] =
     _.mapChunks {
       _.flatMap {
         case CborItem.PositiveInt(bytes) =>

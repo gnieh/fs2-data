@@ -19,14 +19,41 @@ package data
 package cbor
 
 import low.CborItem
-import high.internal.ValueParser
+import high.internal.{ValueParser, ValueSerializer}
 
+/** High-level representation and tools for CBOR data streams.
+  *
+  * The high-level representation is less powerful as the low-level one, as it builds
+  * structured data. For instance it is not able to represent arrays of strings  whose size
+  * is bigger than `Int.MaxValue`.
+  *
+  * The reprensentation is intended to be easier to work with if you need more structured
+  * data and don't exceed the underlying limits.
+  */
 package object high {
 
+  /** Parses the stream of bytes into high level AST. */
   def values[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, CborValue] =
     _.through(low.items).through(parseValues)
 
+  /** Parses the stream of low-level items into high level AST. */
   def parseValues[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, CborItem, CborValue] =
     ValueParser.pipe[F]
+
+  /** Transforms a stream of CBOR values into a stream of low-level items.
+    *
+    * This encoder, uses some tags defined in [[fs2.data.cbor.Tags Tags]] to encode
+    * some values (e.g. big numbers).
+    */
+  def toItems[F[_]]: Pipe[F, CborValue, CborItem] =
+    ValueSerializer.toItems[F]
+
+  /** Transforms a stream of CBOR values into the binary representations.
+    *
+    * This encoder, uses some tags defined in [[fs2.data.cbor.Tags Tags]] to encode
+    * some values (e.g. big numbers).
+    */
+  def toBinary[F[_]]: Pipe[F, CborValue, Byte] =
+    _.through(toItems).through(low.toNonValidatedBinary)
 
 }

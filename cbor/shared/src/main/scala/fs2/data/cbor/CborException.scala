@@ -16,4 +16,8 @@
 
 package fs2.data.cbor
 
-class CborException(msg: String, inner: Throwable = null) extends Exception(msg, inner)
+sealed abstract class CborException(msg: String, inner: Throwable) extends Exception(msg, inner)
+
+class CborParsingException(msg: String, inner: Throwable = null) extends CborException(msg, inner)
+
+class CborValidationException(msg: String, inner: Throwable = null) extends CborException(msg, inner)

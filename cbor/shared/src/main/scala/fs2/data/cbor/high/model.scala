@@ -27,8 +27,8 @@ object CborValue {
   case class Integer(value: BigInt) extends CborValue
   case class ByteString(bytes: ByteVector) extends CborValue
   case class TextString(text: String) extends CborValue
-  case class Array(values: List[CborValue]) extends CborValue
-  case class Map(values: SMap[CborValue, CborValue]) extends CborValue
+  case class Array(values: List[CborValue], indefinite: Boolean) extends CborValue
+  case class Map(values: SMap[CborValue, CborValue], indefinite: Boolean) extends CborValue
   case class Tagged(tag: Long, value: CborValue) extends CborValue
   case object True extends CborValue
   case object False extends CborValue

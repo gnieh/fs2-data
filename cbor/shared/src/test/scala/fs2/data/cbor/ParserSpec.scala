@@ -81,66 +81,75 @@ class ParserSpec extends AnyFlatSpec with Matchers {
     List(CborValue.TextString("\u00fc")).asLeft -> hex"62c3bc",
     List(CborValue.TextString("\u6c34")).asLeft -> hex"63e6b0b4",
     List(CborValue.TextString("\ud800\udd51")).asLeft -> hex"64f0908591",
-    List(CborValue.Array(Nil)).asLeft -> hex"80",
+    List(CborValue.Array(Nil, false)).asLeft -> hex"80",
     List(
-      CborValue.Array(List(CborValue.Integer(1), CborValue.Integer(2), CborValue.Integer(3)))).asLeft -> hex"83010203",
-    List(
-      CborValue.Array(List(
-        CborValue.Integer(1),
-        CborValue.Array(List(CborValue.Integer(2), CborValue.Integer(3))),
-        CborValue.Array(List(CborValue.Integer(4), CborValue.Integer(5)))
-      ))).asLeft -> hex"8301820203820405",
-    List(
-      CborValue.Array(List(
-        CborValue.Integer(1),
-        CborValue.Integer(2),
-        CborValue.Integer(3),
-        CborValue.Integer(4),
-        CborValue.Integer(5),
-        CborValue.Integer(6),
-        CborValue.Integer(7),
-        CborValue.Integer(8),
-        CborValue.Integer(9),
-        CborValue.Integer(10),
-        CborValue.Integer(11),
-        CborValue.Integer(12),
-        CborValue.Integer(13),
-        CborValue.Integer(14),
-        CborValue.Integer(15),
-        CborValue.Integer(16),
-        CborValue.Integer(17),
-        CborValue.Integer(18),
-        CborValue.Integer(19),
-        CborValue.Integer(20),
-        CborValue.Integer(21),
-        CborValue.Integer(22),
-        CborValue.Integer(23),
-        CborValue.Integer(24),
-        CborValue.Integer(25)
-      ))).asLeft -> hex"98190102030405060708090a0b0c0d0e0f101112131415161718181819",
-    List(CborValue.Map(Map.empty)).asLeft -> hex"a0",
-    List(
-      CborValue.Map(
-        Map(CborValue.Integer(1) -> CborValue.Integer(2),
-            CborValue.Integer(3) -> CborValue.Integer(4)))).asLeft -> hex"a201020304",
-    List(
-      CborValue.Map(
-        Map(CborValue.TextString("a") -> CborValue.Integer(1),
-            CborValue.TextString("b") -> CborValue.Array(
-              List(CborValue.Integer(2), CborValue.Integer(3)))))).asLeft -> hex"a26161016162820203",
+      CborValue.Array(List(CborValue.Integer(1), CborValue.Integer(2), CborValue.Integer(3)),
+                      false)).asLeft -> hex"83010203",
     List(
       CborValue.Array(
         List(
-          CborValue.TextString("a"),
-          CborValue.Map(Map(CborValue.TextString("b") -> CborValue.TextString("c")))))).asLeft -> hex"826161a161626163",
+          CborValue.Integer(1),
+          CborValue.Array(List(CborValue.Integer(2), CborValue.Integer(3)), false),
+          CborValue.Array(List(CborValue.Integer(4), CborValue.Integer(5)), false)
+        ),
+        false
+      )).asLeft -> hex"8301820203820405",
     List(
-      CborValue.Map(Map(
-        CborValue.TextString("a") -> CborValue.TextString("A"),
-        CborValue.TextString("b") -> CborValue.TextString("B"),
-        CborValue.TextString("c") -> CborValue.TextString("C"),
-        CborValue.TextString("d") -> CborValue.TextString("D"),
-        CborValue.TextString("e") -> CborValue.TextString("E")
-      ))).asLeft -> hex"a56161614161626142616361436164614461656145"
+      CborValue.Array(
+        List(
+          CborValue.Integer(1),
+          CborValue.Integer(2),
+          CborValue.Integer(3),
+          CborValue.Integer(4),
+          CborValue.Integer(5),
+          CborValue.Integer(6),
+          CborValue.Integer(7),
+          CborValue.Integer(8),
+          CborValue.Integer(9),
+          CborValue.Integer(10),
+          CborValue.Integer(11),
+          CborValue.Integer(12),
+          CborValue.Integer(13),
+          CborValue.Integer(14),
+          CborValue.Integer(15),
+          CborValue.Integer(16),
+          CborValue.Integer(17),
+          CborValue.Integer(18),
+          CborValue.Integer(19),
+          CborValue.Integer(20),
+          CborValue.Integer(21),
+          CborValue.Integer(22),
+          CborValue.Integer(23),
+          CborValue.Integer(24),
+          CborValue.Integer(25)
+        ),
+        false
+      )).asLeft -> hex"98190102030405060708090a0b0c0d0e0f101112131415161718181819",
+    List(CborValue.Map(Map.empty, false)).asLeft -> hex"a0",
+    List(
+      CborValue.Map(Map(CborValue.Integer(1) -> CborValue.Integer(2), CborValue.Integer(3) -> CborValue.Integer(4)),
+                    false)).asLeft -> hex"a201020304",
+    List(
+      CborValue.Map(
+        Map(CborValue.TextString("a") -> CborValue.Integer(1),
+            CborValue.TextString("b") -> CborValue.Array(List(CborValue.Integer(2), CborValue.Integer(3)), false)),
+        false
+      )).asLeft -> hex"a26161016162820203",
+    List(
+      CborValue.Array(List(CborValue.TextString("a"),
+                           CborValue.Map(Map(CborValue.TextString("b") -> CborValue.TextString("c")), false)),
+                      false)).asLeft -> hex"826161a161626163",
+    List(
+      CborValue.Map(
+        Map(
+          CborValue.TextString("a") -> CborValue.TextString("A"),
+          CborValue.TextString("b") -> CborValue.TextString("B"),
+          CborValue.TextString("c") -> CborValue.TextString("C"),
+          CborValue.TextString("d") -> CborValue.TextString("D"),
+          CborValue.TextString("e") -> CborValue.TextString("E")
+        ),
+        false
+      )).asLeft -> hex"a56161614161626142616361436164614461656145"
   )
 
   val streamingTestCases = List(
@@ -156,7 +165,7 @@ class ParserSpec extends AnyFlatSpec with Matchers {
           CborItem.Break),
      List(CborValue.TextString("streaming")),
      hex"7f657374726561646d696e67ff"),
-    (List(CborItem.StartIndefiniteArray, CborItem.Break), List(CborValue.Array(Nil)), hex"9fff"),
+    (List(CborItem.StartIndefiniteArray, CborItem.Break), List(CborValue.Array(Nil, true)), hex"9fff"),
     (List(
        CborItem.StartIndefiniteArray,
        CborItem.PositiveInt(hex"01"),
@@ -170,11 +179,14 @@ class ParserSpec extends AnyFlatSpec with Matchers {
        CborItem.Break
      ),
      List(
-       CborValue.Array(List(
-         CborValue.Integer(1),
-         CborValue.Array(List(CborValue.Integer(2), CborValue.Integer(3))),
-         CborValue.Array(List(CborValue.Integer(4), CborValue.Integer(5)))
-       ))),
+       CborValue.Array(
+         List(
+           CborValue.Integer(1),
+           CborValue.Array(List(CborValue.Integer(2), CborValue.Integer(3)), false),
+           CborValue.Array(List(CborValue.Integer(4), CborValue.Integer(5)), true)
+         ),
+         true
+       )),
      hex"9f018202039f0405ffff"),
     (List(
        CborItem.StartIndefiniteArray,
@@ -188,11 +200,14 @@ class ParserSpec extends AnyFlatSpec with Matchers {
        CborItem.Break
      ),
      List(
-       CborValue.Array(List(
-         CborValue.Integer(1),
-         CborValue.Array(List(CborValue.Integer(2), CborValue.Integer(3))),
-         CborValue.Array(List(CborValue.Integer(4), CborValue.Integer(5)))
-       ))),
+       CborValue.Array(
+         List(
+           CborValue.Integer(1),
+           CborValue.Array(List(CborValue.Integer(2), CborValue.Integer(3)), false),
+           CborValue.Array(List(CborValue.Integer(4), CborValue.Integer(5)), false)
+         ),
+         true
+       )),
      hex"9f01820203820405ff"),
     (List(
        CborItem.StartArray(3),
@@ -206,11 +221,14 @@ class ParserSpec extends AnyFlatSpec with Matchers {
        CborItem.Break
      ),
      List(
-       CborValue.Array(List(
-         CborValue.Integer(1),
-         CborValue.Array(List(CborValue.Integer(2), CborValue.Integer(3))),
-         CborValue.Array(List(CborValue.Integer(4), CborValue.Integer(5)))
-       ))),
+       CborValue.Array(
+         List(
+           CborValue.Integer(1),
+           CborValue.Array(List(CborValue.Integer(2), CborValue.Integer(3)), false),
+           CborValue.Array(List(CborValue.Integer(4), CborValue.Integer(5)), true)
+         ),
+         false
+       )),
      hex"83018202039f0405ff"),
     (List(
        CborItem.StartArray(3),
@@ -224,11 +242,14 @@ class ParserSpec extends AnyFlatSpec with Matchers {
        CborItem.PositiveInt(hex"05")
      ),
      List(
-       CborValue.Array(List(
-         CborValue.Integer(1),
-         CborValue.Array(List(CborValue.Integer(2), CborValue.Integer(3))),
-         CborValue.Array(List(CborValue.Integer(4), CborValue.Integer(5)))
-       ))),
+       CborValue.Array(
+         List(
+           CborValue.Integer(1),
+           CborValue.Array(List(CborValue.Integer(2), CborValue.Integer(3)), true),
+           CborValue.Array(List(CborValue.Integer(4), CborValue.Integer(5)), false)
+         ),
+         false
+       )),
      hex"83019f0203ff820405"),
     (List(
        CborItem.StartIndefiniteArray,
@@ -260,33 +281,36 @@ class ParserSpec extends AnyFlatSpec with Matchers {
        CborItem.Break
      ),
      List(
-       CborValue.Array(List(
-         CborValue.Integer(1),
-         CborValue.Integer(2),
-         CborValue.Integer(3),
-         CborValue.Integer(4),
-         CborValue.Integer(5),
-         CborValue.Integer(6),
-         CborValue.Integer(7),
-         CborValue.Integer(8),
-         CborValue.Integer(9),
-         CborValue.Integer(10),
-         CborValue.Integer(11),
-         CborValue.Integer(12),
-         CborValue.Integer(13),
-         CborValue.Integer(14),
-         CborValue.Integer(15),
-         CborValue.Integer(16),
-         CborValue.Integer(17),
-         CborValue.Integer(18),
-         CborValue.Integer(19),
-         CborValue.Integer(20),
-         CborValue.Integer(21),
-         CborValue.Integer(22),
-         CborValue.Integer(23),
-         CborValue.Integer(24),
-         CborValue.Integer(25)
-       ))),
+       CborValue.Array(
+         List(
+           CborValue.Integer(1),
+           CborValue.Integer(2),
+           CborValue.Integer(3),
+           CborValue.Integer(4),
+           CborValue.Integer(5),
+           CborValue.Integer(6),
+           CborValue.Integer(7),
+           CborValue.Integer(8),
+           CborValue.Integer(9),
+           CborValue.Integer(10),
+           CborValue.Integer(11),
+           CborValue.Integer(12),
+           CborValue.Integer(13),
+           CborValue.Integer(14),
+           CborValue.Integer(15),
+           CborValue.Integer(16),
+           CborValue.Integer(17),
+           CborValue.Integer(18),
+           CborValue.Integer(19),
+           CborValue.Integer(20),
+           CborValue.Integer(21),
+           CborValue.Integer(22),
+           CborValue.Integer(23),
+           CborValue.Integer(24),
+           CborValue.Integer(25)
+         ),
+         true
+       )),
      hex"9f0102030405060708090a0b0c0d0e0f101112131415161718181819ff"),
     (List(
        CborItem.StartIndefiniteMap,
@@ -302,7 +326,9 @@ class ParserSpec extends AnyFlatSpec with Matchers {
      List(
        CborValue.Map(
          Map(CborValue.TextString("a") -> CborValue.Integer(1),
-             CborValue.TextString("b") -> CborValue.Array(List(CborValue.Integer(2), CborValue.Integer(3)))))),
+             CborValue.TextString("b") -> CborValue.Array(List(CborValue.Integer(2), CborValue.Integer(3)), true)),
+         true
+       )),
      hex"bf61610161629f0203ffff"),
     (List(CborItem.StartArray(2),
           CborItem.TextString("a"),
@@ -311,8 +337,9 @@ class ParserSpec extends AnyFlatSpec with Matchers {
           CborItem.TextString("c"),
           CborItem.Break),
      List(
-       CborValue.Array(
-         List(CborValue.TextString("a"), CborValue.Map(Map(CborValue.TextString("b") -> CborValue.TextString("c")))))),
+       CborValue.Array(List(CborValue.TextString("a"),
+                            CborValue.Map(Map(CborValue.TextString("b") -> CborValue.TextString("c")), true)),
+                       false)),
      hex"826161bf61626163ff"),
     (List(
        CborItem.StartIndefiniteMap,
@@ -323,8 +350,9 @@ class ParserSpec extends AnyFlatSpec with Matchers {
        CborItem.Break
      ),
      List(
-       CborValue.Map(
-         Map(CborValue.TextString("Fun") -> CborValue.True, CborValue.TextString("Amt") -> CborValue.Integer(-2)))),
+       CborValue.Map(Map(CborValue.TextString("Fun") -> CborValue.True,
+                         CborValue.TextString("Amt") -> CborValue.Integer(-2)),
+                     true)),
      hex"bf6346756ef563416d7421ff")
   )
 
@@ -345,7 +373,6 @@ class ParserSpec extends AnyFlatSpec with Matchers {
       val bytes = Stream.chunk(Chunk.byteVector(input))
       val low = bytes.through(items[Fallible]).compile.toList
       val high = bytes.through(values[Fallible]).compile.toList
-      high.leftMap(_.printStackTrace())
       low shouldBe Right(expectedLow)
       high shouldBe Right(expectedHigh)
     }
@@ -356,7 +383,7 @@ class ParserSpec extends AnyFlatSpec with Matchers {
       val roundtrip = Stream
         .chunk(Chunk.byteVector(input))
         .through(items[Fallible])
-        .through(toBinary)
+        .through(low.toBinary)
         .compile
         .to(Chunk)
         .map(_.toByteVector)
@@ -370,7 +397,7 @@ class ParserSpec extends AnyFlatSpec with Matchers {
       val roundtrip = Stream
         .chunk(Chunk.byteVector(input))
         .through(items[Fallible])
-        .through(toBinary)
+        .through(low.toBinary)
         .compile
         .to(Chunk)
         .map(_.toByteVector)
