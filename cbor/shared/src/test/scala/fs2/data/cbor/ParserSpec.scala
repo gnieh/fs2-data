@@ -1,8 +1,8 @@
 package fs2
 package data
 package cbor
-package high
 
+import high._
 import low._
 
 import scodec.bits._
