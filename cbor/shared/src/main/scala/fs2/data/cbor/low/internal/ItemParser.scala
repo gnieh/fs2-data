@@ -36,6 +36,19 @@ private[low] object ItemParser {
   private def asUnsignedNumber(bytes: Chunk[Byte]) =
     bytes.toBitVector.toLong(signed = false)
 
+  @inline
+  private def ensureChunk[F[_], T](chunk: Chunk[Byte], idx: Int, rest: Stream[F, Byte], chunkAcc: List[CborItem])(
+      cont: (Chunk[Byte], Int, Stream[F, Byte], List[CborItem]) => Pull[F, CborItem, T])(
+      onEos: => Pull[F, CborItem, T]): Pull[F, CborItem, T] =
+    if (idx >= chunk.size) {
+      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+        case Some((hd, tl)) => cont(hd, 0, tl, Nil)
+        case None           => onEos
+      }
+    } else {
+      cont(chunk, idx, rest, chunkAcc)
+    }
+
   // the resulting chunk contains exactly n bytes
   private def requireBytes[F[_]](chunk: Chunk[Byte],
                                  idx: Int,
@@ -44,16 +57,7 @@ private[low] object ItemParser {
                                  acc: Chunk.Queue[Byte],
                                  chunkAcc: List[CborItem])(implicit
       F: RaiseThrowable[F]): Pull[F, CborItem, Result[F, Chunk[Byte]]] =
-    if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
-        case Some((hd, tl)) => requireBytes(hd, 0, tl, n, acc, Nil)
-        case None =>
-          if (n == 0)
-            Pull.pure((Chunk.empty, 0, Stream.empty, Nil, Chunk.empty))
-          else
-            Pull.raiseError(new CborParsingException("unexpected end of input"))
-      }
-    } else {
+    ensureChunk(chunk, idx, rest, chunkAcc) { (chunk, idx, rest, chunkAcc) =>
       val seg = chunk.drop(idx).take(n)
       if (seg.size == n) {
         // the chunk was big enough to gather all the bytes, we are done
@@ -62,6 +66,11 @@ private[low] object ItemParser {
         // accumulate bytes and continue
         requireBytes(chunk, idx + n, rest, n - seg.size, acc :+ seg, chunkAcc)
       }
+    } {
+      if (n == 0)
+        Pull.pure((Chunk.empty, 0, Stream.empty, Nil, Chunk.empty))
+      else
+        Pull.raiseError(new CborParsingException("unexpected end of input"))
     }
 
   private def requireOneByte[F[_]](chunk: Chunk[Byte],
@@ -69,14 +78,11 @@ private[low] object ItemParser {
                                    rest: Stream[F, Byte],
                                    chunkAcc: List[CborItem],
                                    peek: Boolean = false)(implicit
-      F: RaiseThrowable[F]): Pull[F, CborItem, Result[F, Integer]] =
-    if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
-        case Some((hd, tl)) => requireOneByte(hd, 0, tl, Nil)
-        case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
-      }
-    } else {
+      F: RaiseThrowable[F]): Pull[F, CborItem, Result[F, Int]] =
+    ensureChunk(chunk, idx, rest, chunkAcc) { (chunk, idx, rest, chunkAcc) =>
       Pull.pure((chunk, if (peek) idx else idx + 1, rest, chunkAcc, chunk(idx) & 0xff))
+    } {
+      Pull.raiseError(new CborParsingException("unexpected end of input"))
     }
 
   private def parseInteger[F[_]](chunk: Chunk[Byte],
@@ -361,15 +367,12 @@ private[low] object ItemParser {
 
   def pipe[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, CborItem] = {
     def go(chunk: Chunk[Byte], idx: Int, rest: Stream[F, Byte], chunkAcc: List[CborItem]): Pull[F, CborItem, Unit] =
-      if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
-          case Some((hd, tl)) => go(hd, 0, tl, Nil)
-          case None           => Pull.done
-        }
-      } else {
+      ensureChunk(chunk, idx, rest, chunkAcc) { (chunk, idx, rest, chunkAcc) =>
         parseValue(chunk, idx, rest, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc) =>
           go(chunk, idx, rest, chunkAcc)
         }
+      } {
+        Pull.done
       }
 
     go(Chunk.empty, 0, _, Nil).stream

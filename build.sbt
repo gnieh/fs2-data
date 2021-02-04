@@ -210,7 +210,8 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform)
   .settings(publishSettings)
   .settings(
     name := "fs2-data-cbor",
-    description := "Streaming CBOR manipulation library"
+    description := "Streaming CBOR manipulation library",
+    scalacOptions ++= List("-opt:l:inline", "-opt-inline-from:fs2.data.cbor.low.internal.ItemParser$")
   )
 
 lazy val documentation = project
