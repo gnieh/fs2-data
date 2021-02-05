@@ -2,6 +2,7 @@
 title: JSON
 description: JSON parser and transformation
 index: 0
+type: textual
 module: json
 ---
 

@@ -8,6 +8,7 @@ val commonSettings = List(
   scalaVersion := scala212,
   crossScalaVersions := Seq(scala213, scala212),
   organization := "org.gnieh",
+  headerLicense := Some(HeaderLicense.ALv2("2021", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
   scalacOptions ++= List("-feature",
@@ -15,7 +16,7 @@ val commonSettings = List(
                          "-unchecked",
                          "-Ypatmat-exhaust-depth",
                          "off",
-                         "-Ywarn-unused:imports"),
+                         "-Ywarn-unused:imports,privates"),
   scalacOptions ++= PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
       case Some((2, n)) if n < 13 =>
@@ -72,7 +73,8 @@ val root = (project in file("."))
                                                                                json.js,
                                                                                jsonCirce.js,
                                                                                jsonDiffson.js,
-                                                                               xml.js),
+                                                                               xml.js,
+                                                                               cbor.js),
     siteSubdirName in ScalaUnidoc := "api",
     addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
     Nanoc / sourceDirectory := file("site"),
@@ -92,7 +94,9 @@ val root = (project in file("."))
     jsonDiffson.js,
     jsonInterpolators,
     xml.jvm,
-    xml.js
+    xml.js,
+    cbor.jvm,
+    cbor.js
   )
 
 lazy val csv = crossProject(JVMPlatform, JSPlatform)
@@ -199,6 +203,17 @@ lazy val xml = crossProject(JVMPlatform, JSPlatform)
     description := "Streaming XML manipulation library"
   )
 
+lazy val cbor = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Full)
+  .in(file("cbor"))
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "fs2-data-cbor",
+    description := "Streaming CBOR manipulation library",
+    scalacOptions ++= List("-opt:l:inline", "-opt-inline-from:fs2.data.cbor.low.internal.ItemParser$")
+  )
+
 lazy val documentation = project
   .in(file("documentation"))
   .enablePlugins(MdocPlugin)
@@ -213,7 +228,7 @@ lazy val documentation = project
       "co.fs2" %% "fs2-io" % fs2Version
     )
   )
-  .dependsOn(csv.jvm, csvGeneric.jvm, json.jvm, jsonDiffson.jvm, jsonCirce.jvm, jsonInterpolators, xml.jvm)
+  .dependsOn(csv.jvm, csvGeneric.jvm, json.jvm, jsonDiffson.jvm, jsonCirce.jvm, jsonInterpolators, xml.jvm, cbor.jvm)
 
 lazy val benchmarks = project
   .in(file("benchmarks"))
