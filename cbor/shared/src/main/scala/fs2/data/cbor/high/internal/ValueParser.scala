@@ -35,6 +35,20 @@ object ValueParser {
       F: RaiseThrowable[F]): Pull[F, CborValue, Nothing] =
     Pull.output(Chunk.seq(chunkAcc.reverse)) >> Pull.raiseError(e)
 
+  private def ensureInput[F[_]: RaiseThrowable](
+      chunk: Chunk[CborItem],
+      idx: Int,
+      rest: Stream[F, CborItem],
+      chunkAcc: List[CborValue]): Pull[F, CborValue, (Chunk[CborItem], Int, Stream[F, CborItem], List[CborValue])] =
+    if (idx >= chunk.size) {
+      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+        case Some((hd, tl)) => ensureInput(hd, 0, tl, Nil)
+        case None           => Pull.raiseError[F](new CborParsingException("unexpected end of input"))
+      }
+    } else {
+      Pull.pure((chunk, idx, rest, chunkAcc))
+    }
+
   private def parseArray[F[_]](chunk: Chunk[CborItem],
                                idx: Int,
                                rest: Stream[F, CborItem],
@@ -45,12 +59,7 @@ object ValueParser {
     if (size == 0l) {
       Pull.pure((chunk, idx, rest, chunkAcc, CborValue.Array(acc.result(), false)))
     } else {
-      if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
-          case Some((hd, tl)) => parseArray(hd, 0, tl, size, acc, Nil)
-          case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
-        }
-      } else {
+      ensureInput(chunk, idx, rest, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc) =>
         if (JLong.compareUnsigned(size, Int.MaxValue.toLong) > 0) {
           raise(
             new CborParsingException(
@@ -169,7 +178,8 @@ object ValueParser {
           Pull.pure((chunk, idx + 1, rest, chunkAcc, CborValue.ByteString(acc)))
         case CborItem.ByteString(bytes) =>
           if (acc.size + bytes.size < 0l) {
-            raise(new CborParsingException(s"byte string size is limited to max long (${Long.MaxValue}) bits"), chunkAcc)
+            raise(new CborParsingException(s"byte string size is limited to max long (${Long.MaxValue}) bits"),
+                  chunkAcc)
           } else {
             parseByteStrings(chunk, idx + 1, rest, acc ++ bytes, chunkAcc)
           }
@@ -195,7 +205,8 @@ object ValueParser {
           Pull.pure((chunk, idx + 1, rest, chunkAcc, CborValue.TextString(acc.result())))
         case CborItem.TextString(text) =>
           if (acc.size + text.size < 0) {
-            raise(new CborParsingException(s"text string size is limited to max int (${Int.MaxValue}) characters"), chunkAcc)
+            raise(new CborParsingException(s"text string size is limited to max int (${Int.MaxValue}) characters"),
+                  chunkAcc)
           } else {
             parseTextStrings(chunk, idx + 1, rest, acc.append(text), chunkAcc)
           }
