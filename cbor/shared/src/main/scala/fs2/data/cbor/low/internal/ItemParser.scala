@@ -42,7 +42,7 @@ private[low] object ItemParser {
       onEos: => Pull[F, CborItem, T]): Pull[F, CborItem, T] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
-        case Some((hd, tl)) => cont(hd, 0, tl, Nil)
+        case Some((hd, tl)) => ensureChunk(hd, 0, tl, Nil)(cont)(onEos)
         case None           => onEos
       }
     } else {
