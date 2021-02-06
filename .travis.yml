@@ -3,7 +3,7 @@ dist: bionic
 
 scala:
   - 2.12.12
-  - 2.13.3
+  - 2.13.4
 
 jobs:
   include:

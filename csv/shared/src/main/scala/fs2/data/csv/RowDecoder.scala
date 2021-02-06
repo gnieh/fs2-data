@@ -15,11 +15,7 @@
  */
 package fs2.data.csv
 
-import cats._
-import cats.implicits._
 import cats.data.NonEmptyList
-
-import scala.annotation.{implicitNotFound, tailrec}
 
 /** Describes how a row can be decoded to the given type.
   *

@@ -22,7 +22,7 @@ import csv.internals._
 import cats.data._
 import cats.implicits._
 
-import scala.annotation.{implicitNotFound, tailrec}
+import scala.annotation.implicitNotFound
 
 package object csv {
 

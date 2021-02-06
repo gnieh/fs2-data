@@ -179,14 +179,14 @@ implicit val wrapperCellEncoder2: CellEncoder[Wrapper] = CellEncoder[String].con
 import shapeless._
 
 implicit object HListDecoder extends RowDecoder[Option[Int] :: String :: Int :: HNil] {
-  def apply(cells: NonEmptyList[String]): DecoderResult[Option[Int] :: String :: Int :: HNil] =
-    if(cells.size < 3)
+  def apply(row: Row): DecoderResult[Option[Int] :: String :: Int :: HNil] =
+    if(row.values.size < 3)
       Left(new DecoderError("row is too short"))
     else
       for {
-        i <- if(cells.head.isEmpty) Right(None) else CellDecoder[Int].apply(cells.head).map(Some(_))
-        s <- CellDecoder[String].apply(cells.tail.head)
-        j <- CellDecoder[Int].apply(cells.tail.tail.head)
+        i <- if(row.values.head.isEmpty) Right(None) else CellDecoder[Int].apply(row.values.head).map(Some(_))
+        s <- CellDecoder[String].apply(row.values.tail.head)
+        j <- CellDecoder[Int].apply(row.values.tail.tail.head)
       } yield i :: s :: j :: HNil
 }
 
@@ -201,8 +201,8 @@ Again, encoding is easier as it can't fail:
 import shapeless._
 
 implicit object HListEncoder extends RowEncoder[Option[Int] :: String :: Int :: HNil] {
-  def apply(input: Option[Int] :: String :: Int :: HNil): NonEmptyList[String] =
-    NonEmptyList.of(CellEncoder[Option[Int]].apply(input.head), input.tail.head, input.tail.tail.head.toString)
+  def apply(input: Option[Int] :: String :: Int :: HNil): Row =
+    Row(NonEmptyList.of(CellEncoder[Option[Int]].apply(input.head), input.tail.head, input.tail.tail.head.toString))
 }
 
 // .tail drops the header line
