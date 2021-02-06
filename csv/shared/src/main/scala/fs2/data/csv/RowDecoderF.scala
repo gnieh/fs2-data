@@ -114,9 +114,6 @@ object RowDecoderF extends ExportedRowDecoderFs {
 }
 
 trait ExportedRowDecoderFs {
-  /*implicit def exportedRowDecoderFs[H[+a] <: Option[a], A, Header](implicit
-      exported: Exported[RowDecoderF[H, A, Header]]): RowDecoderF[H, A, Header] = exported.instance*/
-
   implicit def exportedRowDecoders[A](implicit exported: Exported[RowDecoder[A]]): RowDecoder[A] = exported.instance
 
   implicit def exportedCsvRowDecoders[A](implicit
