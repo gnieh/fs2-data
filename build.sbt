@@ -1,4 +1,4 @@
-val scala212 = "2.12.12"
+val scala212 = "2.12.13"
 val scala213 = "2.13.4"
 val fs2Version = "3.0.0-M7"
 val circeVersion = "0.13.0"
@@ -11,12 +11,14 @@ val commonSettings = List(
   version := "0.8.0-SNAPSHOT",
   licenses += ("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
-  scalacOptions ++= List("-feature",
-                         "-deprecation",
-                         "-unchecked",
-                         "-Ypatmat-exhaust-depth",
-                         "off",
-                         "-Ywarn-unused:imports"),
+  scalacOptions ++= List(
+    "-feature",
+    "-deprecation",
+    "-unchecked",
+    "-Ypatmat-exhaust-depth",
+    "off",
+    "-Ywarn-unused:imports"
+  ),
   scalacOptions ++= PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
       case Some((2, n)) if n < 13 =>
@@ -24,7 +26,7 @@ val commonSettings = List(
     }
     .toList
     .flatten,
-  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.10.3" cross CrossVersion.binary),
+  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.11.3" cross CrossVersion.full),
   addCompilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary),
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,

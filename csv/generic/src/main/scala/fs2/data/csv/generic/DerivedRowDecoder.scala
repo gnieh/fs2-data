@@ -18,8 +18,6 @@ package data
 package csv
 package generic
 
-import cats.data.NonEmptyList
-
 import shapeless._
 
 trait DerivedRowDecoder[T] extends RowDecoder[T]
@@ -31,8 +29,8 @@ object DerivedRowDecoder {
       cc: Lazy[SeqShapedRowDecoder[Repr]]): DerivedRowDecoder[T] =
     new DerivedRowDecoder[T] {
 
-      def apply(cells: NonEmptyList[String]): DecoderResult[T] =
-        cc.value(cells).map(gen.from(_))
+      def apply(row: Row): DecoderResult[T] =
+        cc.value(row).map(gen.from(_))
     }
 
 }

@@ -18,21 +18,14 @@ package data
 package csv
 package generic
 
-import cats.data.NonEmptyList
-
 import shapeless._
 
 object hlist {
 
   final implicit def hlistDecoder[T <: HList](implicit cc: Lazy[SeqShapedRowDecoder[T]]): DerivedRowDecoder[T] =
-    new DerivedRowDecoder[T] {
-      def apply(cells: NonEmptyList[String]): DecoderResult[T] =
-        cc.value(cells)
-    }
+    (row: Row) => cc.value(row)
 
   final implicit def hlistEncoder[T <: HList](implicit cc: Lazy[SeqShapedRowEncoder[T]]): DerivedRowEncoder[T] =
-    new DerivedRowEncoder[T] {
-      override def apply(elem: T): NonEmptyList[String] = cc.value(elem)
-    }
+    (elem: T) => cc.value(elem)
 
 }

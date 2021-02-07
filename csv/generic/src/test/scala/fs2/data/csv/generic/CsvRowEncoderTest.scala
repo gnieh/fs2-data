@@ -24,11 +24,11 @@ import weaver._
 
 object CsvRowEncoderTest extends SimpleIOSuite {
 
-  val csvRow = new CsvRow(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
-  val csvRowK = new CsvRow(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "k"))
-  val csvRowDefaultI = new CsvRow(NonEmptyList.of("", "test", "42"), NonEmptyList.of("i", "s", "j"))
+  val csvRow = CsvRow.unsafe(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
+  val csvRowK = CsvRow.unsafe(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "k"))
+  val csvRowDefaultI = CsvRow.unsafe(NonEmptyList.of("", "test", "42"), NonEmptyList.of("i", "s", "j"))
   val csvRowEmptyJ =
-    new CsvRow(NonEmptyList.of("1", "test", ""), NonEmptyList.of("i", "s", "j"))
+    CsvRow.unsafe(NonEmptyList.of("1", "test", ""), NonEmptyList.of("i", "s", "j"))
 
   case class Test(i: Int = 0, s: String, j: Option[Int])
   case class TestRename(i: Int, s: String, @CsvName("j") k: Int)

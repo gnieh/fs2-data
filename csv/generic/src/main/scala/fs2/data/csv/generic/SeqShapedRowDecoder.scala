@@ -29,15 +29,15 @@ object SeqShapedRowDecoder extends LowPrioritySeqShapedRowDecoder1 {
 
   implicit def hnilOptionDecoder[Head](implicit Head: CellDecoder[Head]): SeqShapedRowDecoder[Option[Head] :: HNil] =
     new SeqShapedRowDecoder[Option[Head] :: HNil] {
-      def apply(cells: NonEmptyList[String]): DecoderResult[Option[Head] :: HNil] =
-        cells match {
+      def apply(row: Row): DecoderResult[Option[Head] :: HNil] =
+        row.values match {
           case NonEmptyList(c, Nil) =>
             if (c.isEmpty)
               Right(None :: HNil)
             else
               Head(c).map(Some(_) :: HNil)
           case _ =>
-            Left(new DecoderError(s"expected 1 element but got ${cells.size}"))
+            Left(new DecoderError(s"expected 1 element but got ${row.values.size}"))
         }
 
     }
@@ -46,11 +46,13 @@ object SeqShapedRowDecoder extends LowPrioritySeqShapedRowDecoder1 {
       Head: CellDecoder[Head],
       Tail: Lazy[SeqShapedRowDecoder[Tail]]): SeqShapedRowDecoder[Option[Head] :: Tail] =
     new SeqShapedRowDecoder[Option[Head] :: Tail] {
-      def apply(cells: NonEmptyList[String]): DecoderResult[Option[Head] :: Tail] =
+      def apply(row: Row): DecoderResult[Option[Head] :: Tail] =
         for {
-          tail <- NonEmptyList.fromList(cells.tail).liftTo[DecoderResult](new DecoderError("unexpected end of row"))
-          head <- if (cells.head.isEmpty) Right(None) else Head(cells.head).map(Some(_))
-          tail <- Tail.value(tail)
+          tail <- NonEmptyList
+            .fromList(row.values.tail)
+            .liftTo[DecoderResult](new DecoderError("unexpected end of row"))
+          head <- if (row.values.head.isEmpty) Right(None) else Head(row.values.head).map(Some(_))
+          tail <- Tail.value(Row(tail))
         } yield head :: tail
     }
 
@@ -60,12 +62,12 @@ trait LowPrioritySeqShapedRowDecoder1 {
 
   implicit def hnilDecoder[Head](implicit Head: CellDecoder[Head]): SeqShapedRowDecoder[Head :: HNil] =
     new SeqShapedRowDecoder[Head :: HNil] {
-      def apply(cells: NonEmptyList[String]): DecoderResult[Head :: HNil] =
-        cells match {
+      def apply(row: Row): DecoderResult[Head :: HNil] =
+        row.values match {
           case NonEmptyList(c, Nil) =>
             Head(c).map(_ :: HNil)
           case _ =>
-            Left(new DecoderError(s"expected 1 element but got ${cells.size}"))
+            Left(new DecoderError(s"expected 1 element but got ${row.values.size}"))
         }
 
     }
@@ -74,11 +76,11 @@ trait LowPrioritySeqShapedRowDecoder1 {
       Head: CellDecoder[Head],
       Tail: Lazy[SeqShapedRowDecoder[Tail]]): SeqShapedRowDecoder[Head :: Tail] =
     new SeqShapedRowDecoder[Head :: Tail] {
-      def apply(cells: NonEmptyList[String]): DecoderResult[Head :: Tail] =
+      def apply(row: Row): DecoderResult[Head :: Tail] =
         for {
-          tail <- NonEmptyList.fromList(cells.tail).liftTo[DecoderResult](new DecoderError("unexpect end of row"))
-          head <- Head(cells.head)
-          tail <- Tail.value(tail)
+          tail <- NonEmptyList.fromList(row.values.tail).liftTo[DecoderResult](new DecoderError("unexpect end of row"))
+          head <- Head(row.values.head)
+          tail <- Tail.value(Row(tail))
         } yield head :: tail
     }
 
