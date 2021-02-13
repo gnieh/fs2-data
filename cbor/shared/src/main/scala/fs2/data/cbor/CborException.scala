@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Lucas Satabin
+ * Copyright 2020 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.json
 
-case class JsonException(msg: String, val context: Option[JsonContext] = None, val inner: Throwable = null)
-    extends Exception(msg, inner)
+package fs2.data.cbor
 
-class JsonMissingFieldException(msg: String, val missing: Set[String]) extends Exception(msg)
+sealed abstract class CborException(msg: String, inner: Throwable) extends Exception(msg, inner)
+
+class CborParsingException(msg: String, inner: Throwable = null) extends CborException(msg, inner)
+
+class CborValidationException(msg: String, inner: Throwable = null) extends CborException(msg, inner)

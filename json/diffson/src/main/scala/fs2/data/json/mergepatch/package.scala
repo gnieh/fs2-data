@@ -23,6 +23,8 @@ import internals._
 import diffson._
 import diffson.jsonmergepatch._
 
+import scala.collection.immutable.VectorBuilder
+
 package object mergepatch {
 
   // opening brace has been consumed
@@ -30,14 +32,16 @@ package object mergepatch {
                                       idx: Int,
                                       rest: Stream[F, Token],
                                       patch: Map[String, Json],
-                                      chunkAcc: List[Token])(implicit
+                                      chunkAcc: VectorBuilder[Token])(implicit
       F: RaiseThrowable[F],
       Json: Jsony[Json],
-      tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, List[Token]]] =
+      tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, VectorBuilder[Token]]] =
     if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
-        case Some((hd, tl)) => patchObject(hd, 0, tl, patch, Nil)
-        case None           => Pull.pure(None)
+      emitChunk(chunkAcc) >> rest.pull.uncons.flatMap {
+        case Some((hd, tl)) =>
+          chunkAcc.clear()
+          patchObject(hd, 0, tl, patch, chunkAcc)
+        case None => Pull.pure(None)
       }
     } else {
       chunk(idx) match {
@@ -45,7 +49,7 @@ package object mergepatch {
           patch.get(key) match {
             case Some(JsObject(fields)) =>
               // key was found, recursively patch value
-              patchChunk(chunk, idx + 1, rest, JsonMergePatch.Object(fields), token :: chunkAcc).flatMap {
+              patchChunk(chunk, idx + 1, rest, JsonMergePatch.Object(fields), chunkAcc += token).flatMap {
                 case Some((chunk, idx, rest, chunkAcc)) =>
                   patchObject(chunk, idx, rest, patch - key, chunkAcc)
                 case None =>
@@ -62,11 +66,7 @@ package object mergepatch {
                     patchObject(chunk, idx, rest, patch - key, chunkAcc)
                   else
                     // replace current value by the patch one
-                    patchObject(chunk,
-                                idx,
-                                rest,
-                                patch - key,
-                                tokenizer.tokenize(value).toList reverse_::: (token :: chunkAcc))
+                    patchObject(chunk, idx, rest, patch - key, chunkAcc += token ++= tokenizer.tokenize(value).toList)
                 case None =>
                   // this is really malformed and should have been caught before
                   // anyway, just raise the error
@@ -74,7 +74,7 @@ package object mergepatch {
               }
             case None =>
               // this object key is not in the patch, just emit it unchanged
-              emitValue(chunk, idx + 1, rest, 0, token :: chunkAcc).flatMap {
+              emitValue(chunk, idx + 1, rest, 0, chunkAcc += token).flatMap {
                 case Some((chunk, idx, rest, chunkAcc)) =>
                   patchObject(chunk, idx, rest, patch, chunkAcc)
                 case None =>
@@ -86,16 +86,16 @@ package object mergepatch {
         case Token.EndObject =>
           // object is done, add all patch key/values that were not found in the patched object (if any)
           if (patch.isEmpty)
-            Pull.pure(Some((chunk, idx + 1, rest, Token.EndObject :: chunkAcc)))
+            Pull.pure(Some((chunk, idx + 1, rest, chunkAcc += Token.EndObject)))
           else
             Pull.pure(
               Some(
                 (chunk,
                  idx + 1,
                  rest,
-                 Token.EndObject :: (patch.flatMap { case (key, value) =>
+                 chunkAcc ++= patch.flatMap { case (key, value) =>
                    Token.Key(key) :: tokenizer.tokenize(value).toList
-                 }.toList reverse_::: chunkAcc))))
+                 } += Token.EndObject)))
         case _ =>
           // this is really malformed and should have been caught before
           // anyway, just raise the error
@@ -107,14 +107,16 @@ package object mergepatch {
                                      idx: Int,
                                      rest: Stream[F, Token],
                                      patch: JsonMergePatch[Json],
-                                     chunkAcc: List[Token])(implicit
+                                     chunkAcc: VectorBuilder[Token])(implicit
       F: RaiseThrowable[F],
       Json: Jsony[Json],
-      tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, List[Token]]] =
+      tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, VectorBuilder[Token]]] =
     if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
-        case Some((hd, tl)) => patchChunk(hd, 0, tl, patch, Nil)
-        case None           => Pull.pure(None)
+      emitChunk(chunkAcc) >> rest.pull.uncons.flatMap {
+        case Some((hd, tl)) =>
+          chunkAcc.clear()
+          patchChunk(hd, 0, tl, patch, chunkAcc)
+        case None => Pull.pure(None)
       }
     } else {
       patch match {
@@ -122,7 +124,7 @@ package object mergepatch {
           chunk(idx) match {
             case Token.StartObject =>
               // we are patching an object, go through the object and patch recursively
-              patchObject(chunk, idx + 1, rest, fields, Token.StartObject :: chunkAcc)
+              patchObject(chunk, idx + 1, rest, fields, chunkAcc += Token.StartObject)
             case Token.StartArray | Token.NullValue | Token.TrueValue | Token.FalseValue | Token.NumberValue(_) |
                 Token.StringValue(_) =>
               // applying a patch to a non object simply replaces the value with the object
@@ -132,10 +134,11 @@ package object mergepatch {
                 }.toList
                 res match {
                   case Some((chunk, idx, rest, chunkAcc)) =>
-                    Pull.pure(Some((chunk, idx, rest, Token.EndObject :: (tokens reverse_::: chunkAcc))))
+                    Pull.pure(Some((chunk, idx, rest, chunkAcc ++= tokens += Token.EndObject)))
                   case None =>
                     // this was the last value in the stream, emit the object and we are done
-                    Pull.pure(Some((Chunk.empty, 0, Stream.empty, Token.EndObject :: tokens.reverse)))
+                    chunkAcc.clear()
+                    Pull.pure(Some((Chunk.empty, 0, Stream.empty, chunkAcc ++= tokens += Token.EndObject)))
                 }
               }
             case Token.EndObject | Token.EndArray | Token.Key(_) =>
@@ -153,10 +156,11 @@ package object mergepatch {
                 Pull.pure(Some((chunk, idx, rest, chunkAcc)))
               else
                 // else replace
-                Pull.pure(Some((chunk, idx, rest, tokenizer.tokenize(value).toList reverse_::: chunkAcc)))
+                Pull.pure(Some((chunk, idx, rest,  chunkAcc ++= tokenizer.tokenize(value).toList)))
             case None =>
               // EOS reached? this must have been the last value in the stream, just add the value
-              Pull.pure(Some((Chunk.empty, 0, Stream.empty, tokenizer.tokenize(value).toList)))
+              chunkAcc.clear()
+              Pull.pure(Some((Chunk.empty, 0, Stream.empty, chunkAcc ++= tokenizer.tokenize(value).toList)))
           }
       }
     }
@@ -165,7 +169,7 @@ package object mergepatch {
                              idx: Int,
                              rest: Stream[F, Token],
                              patch: JsonMergePatch[Json],
-                             chunkAcc: List[Token])(implicit
+                             chunkAcc: VectorBuilder[Token])(implicit
       F: RaiseThrowable[F],
       Json: Jsony[Json],
       tokenizer: Tokenizer[Json]): Pull[F, Token, Unit] =
@@ -180,6 +184,6 @@ package object mergepatch {
       F: RaiseThrowable[F],
       Json: Jsony[Json],
       tokenizer: Tokenizer[Json]): Pipe[F, Token, Token] =
-    s => go(Chunk.empty, 0, s, patch, Nil).stream
+    s => go(Chunk.empty, 0, s, patch, new VectorBuilder).stream
 
 }

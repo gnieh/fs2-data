@@ -8,17 +8,15 @@ val commonSettings = List(
   scalaVersion := scala212,
   crossScalaVersions := Seq(scala213, scala212),
   organization := "org.gnieh",
-  version := "0.8.0-SNAPSHOT",
+  headerLicense := Some(HeaderLicense.ALv2("2021", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
-  scalacOptions ++= List(
-    "-feature",
-    "-deprecation",
-    "-unchecked",
-    "-Ypatmat-exhaust-depth",
-    "off",
-    "-Ywarn-unused:imports"
-  ),
+  scalacOptions ++= List("-feature",
+                         "-deprecation",
+                         "-unchecked",
+                         "-Ypatmat-exhaust-depth",
+                         "off",
+                         "-Ywarn-unused:imports,privates"),
   scalacOptions ++= PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
       case Some((2, n)) if n < 13 =>
@@ -30,7 +28,7 @@ val commonSettings = List(
   addCompilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary),
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
-    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.3.2",
+    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.1",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "co.fs2" %% "fs2-io" % fs2Version % "test",
     "com.disneystreaming" %%% "weaver-cats" % "0.7.0-M5" % "test"
@@ -40,15 +38,7 @@ val commonSettings = List(
 )
 
 val publishSettings = List(
-  publishMavenStyle := true,
   publishArtifact in Test := false,
-  // The Nexus repo we're publishing to.
-  publishTo := Some(
-    if (isSnapshot.value)
-      Opts.resolver.sonatypeSnapshots
-    else
-      Opts.resolver.sonatypeStaging
-  ),
   pomIncludeRepository := { x =>
     false
   },
@@ -77,7 +67,14 @@ val root = (project in file("."))
     name := "fs2-data",
     publishArtifact := false,
     skip in publish := true,
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(benchmarks),
+    unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(benchmarks,
+                                                                               csv.js,
+                                                                               csvGeneric.js,
+                                                                               json.js,
+                                                                               jsonCirce.js,
+                                                                               jsonDiffson.js,
+                                                                               xml.js,
+                                                                               cbor.js),
     siteSubdirName in ScalaUnidoc := "api",
     addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
     Nanoc / sourceDirectory := file("site"),
@@ -99,7 +96,9 @@ val root = (project in file("."))
     jsonDiffson.js,
     jsonInterpolators,
     xml.jvm,
-    xml.js
+    xml.js,
+    cbor.jvm,
+    cbor.js
   )
 
 lazy val text = crossProject(JVMPlatform, JSPlatform)
@@ -118,7 +117,7 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(name := "fs2-data-csv", description := "Streaming CSV manipulation library")
-  .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.0.0" % Test)
+  .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.1.0" % Test)
   .dependsOn(text)
 
 lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
@@ -153,7 +152,7 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
       .toList
       .flatten
   )
-  .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.0.0" % Test)
+  .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.1.0" % Test)
   .dependsOn(csv)
 
 lazy val json = crossProject(JVMPlatform, JSPlatform)
@@ -218,6 +217,17 @@ lazy val xml = crossProject(JVMPlatform, JSPlatform)
   )
   .dependsOn(text)
 
+lazy val cbor = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Full)
+  .in(file("cbor"))
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "fs2-data-cbor",
+    description := "Streaming CBOR manipulation library",
+    scalacOptions ++= List("-opt:l:inline", "-opt-inline-from:fs2.data.cbor.low.internal.ItemParser$")
+  )
+
 lazy val documentation = project
   .in(file("documentation"))
   .enablePlugins(MdocPlugin)
@@ -232,7 +242,7 @@ lazy val documentation = project
       "co.fs2" %% "fs2-io" % fs2Version
     )
   )
-  .dependsOn(csv.jvm, csvGeneric.jvm, json.jvm, jsonDiffson.jvm, jsonCirce.jvm, jsonInterpolators, xml.jvm)
+  .dependsOn(csv.jvm, csvGeneric.jvm, json.jvm, jsonDiffson.jvm, jsonCirce.jvm, jsonInterpolators, xml.jvm, cbor.jvm)
 
 lazy val benchmarks = project
   .in(file("benchmarks"))

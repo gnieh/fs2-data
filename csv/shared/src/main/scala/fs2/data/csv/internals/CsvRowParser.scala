@@ -25,21 +25,26 @@ private[csv] object CsvRowParser {
 
   def pipe[F[_], Header](implicit
       F: RaiseThrowable[F],
-      Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
+      Header: ParseableHeader[Header]
+  ): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
+    _.through(pipeAttempt[F, Header]).rethrow
+
+  /** Like `pipe` except that instead of failing the stream on parse errors, it emits `Left` elements for bad rows */
+  def pipeAttempt[F[_], Header](implicit
+      F: RaiseThrowable[F],
+      Header: ParseableHeader[Header]
+  ): Pipe[F, NonEmptyList[String], Either[Throwable, CsvRow[Header]]] =
     _.pull.uncons1.flatMap {
-      case Some((currentRow, tail)) =>
-        Header(currentRow) match {
-          case Left(error) => Pull.raiseError[F](error)
-          case Right(headers) if headers.length =!= currentRow.length =>
-            val error = new HeaderSizeError(
-              s"Got ${headers.length} headers, but ${currentRow.length} columns. Both numbers must match!",
-              expectedColumns = headers.length,
-              actualColumns = currentRow.length)
-            Pull.raiseError[F](error)
+      case Some((firstRow, tail)) =>
+        Header(firstRow) match {
+          case Left(error) => Pull.output1(Left(error))
+          case Right(headers) if headers.length =!= firstRow.length =>
+            val error = new HeaderError(
+              s"Got ${headers.length} headers, but ${firstRow.length} columns. Both numbers must match!")
+            Pull.output1(Left(error))
           case Right(headers) =>
             tail
               .map(CsvRow(_, headers))
-              .rethrow
               .pull
               .echo
         }

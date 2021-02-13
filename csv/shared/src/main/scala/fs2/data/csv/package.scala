@@ -122,6 +122,12 @@ package object csv {
       Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
     CsvRowParser.pipe[F, Header]
 
+  /** Transforms a stream of raw CSV rows into parsed CSV rows with headers, with failures at the element level instead of failing the stream */
+  def headersAttempt[F[_], Header](
+      implicit F: RaiseThrowable[F],
+      Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], Either[Throwable, CsvRow[Header]]] =
+    CsvRowParser.pipeAttempt[F, Header]
+
   /** Transforms a stream of raw CSV rows into parsed CSV rows with given headers. */
   def withHeaders[F[_], Header](headers: NonEmptyList[Header])(implicit
       F: RaiseThrowable[F]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =

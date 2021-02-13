@@ -17,6 +17,9 @@ package fs2
 package data
 package json
 
+import cats.Show
+import cats.implicits._
+
 /** Used to select tokens in a token stream.
   */
 sealed trait Selector
@@ -93,6 +96,16 @@ object Selector {
         case (_, _)            => PipeSelector(left, right)
       }
   }
+
+  implicit lazy val SelectorShow: Show[Selector] = Show.show {
+    case ThisSelector => "."
+    case NameSelector(pred, strict, mandatory) =>
+      show"$pred${if (strict) "" else "?"}${if (mandatory) "!" else ""}"
+    case IndexSelector(pred, strict) => show"$pred${if (strict) "" else "?"}"
+    case IteratorSelector(strict)    => show".[]${if (strict) "" else "?"}"
+    case PipeSelector(left, right)   => show"$left$right"
+  }
+
 }
 
 sealed trait NamePredicate extends (String => Boolean) {
@@ -119,6 +132,14 @@ object NamePredicate {
     def apply(name: String): Boolean = names.contains(name)
     def values: Set[String] = names
   }
+
+  implicit lazy val NamePredicateShow: Show[NamePredicate] = Show.show {
+    case All            => ".[]"
+    case None           => ".[<none>]"
+    case Single(name)   => s""".["$name"]"""
+    case Several(names) => s""".[${names.map(n => s""""$n"""").mkString(",")}]"""
+  }
+
 }
 
 sealed trait IndexPredicate extends (Int => Boolean)
@@ -137,5 +158,13 @@ object IndexPredicate {
   }
   case class Range(start: Int, end: Int) extends IndexPredicate {
     def apply(idx: Int): Boolean = start <= idx && idx <= end
+  }
+
+  implicit lazy val IndexPredicateShow: Show[IndexPredicate] = Show.show {
+    case All               => "[]"
+    case None              => ".[<none>]"
+    case Single(idx)       => s".[$idx]"
+    case Several(indices)  => s".[${indices.mkString(",")}]"
+    case Range(start, end) => s".[$start:$end]"
   }
 }

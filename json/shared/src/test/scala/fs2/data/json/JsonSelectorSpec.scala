@@ -172,6 +172,7 @@ abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer
   test("transformF should fail the stream if one value fails") {
     val selector = root.field("f").compile
     val exn = new Exception
+    val error = new JsonException("An error occurred while transforming Json data", Some(JsonContext.Key("f", JsonContext.Root)), exn)
     Stream(Token.StartObject,
            Token.Key("f"),
            Token.TrueValue,
@@ -183,7 +184,7 @@ abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer
       .compile
       .toList
       .map(transformed =>
-        expect(transformed == List(Right(Token.StartObject), Right(Token.Key("f")), Left(exn))))
+        expect(transformed == List(Right(Token.StartObject), Right(Token.Key("f")), Left(error))))
   }
 
 }

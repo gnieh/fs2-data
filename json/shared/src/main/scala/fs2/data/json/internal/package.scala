@@ -32,13 +32,15 @@ package object internals {
                                     idx: Int,
                                     rest: Stream[F, Token],
                                     depth: Int,
-                                    chunkAcc: List[Token])(implicit
-      F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
+                                    chunkAcc: VectorBuilder[Token])(implicit
+      F: RaiseThrowable[F]): Pull[F, Token, Result[F, VectorBuilder[Token]]] =
     if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >>
+      emitChunk(chunkAcc) >>
         rest.pull.uncons.flatMap {
-          case Some((hd, tl)) => skipValue(hd, 0, tl, depth, Nil)
-          case None           => Pull.raiseError[F](new JsonException("unexpected end of input"))
+          case Some((hd, tl)) =>
+            chunkAcc.clear()
+            skipValue(hd, 0, tl, depth, chunkAcc)
+          case None => Pull.raiseError[F](new JsonException("unexpected end of input"))
         }
     } else
       chunk(idx) match {
@@ -65,35 +67,36 @@ package object internals {
                                     idx: Int,
                                     rest: Stream[F, Token],
                                     depth: Int,
-                                    chunkAcc: List[Token])(implicit
-      F: RaiseThrowable[F]): Pull[F, Token, Result[F, List[Token]]] =
+                                    chunkAcc: VectorBuilder[Token])(implicit
+      F: RaiseThrowable[F]): Pull[F, Token, Result[F, VectorBuilder[Token]]] =
     if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >>
+      emitChunk(chunkAcc) >>
         rest.pull.uncons.flatMap {
           case Some((hd, tl)) =>
-            emitValue(hd, 0, tl, depth, Nil)
+            chunkAcc.clear()
+            emitValue(hd, 0, tl, depth, chunkAcc)
           case None =>
             Pull.raiseError[F](new JsonException("unexpected end of input"))
         }
     } else {
       chunk(idx) match {
         case token @ (Token.StartArray | Token.StartObject) =>
-          emitValue(chunk, idx + 1, rest, depth + 1, token :: chunkAcc)
+          emitValue(chunk, idx + 1, rest, depth + 1, chunkAcc += token)
         case token @ (Token.EndArray | Token.EndObject) =>
           if (depth == 1)
             // this is the value closing token, onSelect it and we are done
-            Pull.pure(Some((chunk, idx + 1, rest, token :: chunkAcc)))
+            Pull.pure(Some((chunk, idx + 1, rest, chunkAcc += token)))
           else if (depth < 1)
             // this is an error, closing a not opened brace or bracket
             Pull.raiseError[F](new JsonException("malformed json"))
           else
-            emitValue(chunk, idx + 1, rest, depth - 1, token :: chunkAcc)
+            emitValue(chunk, idx + 1, rest, depth - 1, chunkAcc += token)
         case token =>
           if (depth == 0)
             // this is the value to onSelect
-            Pull.pure(Some((chunk, idx + 1, rest, token :: chunkAcc)))
+            Pull.pure(Some((chunk, idx + 1, rest, chunkAcc += token)))
           else
-            emitValue(chunk, idx + 1, rest, depth, token :: chunkAcc)
+            emitValue(chunk, idx + 1, rest, depth, chunkAcc += token)
       }
     }
 
