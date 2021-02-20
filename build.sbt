@@ -5,7 +5,7 @@ val circeVersion = "0.13.0"
 val shapelessVersion = "2.3.3"
 
 val commonSettings = List(
-  scalaVersion := scala212,
+  scalaVersion := scala213,
   crossScalaVersions := Seq(scala213, scala212),
   organization := "org.gnieh",
   headerLicense := Some(HeaderLicense.ALv2("2021", "Lucas Satabin")),
@@ -187,7 +187,7 @@ lazy val jsonInterpolators = project
     name := "fs2-data-json-interpolators",
     description := "Json interpolators support",
     libraryDependencies ++= List(
-      "com.propensive" %% "contextual" % "1.2.1",
+      "com.propensive" %% "contextual-core" % "3.0.1",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     )
   )
