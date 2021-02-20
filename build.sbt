@@ -1,5 +1,5 @@
 val scala212 = "2.12.12"
-val scala213 = "2.13.3"
+val scala213 = "2.13.4"
 val fs2Version = "2.5.2"
 val circeVersion = "0.13.0"
 val shapelessVersion = "2.3.3"
@@ -187,7 +187,7 @@ lazy val jsonInterpolators = project
     name := "fs2-data-json-interpolators",
     description := "Json interpolators support",
     libraryDependencies ++= List(
-      "com.propensive" %% "contextual-core" % "3.0.1",
+      "com.propensive" %% "contextual-core" % "3.0.0",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     )
   )
