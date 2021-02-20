@@ -17,12 +17,15 @@ package fs2
 package data
 package json
 
-import contextual.Prefix
+import contextual.Macros
+
+import language.experimental.macros
 
 package object interpolators {
 
   implicit class SelectorStringContext(sc: StringContext) {
-    val selector = Prefix(SelectorInterpolator, sc)
+    def selector(expressions: String*): Selector =
+      macro Macros.contextual[SelectorInterpolator.type]
   }
 
 }
