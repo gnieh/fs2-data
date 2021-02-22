@@ -105,7 +105,7 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(name := "fs2-data-csv", description := "Streaming CSV manipulation library")
-  .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.1.0" % Test)
+  .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.2.0" % Test)
 
 lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
@@ -139,7 +139,7 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
       .toList
       .flatten
   )
-  .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.1.0" % Test)
+  .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.2.0" % Test)
   .dependsOn(csv)
 
 lazy val json = crossProject(JVMPlatform, JSPlatform)
