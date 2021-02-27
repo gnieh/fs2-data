@@ -1,4 +1,4 @@
-val scala212 = "2.12.12"
+val scala212 = "2.12.13"
 val scala213 = "2.13.5"
 val fs2Version = "2.5.3"
 val circeVersion = "0.13.0"
