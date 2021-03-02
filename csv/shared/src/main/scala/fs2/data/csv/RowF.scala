@@ -128,11 +128,20 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String], header
   def toMap(implicit hasHeaders: HasHeaders[H, Header]): Map[Header, String] =
     byHeader
 
-  /**
-    * Drop all headers (if any).
+  /** Drop all headers (if any).
     * @return a row without headers, but same values
     */
   def dropHeaders: Row = Row(values)
+
+  /** Concat this row with another. Header types must match, headers must be distinct.
+    * @param other the row to append
+    * @return a row combining both
+    */
+  def :::(other: RowF[H, Header]): RowF[H, Header] =
+    new RowF[H, Header](
+      values ::: other.values,
+      (headers: Option[NonEmptyList[Header]], other.headers).mapN(_ ::: _).asInstanceOf[H[NonEmptyList[Header]]]
+    )
 
   private def byHeader(implicit hasHeaders: HasHeaders[H, Header]): Map[Header, String] =
     headers.get.toList.zip(values.toList).toMap
