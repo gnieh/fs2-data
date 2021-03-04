@@ -12,7 +12,7 @@ object CsvRow {
         new CsvException(
           s"Headers have size ${headers.length} but row has size ${values.length}. Both numbers must match!"))
     else
-      Right(new CsvRow(values, Some(headers)))
+      Right(new RowF[Some, Header](values, Some(headers)))
 
   def unsafe[Header](values: NonEmptyList[String], headers: NonEmptyList[Header]): CsvRow[Header] =
     apply(values, headers).fold(throw _, identity)
@@ -22,12 +22,12 @@ object CsvRow {
 
   def fromListHeaders[Header](l: List[(Header, String)]): Option[CsvRow[Header]] = {
     val (hs, vs) = l.unzip
-    (NonEmptyList.fromList(vs), NonEmptyList.fromList(hs)).mapN((v, h) => new CsvRow(v, Some(h)))
+    (NonEmptyList.fromList(vs), NonEmptyList.fromList(hs)).mapN((v, h) => new RowF[Some, Header](v, Some(h)))
   }
 
   def fromNelHeaders[Header](nel: NonEmptyList[(Header, String)]): CsvRow[Header] = {
     val (hs, vs) = nel.toList.unzip
-    new CsvRow(NonEmptyList.fromListUnsafe(vs), Some(NonEmptyList.fromListUnsafe(hs)))
+    new RowF[Some, Header](NonEmptyList.fromListUnsafe(vs), Some(NonEmptyList.fromListUnsafe(hs)))
   }
 
   def unapply[Header](arg: CsvRow[Header]): Some[(NonEmptyList[String], NonEmptyList[Header])] = Some(

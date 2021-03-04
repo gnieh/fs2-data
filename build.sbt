@@ -1,12 +1,13 @@
 val scala212 = "2.12.13"
-val scala213 = "2.13.4"
-val fs2Version = "3.0.0-M7"
-val circeVersion = "0.13.0"
+val scala213 = "2.13.5"
+val scala3 = "3.0.0-M3"
+val fs2Version = "3.0.0-M9"
+val circeVersion = "0.14.0-M3"
 val shapelessVersion = "2.3.3"
 
 val commonSettings = List(
-  scalaVersion := scala212,
-  crossScalaVersions := Seq(scala213, scala212),
+  scalaVersion := scala3,
+  crossScalaVersions := Seq(scala213, scala212, scala3),
   organization := "org.gnieh",
   headerLicense := Some(HeaderLicense.ALv2("2021", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
@@ -21,17 +22,26 @@ val commonSettings = List(
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
       case Some((2, n)) if n < 13 =>
         List("-Ypartial-unification", "-language:higherKinds")
+      case Some((3, _)) =>
+        List("-Ykind-projector")
     }
     .toList
     .flatten,
-  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.11.3" cross CrossVersion.full),
-  addCompilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary),
+  libraryDependencies ++= PartialFunction
+    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
+      List(
+        compilerPlugin("org.typelevel" % "kind-projector" % "0.11.3" cross CrossVersion.full),
+        compilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary)
+      )
+    }
+    .toList
+    .flatten,
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
-    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.1",
+    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.2",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "co.fs2" %% "fs2-io" % fs2Version % "test",
-    "com.disneystreaming" %%% "weaver-cats" % "0.7.0-M5" % "test"
+    "com.disneystreaming" %%% "weaver-cats" % "0.7.0-M6" % "test"
   ),
   testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
   scmInfo := Some(ScmInfo(url("https://github.com/satabin/fs2-data"), "scm:git:git@github.com:satabin/fs2-data.git"))

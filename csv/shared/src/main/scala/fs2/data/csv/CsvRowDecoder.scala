@@ -18,7 +18,7 @@ package fs2.data.csv
 object CsvRowDecoder {
 
   @inline
-  def apply[T: CsvRowDecoder[*, Header], Header]: CsvRowDecoder[T, Header] = implicitly[CsvRowDecoder[T, Header]]
+  def apply[T, Header](implicit ev: CsvRowDecoder[T, Header]): CsvRowDecoder[T, Header] = ev
 
   @inline
   def instance[T, Header](f: CsvRow[Header] => DecoderResult[T]): CsvRowDecoder[T, Header] = f(_)

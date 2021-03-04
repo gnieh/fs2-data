@@ -7,18 +7,20 @@ import weaver._
 object RowWriterTest extends SimpleIOSuite {
 
   pureTest("RowWriter should escape according to the given escape mode") {
+    // Needed for Scala 3.0.0-M3 :'(
+    def test(mode: EscapeMode, in: String): String = RowWriter.encodeColumn(',', mode)(in)
     // separator
-    expect(RowWriter.encodeColumn(',', EscapeMode.Auto)(",") == "\",\"") and
-      expect(RowWriter.encodeColumn(',', EscapeMode.Always)(",") == "\",\"") and
-      expect(RowWriter.encodeColumn(',', EscapeMode.Never)(",") == ",") and
+    expect(test(EscapeMode.Auto, ",") == "\",\"") and
+      expect(test(EscapeMode.Always, ",") == "\",\"") and
+      expect(test(EscapeMode.Never, ",") == ",") and
       // quotes
-      expect(RowWriter.encodeColumn(',', EscapeMode.Auto)("\"") == "\"\"\"\"") and
-      expect(RowWriter.encodeColumn(',', EscapeMode.Always)("\"") == "\"\"\"\"") and
-      expect(RowWriter.encodeColumn(',', EscapeMode.Never)("\"") == "\"") and
+      expect(test(EscapeMode.Auto, "\"") == "\"\"\"\"") and
+      expect(test(EscapeMode.Always, "\"") == "\"\"\"\"") and
+      expect(test(EscapeMode.Never, "\"") == "\"") and
       // normal string
-      expect(RowWriter.encodeColumn(',', EscapeMode.Auto)("test") == "test") and
-      expect(RowWriter.encodeColumn(',', EscapeMode.Always)("test") == "\"test\"") and
-      expect(RowWriter.encodeColumn(',', EscapeMode.Never)("test") == "test")
+      expect(test(EscapeMode.Auto, "test") == "test") and
+      expect(test(EscapeMode.Always, "test") == "\"test\"") and
+      expect(test(EscapeMode.Never, "test") == "test")
   }
 
 }

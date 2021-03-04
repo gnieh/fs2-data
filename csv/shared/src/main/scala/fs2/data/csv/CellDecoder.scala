@@ -40,8 +40,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 trait CellDecoder[T] {
   def apply(cell: String): DecoderResult[T]
 
-  /**
-    * Map the parsed value.
+  /** Map the parsed value.
     * @param f the mapping function
     * @tparam T2 the result type
     * @return a cell decoder reading the mapped type
@@ -49,8 +48,7 @@ trait CellDecoder[T] {
   def map[T2](f: T => T2): CellDecoder[T2] =
     s => apply(s).map(f)
 
-  /**
-    * Map the parsed value to a new decoder, which in turn will be applied to
+  /** Map the parsed value to a new decoder, which in turn will be applied to
     * the parsed value.
     * @param f the mapping function
     * @tparam T2 the result type
@@ -59,8 +57,7 @@ trait CellDecoder[T] {
   def flatMap[T2](f: T => CellDecoder[T2]): CellDecoder[T2] =
     s => apply(s).flatMap(f(_)(s))
 
-  /**
-    * Map the parsed value, potentially failing.
+  /** Map the parsed value, potentially failing.
     * @param f the mapping function
     * @tparam T2 the result type
     * @return a cell decoder reading the mapped type
@@ -68,8 +65,7 @@ trait CellDecoder[T] {
   def emap[T2](f: T => DecoderResult[T2]): CellDecoder[T2] =
     s => apply(s).flatMap(f)
 
-  /**
-    * Fail-over. If this decoder fails, try the supplied other decoder.
+  /** Fail-over. If this decoder fails, try the supplied other decoder.
     * @param cd the fail-over decoder
     * @tparam TT the return type
     * @return a decoder combining this and the other decoder
@@ -81,8 +77,7 @@ trait CellDecoder[T] {
         case r @ Right(_) => r.leftCast[DecoderError]
       }
 
-  /**
-    * Similar to [[or]], but return the result as an Either signaling which cell decoder succeeded. Allows for parsing
+  /** Similar to [[or]], but return the result as an Either signaling which cell decoder succeeded. Allows for parsing
     * an unrelated type in case of failure.
     * @param cd the alternative decoder
     * @tparam B the type the alternative decoder returns
@@ -144,11 +139,11 @@ object CellDecoder
   @inline
   def fromString[T](f: String => T): CellDecoder[T] = s => f(s).asRight
 
-  def enumerationDecoder[E <: Enumeration](enum: E): CellDecoder[E#Value] =
+  /*def enumerationDecoder[E <: Enumeration](e: E): CellDecoder[E#Value] =
     s =>
-      enum.values
+      e.values
         .find(_.toString === s)
-        .toRight(new DecoderError(s"unable to decode '$s' as a ${enum.toString()} value"))
+        .toRight(new DecoderError(s"unable to decode '$s' as a ${e.toString()} value"))*/
 
   // Primitives
   implicit val unitDecoder: CellDecoder[Unit] = s =>

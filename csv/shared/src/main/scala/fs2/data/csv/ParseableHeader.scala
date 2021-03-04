@@ -63,7 +63,9 @@ object ParseableHeader {
         }
   }
 
-  def liftCellDecoder[T](implicit cellDecoder: CellDecoder[T]): ParseableHeader[T] =
-    _.traverse(cellDecoder(_).leftMap(e => new HeaderError(e.getMessage)))
+  def liftCellDecoder[T](implicit cellDecoder: CellDecoder[T]): ParseableHeader[T] = new ParseableHeader[T] {
+    override def apply(names: NonEmptyList[String]): HeaderResult[T] =
+      names.traverse[Either[HeaderError, *], T](cellDecoder(_).leftMap(e => new HeaderError(e.getMessage)))
+  }
 
 }

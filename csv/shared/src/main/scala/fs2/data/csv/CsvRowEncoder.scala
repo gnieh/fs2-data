@@ -20,7 +20,7 @@ import cats.data.NonEmptyList
 object CsvRowEncoder {
 
   @inline
-  def apply[T: CsvRowEncoder[*, Header], Header]: CsvRowEncoder[T, Header] = implicitly[CsvRowEncoder[T, Header]]
+  def apply[T, Header](implicit ev: CsvRowEncoder[T, Header]): CsvRowEncoder[T, Header] = ev
 
   @inline
   def instance[T, Header](f: T => NonEmptyList[(Header, String)]): CsvRowEncoder[T, Header] =

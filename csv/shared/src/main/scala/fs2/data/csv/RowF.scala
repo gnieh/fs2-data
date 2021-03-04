@@ -64,8 +64,8 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String], header
     * will be modified. It shouldn't be a problem in the general case as headers
     * should not be duplicated.
     */
-  def modify(header: Header)(f: String => String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] =
-    modify(headers.get.toList.indexOf(header))(f)
+  /*def modify(header: Header)(f: String => String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] =
+    modify(headers.get.toList.indexOf(header))(f)*/
 
   /** Returns the row with the cell at `idx` modified to `value`. */
   def updated(idx: Int, value: String): RowF[H, Header] =
@@ -77,8 +77,8 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String], header
     * will be modified. It shouldn't be a problem in the general case as headers
     * should not be duplicated.
     */
-  def updated(header: Header, value: String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] =
-    updated(headers.get.toList.indexOf(header), value)
+  /*def updated(header: Header, value: String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] =
+    updated(headers.get.toList.indexOf(header), value)*/
 
   /** Returns the row without the cell at the given `idx`.
     * If the resulting row is empty, returns `None`.
@@ -128,8 +128,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String], header
   def toMap(implicit hasHeaders: HasHeaders[H, Header]): Map[Header, String] =
     byHeader
 
-  /**
-    * Drop all headers (if any).
+  /** Drop all headers (if any).
     * @return a row without headers, but same values
     */
   def dropHeaders: Row = Row(values)
@@ -145,7 +144,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String], header
 }
 
 object RowF {
-  implicit object functor extends Functor[CsvRow[*]] {
+  implicit object functor extends Functor[CsvRow] {
     override def map[A, B](fa: CsvRow[A])(f: A => B): CsvRow[B] = fa.copy(headers = Some(fa.headers.get.map(f)))
   }
 }

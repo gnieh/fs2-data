@@ -29,6 +29,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   */
 @implicitNotFound(
   "No implicit CellEncoder found for type ${T}.\nYou can define one using CellEncoder.instance, by calling contramap on another CellEncoder or by using generic derivation for coproducts and unary products.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val cellEncoder: CellEncoder[${T}] = deriveCellEncoder\n\n")
+@FunctionalInterface
 trait CellEncoder[T] {
   def apply(cell: T): String
 
@@ -53,8 +54,8 @@ object CellEncoder
   @inline
   def fromToString[A]: CellEncoder[A] = _.toString
 
-  implicit def enumerationEncoder[E <: Enumeration]: CellEncoder[E#Value] =
-    _.toString
+  /*implicit def enumerationEncoder[E <: Enumeration]: CellEncoder[E#Value] =
+    _.toString*/
 
   // Primitives
   implicit val unitEncoder: CellEncoder[Unit] = _ => ""
