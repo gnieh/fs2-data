@@ -29,7 +29,7 @@ val commonSettings = List(
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.2",
-    "org.scalatest" %%% "scalatest" % "3.2.5" % "test",
+    "org.scalatest" %%% "scalatest" % "3.2.6" % "test",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "co.fs2" %% "fs2-io" % fs2Version % "test",
     "com.github.pathikrit" %% "better-files" % "3.9.1" % "test"
