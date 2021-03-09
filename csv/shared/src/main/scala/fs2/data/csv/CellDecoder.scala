@@ -16,8 +16,6 @@
 package fs2.data.csv
 
 import java.net.{MalformedURLException, URI}
-import java.time._
-import java.time.format.DateTimeParseException
 import java.util.UUID
 
 import cats._
@@ -34,15 +32,13 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   *
   * Actually, `CellDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
   * instance. To get the full power of it, import `cats.implicits._`.
-  *
   */
 @implicitNotFound(
   "No implicit CellDecoder found for type ${T}.\nYou can define one using CellDecoder.instance, by calling map on another CellDecoder or by using generic derivation for coproducts and unary products.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val cellDecoder: CellDecoder[${T}] = deriveCellDecoder\n\n")
 trait CellDecoder[T] {
   def apply(cell: String): DecoderResult[T]
 
-  /**
-    * Map the parsed value.
+  /** Map the parsed value.
     * @param f the mapping function
     * @tparam T2 the result type
     * @return a cell decoder reading the mapped type
@@ -50,8 +46,7 @@ trait CellDecoder[T] {
   def map[T2](f: T => T2): CellDecoder[T2] =
     s => apply(s).map(f)
 
-  /**
-    * Map the parsed value to a new decoder, which in turn will be applied to
+  /** Map the parsed value to a new decoder, which in turn will be applied to
     * the parsed value.
     * @param f the mapping function
     * @tparam T2 the result type
@@ -60,8 +55,7 @@ trait CellDecoder[T] {
   def flatMap[T2](f: T => CellDecoder[T2]): CellDecoder[T2] =
     s => apply(s).flatMap(f(_)(s))
 
-  /**
-    * Map the parsed value, potentially failing.
+  /** Map the parsed value, potentially failing.
     * @param f the mapping function
     * @tparam T2 the result type
     * @return a cell decoder reading the mapped type
@@ -69,8 +63,7 @@ trait CellDecoder[T] {
   def emap[T2](f: T => DecoderResult[T2]): CellDecoder[T2] =
     s => apply(s).flatMap(f)
 
-  /**
-    * Fail-over. If this decoder fails, try the supplied other decoder.
+  /** Fail-over. If this decoder fails, try the supplied other decoder.
     * @param cd the fail-over decoder
     * @tparam TT the return type
     * @return a decoder combining this and the other decoder
@@ -82,8 +75,7 @@ trait CellDecoder[T] {
         case r @ Right(_) => r.leftCast[DecoderError]
       }
 
-  /**
-    * Similar to [[or]], but return the result as an Either signaling which cell decoder succeeded. Allows for parsing
+  /** Similar to [[or]], but return the result as an Either signaling which cell decoder succeeded. Allows for parsing
     * an unrelated type in case of failure.
     * @param cd the alternative decoder
     * @tparam B the type the alternative decoder returns
@@ -103,6 +95,7 @@ trait CellDecoder[T] {
 
 object CellDecoder
     extends CellDecoderInstances1
+    with CellDecoderInstances2
     with LiteralCellDecoders
     with ExportedCellDecoders
     with PlatformCellDecoders {
@@ -204,30 +197,67 @@ object CellDecoder
     Either
       .catchOnly[IllegalArgumentException](UUID.fromString(s))
       .leftMap(t => new DecoderError(s"couldn't parse UUID", t))
-
-  // Java Time
-  implicit val instantDecoder: CellDecoder[Instant] = javaTimeDecoder("Instant", Instant.parse)
-  implicit val periodDecoder: CellDecoder[Period] = javaTimeDecoder("Period", Period.parse)
-  implicit val localDateDecoder: CellDecoder[LocalDate] = javaTimeDecoder("LocalDate", LocalDate.parse)
-  implicit val localDateTimeDecoder: CellDecoder[LocalDateTime] = javaTimeDecoder("LocalDateTime", LocalDateTime.parse)
-  implicit val localTimeDecoder: CellDecoder[LocalTime] = javaTimeDecoder("LocalTime", LocalTime.parse)
-  implicit val offsetDateTimeDecoder: CellDecoder[OffsetDateTime] =
-    javaTimeDecoder("OffsetDateTime", OffsetDateTime.parse)
-  implicit val offsetTimeDecoder: CellDecoder[OffsetTime] = javaTimeDecoder("OffsetTime", OffsetTime.parse)
-  implicit val zonedDateTimeDecoder: CellDecoder[ZonedDateTime] = javaTimeDecoder("ZonedDateTime", ZonedDateTime.parse)
-
-  private def javaTimeDecoder[T](name: String, t: String => T): CellDecoder[T] =
-    s =>
-      Either
-        .catchOnly[DateTimeParseException](t(s))
-        .leftMap(t => new DecoderError(s"couldn't parse $name", t))
 }
 
 trait CellDecoderInstances1 {
   implicit val durationDecoder: CellDecoder[Duration] = s =>
     Either
       .catchNonFatal(Duration(s))
-      .leftMap(t => new DecoderError(s"couldn't parse Duration", t))
+      .leftMap(t => new DecoderError("couldn't parse Duration", t))
+}
+
+// Java Time Decoders
+trait CellDecoderInstances2 {
+  import java.time._
+  import java.time.format.DateTimeFormatter
+
+  implicit val instantDecoder: CellDecoder[Instant] = javaTimeDecoder("Instant", Instant.parse)
+  implicit val periodDecoder: CellDecoder[Period] = javaTimeDecoder("Period", Period.parse)
+  implicit def localDateDecoder(implicit
+      localDateDecodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE): CellDecoder[LocalDate] =
+    javaTimeDecoderWithFmt("LocalDate", LocalDate.parse)(localDateDecodeFmt)
+  implicit def localDateTimeDecoder(implicit
+      localDateTimeDecodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME): CellDecoder[LocalDateTime] =
+    javaTimeDecoderWithFmt("LocalDateTime", LocalDateTime.parse)(localDateTimeDecodeFmt)
+  implicit def localTimeDecoder(implicit
+      localTimeDecodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_TIME): CellDecoder[LocalTime] =
+    javaTimeDecoderWithFmt("LocalTime", LocalTime.parse)(localTimeDecodeFmt)
+  implicit def offsetDateTimeDecoder(implicit
+      offsetDateTimeDecodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+      : CellDecoder[OffsetDateTime] =
+    javaTimeDecoderWithFmt("OffsetDateTime", OffsetDateTime.parse)(offsetDateTimeDecodeFmt)
+  implicit def offsetTimeDecoder(implicit
+      offsetTimeDecodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_TIME): CellDecoder[OffsetTime] =
+    javaTimeDecoderWithFmt("OffsetTime", OffsetTime.parse)(offsetTimeDecodeFmt)
+  implicit def zonedDateTimeDecoder(implicit
+      zonedDateTimeDecodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_ZONED_DATE_TIME): CellDecoder[ZonedDateTime] =
+    javaTimeDecoderWithFmt("ZonedDateTime", ZonedDateTime.parse)(zonedDateTimeDecodeFmt)
+  implicit val dayOfWeekDecoder: CellDecoder[DayOfWeek] =
+    javaTimeDecoder("DayOfWeek", t => DayOfWeek.valueOf(t.toUpperCase))
+  implicit val javaTimeDurationDecoder: CellDecoder[java.time.Duration] =
+    javaTimeDecoder("java.time.Duration", java.time.Duration.parse)
+  implicit val monthDecoder: CellDecoder[Month] = javaTimeDecoder("Month", t => Month.valueOf(t.toUpperCase))
+  implicit val monthDayDecoder: CellDecoder[MonthDay] = javaTimeDecoder("MonthDay", MonthDay.parse)
+  implicit val yearDayDecoder: CellDecoder[Year] = javaTimeDecoder("Year", Year.parse)
+  implicit val yearMonthDayDecoder: CellDecoder[YearMonth] = javaTimeDecoder("YearMonth", YearMonth.parse)
+  implicit val zoneIdDecoder: CellDecoder[ZoneId] = javaTimeDecoder("ZoneId", ZoneId.of)
+  implicit val zoneOffsetDecoder: CellDecoder[ZoneOffset] = javaTimeDecoder("ZoneOffset", ZoneOffset.of)
+
+  private def javaTimeDecoder[T](name: String, t: String => T): CellDecoder[T] =
+    s =>
+      Either
+        .catchOnly[DateTimeException](t(s))
+        .leftMap(t => new DecoderError(s"couldn't parse $name", t))
+
+  private def javaTimeDecoderWithFmt[T](name: String, t: (String, DateTimeFormatter) => T)(implicit
+      fmt: DateTimeFormatter): CellDecoder[T] = {
+    CellDecoder[String]
+      .emap { s =>
+        Either
+          .catchOnly[DateTimeException](t(s, fmt))
+          .leftMap(t => new DecoderError(s"couldn't parse $name with fmt: ${fmt}", t))
+      }
+  }
 }
 
 trait ExportedCellDecoders {

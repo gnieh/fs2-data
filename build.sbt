@@ -3,6 +3,7 @@ val scala213 = "2.13.5"
 val fs2Version = "2.5.3"
 val circeVersion = "0.13.0"
 val shapelessVersion = "2.3.3"
+val scalaJavaTimeVersion = "2.2.0"
 
 val commonSettings = List(
   scalaVersion := scala213,
@@ -105,8 +106,11 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(name := "fs2-data-csv", description := "Streaming CSV manipulation library")
-  .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.2.0" % Test)
-
+  .jsSettings(
+    libraryDependencies ++= List(
+      "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test,
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion % Test
+    ))
 lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("csv/generic"))
