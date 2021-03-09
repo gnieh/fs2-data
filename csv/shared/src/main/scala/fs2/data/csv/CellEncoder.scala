@@ -16,7 +16,6 @@
 package fs2.data.csv
 
 import java.net.URI
-import java.time._
 import java.util.UUID
 
 import cats._
@@ -37,6 +36,7 @@ trait CellEncoder[T] {
 
 object CellEncoder
     extends CellEncoderInstances1
+    with CellEncoderInstances2
     with LiteralCellEncoders
     with ExportedCellEncoders
     with PlatformCellEncoders {
@@ -77,17 +77,6 @@ object CellEncoder
   implicit val javaUriEncoder: CellEncoder[URI] = fromToString(_)
   implicit val uuidEncoder: CellEncoder[UUID] = fromToString(_)
 
-  // Java Time
-  implicit val instantEncoder: CellEncoder[Instant] = fromToString(_)
-  implicit val periodEncoder: CellEncoder[Period] = fromToString(_)
-  implicit val localDateEncoder: CellEncoder[LocalDate] = fromToString(_)
-  implicit val localDateTimeEncoder: CellEncoder[LocalDateTime] = fromToString(_)
-  implicit val localTimeEncoder: CellEncoder[LocalTime] = fromToString(_)
-  implicit val offsetDateTimeEncoder: CellEncoder[OffsetDateTime] =
-    fromToString(_)
-  implicit val offsetTimeEncoder: CellEncoder[OffsetTime] = fromToString(_)
-  implicit val zonedDateTimeEncoder: CellEncoder[ZonedDateTime] = fromToString(_)
-
   // Option
   implicit def optionEncoder[Cell: CellEncoder]: CellEncoder[Option[Cell]] =
     _.fold("")(CellEncoder[Cell].apply)
@@ -96,6 +85,46 @@ object CellEncoder
 
 trait CellEncoderInstances1 {
   implicit val durationEncoder: CellEncoder[Duration] = _.toString
+}
+
+// Java Time Encoders
+trait CellEncoderInstances2 {
+  import java.time._
+  import java.time.format.DateTimeFormatter
+  import java.time.temporal.TemporalAccessor
+
+  implicit val instantEncoder: CellEncoder[Instant] = _.toString
+  implicit val periodEncoder: CellEncoder[Period] = _.toString
+  implicit def localDateEncoder(implicit
+      localDateEncodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE): CellEncoder[LocalDate] =
+    javaTimeEncoderWithFmt(_)(localDateEncodeFmt)
+  implicit def localDateTimeEncoder(implicit
+      localDateTimeEncodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME): CellEncoder[LocalDateTime] =
+    javaTimeEncoderWithFmt(_)(localDateTimeEncodeFmt)
+  implicit def localTimeEncoder(implicit
+      localTimeEncodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_TIME): CellEncoder[LocalTime] =
+    javaTimeEncoderWithFmt(_)(localTimeEncodeFmt)
+  implicit def offsetDateTimeEncoder(implicit
+      offsetDateTimeEncodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+      : CellEncoder[OffsetDateTime] = javaTimeEncoderWithFmt(_)(offsetDateTimeEncodeFmt)
+  implicit def offsetTimeEncoder(implicit
+      offsetTimeEncodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_TIME): CellEncoder[OffsetTime] =
+    javaTimeEncoderWithFmt(_)(offsetTimeEncodeFmt)
+  implicit def zonedDateTimeEncoder(implicit
+      zonedDateTimeEncodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_ZONED_DATE_TIME): CellEncoder[ZonedDateTime] =
+    javaTimeEncoderWithFmt(_)(zonedDateTimeEncodeFmt)
+  implicit val dayOfWeekEncoder: CellEncoder[DayOfWeek] = _.toString
+  implicit val javaTimeDurationEncoder: CellEncoder[java.time.Duration] = _.toString
+  implicit val monthEncoder: CellEncoder[Month] = _.toString
+  implicit val monthDayEncoder: CellEncoder[MonthDay] = _.toString
+  implicit val yearDayEncoder: CellEncoder[Year] = _.toString
+  implicit val yearMonthDayEncoder: CellEncoder[YearMonth] = _.toString
+  implicit val zoneIdEncoder: CellEncoder[ZoneId] = _.toString
+  implicit val zoneOffsetEncoder: CellEncoder[ZoneOffset] = _.toString
+
+  private def javaTimeEncoderWithFmt[T <: TemporalAccessor](value: T)(implicit fmt: DateTimeFormatter): String = {
+    fmt.format(value)
+  }
 }
 
 trait ExportedCellEncoders {
