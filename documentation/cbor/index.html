@@ -1,0 +1,414 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>fs2-data - CBOR</title>
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <link rel="stylesheet" href="/css/syntax.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
+    <style>body{font-family: overpass, sans-serif; }</style>
+
+    <meta name="generator" content="Nanoc 4.12.0">
+  </head>
+  <body>
+    <header>
+        <nav class="nav-extended red darken-2">
+          <a href="#!" class="brand-logo right">fs2-data</a>
+          <a href="#" data-target="collapsed" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+          <div class="nav-wrapper">
+            <ul id="nav-mobile" class="left hide-on-med-and-down">
+              <li><a href="/">Home</a></li>
+              <li><a href="/documentation/">Documentation</a></li>
+              <li><a href="/api/">Scaladoc</a></li>
+              <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+            </ul>
+          </div>
+          
+          
+          <div class="nav-content">
+            <ul class="tabs tabs-transparent">
+              
+              
+              <li class="tab active"><a href="/documentation/cbor/">CBOR</a></li>
+              
+              
+            </ul>
+          </div>
+          
+        </nav>
+
+    </header>
+
+    <ul class="sidenav" id="collapsed">
+      <li><a href="/">Home</a></li>
+      <li><a href="/documentation/">Documentation</a></li>
+      <li><a href="/api/">Scaladoc</a></li>
+      <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+    </ul>
+
+    
+    <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
+      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/master/documentation/docs/cbor/index.md" target="_blank">
+        <i class="large material-icons">mode_edit</i>
+      </a>
+    </div>
+    
+
+    <main>
+      <div class="container">
+        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-cbor_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-cbor_2.13.svg" alt="Maven Central" /></a></p>
+
+<p>The <code>fs2-data-cbor</code> module provides tools to parse and transform <a href="https://tools.ietf.org/html/rfc7049">CBOR</a> data in a streaming manner.</p>
+
+<p>This page covers the following topics:</p>
+<ul id="markdown-toc">
+  <li><a href="#low-level-representation" id="markdown-toc-low-level-representation">Low-level representation</a>    <ul>
+      <li><a href="#parsing" id="markdown-toc-parsing">Parsing</a></li>
+      <li><a href="#serializing" id="markdown-toc-serializing">Serializing</a></li>
+    </ul>
+  </li>
+  <li><a href="#high-level-representation" id="markdown-toc-high-level-representation">High-level representation</a>    <ul>
+      <li><a href="#parsing-1" id="markdown-toc-parsing-1">Parsing</a></li>
+      <li><a href="#serializing-1" id="markdown-toc-serializing-1">Serializing</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="low-level-representation">Low-level representation</h3>
+
+<p>The low-level representation lives in the <code>fs2.data.cbor.low</code> package and follows closely the structure defined in the RFC. It is a flat structure, which doesn’t represent data as an AST. This representation is useful when you don’t need the tree structure for your processing or when the data cannot be represented in an AST way (e.g. when a collection contains more than <code>Int.MaxValue</code> elements).</p>
+
+<h4 id="parsing">Parsing</h4>
+
+<p>Parsing a CBOR binary stream into low-level representation, use the <code>items</code> pipe.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2._</span>
+<span class="k">import</span> <span class="nn">fs2.data.cbor.low._</span>
+
+<span class="k">import</span> <span class="nn">scodec.bits._</span>
+
+<span class="k">val</span> <span class="nv">byteStream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">chunk</span><span class="o">(</span><span class="nv">Chunk</span><span class="o">.</span><span class="py">byteVector</span><span class="o">(</span><span class="n">hex</span><span class="s">"8301820203820405"</span><span class="o">))</span>
+<span class="c1">// byteStream: Stream[Nothing, Byte] = Stream(..)</span>
+
+<span class="k">val</span> <span class="nv">itemStream</span> <span class="k">=</span> <span class="nv">byteStream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">items</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">])</span>
+<span class="c1">// itemStream: Stream[Fallible[A], CborItem] = Stream(..)</span>
+<span class="nv">itemStream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res0: Either[Throwable, List[CborItem]] = Right(</span>
+<span class="c1">//   value = List(</span>
+<span class="c1">//     StartArray(size = 3L),</span>
+<span class="c1">//     PositiveInt(</span>
+<span class="c1">//       bytes = Chunk(</span>
+<span class="c1">//         bytes = View(</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@9f2d4c6,</span>
+<span class="c1">//           offset = 0L,</span>
+<span class="c1">//           size = 1L</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     StartArray(size = 2L),</span>
+<span class="c1">//     PositiveInt(</span>
+<span class="c1">//       bytes = Chunk(</span>
+<span class="c1">//         bytes = View(</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@3e55ceb7,</span>
+<span class="c1">//           offset = 0L,</span>
+<span class="c1">//           size = 1L</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     PositiveInt(</span>
+<span class="c1">//       bytes = Chunk(</span>
+<span class="c1">//         bytes = View(</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@2dfd0438,</span>
+<span class="c1">//           offset = 0L,</span>
+<span class="c1">//           size = 1L</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     StartArray(size = 2L),</span>
+<span class="c1">//     PositiveInt(</span>
+<span class="c1">//       bytes = Chunk(</span>
+<span class="c1">//         bytes = View(</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@24e4f4ee,</span>
+<span class="c1">//           offset = 0L,</span>
+<span class="c1">//           size = 1L</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     PositiveInt(</span>
+<span class="c1">//       bytes = Chunk(</span>
+<span class="c1">//         bytes = View(</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@2ae50937,</span>
+<span class="c1">//           offset = 0L,</span>
+<span class="c1">//           size = 1L</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">// ...</span>
+</code></pre></div></div>
+
+<h4 id="serializing">Serializing</h4>
+
+<p>When you already have a hand on a CBOR item stream, you can serialize it back to the binary representation (for instance to send it to the consumer) by making it go through the <code>toBinary</code> pipe.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Stream</span>
+  <span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span>
+    <span class="nv">CborItem</span><span class="o">.</span><span class="py">StartArray</span><span class="o">(</span><span class="mi">2</span><span class="o">),</span>
+    <span class="nv">CborItem</span><span class="o">.</span><span class="py">TextString</span><span class="o">(</span><span class="s">"an"</span><span class="o">),</span>
+    <span class="nv">CborItem</span><span class="o">.</span><span class="py">TextString</span><span class="o">(</span><span class="s">"array"</span><span class="o">)))</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">toBinary</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">])</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nc">ByteVector</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">toHex</span><span class="o">)</span>
+<span class="c1">// res1: Either[Throwable, String] = Right(value = "8262616e656172726179")</span>
+</code></pre></div></div>
+
+<p>The <code>toBinary</code> pipe validates the input and fail if the input steam is invalid. For instance let’s say that we are missing some elements in the array.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">invalid</span> <span class="k">=</span>
+  <span class="nc">Stream</span>
+    <span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span>
+      <span class="nv">CborItem</span><span class="o">.</span><span class="py">StartArray</span><span class="o">(</span><span class="mi">3</span><span class="o">),</span>
+      <span class="nv">CborItem</span><span class="o">.</span><span class="py">TextString</span><span class="o">(</span><span class="s">"an"</span><span class="o">),</span>
+      <span class="nv">CborItem</span><span class="o">.</span><span class="py">TextString</span><span class="o">(</span><span class="s">"array"</span><span class="o">)))</span>
+<span class="c1">// invalid: Stream[Nothing, Product with CborItem with Serializable] = Stream(..)</span>
+
+<span class="n">invalid</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">toBinary</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">])</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">drain</span>
+<span class="c1">// res2: Either[Throwable, Unit] = Left(</span>
+<span class="c1">//   value = fs2.data.cbor.CborValidationException: unexpected end of CBOR item stream</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>The pipe is fine when you are sure that the input stream is valid or when throughput doesn’t matter. In the case source is safe, or throughput matters more than correctness, you can use the <code>toNonValidatedBinary</code> pipe instead, which will silently generate a non valid byte stream.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">invalidBytes</span> <span class="k">=</span> <span class="nv">invalid</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">toNonValidatedBinary</span><span class="o">)</span>
+<span class="c1">// invalidBytes: Stream[Nothing, Byte] = Stream(..)</span>
+
+<span class="n">invalidBytes</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nc">ByteVector</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">toHex</span>
+<span class="c1">// res3: String = "8362616e656172726179"</span>
+</code></pre></div></div>
+
+<p>Of course, this stream will fail to be parsed.</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">invalidBytes</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">items</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">]).</span><span class="py">compile</span><span class="o">.</span><span class="py">drain</span>
+<span class="c1">// res4: Either[Throwable, Unit] = Left(</span>
+<span class="c1">//   value = fs2.data.cbor.CborParsingException: unexpected end of input</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<h3 id="high-level-representation">High-level representation</h3>
+
+<p>Some transformations are easier or safe to perform on more structure data, this is a scenario in which the high-level representation can come in handy. This representation lives in the <code>fs2.data.cbor.high</code> package.</p>
+
+<h4 id="parsing-1">Parsing</h4>
+
+<p>The main parsing pipe to get a high-level value stream from a byte stream is the <code>values</code> pipe.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.cbor.high._</span>
+
+<span class="k">val</span> <span class="nv">valueStream</span> <span class="k">=</span> <span class="nv">byteStream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">values</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">])</span>
+<span class="c1">// valueStream: Stream[Fallible[A], CborValue] = Stream(..)</span>
+<span class="nv">valueStream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res5: Either[Throwable, List[CborValue]] = Right(</span>
+<span class="c1">//   value = List(</span>
+<span class="c1">//     Array(</span>
+<span class="c1">//       values = List(</span>
+<span class="c1">//         Integer(value = 1),</span>
+<span class="c1">//         Array(</span>
+<span class="c1">//           values = List(Integer(value = 2), Integer(value = 3)),</span>
+<span class="c1">//           indefinite = false</span>
+<span class="c1">//         ),</span>
+<span class="c1">//         Array(</span>
+<span class="c1">//           values = List(Integer(value = 4), Integer(value = 5)),</span>
+<span class="c1">//           indefinite = false</span>
+<span class="c1">//         )</span>
+<span class="c1">//       ),</span>
+<span class="c1">//       indefinite = false</span>
+<span class="c1">//     )</span>
+<span class="c1">//   )</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>If you already have a stream of low-level items, you can make it go through the <code>parseValues</code> pipe to get the value stream.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">itemStream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">parseValues</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">]).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res6: Either[Throwable, List[CborValue]] = Right(</span>
+<span class="c1">//   value = List(</span>
+<span class="c1">//     Array(</span>
+<span class="c1">//       values = List(</span>
+<span class="c1">//         Integer(value = 1),</span>
+<span class="c1">//         Array(</span>
+<span class="c1">//           values = List(Integer(value = 2), Integer(value = 3)),</span>
+<span class="c1">//           indefinite = false</span>
+<span class="c1">//         ),</span>
+<span class="c1">//         Array(</span>
+<span class="c1">//           values = List(Integer(value = 4), Integer(value = 5)),</span>
+<span class="c1">//           indefinite = false</span>
+<span class="c1">//         )</span>
+<span class="c1">//       ),</span>
+<span class="c1">//       indefinite = false</span>
+<span class="c1">//     )</span>
+<span class="c1">//   )</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<h4 id="serializing-1">Serializing</h4>
+
+<p>High-level value stream can be serialized to binary format by using the <code>toBinary</code> pipe.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">valueStream</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">data</span><span class="o">.</span><span class="py">cbor</span><span class="o">.</span><span class="py">high</span><span class="o">.</span><span class="py">toBinary</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nc">ByteVector</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">toHex</span><span class="o">)</span>
+<span class="c1">// res7: Either[Throwable, String] = Right(value = "8301820203820405")</span>
+</code></pre></div></div>
+
+<p>It is possible to convert values back to low-level items, using the <code>toItems</code> pipes.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">valueStream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">toItems</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res8: Either[Throwable, List[CborItem]] = Right(</span>
+<span class="c1">//   value = List(</span>
+<span class="c1">//     StartArray(size = 3L),</span>
+<span class="c1">//     PositiveInt(</span>
+<span class="c1">//       bytes = Chunk(</span>
+<span class="c1">//         bytes = View(</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@5e21a4d5,</span>
+<span class="c1">//           offset = 0L,</span>
+<span class="c1">//           size = 1L</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     StartArray(size = 2L),</span>
+<span class="c1">//     PositiveInt(</span>
+<span class="c1">//       bytes = Chunk(</span>
+<span class="c1">//         bytes = View(</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@57a932b0,</span>
+<span class="c1">//           offset = 0L,</span>
+<span class="c1">//           size = 1L</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     PositiveInt(</span>
+<span class="c1">//       bytes = Chunk(</span>
+<span class="c1">//         bytes = View(</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@6f4bd361,</span>
+<span class="c1">//           offset = 0L,</span>
+<span class="c1">//           size = 1L</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     StartArray(size = 2L),</span>
+<span class="c1">//     PositiveInt(</span>
+<span class="c1">//       bytes = Chunk(</span>
+<span class="c1">//         bytes = View(</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@ac8dc21,</span>
+<span class="c1">//           offset = 0L,</span>
+<span class="c1">//           size = 1L</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     PositiveInt(</span>
+<span class="c1">//       bytes = Chunk(</span>
+<span class="c1">//         bytes = View(</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@599cc6a1,</span>
+<span class="c1">//           offset = 0L,</span>
+<span class="c1">//           size = 1L</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">// ...</span>
+</code></pre></div></div>
+
+<p>You can locally control whether an array or a map will be streamed in the serialized form by setting the <code>indefinite</code> flag to <code>true</code>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">valueStream</span>
+  <span class="o">.</span><span class="py">map</span> <span class="o">{</span>
+    <span class="c1">// make top-level arrays streamed</span>
+    <span class="k">case</span> <span class="nv">CborValue</span><span class="o">.</span><span class="py">Array</span><span class="o">(</span><span class="n">elements</span><span class="o">,</span> <span class="k">_</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nv">CborValue</span><span class="o">.</span><span class="py">Array</span><span class="o">(</span><span class="n">elements</span><span class="o">,</span> <span class="kc">true</span><span class="o">)</span>
+    <span class="k">case</span> <span class="n">value</span>                        <span class="k">=&gt;</span> <span class="n">value</span>
+  <span class="o">}</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">toItems</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res9: Either[Throwable, List[CborItem]] = Right(</span>
+<span class="c1">//   value = List(</span>
+<span class="c1">//     StartIndefiniteArray,</span>
+<span class="c1">//     PositiveInt(</span>
+<span class="c1">//       bytes = Chunk(</span>
+<span class="c1">//         bytes = View(</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@303b323d,</span>
+<span class="c1">//           offset = 0L,</span>
+<span class="c1">//           size = 1L</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     StartArray(size = 2L),</span>
+<span class="c1">//     PositiveInt(</span>
+<span class="c1">//       bytes = Chunk(</span>
+<span class="c1">//         bytes = View(</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@3c6ec54f,</span>
+<span class="c1">//           offset = 0L,</span>
+<span class="c1">//           size = 1L</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     PositiveInt(</span>
+<span class="c1">//       bytes = Chunk(</span>
+<span class="c1">//         bytes = View(</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@5324dc9a,</span>
+<span class="c1">//           offset = 0L,</span>
+<span class="c1">//           size = 1L</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     StartArray(size = 2L),</span>
+<span class="c1">//     PositiveInt(</span>
+<span class="c1">//       bytes = Chunk(</span>
+<span class="c1">//         bytes = View(</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@3075ef3e,</span>
+<span class="c1">//           offset = 0L,</span>
+<span class="c1">//           size = 1L</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     PositiveInt(</span>
+<span class="c1">//       bytes = Chunk(</span>
+<span class="c1">//         bytes = View(</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@593689d7,</span>
+<span class="c1">//           offset = 0L,</span>
+<span class="c1">//           size = 1L</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">// ...</span>
+</code></pre></div></div>
+
+
+      </div>
+    </main>
+
+    <footer class="page-footer red lighten-2">
+      <div class="footer-copyright red darken-2">
+        <div class="container">
+          Copyright © 2020 <a class="grey-text text-lighten-4" href="https://twitter.com/lucassatabin">@lucassatabin</a>
+          <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" class="grey-text text-lighten-4 right" /></a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+    <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.sidenav');
+      var instances = M.Sidenav.init(elems, {});
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.tooltipped');
+      var instances = M.Tooltip.init(elems, {});
+    });
+    </script>
+  </body>
+</html>

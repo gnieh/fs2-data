@@ -9,7 +9,7 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
-    <meta name="generator" content="Nanoc 4.11.16">
+    <meta name="generator" content="Nanoc 4.12.0">
   </head>
   <body>
     <header>
@@ -87,8 +87,12 @@
 
 <span class="k">val</span> <span class="nv">selector</span> <span class="k">=</span> <span class="n">selector</span><span class="s">".field3.[]"</span>
 <span class="c1">// selector: fs2.data.json.Selector = PipeSelector(</span>
-<span class="c1">//   NameSelector(Single("field3"), true, false),</span>
-<span class="c1">//   IteratorSelector(true)</span>
+<span class="c1">//   left = NameSelector(</span>
+<span class="c1">//     pred = Single(name = "field3"),</span>
+<span class="c1">//     strict = true,</span>
+<span class="c1">//     mandatory = false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   right = IteratorSelector(strict = true)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 

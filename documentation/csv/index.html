@@ -9,7 +9,7 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
-    <meta name="generator" content="Nanoc 4.11.16">
+    <meta name="generator" content="Nanoc 4.12.0">
   </head>
   <body>
     <header>
@@ -97,12 +97,12 @@
 <span class="c1">// """</span>
 
 <span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">rows</span><span class="o">[</span><span class="kt">IO</span><span class="o">]())</span>
-<span class="c1">// stream: Stream[IO, cats.data.NonEmptyList[String]] = Stream(..)</span>
+<span class="c1">// stream: Stream[IO[A], cats.data.NonEmptyList[String]] = Stream(..)</span>
 <span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res0: List[cats.data.NonEmptyList[String]] = List(</span>
-<span class="c1">//   NonEmptyList("i", List("s", "j")),</span>
-<span class="c1">//   NonEmptyList("1", List("test", "2")),</span>
-<span class="c1">//   NonEmptyList("", List("other", "-3"))</span>
+<span class="c1">//   NonEmptyList(head = "i", tail = List("s", "j")),</span>
+<span class="c1">//   NonEmptyList(head = "1", tail = List("test", "2")),</span>
+<span class="c1">//   NonEmptyList(head = "", tail = List("other", "-3"))</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -114,11 +114,11 @@
 <span class="c1">// 1;test;2"""</span>
 
 <span class="k">val</span> <span class="nv">stream2</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input2</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">rows</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="sc">';'</span><span class="o">))</span>
-<span class="c1">// stream2: Stream[IO, cats.data.NonEmptyList[String]] = Stream(..)</span>
+<span class="c1">// stream2: Stream[IO[A], cats.data.NonEmptyList[String]] = Stream(..)</span>
 <span class="nv">stream2</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res1: List[cats.data.NonEmptyList[String]] = List(</span>
-<span class="c1">//   NonEmptyList("i", List("s", "j")),</span>
-<span class="c1">//   NonEmptyList("1", List("test", "2"))</span>
+<span class="c1">//   NonEmptyList(head = "i", tail = List("s", "j")),</span>
+<span class="c1">//   NonEmptyList(head = "1", tail = List("test", "2"))</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -138,14 +138,14 @@
 
 <span class="c1">// default quote-handling is QuoteHandling.RFCCompliant</span>
 <span class="k">val</span> <span class="nv">stream3</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input3</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">rows</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="sc">','</span><span class="o">,</span> <span class="nv">QuoteHandling</span><span class="o">.</span><span class="py">Literal</span><span class="o">))</span>
-<span class="c1">// stream3: Stream[IO, cats.data.NonEmptyList[String]] = Stream(..)</span>
+<span class="c1">// stream3: Stream[IO[A], cats.data.NonEmptyList[String]] = Stream(..)</span>
 <span class="nv">stream3</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res2: List[cats.data.NonEmptyList[String]] = List(</span>
-<span class="c1">//   NonEmptyList("name", List("age", "description")),</span>
-<span class="c1">//   NonEmptyList("John Doe", List("47", "no quotes")),</span>
-<span class="c1">//   NonEmptyList("Jane Doe", List("50", "\"entirely quoted\"")),</span>
-<span class="c1">//   NonEmptyList("Bob Smith", List("80", "\"starts with\" a quote")),</span>
-<span class="c1">//   NonEmptyList("Alice Grey", List("78", "contains \"a quote"))</span>
+<span class="c1">//   NonEmptyList(head = "name", tail = List("age", "description")),</span>
+<span class="c1">//   NonEmptyList(head = "John Doe", tail = List("47", "no quotes")),</span>
+<span class="c1">//   NonEmptyList(head = "Jane Doe", tail = List("50", "\"entirely quoted\"")),</span>
+<span class="c1">//   NonEmptyList(head = "Bob Smith", tail = List("80", "\"starts with\" a quote")),</span>
+<span class="c1">//   NonEmptyList(head = "Alice Grey", tail = List("78", "contains \"a quote"))</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -159,9 +159,9 @@
 <span class="c1">// noh: Stream[IO[x], Row] = Stream(..)</span>
 <span class="nv">noh</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">values</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res3: List[cats.data.NonEmptyList[String]] = List(</span>
-<span class="c1">//   NonEmptyList("i", List("s", "j")),</span>
-<span class="c1">//   NonEmptyList("1", List("test", "2")),</span>
-<span class="c1">//   NonEmptyList("", List("other", "-3"))</span>
+<span class="c1">//   NonEmptyList(head = "i", tail = List("s", "j")),</span>
+<span class="c1">//   NonEmptyList(head = "1", tail = List("test", "2")),</span>
+<span class="c1">//   NonEmptyList(head = "", tail = List("other", "-3"))</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -275,12 +275,12 @@
 <p>For <code>CellEncoder</code>, it is even easier to define your own as encoding can’t fail, so basically it’s just a function <code>A =&gt; String</code>. The easiest ways to roll your own are using Scala’s single abstract method sugar:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Wrapper</span><span class="o">(</span><span class="n">content</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">wrapperCellEncoder</span><span class="k">:</span> <span class="kt">CellEncoder</span><span class="o">[</span><span class="kt">Wrapper</span><span class="o">]</span> <span class="k">=</span> <span class="o">(</span><span class="n">w</span><span class="k">:</span> <span class="kt">Wrapper</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nv">w</span><span class="o">.</span><span class="py">content</span>
-<span class="c1">// wrapperCellEncoder: CellEncoder[Wrapper] = repl.MdocSession$App$$anonfun$22@3301f26d</span>
+<span class="c1">// wrapperCellEncoder: CellEncoder[Wrapper] = repl.MdocSession$App$$anonfun$22@3690459a</span>
 </code></pre></div></div>
 
 <p>or using <code>contramap</code> on an existing encoder:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="nv">wrapperCellEncoder2</span><span class="k">:</span> <span class="kt">CellEncoder</span><span class="o">[</span><span class="kt">Wrapper</span><span class="o">]</span> <span class="k">=</span> <span class="nc">CellEncoder</span><span class="o">[</span><span class="kt">String</span><span class="o">].</span><span class="py">contramap</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">content</span><span class="o">)</span>
-<span class="c1">// wrapperCellEncoder2: CellEncoder[Wrapper] = fs2.data.csv.CellEncoder$$anonfun$contramap$2@3dd75636</span>
+<span class="c1">// wrapperCellEncoder2: CellEncoder[Wrapper] = fs2.data.csv.CellEncoder$$anonfun$contramap$2@5d2f4094</span>
 </code></pre></div></div>
 
 <h4 id="rowdecoder--rowencoder"><code>RowDecoder</code> &amp; <code>RowEncoder</code></h4>
@@ -306,7 +306,7 @@
 <span class="c1">// hlists: Stream[IO[x], Option[Int] :: String :: Int :: HNil] = Stream(..)</span>
 <span class="nv">hlists</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res7: List[Option[Int] :: String :: Int :: HNil] = List(</span>
-<span class="c1">//   Some(1) :: "test" :: 2 :: HNil,</span>
+<span class="c1">//   Some(value = 1) :: "test" :: 2 :: HNil,</span>
 <span class="c1">//   None :: "other" :: -3 :: HNil</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
@@ -324,7 +324,7 @@
 <span class="k">val</span> <span class="nv">row</span> <span class="k">=</span> <span class="nc">Stream</span><span class="o">(</span><span class="nc">Option</span><span class="o">(</span><span class="mi">3</span><span class="o">)</span> <span class="o">::</span> <span class="s">"test"</span> <span class="o">::</span> <span class="mi">42</span> <span class="o">::</span> <span class="nc">HNil</span><span class="o">)</span>
 <span class="c1">// row: Stream[Nothing, Option[Int] :: String :: Int :: HNil] = Stream(..)</span>
 <span class="nv">row</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">encode</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res8: cats.package.Id[List[Row]] = List(fs2.data.csv.Row@65370da9)</span>
+<span class="c1">// res8: cats.package.Id[List[Row]] = List(fs2.data.csv.Row@6697cf8e)</span>
 </code></pre></div></div>
 
 <h4 id="csvrowdecoder--csvrowencoder"><code>CsvRowDecoder</code> &amp; <code>CsvRowEncoder</code></h4>
@@ -346,8 +346,8 @@
 <span class="c1">// decoded: Stream[IO[x], MyRow] = Stream(..)</span>
 <span class="nv">decoded</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res9: List[MyRow] = List(</span>
-<span class="c1">//   MyRow(Some(1), 2, "test"),</span>
-<span class="c1">//   MyRow(None, -3, "other")</span>
+<span class="c1">//   MyRow(i = Some(value = 1), j = 2, s = "test"),</span>
+<span class="c1">//   MyRow(i = None, j = -3, s = "other")</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 

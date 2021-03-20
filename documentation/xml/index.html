@@ -9,7 +9,7 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
-    <meta name="generator" content="Nanoc 4.11.16">
+    <meta name="generator" content="Nanoc 4.12.0">
   </head>
   <body>
     <header>
@@ -93,55 +93,58 @@
 <span class="c1">// &lt;/a&gt;"""</span>
 
 <span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">events</span><span class="o">[</span><span class="kt">IO</span><span class="o">])</span>
-<span class="c1">// stream: Stream[IO, XmlEvent] = Stream(..)</span>
+<span class="c1">// stream: Stream[IO[A], XmlEvent] = Stream(..)</span>
 <span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res0: List[XmlEvent] = List(</span>
 <span class="c1">//   StartTag(</span>
-<span class="c1">//     QName(None, "a"),</span>
-<span class="c1">//     List(</span>
-<span class="c1">//       Attr(QName(Some("xmlns"), "ns"), List(XmlString("http://test.ns", false)))</span>
+<span class="c1">//     name = QName(prefix = None, local = "a"),</span>
+<span class="c1">//     attributes = List(</span>
+<span class="c1">//       Attr(</span>
+<span class="c1">//         name = QName(prefix = Some(value = "xmlns"), local = "ns"),</span>
+<span class="c1">//         value = List(XmlString(s = "http://test.ns", isCDATA = false))</span>
+<span class="c1">//       )</span>
 <span class="c1">//     ),</span>
-<span class="c1">//     false</span>
+<span class="c1">//     isEmpty = false</span>
 <span class="c1">//   ),</span>
 <span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
+<span class="c1">//     s = """</span>
 <span class="c1">//   """,</span>
-<span class="c1">//     false</span>
+<span class="c1">//     isCDATA = false</span>
 <span class="c1">//   ),</span>
 <span class="c1">//   StartTag(</span>
-<span class="c1">//     QName(Some("ns"), "b"),</span>
-<span class="c1">//     List(Attr(QName(Some("ns"), "a"), List(XmlString("attribute", false)))),</span>
-<span class="c1">//     false</span>
+<span class="c1">//     name = QName(prefix = Some(value = "ns"), local = "b"),</span>
+<span class="c1">//     attributes = List(</span>
+<span class="c1">//       Attr(</span>
+<span class="c1">//         name = QName(prefix = Some(value = "ns"), local = "a"),</span>
+<span class="c1">//         value = List(XmlString(s = "attribute", isCDATA = false))</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     isEmpty = false</span>
 <span class="c1">//   ),</span>
-<span class="c1">//   XmlString("text", false),</span>
-<span class="c1">//   EndTag(QName(Some("ns"), "b")),</span>
+<span class="c1">//   XmlString(s = "text", isCDATA = false),</span>
+<span class="c1">//   EndTag(name = QName(prefix = Some(value = "ns"), local = "b")),</span>
 <span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
+<span class="c1">//     s = """</span>
 <span class="c1">// """,</span>
-<span class="c1">//     false</span>
+<span class="c1">//     isCDATA = false</span>
 <span class="c1">//   ),</span>
-<span class="c1">//   EndTag(QName(None, "a")),</span>
-<span class="c1">//   StartTag(QName(None, "a"), List(), false),</span>
+<span class="c1">//   EndTag(name = QName(prefix = None, local = "a")),</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     name = QName(prefix = None, local = "a"),</span>
+<span class="c1">//     attributes = List(),</span>
+<span class="c1">//     isEmpty = false</span>
+<span class="c1">//   ),</span>
 <span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
+<span class="c1">//     s = """</span>
 <span class="c1">//   """,</span>
-<span class="c1">//     false</span>
+<span class="c1">//     isCDATA = false</span>
 <span class="c1">//   ),</span>
-<span class="c1">//   StartTag(QName(None, "b"), List(), true),</span>
-<span class="c1">//   EndTag(QName(None, "b")),</span>
-<span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
-<span class="c1">//   test entity resolution """,</span>
-<span class="c1">//     false</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     name = QName(prefix = None, local = "b"),</span>
+<span class="c1">//     attributes = List(),</span>
+<span class="c1">//     isEmpty = true</span>
 <span class="c1">//   ),</span>
-<span class="c1">//   XmlEntityRef("amp"),</span>
-<span class="c1">//   XmlString(</span>
-<span class="c1">//     """ normalization</span>
-<span class="c1">// """,</span>
-<span class="c1">//     false</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   EndTag(QName(None, "a"))</span>
-<span class="c1">// )</span>
+<span class="c1">// ...</span>
 </code></pre></div></div>
 
 <p>The pipe validates the XML structure while parsing. It reads all the XML elements in the input stream and emits events as they are available.</p>
@@ -155,53 +158,53 @@
 <span class="nv">nsResolved</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res1: List[XmlEvent] = List(</span>
 <span class="c1">//   StartTag(</span>
-<span class="c1">//     QName(Some("http://www.w3.org/XML/1998/namespace"), "a"),</span>
-<span class="c1">//     List(</span>
-<span class="c1">//       Attr(QName(Some("xmlns"), "ns"), List(XmlString("http://test.ns", false)))</span>
+<span class="c1">//     name = QName(</span>
+<span class="c1">//       prefix = Some(value = "http://www.w3.org/XML/1998/namespace"),</span>
+<span class="c1">//       local = "a"</span>
 <span class="c1">//     ),</span>
-<span class="c1">//     false</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
-<span class="c1">//   """,</span>
-<span class="c1">//     false</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   StartTag(</span>
-<span class="c1">//     QName(Some("http://test.ns"), "b"),</span>
-<span class="c1">//     List(</span>
+<span class="c1">//     attributes = List(</span>
 <span class="c1">//       Attr(</span>
-<span class="c1">//         QName(Some("http://test.ns"), "a"),</span>
-<span class="c1">//         List(XmlString("attribute", false))</span>
+<span class="c1">//         name = QName(prefix = Some(value = "xmlns"), local = "ns"),</span>
+<span class="c1">//         value = List(XmlString(s = "http://test.ns", isCDATA = false))</span>
 <span class="c1">//       )</span>
 <span class="c1">//     ),</span>
-<span class="c1">//     false</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   XmlString("text", false),</span>
-<span class="c1">//   EndTag(QName(Some("http://test.ns"), "b")),</span>
-<span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
-<span class="c1">// """,</span>
-<span class="c1">//     false</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   EndTag(QName(Some("http://www.w3.org/XML/1998/namespace"), "a")),</span>
-<span class="c1">//   StartTag(</span>
-<span class="c1">//     QName(Some("http://www.w3.org/XML/1998/namespace"), "a"),</span>
-<span class="c1">//     List(),</span>
-<span class="c1">//     false</span>
+<span class="c1">//     isEmpty = false</span>
 <span class="c1">//   ),</span>
 <span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
+<span class="c1">//     s = """</span>
 <span class="c1">//   """,</span>
-<span class="c1">//     false</span>
+<span class="c1">//     isCDATA = false</span>
 <span class="c1">//   ),</span>
 <span class="c1">//   StartTag(</span>
-<span class="c1">//     QName(Some("http://www.w3.org/XML/1998/namespace"), "b"),</span>
-<span class="c1">//     List(),</span>
-<span class="c1">//     true</span>
+<span class="c1">//     name = QName(prefix = Some(value = "http://test.ns"), local = "b"),</span>
+<span class="c1">//     attributes = List(</span>
+<span class="c1">//       Attr(</span>
+<span class="c1">//         name = QName(prefix = Some(value = "http://test.ns"), local = "a"),</span>
+<span class="c1">//         value = List(XmlString(s = "attribute", isCDATA = false))</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     isEmpty = false</span>
 <span class="c1">//   ),</span>
-<span class="c1">//   EndTag(QName(Some("http://www.w3.org/XML/1998/namespace"), "b")),</span>
+<span class="c1">//   XmlString(s = "text", isCDATA = false),</span>
+<span class="c1">//   EndTag(name = QName(prefix = Some(value = "http://test.ns"), local = "b")),</span>
 <span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
+<span class="c1">//     s = """</span>
+<span class="c1">// """,</span>
+<span class="c1">//     isCDATA = false</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   EndTag(</span>
+<span class="c1">//     name = QName(</span>
+<span class="c1">//       prefix = Some(value = "http://www.w3.org/XML/1998/namespace"),</span>
+<span class="c1">//       local = "a"</span>
+<span class="c1">//     )</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     name = QName(</span>
+<span class="c1">//       prefix = Some(value = "http://www.w3.org/XML/1998/namespace"),</span>
+<span class="c1">//       local = "a"</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     attributes = List(),</span>
+<span class="c1">//     isEmpty = false</span>
 <span class="c1">// ...</span>
 </code></pre></div></div>
 
@@ -212,51 +215,54 @@
 <span class="nv">entityResolved</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res2: List[XmlEvent] = List(</span>
 <span class="c1">//   StartTag(</span>
-<span class="c1">//     QName(None, "a"),</span>
-<span class="c1">//     List(</span>
-<span class="c1">//       Attr(QName(Some("xmlns"), "ns"), List(XmlString("http://test.ns", false)))</span>
+<span class="c1">//     name = QName(prefix = None, local = "a"),</span>
+<span class="c1">//     attributes = List(</span>
+<span class="c1">//       Attr(</span>
+<span class="c1">//         name = QName(prefix = Some(value = "xmlns"), local = "ns"),</span>
+<span class="c1">//         value = List(XmlString(s = "http://test.ns", isCDATA = false))</span>
+<span class="c1">//       )</span>
 <span class="c1">//     ),</span>
-<span class="c1">//     false</span>
+<span class="c1">//     isEmpty = false</span>
 <span class="c1">//   ),</span>
 <span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
+<span class="c1">//     s = """</span>
 <span class="c1">//   """,</span>
-<span class="c1">//     false</span>
+<span class="c1">//     isCDATA = false</span>
 <span class="c1">//   ),</span>
 <span class="c1">//   StartTag(</span>
-<span class="c1">//     QName(Some("ns"), "b"),</span>
-<span class="c1">//     List(Attr(QName(Some("ns"), "a"), List(XmlString("attribute", false)))),</span>
-<span class="c1">//     false</span>
+<span class="c1">//     name = QName(prefix = Some(value = "ns"), local = "b"),</span>
+<span class="c1">//     attributes = List(</span>
+<span class="c1">//       Attr(</span>
+<span class="c1">//         name = QName(prefix = Some(value = "ns"), local = "a"),</span>
+<span class="c1">//         value = List(XmlString(s = "attribute", isCDATA = false))</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     isEmpty = false</span>
 <span class="c1">//   ),</span>
-<span class="c1">//   XmlString("text", false),</span>
-<span class="c1">//   EndTag(QName(Some("ns"), "b")),</span>
+<span class="c1">//   XmlString(s = "text", isCDATA = false),</span>
+<span class="c1">//   EndTag(name = QName(prefix = Some(value = "ns"), local = "b")),</span>
 <span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
+<span class="c1">//     s = """</span>
 <span class="c1">// """,</span>
-<span class="c1">//     false</span>
+<span class="c1">//     isCDATA = false</span>
 <span class="c1">//   ),</span>
-<span class="c1">//   EndTag(QName(None, "a")),</span>
-<span class="c1">//   StartTag(QName(None, "a"), List(), false),</span>
+<span class="c1">//   EndTag(name = QName(prefix = None, local = "a")),</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     name = QName(prefix = None, local = "a"),</span>
+<span class="c1">//     attributes = List(),</span>
+<span class="c1">//     isEmpty = false</span>
+<span class="c1">//   ),</span>
 <span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
+<span class="c1">//     s = """</span>
 <span class="c1">//   """,</span>
-<span class="c1">//     false</span>
+<span class="c1">//     isCDATA = false</span>
 <span class="c1">//   ),</span>
-<span class="c1">//   StartTag(QName(None, "b"), List(), true),</span>
-<span class="c1">//   EndTag(QName(None, "b")),</span>
-<span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
-<span class="c1">//   test entity resolution """,</span>
-<span class="c1">//     false</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     name = QName(prefix = None, local = "b"),</span>
+<span class="c1">//     attributes = List(),</span>
+<span class="c1">//     isEmpty = true</span>
 <span class="c1">//   ),</span>
-<span class="c1">//   XmlString("&amp;", false),</span>
-<span class="c1">//   XmlString(</span>
-<span class="c1">//     """ normalization</span>
-<span class="c1">// """,</span>
-<span class="c1">//     false</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   EndTag(QName(None, "a"))</span>
-<span class="c1">// )</span>
+<span class="c1">// ...</span>
 </code></pre></div></div>
 
 <h3 id="normalization">Normalization</h3>
@@ -268,46 +274,54 @@
 <span class="nv">normalized</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res3: List[XmlEvent] = List(</span>
 <span class="c1">//   StartTag(</span>
-<span class="c1">//     QName(None, "a"),</span>
-<span class="c1">//     List(</span>
-<span class="c1">//       Attr(QName(Some("xmlns"), "ns"), List(XmlString("http://test.ns", false)))</span>
+<span class="c1">//     name = QName(prefix = None, local = "a"),</span>
+<span class="c1">//     attributes = List(</span>
+<span class="c1">//       Attr(</span>
+<span class="c1">//         name = QName(prefix = Some(value = "xmlns"), local = "ns"),</span>
+<span class="c1">//         value = List(XmlString(s = "http://test.ns", isCDATA = false))</span>
+<span class="c1">//       )</span>
 <span class="c1">//     ),</span>
-<span class="c1">//     false</span>
+<span class="c1">//     isEmpty = false</span>
 <span class="c1">//   ),</span>
 <span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
+<span class="c1">//     s = """</span>
 <span class="c1">//   """,</span>
-<span class="c1">//     false</span>
+<span class="c1">//     isCDATA = false</span>
 <span class="c1">//   ),</span>
 <span class="c1">//   StartTag(</span>
-<span class="c1">//     QName(Some("ns"), "b"),</span>
-<span class="c1">//     List(Attr(QName(Some("ns"), "a"), List(XmlString("attribute", false)))),</span>
-<span class="c1">//     false</span>
+<span class="c1">//     name = QName(prefix = Some(value = "ns"), local = "b"),</span>
+<span class="c1">//     attributes = List(</span>
+<span class="c1">//       Attr(</span>
+<span class="c1">//         name = QName(prefix = Some(value = "ns"), local = "a"),</span>
+<span class="c1">//         value = List(XmlString(s = "attribute", isCDATA = false))</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     isEmpty = false</span>
 <span class="c1">//   ),</span>
-<span class="c1">//   XmlString("text", false),</span>
-<span class="c1">//   EndTag(QName(Some("ns"), "b")),</span>
+<span class="c1">//   XmlString(s = "text", isCDATA = false),</span>
+<span class="c1">//   EndTag(name = QName(prefix = Some(value = "ns"), local = "b")),</span>
 <span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
+<span class="c1">//     s = """</span>
 <span class="c1">// """,</span>
-<span class="c1">//     false</span>
+<span class="c1">//     isCDATA = false</span>
 <span class="c1">//   ),</span>
-<span class="c1">//   EndTag(QName(None, "a")),</span>
-<span class="c1">//   StartTag(QName(None, "a"), List(), false),</span>
+<span class="c1">//   EndTag(name = QName(prefix = None, local = "a")),</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     name = QName(prefix = None, local = "a"),</span>
+<span class="c1">//     attributes = List(),</span>
+<span class="c1">//     isEmpty = false</span>
+<span class="c1">//   ),</span>
 <span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
+<span class="c1">//     s = """</span>
 <span class="c1">//   """,</span>
-<span class="c1">//     false</span>
+<span class="c1">//     isCDATA = false</span>
 <span class="c1">//   ),</span>
-<span class="c1">//   StartTag(QName(None, "b"), List(), true),</span>
-<span class="c1">//   EndTag(QName(None, "b")),</span>
-<span class="c1">//   XmlString(</span>
-<span class="c1">//     """</span>
-<span class="c1">//   test entity resolution &amp; normalization</span>
-<span class="c1">// """,</span>
-<span class="c1">//     false</span>
+<span class="c1">//   StartTag(</span>
+<span class="c1">//     name = QName(prefix = None, local = "b"),</span>
+<span class="c1">//     attributes = List(),</span>
+<span class="c1">//     isEmpty = true</span>
 <span class="c1">//   ),</span>
-<span class="c1">//   EndTag(QName(None, "a"))</span>
-<span class="c1">// )</span>
+<span class="c1">// ...</span>
 </code></pre></div></div>
 
 
