@@ -20,9 +20,22 @@ object CellEncoderTest extends SimpleIOSuite {
 
   CellEncoder[java.net.URI]
   CellEncoder[java.util.UUID]
-  CellEncoder[java.time.Instant]
+  CellDecoder[java.time.Instant]
+  CellEncoder[java.time.Period]
+  CellEncoder[java.time.LocalDate]
+  CellEncoder[java.time.LocalDateTime]
   CellEncoder[java.time.LocalTime]
+  CellEncoder[java.time.OffsetDateTime]
+  CellEncoder[java.time.OffsetTime]
   CellEncoder[java.time.ZonedDateTime]
+  CellEncoder[java.time.DayOfWeek]
+  CellEncoder[java.time.Duration]
+  CellEncoder[java.time.Month]
+  CellEncoder[java.time.MonthDay]
+  CellEncoder[java.time.Year]
+  CellEncoder[java.time.YearMonth]
+  CellEncoder[java.time.ZoneId]
+  CellEncoder[java.time.ZoneOffset]
 
   pureTest("CellEncoder should decode standard types correctly") {
     expect(CellEncoder[Unit].apply(()) == "") and

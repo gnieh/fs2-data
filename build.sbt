@@ -3,6 +3,7 @@ val scala213 = "2.13.4"
 val fs2Version = "3.0.0-M7"
 val circeVersion = "0.13.0"
 val shapelessVersion = "2.3.3"
+val scalaJavaTimeVersion = "2.2.0"
 
 val commonSettings = List(
   scalaVersion := scala212,
@@ -117,7 +118,11 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(name := "fs2-data-csv", description := "Streaming CSV manipulation library")
-  .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.1.0" % Test)
+  .jsSettings(
+    libraryDependencies ++= List(
+      "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test,
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion % Test
+    ))
   .dependsOn(text)
 
 lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
@@ -152,7 +157,7 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
       .toList
       .flatten
   )
-  .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.1.0" % Test)
+  .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test)
   .dependsOn(csv)
 
 lazy val json = crossProject(JVMPlatform, JSPlatform)
@@ -200,7 +205,7 @@ lazy val jsonInterpolators = project
     name := "fs2-data-json-interpolators",
     description := "Json interpolators support",
     libraryDependencies ++= List(
-      "com.propensive" %% "contextual" % "1.2.1",
+      "com.propensive" %% "contextual-core" % "3.0.0",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     )
   )
