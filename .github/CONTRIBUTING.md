@@ -89,7 +89,7 @@ def tokens[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, Token]
 for the `Token` type the parser defines.
 
 [open-issue]: https://github.com/satabin/fs2-data/issues/new/choose
-[open-pr]: https://github.com/satabin/fs2-data/pull/new/master
+[open-pr]: https://github.com/satabin/fs2-data/pull/new/main
 [scalafmt]: https://scalameta.org/scalafmt/
 [getting-help]: ./SUPPORT.md
 [mdoc]: https://scalameta.org/mdoc/

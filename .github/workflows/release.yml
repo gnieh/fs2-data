@@ -2,7 +2,8 @@ name: Release
 on:
   push:
     branches:
-      - master
+      - main
+      - 0.x
     tags:
       - "v*"
 jobs:
