@@ -156,7 +156,7 @@ package object mergepatch {
                 Pull.pure(Some((chunk, idx, rest, chunkAcc)))
               else
                 // else replace
-                Pull.pure(Some((chunk, idx, rest,  chunkAcc ++= tokenizer.tokenize(value).toList)))
+                Pull.pure(Some((chunk, idx, rest, chunkAcc ++= tokenizer.tokenize(value).toList)))
             case None =>
               // EOS reached? this must have been the last value in the stream, just add the value
               chunkAcc.clear()

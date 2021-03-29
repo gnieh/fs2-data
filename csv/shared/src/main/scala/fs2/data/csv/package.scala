@@ -26,13 +26,11 @@ import scala.annotation.implicitNotFound
 
 package object csv {
 
-  /**
-    * Higher kinded version of [[scala.None]]. Ignores the type param.
+  /** Higher kinded version of [[scala.None]]. Ignores the type param.
     */
   type NoneF[+A] = None.type
 
-  /**
-    * A CSV row without headers.
+  /** A CSV row without headers.
     */
   type Row = RowF[NoneF, Nothing]
 
@@ -123,8 +121,8 @@ package object csv {
     CsvRowParser.pipe[F, Header]
 
   /** Transforms a stream of raw CSV rows into parsed CSV rows with headers, with failures at the element level instead of failing the stream */
-  def headersAttempt[F[_], Header](
-      implicit F: RaiseThrowable[F],
+  def headersAttempt[F[_], Header](implicit
+      F: RaiseThrowable[F],
       Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], Either[Throwable, CsvRow[Header]]] =
     CsvRowParser.pipeAttempt[F, Header]
 

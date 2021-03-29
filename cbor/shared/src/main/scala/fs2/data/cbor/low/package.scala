@@ -30,14 +30,14 @@ import java.lang.{Long => JLong}
   * The low-level representation has two main goals:
   *  - it is a flat representation of the input stream, which allows for
   *    expressing collections that exceed the max size of `Int.MaxValue`
-*    - it doesn't interpret numbers, keeping their raw representation in
-*      memory.
-*
-*   This representation is useful when dealing with streams that may contain
-*   big collections or when it is not necessary to build an AST, as it is more
-*   efficient than the high-level one.
-*
-*   The data model follows closely the structure described in the RFC.
+  *    - it doesn't interpret numbers, keeping their raw representation in
+  *      memory.
+  *
+  *   This representation is useful when dealing with streams that may contain
+  *   big collections or when it is not necessary to build an AST, as it is more
+  *   efficient than the high-level one.
+  *
+  *   The data model follows closely the structure described in the RFC.
   */
 package object low {
 

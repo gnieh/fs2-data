@@ -69,11 +69,11 @@ object HalfFloat {
     val unsigned =
       if (e == 0) {
         // either zero or a subnormal number
-        if (m != 0) math.pow(2f, -14).toFloat * (m / 1024f)
-        else 0f
+        if (m != 0) math.pow(2F, -14).toFloat * (m / 1024F)
+        else 0F
       } else if (e != 31) {
         // normal number
-        math.pow(2f, e - 15).toFloat * (1f + m / 1024f)
+        math.pow(2F, e - 15).toFloat * (1F + m / 1024F)
       } else if ((raw & 1023) != 0) {
         Float.NaN
       } else {

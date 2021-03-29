@@ -42,7 +42,7 @@ object ValueParser {
                                acc: mutable.ListBuffer[CborValue],
                                chunkAcc: List[CborValue])(implicit
       F: RaiseThrowable[F]): Pull[F, CborValue, Result[F, CborValue]] =
-    if (size == 0l) {
+    if (size == 0L) {
       Pull.pure((chunk, idx, rest, chunkAcc, CborValue.Array(acc.result(), false)))
     } else {
       if (idx >= chunk.size) {
@@ -99,7 +99,7 @@ object ValueParser {
                              acc: mutable.Map[CborValue, CborValue],
                              chunkAcc: List[CborValue])(implicit
       F: RaiseThrowable[F]): Pull[F, CborValue, Result[F, CborValue]] =
-    if (size == 0l) {
+    if (size == 0L) {
       Pull.pure((chunk, idx, rest, chunkAcc, CborValue.Map(acc.result(), false)))
     } else {
       if (idx >= chunk.size) {
@@ -168,8 +168,9 @@ object ValueParser {
         case CborItem.Break =>
           Pull.pure((chunk, idx + 1, rest, chunkAcc, CborValue.ByteString(acc)))
         case CborItem.ByteString(bytes) =>
-          if (acc.size + bytes.size < 0l) {
-            raise(new CborParsingException(s"byte string size is limited to max long (${Long.MaxValue}) bits"), chunkAcc)
+          if (acc.size + bytes.size < 0L) {
+            raise(new CborParsingException(s"byte string size is limited to max long (${Long.MaxValue}) bits"),
+                  chunkAcc)
           } else {
             parseByteStrings(chunk, idx + 1, rest, acc ++ bytes, chunkAcc)
           }
@@ -195,7 +196,8 @@ object ValueParser {
           Pull.pure((chunk, idx + 1, rest, chunkAcc, CborValue.TextString(acc.result())))
         case CborItem.TextString(text) =>
           if (acc.size + text.size < 0) {
-            raise(new CborParsingException(s"text string size is limited to max int (${Int.MaxValue}) characters"), chunkAcc)
+            raise(new CborParsingException(s"text string size is limited to max int (${Int.MaxValue}) characters"),
+                  chunkAcc)
           } else {
             parseTextStrings(chunk, idx + 1, rest, acc.append(text), chunkAcc)
           }
