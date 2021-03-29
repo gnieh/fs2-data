@@ -22,24 +22,24 @@ package cbor
   */
 object Tags {
 
-  final val StandardDateTimeString: Long = 0l
-  final val EpochDateTimeString: Long = 1l
-  final val PositiveBigNum: Long = 2l
-  final val NegativeBigNum: Long = 3l
-  final val DecimalFraction: Long = 4l
-  final val BigFloat: Long = 5l
+  final val StandardDateTimeString: Long = 0L
+  final val EpochDateTimeString: Long = 1L
+  final val PositiveBigNum: Long = 2L
+  final val NegativeBigNum: Long = 3L
+  final val DecimalFraction: Long = 4L
+  final val BigFloat: Long = 5L
 
-  final val ExpectedBase64UrlEncoding: Long = 21l
-  final val ExpectedBase64Encoding: Long = 22l
-  final val ExpectedBase16Encoding: Long = 23l
-  final val CborDataItem: Long = 24l
+  final val ExpectedBase64UrlEncoding: Long = 21L
+  final val ExpectedBase64Encoding: Long = 22L
+  final val ExpectedBase16Encoding: Long = 23L
+  final val CborDataItem: Long = 24L
 
-  final val URI: Long = 32l
-  final val Base64URLEncoded: Long = 33l
-  final val Base64Encoded: Long = 34l
-  final val RegularExpression: Long = 35l
-  final val MimeMessage: Long = 36l
+  final val URI: Long = 32L
+  final val Base64URLEncoded: Long = 33L
+  final val Base64Encoded: Long = 34L
+  final val RegularExpression: Long = 35L
+  final val MimeMessage: Long = 36L
 
-  final val SelfDescribeCbor: Long = 55799l
+  final val SelfDescribeCbor: Long = 55799L
 
 }
