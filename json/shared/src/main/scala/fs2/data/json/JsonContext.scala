@@ -32,10 +32,10 @@ object JsonContext {
 
   implicit object JsonContextShow extends Show[JsonContext] {
     def show(t: JsonContext): String = t match {
-      case Root => "/"
-      case Key(name, Root) => show"/$name"
-      case Key(name, parent) => show"$parent/$name"
-      case Index(idx, Root) => show"/$idx"
+      case Root               => "/"
+      case Key(name, Root)    => show"/$name"
+      case Key(name, parent)  => show"$parent/$name"
+      case Index(idx, Root)   => show"/$idx"
       case Index(idx, parent) => show"$parent/$idx"
     }
   }

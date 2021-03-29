@@ -169,7 +169,8 @@ object ValueParser {
           Pull.pure((chunk, idx + 1, rest, chunkAcc, CborValue.ByteString(acc)))
         case CborItem.ByteString(bytes) =>
           if (acc.size + bytes.size < 0l) {
-            raise(new CborParsingException(s"byte string size is limited to max long (${Long.MaxValue}) bits"), chunkAcc)
+            raise(new CborParsingException(s"byte string size is limited to max long (${Long.MaxValue}) bits"),
+                  chunkAcc)
           } else {
             parseByteStrings(chunk, idx + 1, rest, acc ++ bytes, chunkAcc)
           }
@@ -195,7 +196,8 @@ object ValueParser {
           Pull.pure((chunk, idx + 1, rest, chunkAcc, CborValue.TextString(acc.result())))
         case CborItem.TextString(text) =>
           if (acc.size + text.size < 0) {
-            raise(new CborParsingException(s"text string size is limited to max int (${Int.MaxValue}) characters"), chunkAcc)
+            raise(new CborParsingException(s"text string size is limited to max int (${Int.MaxValue}) characters"),
+                  chunkAcc)
           } else {
             parseTextStrings(chunk, idx + 1, rest, acc.append(text), chunkAcc)
           }

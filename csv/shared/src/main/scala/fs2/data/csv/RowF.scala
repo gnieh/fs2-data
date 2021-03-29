@@ -128,8 +128,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String], header
   def toMap(implicit hasHeaders: HasHeaders[H, Header]): Map[Header, String] =
     byHeader
 
-  /**
-    * Drop all headers (if any).
+  /** Drop all headers (if any).
     * @return a row without headers, but same values
     */
   def dropHeaders: Row = Row(values)
