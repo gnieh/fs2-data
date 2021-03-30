@@ -1,6 +1,6 @@
 val scala212 = "2.12.13"
 val scala213 = "2.13.4"
-val fs2Version = "3.0.0-M9"
+val fs2Version = "3.0.1"
 val circeVersion = "0.13.0"
 val shapelessVersion = "2.3.3"
 val scalaJavaTimeVersion = "2.2.0"
