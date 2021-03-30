@@ -32,7 +32,7 @@ val commonSettings = List(
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.2",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "co.fs2" %% "fs2-io" % fs2Version % "test",
-    "com.disneystreaming" %%% "weaver-cats" % "0.7.0-M6" % "test"
+    "com.disneystreaming" %%% "weaver-cats" % "0.7.0-M7" % "test"
   ),
   testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
   scmInfo := Some(ScmInfo(url("https://github.com/satabin/fs2-data"), "scm:git:git@github.com:satabin/fs2-data.git"))
