@@ -16,8 +16,7 @@ import scala.annotation.tailrec
 trait RowDecoderF[H[+a] <: Option[a], T, Header] {
   def apply(row: RowF[H, Header]): DecoderResult[T]
 
-  /**
-    * Map the parsed value.
+  /** Map the parsed value.
     * @param f the mapping function
     * @tparam T2 the result type
     * @return a row decoder reading the mapped type
@@ -25,8 +24,7 @@ trait RowDecoderF[H[+a] <: Option[a], T, Header] {
   def map[T2](f: T => T2): RowDecoderF[H, T2, Header] =
     row => apply(row).map(f)
 
-  /**
-    * Map the parsed value to a new decoder, which in turn will be applied to
+  /** Map the parsed value to a new decoder, which in turn will be applied to
     * the parsed value.
     * @param f the mapping function
     * @tparam T2 the result type
@@ -35,8 +33,7 @@ trait RowDecoderF[H[+a] <: Option[a], T, Header] {
   def flatMap[T2](f: T => RowDecoderF[H, T2, Header]): RowDecoderF[H, T2, Header] =
     row => apply(row).flatMap(f(_)(row))
 
-  /**
-    * Map the parsed value, potentially failing.
+  /** Map the parsed value, potentially failing.
     * @param f the mapping function
     * @tparam T2 the result type
     * @return a row decoder reading the mapped type
@@ -44,8 +41,7 @@ trait RowDecoderF[H[+a] <: Option[a], T, Header] {
   def emap[T2](f: T => DecoderResult[T2]): RowDecoderF[H, T2, Header] =
     row => apply(row).flatMap(f)
 
-  /**
-    * Fail-over. If this decoder fails, try the supplied other decoder.
+  /** Fail-over. If this decoder fails, try the supplied other decoder.
     * @param cd the fail-over decoder
     * @tparam TT the return type
     * @return a decoder combining this and the other decoder
@@ -57,8 +53,7 @@ trait RowDecoderF[H[+a] <: Option[a], T, Header] {
         case r @ Right(_) => r.leftCast[DecoderError]
       }
 
-  /**
-    * Similar to [[or]], but return the result as an Either signaling which row decoder succeeded. Allows for parsing
+  /** Similar to [[or]], but return the result as an Either signaling which row decoder succeeded. Allows for parsing
     * an unrelated type in case of failure.
     * @param cd the alternative decoder
     * @tparam B the type the alternative decoder returns

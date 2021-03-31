@@ -18,8 +18,7 @@ package generic
 
 import scala.reflect.macros.blackbox
 
-/**
-  * Macros used to circumvent divergence checker restrictions in the compiler. Inspired by pureconfig and circe.
+/** Macros used to circumvent divergence checker restrictions in the compiler. Inspired by pureconfig and circe.
   */
 class ExportMacros(val c: blackbox.Context) {
   import c.universe._

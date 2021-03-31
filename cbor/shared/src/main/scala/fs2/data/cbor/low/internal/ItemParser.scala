@@ -206,7 +206,7 @@ private[low] object ItemParser {
                                 count: Long,
                                 chunkAcc: List[CborItem])(implicit
       F: RaiseThrowable[F]): Pull[F, CborItem, Context[F]] =
-    if (JLong.compareUnsigned(count, 0l) == 0) {
+    if (JLong.compareUnsigned(count, 0L) == 0) {
       // we are done
       Pull.pure((chunk, idx, rest, chunkAcc))
     } else {
@@ -247,7 +247,7 @@ private[low] object ItemParser {
                                    count: Long,
                                    chunkAcc: List[CborItem])(implicit
       F: RaiseThrowable[F]): Pull[F, CborItem, Context[F]] =
-    if (JLong.compareUnsigned(count, 0l) == 0) {
+    if (JLong.compareUnsigned(count, 0L) == 0) {
       // we are done
       Pull.pure((chunk, idx, rest, chunkAcc))
     } else {

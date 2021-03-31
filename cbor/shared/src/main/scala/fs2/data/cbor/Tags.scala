@@ -34,12 +34,12 @@ object Tags {
   final val ExpectedBase16Encoding: Long = 23L
   final val CborDataItem: Long = 24L
 
-  final val URI: Long =32L
-  final val Base64URLEncoded: Long =33L
-  final val Base64Encoded: Long =34L
-  final val RegularExpression: Long =35L
-  final val MimeMessage: Long =36L
+  final val URI: Long = 32L
+  final val Base64URLEncoded: Long = 33L
+  final val Base64Encoded: Long = 34L
+  final val RegularExpression: Long = 35L
+  final val MimeMessage: Long = 36L
 
-  final val SelfDescribeCbor: Long =55799L
+  final val SelfDescribeCbor: Long = 55799L
 
 }
