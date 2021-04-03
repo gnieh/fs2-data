@@ -4,17 +4,27 @@ import weaver._
 
 object CellDecoderDerivationTest extends SimpleIOSuite {
 
-  case class StringWrapper(value: String) derives CellDecoder
-  case class TwoStringWrapper(value1: String, value2: String) derives CellDecoder
+  case class StringWrapper(name: String) derives CellDecoder
+  case class TwoStringWrapper(value1: String, value2: String)// derives CellDecoder
+
+  //import scala.quoted._
+  //scala.quoted.Type.of[Int]
+  //CellDecoder.derived[StringWrapper]
+
+  case object Boom derives CellDecoder
+
+  println(scala.compiletime.codeOf(CellDecoder.derived[StringWrapper]))
+  println(scala.compiletime.codeOf(CellDecoder.derived[Boom.type]))
+  println(scala.compiletime.codeOf(CellDecoder.derived[Cases]))
 
   enum Cases derives CellDecoder {
     case Foo
     case Bar
   }
 
-  sealed trait Classic derives CellDecoder
+  /*sealed trait Classic derives CellDecoder
   case object D extends Classic
-  case object B extends Classic
+  case object B extends Classic*/
 
 //  given d: D.type = D
 //  given b: B.type = B
@@ -24,10 +34,10 @@ object CellDecoderDerivationTest extends SimpleIOSuite {
     //and expect(CellDecoder[TwoStringWrapper].apply("foo") == Right(TwoStringWrapper("foo", "bar")))
   }
 
-  pureTest("derive for enums") {
-    expect(CellDecoder[Cases].apply("Foo") == Right(Cases.Foo)) and
-    expect(CellDecoder[Cases].apply("Bar") == Right(Cases.Bar)) and
+  /*pureTest("derive for enums") {
+    //expect(CellDecoder[Cases].apply("Foo") == Right(Cases.Foo)) and
+    //expect(CellDecoder[Cases].apply("Bar") == Right(Cases.Bar)) and
     expect(CellDecoder[Classic].apply("D") == Right(D)) and
     expect(CellDecoder[Classic].apply("B") == Right(B))
-  }
+  }*/
 }
