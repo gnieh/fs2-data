@@ -37,14 +37,14 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String], header
     * Returns `None` if `idx` is out of row bounds.
     * An empty cell value results in `Some("")`.
     */
-  def apply(idx: Int): Option[String] =
+  def at(idx: Int): Option[String] =
     values.get(idx)
 
   /** Returns the decoded content of the cell at `idx`.
     * Fails if the index doesn't exist or cannot be decoded
     * to the expected type.
     */
-  def as[T](idx: Int)(implicit decoder: CellDecoder[T]): DecoderResult[T] =
+  def asAt[T](idx: Int)(implicit decoder: CellDecoder[T]): DecoderResult[T] =
     values.get(idx) match {
       case Some(v) => decoder(v)
       case None    => Left(new DecoderError(s"unknown index $idx"))
@@ -52,7 +52,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String], header
 
   /** Modifies the cell content at the given `idx` using the function `f`.
     */
-  def modify(idx: Int)(f: String => String): RowF[H, Header] =
+  def modifyAt(idx: Int)(f: String => String): RowF[H, Header] =
     if (idx < 0 || idx >= values.size)
       this
     else
@@ -65,11 +65,11 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String], header
     * should not be duplicated.
     */
   def modify(header: Header)(f: String => String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] =
-    modify(headers.get.toList.indexOf(header))(f)
+    hasHeaders(modifyAt(headers.get.toList.indexOf(header))(f))
 
   /** Returns the row with the cell at `idx` modified to `value`. */
-  def updated(idx: Int, value: String): RowF[H, Header] =
-    modify(idx)(_ => value)
+  def updatedAt(idx: Int, value: String): RowF[H, Header] =
+    modifyAt(idx)(_ => value)
 
   /** Returns the row with the cell at `header` modified to `value`.
     *
@@ -78,12 +78,12 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String], header
     * should not be duplicated.
     */
   def updated(header: Header, value: String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] =
-    updated(headers.get.toList.indexOf(header), value)
+    hasHeaders(updatedAt(headers.get.toList.indexOf(header), value))
 
   /** Returns the row without the cell at the given `idx`.
     * If the resulting row is empty, returns `None`.
     */
-  def delete(idx: Int): Option[RowF[H, Header]] =
+  def deleteAt(idx: Int): Option[RowF[H, Header]] =
     if (idx < 0 || idx >= values.size) {
       Some(this)
     } else {
@@ -103,7 +103,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String], header
     * should not be duplicated.
     */
   def delete(header: Header)(implicit hasHeaders: HasHeaders[H, Header]): Option[CsvRow[Header]] =
-    delete(headers.get.toList.indexOf(header)).map(hasHeaders)
+    deleteAt(headers.get.toList.indexOf(header)).map(hasHeaders)
 
   /** Returns the content of the cell at `header` if it exists.
     * Returns `None` if `header` does not exist for the row.
