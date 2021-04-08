@@ -29,7 +29,7 @@ val input = """i,s,j
               |,other,-3
               |""".stripMargin
 
-val stream = Stream.emit(input).through(rows[Fallible, String]())
+val stream = Stream.emit(input).through(lowlevel.rows[Fallible, String]())
 stream.compile.toList
 ```
 
@@ -39,7 +39,7 @@ If your CSV data is not using the comma as separator, you can provide the charac
 val input2 = """i;s;j
                |1;test;2""".stripMargin
 
-val stream2 = Stream.emit(input2).through(rows[Fallible, String](';'))
+val stream2 = Stream.emit(input2).through(lowlevel.rows[Fallible, String](';'))
 stream2.compile.toList
 ```
 
@@ -54,7 +54,7 @@ val input3 =
     |Alice Grey,78,contains "a quote""".stripMargin
 
 // default quote-handling is QuoteHandling.RFCCompliant
-val stream3 = Stream.emit(input3).through(rows[Fallible, String](',', QuoteHandling.Literal))
+val stream3 = Stream.emit(input3).through(lowlevel.rows[Fallible, String](',', QuoteHandling.Literal))
 stream3.compile.toList
 ```
 
@@ -65,14 +65,14 @@ Rows can be converted to a `Row` or `CsvRow[Header]` for some `Header` type. The
 If your CSV file doesn't have headers, you can use the `noHeaders` pipe, which creates `Row`.
 
 ```scala mdoc
-val noh = stream.through(noHeaders)
+val noh = stream.through(lowlevel.noHeaders)
 noh.map(_.values).compile.toList
 ```
 
 If you want to consider the first row as a header row, you can use the `headers` pipe. For instance to have headers as `String`:
 
 ```scala mdoc
-val withh = stream.through(headers[Fallible, String])
+val withh = stream.through(lowlevel.headers[Fallible, String])
 withh.map(_.toMap).compile.toList
 ```
 
@@ -101,7 +101,7 @@ implicit object ParseableMyHeaders extends ParseableHeader[MyHeaders] {
     }
 }
 
-val withMyHeaders = stream.through(headers[Fallible, MyHeaders])
+val withMyHeaders = stream.through(lowlevel.headers[Fallible, MyHeaders])
 withMyHeaders.map(_.toMap).compile.toList
 ```
 
@@ -113,8 +113,8 @@ There are also pipes for encoding rows to CSV, with or without headers. Simple e
 ```scala mdoc
 val testRows = Stream(Row(NonEmptyList.of("3", "", "test")))
 testRows
-  .through(writeWithoutHeaders)
-  .through(toRowStrings(/* separator: Char = ',', newline: String = "\n"*/))
+  .through(lowlevel.writeWithoutHeaders)
+  .through(lowlevel.toRowStrings(/* separator: Char = ',', newline: String = "\n"*/))
   .compile
   .toList
 ```
@@ -192,7 +192,7 @@ implicit object HListDecoder extends RowDecoder[Option[Int] :: String :: Int :: 
 }
 
 // .tail drops the header line
-val hlists = noh.tail.through(decode[Fallible, Option[Int] :: String :: Int :: HNil])
+val hlists = noh.tail.through(lowlevel.decode[Fallible, Option[Int] :: String :: Int :: HNil])
 hlists.compile.toList
 ```
 
@@ -208,7 +208,7 @@ implicit object HListEncoder extends RowEncoder[Option[Int] :: String :: Int :: 
 
 // .tail drops the header line
 val row = Stream(Option(3) :: "test" :: 42 :: HNil)
-row.through(encode).compile.toList
+row.through(lowlevel.encode).compile.toList
 ```
 
 #### `CsvRowDecoder` & `CsvRowEncoder`
@@ -227,13 +227,46 @@ implicit object MyRowDecoder extends CsvRowDecoder[MyRow, String] {
     s <- row.as[String]("s")
   } yield MyRow(i, j, s)
 }
-val decoded = withh.through(decodeRow[Fallible, String, MyRow])
+val decoded = withh.through(lowlevel.decodeRow[Fallible, String, MyRow])
 decoded.compile.toList
 ```
 
 Analogously, you can encode your data with a `CsvRowEncoder`. Make sure to not vary the headers based on the data itself as this can't be reflected in the CSV format.
 
 As you can see this can be quite tedious to implement. Lucky us, the `fs2-data-csv-generic` module comes to the rescue to avoid having to write the boilerplate. Please refer to [the module documentation][csv-generic-doc] for more details.
+
+### High-level API for standard use cases
+
+You might have noticed the `lowlevel` namespacing for all pipes used so far. This is due to the fact that most users won't need to call these directly, but higher-level versions which combine several low-level pipes into a more convenient and concise pipe which resides directly in the `fs2.data.csv` package. Example:
+```scala mdoc
+val textStream = Stream.emit(input).covary[Fallible]
+// Low-level pipes
+val lowDecoded = 
+    textStream
+        .through(lowlevel.rows[Fallible, String]())
+        .through(lowlevel.headers[Fallible, String])
+        .through(lowlevel.decodeRow[Fallible, String, MyRow])
+        .compile.toList
+        
+// High-level pipe
+val highDecoded = 
+    textStream
+        .through(decodeUsingHeaders[MyRow]())
+        .compile.toList
+```
+
+As you can see, the high-level version is not only shorter, it also can infer some types you need to specify explicitly in the low-level API. Of course, the high-level API offers the same configurability when it comes to separators, quoting, etc. For that reason, you also need to spell out the parentheses, otherwise you'll end up with a rather cryptic compiler error.
+
+All the high-level pipes are implemented as a composition of low-level pipes. This means that all explanations about en- & decoding from the sections above still apply and you can at any time swap the high-level pipe for a combination of low-level pipes which you can recompose differently in use cases where the high-level versions don't fit.
+
+The following pipes are available:
+* `decodeWithoutHeaders` for CSV parsing that requires no headers and none are present in the input
+* `decodeSkippingHeaders` for CSV parsing that requires no headers, but they are present in the input
+* `decodeGivenHeaders` for CSV parsing that requires headers, but they aren't present in the input
+* `decodeUsingHeaders` for CSV parsing that requires headers and they're present in the input
+* `encodeWithoutHeaders` for CSV encoding that works entirely without headers
+* `encodeGivenHeaders` for CSV encoding that works without headers, but they should be added to the output
+* `encodeUsingFirstHeaders` for CSV encoding that works with headers. Uses the headers of the first row for the output.
 
 [nel]: https://typelevel.org/cats/datatypes/nel.html
 [rfc]: https://tools.ietf.org/html/rfc4180
