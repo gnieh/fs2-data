@@ -38,6 +38,7 @@ object CellEncoder
     extends CellEncoderInstances1
     with CellEncoderInstances2
     with LiteralCellEncoders
+    with EnumEncoders
     with ExportedCellEncoders
     with PlatformCellEncoders {
 
@@ -52,10 +53,7 @@ object CellEncoder
 
   @inline
   def fromToString[A]: CellEncoder[A] = _.toString
-
-  implicit def enumerationEncoder[E <: Enumeration]: CellEncoder[E#Value] =
-    _.toString
-
+  
   // Primitives
   implicit val unitEncoder: CellEncoder[Unit] = _ => ""
   implicit val booleanEncoder: CellEncoder[Boolean] = fromToString(_)
@@ -68,7 +66,9 @@ object CellEncoder
   implicit val doubleEncoder: CellEncoder[Double] = fromToString(_)
   implicit val bigDecimalEncoder: CellEncoder[BigDecimal] = fromToString(_)
   implicit val bigIntEncoder: CellEncoder[BigInt] = fromToString(_)
-  implicit val stringEncoder: CellEncoder[String] = identity
+  implicit val stringEncoder: CellEncoder[String] = new CellEncoder[String] {
+    override def apply(cell: String): String = cell
+  }
   implicit val charArrayEncoder: CellEncoder[Array[Char]] = new String(_)
 
   // Standard Library types

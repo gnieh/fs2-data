@@ -20,14 +20,19 @@ package interpolators
 
 import cats.implicits._
 
-import contextual._
+import org.typelevel.literally.Literally
 
-object SelectorInterpolator extends Verifier[Selector] {
+object SelectorInterpolator extends Literally[Selector] {
 
-  def check(string: String): Either[(Int, String), Selector] =
-    new SelectorParser[Either[Throwable, *]](string).parse().leftMap {
-      case JsonSelectorException(msg, idx) => (idx, msg)
-      case t                               => (0, t.getMessage)
+  def validate(c: Context)(string: String): Either[String, c.Expr[Selector]] = {
+    import c.universe._
+    new SelectorParser[Either[Throwable, *]](string).parse() match {
+      case Left(JsonSelectorException(msg, idx)) => Left(msg)
+      case Left(t)                               => Left(t.getMessage)
+      case Right(v)                              => Right(c.Expr(q"new SelectorParser[Either[Throwable, *]](string).parse().toOption.get"))
     }
+  }
+
+  def make(c: Context)(args: c.Expr[Any]*): c.Expr[Selector] = apply(c)(args: _*)
 
 }

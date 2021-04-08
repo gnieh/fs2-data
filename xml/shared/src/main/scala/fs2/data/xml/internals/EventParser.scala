@@ -959,22 +959,19 @@ private[xml] object EventParser {
                     is11: Boolean,
                     name: QName,
                     chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
-      for {
-        (ctx, chunkAcc, startTag) <- completeStartTag(ctx, is11, name, chunkAcc)
-        res <-
-          if (startTag.isEmpty)
-            Pull.pure((ctx, chunkAcc += startTag += XmlEvent.EndTag(name)))
-          else
-            readContent(ctx, is11, name, chunkAcc += startTag)
-      } yield res
+      completeStartTag(ctx, is11, name, chunkAcc).flatMap { case (ctx, chunkAcc, startTag) =>
+        if (startTag.isEmpty)
+          Pull.pure((ctx, chunkAcc += startTag += XmlEvent.EndTag(name)))
+        else
+          readContent(ctx, is11, name, chunkAcc += startTag)
+      }
 
     def readContent(ctx: T.Context,
                     is11: Boolean,
                     name: QName,
                     chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
-      for {
-        (ctx, chunkAcc, last) <- readCharData(ctx, is11, chunkAcc)
-        res <- last match {
+      readCharData(ctx, is11, chunkAcc).flatMap { case (ctx, chunkAcc, last) =>
+        last match {
           case XmlEvent.EndTag(n) if n == name =>
             // we are done reading that content
             Pull.pure((ctx, chunkAcc += last))
@@ -992,7 +989,7 @@ private[xml] object EventParser {
             // just emit and continue
             readContent(ctx, is11, name, chunkAcc += last)
         }
-      } yield res
+      }
 
     def go(ctx: T.Context, chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, Unit] =
       scanPrologToken0(ctx, chunkAcc).flatMap {
