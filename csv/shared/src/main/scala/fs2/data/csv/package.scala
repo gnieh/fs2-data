@@ -103,7 +103,7 @@ package object csv {
   /** Decode a char-like stream (see [[CharLikeChunks]]) into a specified type,
     * assuming the file neither contains headers nor are they needed for decoding.
     */
-  def decodeWithoutHeaders[F[_], C, T]: PartiallyAppliedDecodeWithoutHeaders[T] =
+  def decodeWithoutHeaders[T]: PartiallyAppliedDecodeWithoutHeaders[T] =
     new PartiallyAppliedDecodeWithoutHeaders[T](dummy = true)
 
   class PartiallyAppliedDecodeWithoutHeaders[T](val dummy: Boolean) extends AnyVal {
