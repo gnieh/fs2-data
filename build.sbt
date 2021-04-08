@@ -1,13 +1,25 @@
 val scala212 = "2.12.13"
 val scala213 = "2.13.5"
-val fs2Version = "3.0.3"
-val circeVersion = "0.13.0"
-val shapelessVersion = "2.3.6"
-val scalaJavaTimeVersion = "2.2.2"
+val scala3 = "3.0.0"
+val fs2Version = "3.0.1"
+val circeVersion = "0.14.0-M5"
+val shapelessVersion = "2.3.3"
+val scalaJavaTimeVersion = "2.2.1"
 
 val commonSettings = List(
-  scalaVersion := scala212,
-  crossScalaVersions := Seq(scala213, scala212),
+  scalaVersion := scala3,
+  crossScalaVersions := Seq(scala213, scala212, scala3),
+  // Copied from circe
+  Compile / unmanagedSourceDirectories ++= {
+    def extraDirs(suffix: String) =
+      CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + suffix))
+
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, y)) => extraDirs("-2") ++ (if (y >= 13) extraDirs("-2.13+") else Nil)
+      case Some((3, _)) => extraDirs("-3") ++ extraDirs("-2.13+")
+      case _            => Nil
+    }
+  },
   organization := "org.gnieh",
   headerLicense := Some(HeaderLicense.ALv2("2021", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
@@ -22,18 +34,26 @@ val commonSettings = List(
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
       case Some((2, n)) if n < 13 =>
         List("-Ypartial-unification", "-language:higherKinds")
+      case Some((3, _)) =>
+        List("-Ykind-projector")
     }
     .toList
     .flatten,
-  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.12.0" cross CrossVersion.full),
-  addCompilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary),
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.4",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "co.fs2" %% "fs2-io" % fs2Version % "test",
-    "com.disneystreaming" %%% "weaver-cats" % "0.7.2" % "test"
-  ),
+    "com.disneystreaming" %%% "weaver-cats" % "0.7.0" % "test"
+  ) ++ PartialFunction
+    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
+      List(
+        compilerPlugin("org.typelevel" % "kind-projector" % "0.11.3" cross CrossVersion.full),
+        compilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary)
+      )
+    }
+    .toList
+    .flatten,
   testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
   scmInfo := Some(ScmInfo(url("https://github.com/satabin/fs2-data"), "scm:git:git@github.com:satabin/fs2-data.git"))
 )
@@ -68,8 +88,15 @@ val root = (project in file("."))
     name := "fs2-data",
     publishArtifact := false,
     publish / skip := true,
-    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject --
-      inProjects(benchmarks, cbor.js, csv.js, csvGeneric.js, json.js, jsonCirce.js, jsonDiffson.js, text.js, xml.js),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects( //benchmarks,
+                                                                              cbor.js,
+                                                                              csv.js,
+                                                                              //csvGeneric.js,
+                                                                              json.js,
+                                                                              //jsonCirce.js,
+                                                                              //jsonDiffson.js,
+                                                                              text.js,
+                                                                              xml.js),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     Nanoc / sourceDirectory := file("site"),
@@ -81,14 +108,14 @@ val root = (project in file("."))
     text.js,
     csv.jvm,
     csv.js,
-    csvGeneric.jvm,
-    csvGeneric.js,
+    //csvGeneric.jvm,
+    //csvGeneric.js,
     json.jvm,
     json.js,
-    jsonCirce.jvm,
-    jsonCirce.js,
-    jsonDiffson.jvm,
-    jsonDiffson.js,
+    //jsonCirce.jvm,
+    //jsonCirce.js,
+    //jsonDiffson.jvm,
+    //jsonDiffson.js,
     jsonInterpolators,
     xml.jvm,
     xml.js,
@@ -119,7 +146,7 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform)
     ))
   .dependsOn(text)
 
-lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
+/*lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("csv/generic"))
   .settings(commonSettings)
@@ -152,7 +179,7 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
       .flatten
   )
   .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test)
-  .dependsOn(csv)
+  .dependsOn(csv)*/
 
 lazy val json = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -162,7 +189,7 @@ lazy val json = crossProject(JVMPlatform, JSPlatform)
   .settings(name := "fs2-data-json", description := "Streaming JSON manipulation library")
   .dependsOn(text)
 
-lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
+/*lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
   .in(file("json/circe"))
   .settings(commonSettings)
@@ -175,9 +202,9 @@ lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
       "org.gnieh" %%% "diffson-circe" % "4.0.3" % "test"
     )
   )
-  .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
+  .dependsOn(json % "compile->compile;test->test" , jsonDiffson % "test->test" )*/
 
-lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform)
+/*lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("json/diffson"))
   .settings(commonSettings)
@@ -189,7 +216,7 @@ lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform)
       "org.gnieh" %%% "diffson-core" % "4.0.3"
     )
   )
-  .dependsOn(json % "compile->compile;test->test")
+  .dependsOn(json % "compile->compile;test->test")*/
 
 lazy val jsonInterpolators = project
   .in(file("json/interpolators"))
@@ -199,9 +226,12 @@ lazy val jsonInterpolators = project
     name := "fs2-data-json-interpolators",
     description := "Json interpolators support",
     libraryDependencies ++= List(
-      "org.typelevel" %% "literally" % "1.0.2",
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value
-    )
+      "org.typelevel" %% "literally" % "1.0.2"
+    ) ++ PartialFunction
+      .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value
+      }
+      .toList
   )
   .dependsOn(json.jvm % "compile->compile;test->test")
 
@@ -224,10 +254,15 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "fs2-data-cbor",
     description := "Streaming CBOR manipulation library",
-    scalacOptions ++= List("-opt:l:inline", "-opt-inline-from:fs2.data.cbor.low.internal.ItemParser$")
+    scalacOptions ++= PartialFunction
+      .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
+        List("-opt:l:inline", "-opt-inline-from:fs2.data.cbor.low.internal.ItemParser$")
+      }
+      .toList
+      .flatten
   )
 
-lazy val documentation = project
+/*lazy val documentation = project
   .in(file("documentation"))
   .enablePlugins(MdocPlugin)
   .settings(commonSettings)
@@ -241,9 +276,12 @@ lazy val documentation = project
       "co.fs2" %% "fs2-io" % fs2Version
     )
   )
-  .dependsOn(csv.jvm, csvGeneric.jvm, json.jvm, jsonDiffson.jvm, jsonCirce.jvm, jsonInterpolators, xml.jvm, cbor.jvm)
+  .dependsOn(csv.jvm,
+             //csvGeneric.jvm,
+             json.jvm, /*jsonDiffson.jvm, jsonCirce.jvm, jsonInterpolators,*/ xml.jvm,
+             cbor.jvm)*/
 
-lazy val benchmarks = project
+/*lazy val benchmarks = project
   .in(file("benchmarks"))
   .enablePlugins(JmhPlugin)
   .settings(commonSettings)
@@ -252,4 +290,4 @@ lazy val benchmarks = project
       "com.github.pathikrit" %% "better-files" % "3.9.1"
     )
   )
-  .dependsOn(csv.jvm)
+  .dependsOn(csv.jvm)*/

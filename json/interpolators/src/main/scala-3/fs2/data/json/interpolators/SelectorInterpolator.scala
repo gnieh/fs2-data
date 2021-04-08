@@ -16,13 +16,20 @@
 package fs2
 package data
 package json
+package interpolators
 
-import scala.language.experimental.macros
+import cats.implicits._
 
-package object interpolators {
+import org.typelevel.literally.Literally
 
-  implicit class JsonSelectorStringContext(val sc: StringContext) extends AnyVal {
-    def selector(args: Any*): Selector = macro SelectorInterpolator.make
+object SelectorInterpolator extends Literally[Selector] {
+
+  def validate(string: String)(using Quotes) = {
+    new SelectorParser[Either[Throwable, *]](string).parse() match {
+      case Left(JsonSelectorException(msg, idx)) => Left(msg)
+      case Left(t)                               => Left(t.getMessage)
+      case Right(v)                              => Right('{new SelectorParser[Either[Throwable, *]](${Expr(string)}).parse().toOption.get})
+    }
   }
 
 }

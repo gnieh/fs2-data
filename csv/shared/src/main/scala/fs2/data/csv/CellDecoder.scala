@@ -120,7 +120,7 @@ object CellDecoder
     def tailRecM[A, B](a: A)(f: A => CellDecoder[Either[A, B]]): CellDecoder[B] = {
       @tailrec
       def step(s: String, a: A): DecoderResult[B] =
-        f(a)(s) match {
+        f.apply(a)(s) match {
           case left @ Left(_)          => left.rightCast[B]
           case Right(Left(a))          => step(s, a)
           case Right(right @ Right(_)) => right.leftCast[DecoderError]
@@ -137,13 +137,7 @@ object CellDecoder
   def instance[T](f: String => DecoderResult[T]): CellDecoder[T] = s => f(s)
   @inline
   def fromString[T](f: String => T): CellDecoder[T] = s => f(s).asRight
-
-  def enumerationDecoder[E <: Enumeration](enum: E): CellDecoder[E#Value] =
-    s =>
-      enum.values
-        .find(_.toString === s)
-        .toRight(new DecoderError(s"unable to decode '$s' as a ${enum.toString()} value"))
-
+  
   // Primitives
   implicit val unitDecoder: CellDecoder[Unit] = s =>
     if (s.isEmpty)
