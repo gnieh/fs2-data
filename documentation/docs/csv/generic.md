@@ -103,8 +103,8 @@ import fs2.data.csv.generic.auto._
 
 val roundtrip = stream.through(decodeUsingHeaders[MyRow]())
   // and back - note that types and corresponding are all inferred
-  .through(encodeWithFirstHeaders(fullRows = true))
-roundtrip.compile.toList
+  .through(encodeUsingFirstHeaders(fullRows = true))
+roundtrip.compile.string
 ```
 
 Automatic derivation can be quite slow at compile time, so you might want to opt for semiautomatic derivation. In this case, you need to explicitly define the implicit instance in scope.

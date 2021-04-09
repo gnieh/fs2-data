@@ -203,10 +203,10 @@ package object csv {
   }
 
   /** Encode a specified type into a CSV that contains the headers determined by encoding the first element. Empty if input is. */
-  def encodeWithFirstHeaders[T]: PartiallyAppliedEncodeWithFirstHeaders[T] =
-    new PartiallyAppliedEncodeWithFirstHeaders(dummy = true)
+  def encodeUsingFirstHeaders[T]: PartiallyAppliedEncodeUsingFirstHeaders[T] =
+    new PartiallyAppliedEncodeUsingFirstHeaders(dummy = true)
 
-  class PartiallyAppliedEncodeWithFirstHeaders[T](val dummy: Boolean) extends AnyVal {
+  class PartiallyAppliedEncodeUsingFirstHeaders[T](val dummy: Boolean) extends AnyVal {
     def apply[F[_], Header](fullRows: Boolean = false,
                             separator: Char = ',',
                             newline: String = "\n",
