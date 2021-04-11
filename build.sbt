@@ -3,7 +3,7 @@ val scala213 = "2.13.4"
 val fs2Version = "3.0.1"
 val circeVersion = "0.13.0"
 val shapelessVersion = "2.3.4"
-val scalaJavaTimeVersion = "2.2.0"
+val scalaJavaTimeVersion = "2.2.1"
 
 val commonSettings = List(
   scalaVersion := scala212,
