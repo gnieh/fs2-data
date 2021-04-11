@@ -31,6 +31,8 @@ trait RowEncoderF[H[+a] <: Option[a], T, Header] {
 
 object RowEncoderF extends ExportedRowEncoderFs {
 
+  implicit def identityRowEncoderF[H[+a] <: Option[a], Header]: RowEncoderF[H, RowF[H, Header], Header] = identity
+
   implicit def RowEncoderF[H[+a] <: Option[a], Header]: Contravariant[RowEncoderF[H, *, Header]] =
     new Contravariant[RowEncoderF[H, *, Header]] {
       override def contramap[A, B](fa: RowEncoderF[H, A, Header])(f: B => A): RowEncoderF[H, B, Header] =

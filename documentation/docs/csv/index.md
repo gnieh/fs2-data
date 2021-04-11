@@ -14,22 +14,60 @@ This page covers the following topics:
 * Contents
 {:toc}
 
-### Parsing CSV
+### High-level and low-level APIs
 
-The first one of the provided tools is the `rows` pipe, which transforms a stream of characters into a stream of parsed rows. The rows are represented by [`NonEmptyList[String]`][nel], empty lines are skipped. Values can be quoted and escaped, according to [the RFC][rfc].
+`fs2-data-csv` contains two APIs which share some common concepts and are built on top of each other:
+* The high-level API in `fs2.data.csv._` provides a set of `fs2.Pipe`s that are tailored towards common use cases of CSV en-/decoding. It's built by composing parts of the low-level API into a more convenient and concise interface.  
+* The low-level API in `fs2.data.csv.lowlevel._` contains pipes that do only a single step in a CSV processing pipeline and are hence better building blocks for complex use cases.
+
+Both APIs share data types and type classes that can be found in `fs2.data.csv._`.
+
+### Quick-Start with the high-level API
+For the common use case of parsing a CSV into a `case class` or serializing your data into CSV, you can use this snippet:
 
 ```scala mdoc
 import cats.effect._
 
 import fs2._
 import fs2.data.csv._
+import fs2.data.csv.generic.semiauto._
 
 val input = """i,s,j
               |1,test,2
               |,other,-3
               |""".stripMargin
 
-val stream = Stream.emit(input).through(rows[Fallible, String]())
+// Usually this would come from a file, for example using Files[IO].readAll
+val textStream = Stream.emit(input).covary[Fallible]
+implicit val myRowDecoder: CsvRowDecoder[MyRow, String] = deriveCsvRowDecoder
+implicit val myRowEncoder: CsvRowEncoder[MyRow, String] = deriveCsvRowEncoder
+val decodedStream = textStream.through(decodeUsingHeaders[MyRow]())
+val caseClasses = decodedStream.compile.toList
+
+val backAsText = decodedStream.through(encodeUsingFirstHeaders(fullRows = true)).compile.string
+```
+
+This will assume the file contains headers and takes those into account, re-emitting them again on encoding. How the data is de-/encoded is determined by the type class instances of `CsvRowDecoder` and `CsvRowEncoder` which are derived semi-automatically (for details, see [the fs2-data-csv-generic module][csv-generic-doc]). The details of these type classes are described later in this document.
+
+More high-level pipes are available for the following use cases:
+* `decodeWithoutHeaders` for CSV parsing that requires no headers and none are present in the input (Note: requires `RowDecoder` instead of `CsvRowDecoder`)
+* `decodeSkippingHeaders` for CSV parsing that requires no headers, but they are present in the input (Note: requires `RowDecoder` instead of `CsvRowDecoder`)
+* `decodeGivenHeaders` for CSV parsing that requires headers, but they aren't present in the input
+* `decodeUsingHeaders` for CSV parsing that requires headers and they're present in the input
+* `encodeWithoutHeaders` for CSV encoding that works entirely without headers (Note: requires `RowEncoder` instead of `CsvRowEncoder`)
+* `encodeGivenHeaders` for CSV encoding that works without headers, but they should be added to the output
+* `encodeUsingFirstHeaders` for CSV encoding that works with headers. Uses the headers of the first row for the output.
+
+### Low-level API
+
+This section takes a closer look on the low-level concepts the high-level API is built from.
+
+#### Parsing CSV into rows
+
+The first one of the provided tools is the `rows` pipe, which transforms a stream of characters into a stream of parsed rows. The rows are represented by [`NonEmptyList[String]`][nel], empty lines are skipped. Values can be quoted and escaped, according to [the RFC][rfc].
+
+```scala mdoc
+val stream = textStream.through(lowlevel.rows[Fallible, String]())
 stream.compile.toList
 ```
 
@@ -39,7 +77,7 @@ If your CSV data is not using the comma as separator, you can provide the charac
 val input2 = """i;s;j
                |1;test;2""".stripMargin
 
-val stream2 = Stream.emit(input2).through(rows[Fallible, String](';'))
+val stream2 = Stream.emit(input2).through(lowlevel.rows[Fallible, String](';'))
 stream2.compile.toList
 ```
 
@@ -54,25 +92,25 @@ val input3 =
     |Alice Grey,78,contains "a quote""".stripMargin
 
 // default quote-handling is QuoteHandling.RFCCompliant
-val stream3 = Stream.emit(input3).through(rows[Fallible, String](',', QuoteHandling.Literal))
+val stream3 = Stream.emit(input3).through(lowlevel.rows[Fallible, String](',', QuoteHandling.Literal))
 stream3.compile.toList
 ```
 
-### CSV rows with or without headers
+#### CSV rows with or without headers
 
 Rows can be converted to a `Row` or `CsvRow[Header]` for some `Header` type. These classes provides higher-level utilities to manipulate rows.
 
 If your CSV file doesn't have headers, you can use the `noHeaders` pipe, which creates `Row`.
 
 ```scala mdoc
-val noh = stream.through(noHeaders)
+val noh = stream.through(lowlevel.noHeaders)
 noh.map(_.values).compile.toList
 ```
 
 If you want to consider the first row as a header row, you can use the `headers` pipe. For instance to have headers as `String`:
 
 ```scala mdoc
-val withh = stream.through(headers[Fallible, String])
+val withh = stream.through(lowlevel.headers[Fallible, String])
 withh.map(_.toMap).compile.toList
 ```
 
@@ -101,27 +139,27 @@ implicit object ParseableMyHeaders extends ParseableHeader[MyHeaders] {
     }
 }
 
-val withMyHeaders = stream.through(headers[Fallible, MyHeaders])
+val withMyHeaders = stream.through(lowlevel.headers[Fallible, MyHeaders])
 withMyHeaders.map(_.toMap).compile.toList
 ```
 
 If the parse method fails for a header, the entire stream fails.
 
-### Writing CSV
+#### Writing CSV
 There are also pipes for encoding rows to CSV, with or without headers. Simple example without headers:
 
 ```scala mdoc
 val testRows = Stream(Row(NonEmptyList.of("3", "", "test")))
 testRows
-  .through(writeWithoutHeaders)
-  .through(toRowStrings(/* separator: Char = ',', newline: String = "\n"*/))
+  .through(lowlevel.writeWithoutHeaders)
+  .through(lowlevel.toRowStrings(/* separator: Char = ',', newline: String = "\n"*/))
   .compile
-  .toList
+  .string
 ```
 
 If you want to write headers, use `writeWithHeaders` or, in case you use `CsvRow`, `encodeRowWithFirstHeaders`. For writing non-String headers, you'll need to provide an instance of `WritableHeader`, a type class analog to `ParseableHeader`.
 
-### Decoders and Encoders
+### The type classes: Decoders and Encoders
 
 The library also provides decoder and encoder type classes, which allow for decoding CSV rows into arbitrary data types through the `decode` and `decodeRow` pipes and encoding data to CSV via `encode` and `encodeRow`. There are several kinds:
  - `CellDecoder` is a simple value decoder, used to transform values within the CSV fields. `CellEncoder` describes the reverse operation, encoding a simple value into a String.
@@ -192,7 +230,7 @@ implicit object HListDecoder extends RowDecoder[Option[Int] :: String :: Int :: 
 }
 
 // .tail drops the header line
-val hlists = noh.tail.through(decode[Fallible, Option[Int] :: String :: Int :: HNil])
+val hlists = noh.tail.through(lowlevel.decode[Fallible, Option[Int] :: String :: Int :: HNil])
 hlists.compile.toList
 ```
 
@@ -208,7 +246,7 @@ implicit object HListEncoder extends RowEncoder[Option[Int] :: String :: Int :: 
 
 // .tail drops the header line
 val row = Stream(Option(3) :: "test" :: 42 :: HNil)
-row.through(encode).compile.toList
+row.through(lowlevel.encode).compile.toList
 ```
 
 #### `CsvRowDecoder` & `CsvRowEncoder`
@@ -227,7 +265,7 @@ implicit object MyRowDecoder extends CsvRowDecoder[MyRow, String] {
     s <- row.as[String]("s")
   } yield MyRow(i, j, s)
 }
-val decoded = withh.through(decodeRow[Fallible, String, MyRow])
+val decoded = withh.through(lowlevel.decodeRow[Fallible, String, MyRow])
 decoded.compile.toList
 ```
 
