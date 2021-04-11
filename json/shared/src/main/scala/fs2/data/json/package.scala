@@ -188,7 +188,7 @@ package object json {
       }
   }
 
-  implicit class StringOps(val s: String) extends AnyVal {
+  implicit class JsonSelectorStringOps(val s: String) extends AnyVal {
     def parseSelector[F[_]](implicit F: MonadError[F, Throwable]): F[Selector] =
       new SelectorParser[F](s).parse()
   }
