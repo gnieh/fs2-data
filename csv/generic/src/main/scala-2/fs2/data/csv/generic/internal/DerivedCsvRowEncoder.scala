@@ -13,24 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2
-package data
-package csv
-package generic
+package fs2.data.csv.generic.internal
 
+import fs2.data.csv.CsvRowEncoder
+import fs2.data.csv.generic.CsvName
 import shapeless._
 
-trait DerivedRowDecoder[T] extends RowDecoder[T]
+private[generic] trait DerivedCsvRowEncoder[T] extends CsvRowEncoder[T, String]
 
-object DerivedRowDecoder {
+private[generic] object DerivedCsvRowEncoder {
 
-  final implicit def productDecoder[T, Repr <: HList](implicit
-      gen: Generic.Aux[T, Repr],
-      cc: Lazy[SeqShapedRowDecoder[Repr]]): DerivedRowDecoder[T] =
-    new DerivedRowDecoder[T] {
-
-      def apply(row: Row): DecoderResult[T] =
-        cc.value(row).map(gen.from(_))
-    }
+  final implicit def productWriter[T, Repr <: HList, AnnoRepr <: HList](implicit
+      gen: LabelledGeneric.Aux[T, Repr],
+      annotations: Annotations.Aux[CsvName, T, AnnoRepr],
+      cc: Lazy[MapShapedCsvRowEncoder.WithAnnotations[T, Repr, AnnoRepr]]): DerivedCsvRowEncoder[T] =
+    (elem: T) => cc.value.fromWithAnnotation(gen.to(elem), annotations())
 
 }

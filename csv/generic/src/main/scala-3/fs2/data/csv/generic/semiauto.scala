@@ -18,16 +18,18 @@ package data
 package csv
 package generic
 
-import shapeless._
+object semiauto {
 
-trait DerivedCsvRowEncoder[T] extends CsvRowEncoder[T, String]
+  def deriveRowDecoder[T]: RowDecoder[T] = ???
 
-object DerivedCsvRowEncoder {
+  def deriveRowEncoder[T]: RowEncoder[T] = ???
 
-  final implicit def productWriter[T, Repr <: HList, AnnoRepr <: HList](implicit
-      gen: LabelledGeneric.Aux[T, Repr],
-      annotations: Annotations.Aux[CsvName, T, AnnoRepr],
-      cc: Lazy[MapShapedCsvRowEncoder.WithAnnotations[T, Repr, AnnoRepr]]): DerivedCsvRowEncoder[T] =
-    (elem: T) => cc.value.fromWithAnnotation(gen.to(elem), annotations())
+  def deriveCsvRowDecoder[T]: CsvRowDecoder[T, String] = ???
+
+  def deriveCsvRowEncoder[T]: CsvRowEncoder[T, String] = ???
+
+  def deriveCellDecoder[T]: CellDecoder[T] = ???
+
+  def deriveCellEncoder[T]: CellEncoder[T] = ???
 
 }

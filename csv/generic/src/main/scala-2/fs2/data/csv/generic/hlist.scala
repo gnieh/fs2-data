@@ -18,20 +18,15 @@ package data
 package csv
 package generic
 
+import fs2.data.csv.generic.internal._
 import shapeless._
 
-trait DerivedCsvRowDecoder[T] extends CsvRowDecoder[T, String]
+object hlist {
 
-object DerivedCsvRowDecoder {
+  final implicit def hlistDecoder[T <: HList](implicit cc: Lazy[SeqShapedRowDecoder[T]]): DerivedRowDecoder[T] =
+    (row: Row) => cc.value(row)
 
-  final implicit def productReader[T, Repr <: HList, DefaultRepr <: HList, AnnoRepr <: HList](implicit
-      gen: LabelledGeneric.Aux[T, Repr],
-      defaults: Default.AsOptions.Aux[T, DefaultRepr],
-      annotations: Annotations.Aux[CsvName, T, AnnoRepr],
-      cc: Lazy[MapShapedCsvRowDecoder.WithDefaults[T, Repr, DefaultRepr, AnnoRepr]]): DerivedCsvRowDecoder[T] =
-    new DerivedCsvRowDecoder[T] {
-      def apply(row: CsvRow[String]): DecoderResult[T] =
-        cc.value.fromWithDefault(row, defaults(), annotations()).map(gen.from(_))
-    }
+  final implicit def hlistEncoder[T <: HList](implicit cc: Lazy[SeqShapedRowEncoder[T]]): DerivedRowEncoder[T] =
+    (elem: T) => cc.value(elem)
 
 }

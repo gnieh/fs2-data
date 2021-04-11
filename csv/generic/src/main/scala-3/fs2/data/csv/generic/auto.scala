@@ -16,36 +16,36 @@
 package fs2.data.csv
 package generic
 
-import scala.language.experimental.macros
+import fs2.data.csv.generic.internal.ExportMacros
 
 trait AutoDerivedRowDecoders {
   implicit def exportRowDecoder[A]: Exported[RowDecoder[A]] =
-    macro ExportMacros.exportRowDecoder[A]
+    ???
 }
 
 trait AutoDerivedRowEncoders {
   implicit def exportRowEncoder[A]: Exported[RowEncoder[A]] =
-    macro ExportMacros.exportRowEncoder[A]
+    ???
 }
 
 trait AutoDerivedCsvRowDecoders {
   implicit def exportCsvRowDecoder[A]: Exported[CsvRowDecoder[A, String]] =
-    macro ExportMacros.exportCsvRowDecoder[A]
+    ???
 }
 
 trait AutoDerivedCsvRowEncoders {
   implicit def exportCsvRowEncoder[A]: Exported[CsvRowEncoder[A, String]] =
-    macro ExportMacros.exportCsvRowEncoder[A]
+    ???
 }
 
 trait AutoDerivedCellDecoders {
   implicit def exportCellDecoder[A]: Exported[CellDecoder[A]] =
-    macro ExportMacros.exportCellDecoder[A]
+    ???
 }
 
 trait AutoDerivedCellEncoders {
   implicit def exportCellEncoder[A]: Exported[CellEncoder[A]] =
-    macro ExportMacros.exportCellEncoder[A]
+    ???
 }
 
 object auto

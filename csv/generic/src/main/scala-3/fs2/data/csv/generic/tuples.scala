@@ -18,26 +18,12 @@ package data
 package csv
 package generic
 
-import shapeless._
+object tuples {
 
-object semiauto {
+  final implicit def tupleDecoder[T <: Tuple]: RowDecoder[T] =
+    ???
 
-  def deriveRowDecoder[T](implicit T: Lazy[DerivedRowDecoder[T]]): RowDecoder[T] =
-    T.value
-
-  def deriveRowEncoder[T](implicit T: Lazy[DerivedRowEncoder[T]]): RowEncoder[T] =
-    T.value
-
-  def deriveCsvRowDecoder[T](implicit T: Lazy[DerivedCsvRowDecoder[T]]): CsvRowDecoder[T, String] =
-    T.value
-
-  def deriveCsvRowEncoder[T](implicit T: Lazy[DerivedCsvRowEncoder[T]]): CsvRowEncoder[T, String] =
-    T.value
-
-  def deriveCellDecoder[T](implicit T: Lazy[DerivedCellDecoder[T]]): CellDecoder[T] =
-    T.value
-
-  def deriveCellEncoder[T](implicit T: Lazy[DerivedCellEncoder[T]]): CellEncoder[T] =
-    T.value
+  final implicit def tupleEncoder[T <: Tuple]: RowEncoder[T] =
+    ???
 
 }

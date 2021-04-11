@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.csv.generic
+package fs2.data.csv.generic.internal
 
 import cats.data.NonEmptyList
 import fs2.data.csv.{CellEncoder, Row, RowEncoder}
 import shapeless._
 
-trait SeqShapedRowEncoder[Repr] extends RowEncoder[Repr]
+private[generic] trait SeqShapedRowEncoder[Repr] extends RowEncoder[Repr]
 
-object SeqShapedRowEncoder {
+private[generic] object SeqShapedRowEncoder {
 
   implicit def lastElemEncoder[Head](implicit Head: CellEncoder[Head]): SeqShapedRowEncoder[Head :: HNil] =
     (last: Head :: HNil) => Row(NonEmptyList.one(Head(last.head)))

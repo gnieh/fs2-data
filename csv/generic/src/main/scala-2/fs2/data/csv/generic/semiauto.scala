@@ -18,15 +18,27 @@ package data
 package csv
 package generic
 
+import fs2.data.csv.generic.internal._
 import shapeless._
 
-trait DerivedRowEncoder[T] extends RowEncoder[T]
+object semiauto {
 
-object DerivedRowEncoder {
+  def deriveRowDecoder[T](implicit T: Lazy[DerivedRowDecoder[T]]): RowDecoder[T] =
+    T.value
 
-  final implicit def productEncoder[T, Repr <: HList](implicit
-      gen: Generic.Aux[T, Repr],
-      cc: Lazy[SeqShapedRowEncoder[Repr]]): DerivedRowEncoder[T] =
-    (elem: T) => cc.value(gen.to(elem))
+  def deriveRowEncoder[T](implicit T: Lazy[DerivedRowEncoder[T]]): RowEncoder[T] =
+    T.value
+
+  def deriveCsvRowDecoder[T](implicit T: Lazy[DerivedCsvRowDecoder[T]]): CsvRowDecoder[T, String] =
+    T.value
+
+  def deriveCsvRowEncoder[T](implicit T: Lazy[DerivedCsvRowEncoder[T]]): CsvRowEncoder[T, String] =
+    T.value
+
+  def deriveCellDecoder[T](implicit T: Lazy[DerivedCellDecoder[T]]): CellDecoder[T] =
+    T.value
+
+  def deriveCellEncoder[T](implicit T: Lazy[DerivedCellEncoder[T]]): CellEncoder[T] =
+    T.value
 
 }

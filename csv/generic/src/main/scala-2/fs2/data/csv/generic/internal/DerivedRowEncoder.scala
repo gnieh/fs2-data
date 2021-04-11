@@ -13,19 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2
-package data
-package csv
-package generic
+package fs2.data.csv.generic.internal
 
+import fs2.data.csv.RowEncoder
 import shapeless._
 
-object hlist {
+private[generic] trait DerivedRowEncoder[T] extends RowEncoder[T]
 
-  final implicit def hlistDecoder[T <: HList](implicit cc: Lazy[SeqShapedRowDecoder[T]]): DerivedRowDecoder[T] =
-    (row: Row) => cc.value(row)
+private[generic] object DerivedRowEncoder {
 
-  final implicit def hlistEncoder[T <: HList](implicit cc: Lazy[SeqShapedRowEncoder[T]]): DerivedRowEncoder[T] =
-    (elem: T) => cc.value(elem)
+  final implicit def productEncoder[T, Repr <: HList](implicit
+      gen: Generic.Aux[T, Repr],
+      cc: Lazy[SeqShapedRowEncoder[Repr]]): DerivedRowEncoder[T] =
+    (elem: T) => cc.value(gen.to(elem))
 
 }

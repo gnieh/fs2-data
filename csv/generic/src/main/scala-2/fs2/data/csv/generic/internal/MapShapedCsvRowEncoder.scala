@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.csv.generic
+package fs2.data.csv.generic.internal
 
 import cats.data.NonEmptyList
+import fs2.data.csv.generic.CsvName
 import fs2.data.csv.{CellEncoder, CsvRow, CsvRowEncoder}
 import shapeless._
 import shapeless.labelled._
 
-trait MapShapedCsvRowEncoder[Repr] extends CsvRowEncoder[Repr, String]
+private[generic] trait MapShapedCsvRowEncoder[Repr] extends CsvRowEncoder[Repr, String]
 
-object MapShapedCsvRowEncoder extends LowPrioMapShapedCsvRowEncoderImplicits {
+private[generic] object MapShapedCsvRowEncoder extends LowPrioMapShapedCsvRowEncoderImplicits {
 
   implicit def lastElemRowEncoder[Wrapped, Repr, Anno, Key <: Symbol](implicit
       Last: CellEncoder[Repr],
@@ -34,7 +35,7 @@ object MapShapedCsvRowEncoder extends LowPrioMapShapedCsvRowEncoderImplicits {
 
 }
 
-trait LowPrioMapShapedCsvRowEncoderImplicits {
+private[generic] trait LowPrioMapShapedCsvRowEncoderImplicits {
   trait WithAnnotations[Wrapped, Repr, AnnoRepr] {
     def fromWithAnnotation(row: Repr, annotation: AnnoRepr): CsvRow[String]
   }

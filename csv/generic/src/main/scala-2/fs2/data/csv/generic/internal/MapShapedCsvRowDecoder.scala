@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2
-package data
-package csv
-package generic
+package fs2.data.csv.generic.internal
 
 import cats.implicits._
-
+import fs2.data.csv._
+import fs2.data.csv.generic.CsvName
 import shapeless._
 import shapeless.labelled._
 
-trait MapShapedCsvRowDecoder[Repr] extends CsvRowDecoder[Repr, String]
+private[generic] trait MapShapedCsvRowDecoder[Repr] extends CsvRowDecoder[Repr, String]
 
-object MapShapedCsvRowDecoder extends LowPriorityMapShapedCsvRowDecoder1 {
+private[generic] object MapShapedCsvRowDecoder extends LowPriorityMapShapedCsvRowDecoder1 {
 
   implicit def hnilRowDecoder[Wrapped]: WithDefaults[Wrapped, HNil, HNil, HNil] =
     new WithDefaults[Wrapped, HNil, HNil, HNil] {
@@ -68,7 +66,7 @@ object MapShapedCsvRowDecoder extends LowPriorityMapShapedCsvRowDecoder1 {
 
 }
 
-trait LowPriorityMapShapedCsvRowDecoder1 {
+private[generic] trait LowPriorityMapShapedCsvRowDecoder1 {
 
   trait WithDefaults[Wrapped, Repr, DefaultRepr, AnnoRepr] {
     def fromWithDefault(row: CsvRow[String], default: DefaultRepr, annotation: AnnoRepr): DecoderResult[Repr]
