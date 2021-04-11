@@ -15,7 +15,7 @@
  */
 package fs2.data.csv
 
-import io.circe.parser._
+import io.circe.parser.parse
 
 import fs2._
 import fs2.io.file.Files
@@ -55,8 +55,7 @@ object CsvParserTest extends SimpleIOSuite {
         Files[IO]
           .readAll(path, 1024)
           .through(fs2.text.utf8Decode)
-          .through(rows())
-          .through(headers[IO, String])
+          .through(decodeUsingHeaders[CsvRow[String]]())
           .compile
           .toList
           .map(_.map(_.toMap))
@@ -73,10 +72,9 @@ object CsvParserTest extends SimpleIOSuite {
           .emits(expected)
           .map(m => CsvRow.fromListHeaders(m.toList))
           .unNone
-          .through(encodeRowWithFirstHeaders)
-          .through(toStrings())
-          .through(rows[IO, String]())
-          .through(headers[IO, String])
+          .through(encodeUsingFirstHeaders[CsvRow[String]]())
+          .covary[IO]
+          .through(decodeUsingHeaders[CsvRow[String]]())
           .compile
           .toList
           .map(_.map(_.toMap))
@@ -105,8 +103,7 @@ object CsvParserTest extends SimpleIOSuite {
     Stream
       .emit(content)
       .covary[IO]
-      .through(rows[IO, String](',', QuoteHandling.Literal))
-      .through(headers[IO, String])
+      .through(decodeUsingHeaders[CsvRow[String]](',', QuoteHandling.Literal))
       .compile
       .toList
       .map(_.map(_.toMap))

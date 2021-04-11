@@ -100,98 +100,238 @@ package object csv {
     case object Literal extends QuoteHandling
   }
 
-  /** Transforms a stream of characters into a stream of CSV rows.
-    *
-    * @param separator character to use to separate fields in the CSV
-    * @param quoteHandling use [[QuoteHandling.RFCCompliant]] for RFC-4180
-    *                      handling of quotation marks (optionally quoted
-    *                      if the value begins with a quotation mark; the
-    *                      default) or [[QuoteHandling.Literal]] if quotation
-    *                      marks should be treated literally
+  /** Decode a char-like stream (see [[CharLikeChunks]]) into a specified type,
+    * assuming the file neither contains headers nor are they needed for decoding.
     */
-  def rows[F[_], T](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
-      F: RaiseThrowable[F],
-      T: CharLikeChunks[F, T]): Pipe[F, T, NonEmptyList[String]] =
-    RowParser.pipe[F, T](separator, quoteHandling)
+  def decodeWithoutHeaders[T]: PartiallyAppliedDecodeWithoutHeaders[T] =
+    new PartiallyAppliedDecodeWithoutHeaders[T](dummy = true)
 
-  /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
-  def headers[F[_], Header](implicit
-      F: RaiseThrowable[F],
-      Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
-    CsvRowParser.pipe[F, Header]
-
-  /** Transforms a stream of raw CSV rows into parsed CSV rows with headers, with failures at the element level instead of failing the stream */
-  def headersAttempt[F[_], Header](implicit
-      F: RaiseThrowable[F],
-      Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], Either[Throwable, CsvRow[Header]]] =
-    CsvRowParser.pipeAttempt[F, Header]
-
-  /** Transforms a stream of raw CSV rows into parsed CSV rows with given headers. */
-  def withHeaders[F[_], Header](headers: NonEmptyList[Header])(implicit
-      F: RaiseThrowable[F]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
-    _.map(CsvRow(_, headers)).rethrow
-
-  /** Transforms a stream of raw CSV rows into rows. */
-  def noHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
-    _.map(Row(_))
-
-  /** Transforms a stream of raw CSV rows into rows, skipping the first row to ignore the headers. */
-  def skipHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
-    _.tail.map(Row(_))
-
-  def decode[F[_], R](implicit F: RaiseThrowable[F], R: RowDecoder[R]): Pipe[F, Row, R] =
-    _.map(R(_)).rethrow
-
-  def attemptDecode[F[_], R](implicit R: RowDecoder[R]): Pipe[F, Row, DecoderResult[R]] =
-    _.map(R(_))
-
-  def decodeRow[F[_], Header, R](implicit
-      F: RaiseThrowable[F],
-      R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], R] =
-    _.map(R(_)).rethrow
-
-  def attemptDecodeRow[F[_], Header, R](implicit
-      R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], DecoderResult[R]] =
-    _.map(R(_))
-
-  def writeWithHeaders[F[_], Header](headers: NonEmptyList[Header])(implicit
-      H: WriteableHeader[Header]): Pipe[F, Row, NonEmptyList[String]] =
-    Stream(H(headers)) ++ _.map(_.values)
-
-  def writeWithoutHeaders[F[_]]: Pipe[F, Row, NonEmptyList[String]] =
-    _.map(_.values)
-
-  def toStrings[F[_]](separator: Char = ',',
-                      newline: String = "\n",
-                      escape: EscapeMode = EscapeMode.Auto): Pipe[F, NonEmptyList[String], String] = {
-    _.flatMap(nel =>
-      Stream
-        .emits(nel.toList)
-        .map(RowWriter.encodeColumn(separator, escape))
-        .intersperse(separator.toString) ++ Stream(newline))
+  class PartiallyAppliedDecodeWithoutHeaders[T](val dummy: Boolean) extends AnyVal {
+    def apply[F[_], C](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
+        F: RaiseThrowable[F],
+        C: CharLikeChunks[F, C],
+        T: RowDecoder[T]): Pipe[F, C, T] =
+      lowlevel.rows(separator, quoteHandling) andThen lowlevel.noHeaders andThen lowlevel.decode
   }
 
-  def toRowStrings[F[_]](separator: Char = ',',
-                         newline: String = "\n",
-                         escape: EscapeMode = EscapeMode.Auto): Pipe[F, NonEmptyList[String], String] = {
-    // explicit Show avoids mapping the NEL before
-    val showColumn: Show[String] =
-      Show.show(RowWriter.encodeColumn(separator, escape))
-    _.map(_.mkString_("", separator.toString, newline)(showColumn, implicitly))
+  /** Decode a char-like stream (see [[CharLikeChunks]]) into a specified type,
+    * assuming the file contains headers, but they shall be skipped for decoding.
+    */
+  def decodeSkippingHeaders[T]: PartiallyAppliedDecodeSkippingHeaders[T] =
+    new PartiallyAppliedDecodeSkippingHeaders[T](dummy = true)
+
+  class PartiallyAppliedDecodeSkippingHeaders[T](val dummy: Boolean) extends AnyVal {
+    def apply[F[_], C](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
+        F: RaiseThrowable[F],
+        C: CharLikeChunks[F, C],
+        T: RowDecoder[T]
+    ): Pipe[F, C, T] =
+      lowlevel.rows(separator, quoteHandling) andThen lowlevel.skipHeaders andThen lowlevel.decode
   }
 
-  def encode[F[_], R](implicit R: RowEncoder[R]): Pipe[F, R, Row] =
-    _.map(R(_))
+  /** Decode a char-like stream (see [[CharLikeChunks]]) into a specified type,
+    * assuming the file contains headers and they need to be taken into account for decoding.
+    */
+  def decodeUsingHeaders[T]: PartiallyAppliedDecodeUsingHeaders[T] =
+    new PartiallyAppliedDecodeUsingHeaders[T](dummy = true)
 
-  def encodeRow[F[_], Header, R](implicit R: CsvRowEncoder[R, Header]): Pipe[F, R, CsvRow[Header]] =
-    _.map(R(_))
+  class PartiallyAppliedDecodeUsingHeaders[T](val dummy: Boolean) extends AnyVal {
+    def apply[F[_], C, Header](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(
+        implicit
+        F: RaiseThrowable[F],
+        C: CharLikeChunks[F, C],
+        T: CsvRowDecoder[T, Header],
+        H: ParseableHeader[Header]): Pipe[F, C, T] =
+      lowlevel.rows(separator, quoteHandling) andThen lowlevel.headers andThen lowlevel.decodeRow
+  }
 
-  def encodeRowWithFirstHeaders[F[_], Header](implicit
-      H: WriteableHeader[Header]): Pipe[F, CsvRow[Header], NonEmptyList[String]] =
-    _.pull.peek1.flatMap {
-      case Some((CsvRow(_, headers), stream)) =>
-        Pull.output1(H(headers)) >> stream.map(_.values).pull.echo
-      case None => Pull.done
-    }.stream
+  /** Decode a char-like stream (see [[CharLikeChunks]]) into a specified type,
+    * assuming the file contains no headers, but is compliant with the set of headers given.
+    */
+  def decodeGivenHeaders[T]: PartiallyAppliedDecodeGivenHeaders[T] =
+    new PartiallyAppliedDecodeGivenHeaders(dummy = true)
 
+  class PartiallyAppliedDecodeGivenHeaders[T](val dummy: Boolean) extends AnyVal {
+    def apply[F[_], C, Header](headers: NonEmptyList[Header],
+                               skipHeaders: Boolean = false,
+                               separator: Char = ',',
+                               quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
+        F: RaiseThrowable[F],
+        C: CharLikeChunks[F, C],
+        T: CsvRowDecoder[T, Header]): Pipe[F, C, T] = {
+      if (skipHeaders)
+        lowlevel.rows(separator, quoteHandling) andThen (_.tail) andThen
+          lowlevel.withHeaders(headers) andThen lowlevel.decodeRow
+      else
+        lowlevel.rows(separator, quoteHandling) andThen lowlevel.withHeaders(headers) andThen lowlevel.decodeRow
+    }
+  }
+
+  /** Encode a specified type into a CSV that contains no headers. */
+  def encodeWithoutHeaders[T]: PartiallyAppliedEncodeWithoutHeaders[T] =
+    new PartiallyAppliedEncodeWithoutHeaders[T](dummy = true)
+
+  class PartiallyAppliedEncodeWithoutHeaders[T](val dummy: Boolean) extends AnyVal {
+    def apply[F[_]](fullRows: Boolean = false,
+                    separator: Char = ',',
+                    newline: String = "\n",
+                    escape: EscapeMode = EscapeMode.Auto)(implicit T: RowEncoder[T]): Pipe[F, T, String] = {
+      val stringPipe =
+        if (fullRows) lowlevel.toRowStrings[F](separator, newline, escape)
+        else lowlevel.toStrings[F](separator, newline, escape)
+      lowlevel.encode[F, T] andThen lowlevel.writeWithoutHeaders andThen stringPipe
+    }
+  }
+
+  /** Encode a specified type into a CSV prepending the given headers. */
+  def encodeGivenHeaders[T]: PartiallyAppliedEncodeGivenHeaders[T] =
+    new PartiallyAppliedEncodeGivenHeaders[T](dummy = true)
+
+  class PartiallyAppliedEncodeGivenHeaders[T](val dummy: Boolean) extends AnyVal {
+    def apply[F[_], Header](headers: NonEmptyList[Header],
+                            fullRows: Boolean = false,
+                            separator: Char = ',',
+                            newline: String = "\n",
+                            escape: EscapeMode = EscapeMode.Auto)(implicit
+        T: RowEncoder[T],
+        H: WriteableHeader[Header]): Pipe[F, T, String] = {
+      val stringPipe =
+        if (fullRows) lowlevel.toRowStrings[F](separator, newline, escape)
+        else lowlevel.toStrings[F](separator, newline, escape)
+      lowlevel.encode[F, T] andThen lowlevel.writeWithHeaders(headers) andThen stringPipe
+    }
+  }
+
+  /** Encode a specified type into a CSV that contains the headers determined by encoding the first element. Empty if input is. */
+  def encodeUsingFirstHeaders[T]: PartiallyAppliedEncodeUsingFirstHeaders[T] =
+    new PartiallyAppliedEncodeUsingFirstHeaders(dummy = true)
+
+  class PartiallyAppliedEncodeUsingFirstHeaders[T](val dummy: Boolean) extends AnyVal {
+    def apply[F[_], Header](fullRows: Boolean = false,
+                            separator: Char = ',',
+                            newline: String = "\n",
+                            escape: EscapeMode = EscapeMode.Auto)(implicit
+        T: CsvRowEncoder[T, Header],
+        H: WriteableHeader[Header]): Pipe[F, T, String] = {
+      val stringPipe =
+        if (fullRows) lowlevel.toRowStrings[F](separator, newline, escape)
+        else lowlevel.toStrings[F](separator, newline, escape)
+      lowlevel.encodeRow[F, Header, T] andThen lowlevel.encodeRowWithFirstHeaders[F, Header] andThen stringPipe
+    }
+  }
+
+  /** Low level pipes for CSV handling. All pipes only perform one step in a CSV (de)serialization pipeline,
+    * so use these if you want to customise. All standard use cases should be covered by the higher level pipes directly
+    * on the csv package which are composed of the lower level ones here.
+    */
+  object lowlevel {
+
+    /** Transforms a stream of characters into a stream of CSV rows.
+      *
+      * @param separator     character to use to separate fields in the CSV
+      * @param quoteHandling use [[QuoteHandling.RFCCompliant]] for RFC-4180
+      *                      handling of quotation marks (optionally quoted
+      *                      if the value begins with a quotation mark; the
+      *                      default) or [[QuoteHandling.Literal]] if quotation
+      *                      marks should be treated literally
+      */
+    def rows[F[_], T](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
+        F: RaiseThrowable[F],
+        T: CharLikeChunks[F, T]): Pipe[F, T, NonEmptyList[String]] =
+      RowParser.pipe[F, T](separator, quoteHandling)
+
+    /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
+    def headers[F[_], Header](implicit
+        F: RaiseThrowable[F],
+        Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
+      CsvRowParser.pipe[F, Header]
+
+    /** Transforms a stream of raw CSV rows into parsed CSV rows with headers, with failures at the element level instead of failing the stream */
+    def headersAttempt[F[_], Header](implicit
+        F: RaiseThrowable[F],
+        Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], Either[Throwable, CsvRow[Header]]] =
+      CsvRowParser.pipeAttempt[F, Header]
+
+    /** Transforms a stream of raw CSV rows into parsed CSV rows with given headers. */
+    def withHeaders[F[_], Header](headers: NonEmptyList[Header])(implicit
+        F: RaiseThrowable[F]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
+      _.map(CsvRow(_, headers)).rethrow
+
+    /** Transforms a stream of raw CSV rows into rows. */
+    def noHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
+      _.map(Row(_))
+
+    /** Transforms a stream of raw CSV rows into rows, skipping the first row to ignore the headers. */
+    def skipHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
+      _.tail.map(Row(_))
+
+    /** Decodes simple rows (without headers) into a specified type using a suitable [[RowDecoder]]. */
+    def decode[F[_], R](implicit F: RaiseThrowable[F], R: RowDecoder[R]): Pipe[F, Row, R] =
+      _.map(R(_)).rethrow
+
+    /** Decodes simple rows (without headers) into a specified type using a suitable [[RowDecoder]], but signal errors as values. */
+    def attemptDecode[F[_], R](implicit R: RowDecoder[R]): Pipe[F, Row, DecoderResult[R]] =
+      _.map(R(_))
+
+    /** Decodes [[CsvRow]]s (with headers) into a specified type using a suitable [[CsvRowDecoder]]. */
+    def decodeRow[F[_], Header, R](implicit
+        F: RaiseThrowable[F],
+        R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], R] =
+      _.map(R(_)).rethrow
+
+    /** Decodes [[CsvRow]]s (with headers) into a specified type using a suitable [[CsvRowDecoder]], but signal errors as values. */
+    def attemptDecodeRow[F[_], Header, R](implicit
+        R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], DecoderResult[R]] =
+      _.map(R(_))
+
+    /** Encode a given type into CSV rows using a set of explicitly given headers. */
+    def writeWithHeaders[F[_], Header](headers: NonEmptyList[Header])(implicit
+        H: WriteableHeader[Header]): Pipe[F, Row, NonEmptyList[String]] =
+      Stream(H(headers)) ++ _.map(_.values)
+
+    /** Encode a given type into CSV rows without headers. */
+    def writeWithoutHeaders[F[_]]: Pipe[F, Row, NonEmptyList[String]] =
+      _.map(_.values)
+
+    /** Serialize a CSV row to [[String]]s. No guarantees are given on how the resulting Strings are cut. */
+    def toStrings[F[_]](separator: Char = ',',
+                        newline: String = "\n",
+                        escape: EscapeMode = EscapeMode.Auto): Pipe[F, NonEmptyList[String], String] = {
+      _.flatMap(nel =>
+        Stream
+          .emits(nel.toList)
+          .map(RowWriter.encodeColumn(separator, escape))
+          .intersperse(separator.toString) ++ Stream(newline))
+    }
+
+    /** Serialize a CSV row to [[String]]s. Guaranteed to emit one String per CSV row (= one line if no quoted newlines are contained in the value). */
+    def toRowStrings[F[_]](separator: Char = ',',
+                           newline: String = "\n",
+                           escape: EscapeMode = EscapeMode.Auto): Pipe[F, NonEmptyList[String], String] = {
+      // explicit Show avoids mapping the NEL before
+      val showColumn: Show[String] =
+        Show.show(RowWriter.encodeColumn(separator, escape))
+      _.map(_.mkString_("", separator.toString, newline)(showColumn, implicitly))
+    }
+
+    /** Encode a given type into simple CSV rows without headers. */
+    def encode[F[_], R](implicit R: RowEncoder[R]): Pipe[F, R, Row] =
+      _.map(R(_))
+
+    /** Encode a given type into CSV rows with headers. */
+    def encodeRow[F[_], Header, R](implicit R: CsvRowEncoder[R, Header]): Pipe[F, R, CsvRow[Header]] =
+      _.map(R(_))
+
+    /** Encode a given type into CSV row with headers taken from the first element.
+      * If the input stream is empty, the output is as well.
+      */
+    def encodeRowWithFirstHeaders[F[_], Header](implicit
+        H: WriteableHeader[Header]): Pipe[F, CsvRow[Header], NonEmptyList[String]] =
+      _.pull.peek1.flatMap {
+        case Some((CsvRow(_, headers), stream)) =>
+          Pull.output1(H(headers)) >> stream.map(_.values).pull.echo
+        case None => Pull.done
+      }.stream
+
+  }
 }

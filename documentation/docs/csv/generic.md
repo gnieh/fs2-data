@@ -19,7 +19,7 @@ val input = """i,s,j
               |,other,-3
               |""".stripMargin
 
-val stream = Stream.emit(input).through(rows[Fallible, String]())
+val stream = Stream.emit(input).covary[Fallible]
 ```
 
 This page covers the following topics:
@@ -84,7 +84,7 @@ import shapeless._
 import fs2.data.csv.generic.hlist._
 
 // .tail drops the header line
-val hlists = stream.through(noHeaders).tail.through(decode[Fallible, Option[Int] :: String :: Int :: HNil])
+val hlists = stream.through(decodeSkippingHeaders[Option[Int] :: String :: Int :: HNil]())
 hlists.compile.toList
 ```
 
@@ -101,12 +101,10 @@ You can get an automatically derived `CsvRowDecoder` (and a matching `CsvRowEnco
 ```scala mdoc:nest
 import fs2.data.csv.generic.auto._
 
-val roundtrip = stream.through(headers[Fallible, String])
-  .through(decodeRow[Fallible, String, MyRow])
-  // and back
-  .through(encodeRow[Fallible, String, MyRow])
-  .through(encodeRowWithFirstHeaders[Fallible, String])
-roundtrip.compile.toList
+val roundtrip = stream.through(decodeUsingHeaders[MyRow]())
+  // and back - note that types and corresponding are all inferred
+  .through(encodeUsingFirstHeaders(fullRows = true))
+roundtrip.compile.string
 ```
 
 Automatic derivation can be quite slow at compile time, so you might want to opt for semiautomatic derivation. In this case, you need to explicitly define the implicit instance in scope.
@@ -116,7 +114,7 @@ import fs2.data.csv.generic.semiauto._
 
 implicit val MyRowDecoder: CsvRowDecoder[MyRow, String] = deriveCsvRowDecoder[MyRow]
 
-val decoded = stream.through(headers[Fallible, String]).through(decodeRow[Fallible, String, MyRow])
+val decoded = stream.through(decodeUsingHeaders[MyRow]())
 decoded.compile.toList
 ```
 
@@ -127,7 +125,7 @@ import fs2.data.csv.generic.auto._
 
 case class MyRowDefault(i: Int = 42, j: Int, s: String)
 
-val decoded = stream.through(headers[Fallible, String]).through(decodeRow[Fallible, String, MyRowDefault])
+val decoded = stream.through(decodeUsingHeaders[MyRowDefault]())
 decoded.compile.toList
 ```
 

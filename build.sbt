@@ -2,7 +2,7 @@ val scala212 = "2.12.13"
 val scala213 = "2.13.4"
 val fs2Version = "3.0.1"
 val circeVersion = "0.13.0"
-val shapelessVersion = "2.3.3"
+val shapelessVersion = "2.3.4"
 val scalaJavaTimeVersion = "2.2.1"
 
 val commonSettings = List(
@@ -29,7 +29,7 @@ val commonSettings = List(
   addCompilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary),
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
-    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.2",
+    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.3",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "co.fs2" %% "fs2-io" % fs2Version % "test",
     "com.disneystreaming" %%% "weaver-cats" % "0.7.0-M7" % "test"

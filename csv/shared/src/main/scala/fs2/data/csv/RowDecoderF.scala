@@ -73,6 +73,8 @@ trait RowDecoderF[H[+a] <: Option[a], T, Header] {
 
 object RowDecoderF extends ExportedRowDecoderFs {
 
+  implicit def identityRowDecoderF[H[+a] <: Option[a], Header]: RowDecoderF[H, RowF[H, Header], Header] = _.asRight
+
   implicit def RowDecoderFInstances[H[+a] <: Option[a], Header]
       : MonadError[RowDecoderF[H, *, Header], DecoderError] with SemigroupK[RowDecoderF[H, *, Header]] =
     new MonadError[RowDecoderF[H, *, Header], DecoderError] with SemigroupK[RowDecoderF[H, *, Header]] {
