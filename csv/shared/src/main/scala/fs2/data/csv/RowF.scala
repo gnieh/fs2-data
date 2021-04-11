@@ -122,11 +122,15 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String], header
       case None    => Left(new DecoderError(s"unknown field $header"))
     }
 
-  /** Returns a map representation of this row if headers are defined, otherwise
-    * returns `None`.
+  /** Returns a representation of this row as Map from headers to corresponding cell values.
     */
   def toMap(implicit hasHeaders: HasHeaders[H, Header]): Map[Header, String] =
     byHeader
+
+  /** Returns a representation of this row as NonEmptyMap from headers to corresponding cell values.
+    */
+  def toNonEmptyMap(implicit hasHeaders: HasHeaders[H, Header], order: Order[Header]): NonEmptyMap[Header, String] =
+    headers.get.zip(values).toNem
 
   /** Drop all headers (if any).
     * @return a row without headers, but same values

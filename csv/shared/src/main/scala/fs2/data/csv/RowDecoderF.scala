@@ -1,6 +1,7 @@
 package fs2.data.csv
 
 import cats._
+import cats.data.{NonEmptyList, NonEmptyMap}
 import cats.implicits._
 
 import scala.annotation.tailrec
@@ -108,6 +109,17 @@ object RowDecoderF extends ExportedRowDecoderFs {
       def combineK[A](x: RowDecoderF[H, A, Header], y: RowDecoderF[H, A, Header]): RowDecoderF[H, A, Header] = x or y
     }
 
+  implicit def toMapCsvRowDecoder[Header]: CsvRowDecoder[Map[Header, String], Header] =
+    CsvRowDecoder.instance(_.toMap.asRight)
+
+  implicit def toNonEmptyMapCsvRowDecoder[Header: Order]: CsvRowDecoder[NonEmptyMap[Header, String], Header] =
+    CsvRowDecoder.instance(_.toNonEmptyMap.asRight)
+
+  implicit val toListRowDecoder: RowDecoder[List[String]] =
+    RowDecoder.instance(_.toList.asRight)
+
+  implicit val toNelRowDecoder: RowDecoder[NonEmptyList[String]] =
+    RowDecoder.instance(_.asRight)
 }
 
 trait ExportedRowDecoderFs {
