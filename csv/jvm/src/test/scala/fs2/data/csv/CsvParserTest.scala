@@ -72,7 +72,7 @@ object CsvParserTest extends SimpleIOSuite {
           .emits(expected)
           .map(m => CsvRow.fromListHeaders(m.toList))
           .unNone
-          .through(encodeWithFirstHeaders[CsvRow[String]]())
+          .through(encodeUsingFirstHeaders[CsvRow[String]]())
           .covary[IO]
           .through(decodeUsingHeaders[CsvRow[String]]())
           .compile
