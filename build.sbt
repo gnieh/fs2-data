@@ -88,16 +88,16 @@ val root = (project in file("."))
     name := "fs2-data",
     publishArtifact := false,
     publish / skip := true,
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects( //benchmarks,
-                                                                                csv.js,
-                                                                                //csvGeneric.js,
-                                                                                json.js,
-                                                                                //jsonCirce.js,
-                                                                                //jsonDiffson.js,
-                                                                                xml.js,
-                                                                                cbor.js),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects( //benchmarks,
+                                                                              csv.js,
+                                                                              //csvGeneric.js,
+                                                                              json.js,
+                                                                              //jsonCirce.js,
+                                                                              //jsonDiffson.js,
+                                                                              xml.js,
+                                                                              cbor.js),
     ScalaUnidoc / siteSubdirName := "api",
-    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
+    addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     Nanoc / sourceDirectory := file("site"),
     git.remoteRepo := scmInfo.value.get.connection.replace("scm:git:", ""),
     ghpagesNoJekyll := true
@@ -145,7 +145,7 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform)
     ))
   .dependsOn(text)
 
-/*lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
+lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("csv/generic"))
   .settings(commonSettings)
@@ -153,9 +153,11 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "fs2-data-csv-generic",
     description := "Generic CSV row decoder generation",
-    libraryDependencies ++= List(
-      "com.chuusai" %%% "shapeless" % shapelessVersion,
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    libraryDependencies ++= onScala2(scalaVersion.value)(
+      List(
+        "com.chuusai" %%% "shapeless" % shapelessVersion,
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value
+      )
     ),
     libraryDependencies ++=
       (CrossVersion.partialVersion(scalaVersion.value) match {
@@ -178,7 +180,7 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform)
       .flatten
   )
   .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test)
-  .dependsOn(csv)*/
+  .dependsOn(csv)
 
 lazy val json = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -290,3 +292,12 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform)
     )
   )
   .dependsOn(csv.jvm)*/
+
+// Utils
+
+def onScala2[T](version: String)(values: => List[T]): List[T] = PartialFunction
+  .condOpt(CrossVersion.partialVersion(version)) { case Some((2, _)) =>
+    values
+  }
+  .toList
+  .flatten

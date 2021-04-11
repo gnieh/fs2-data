@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.csv
-package generic
+package fs2.data.csv.generic.internal
+
+import fs2.data.csv._
 
 import scala.reflect.macros.blackbox
 
 /** Macros used to circumvent divergence checker restrictions in the compiler. Inspired by pureconfig and circe.
   */
-class ExportMacros(val c: blackbox.Context) {
+private[generic] class ExportMacros(val c: blackbox.Context) {
   import c.universe._
 
   final def exportRowDecoder[A](implicit a: c.WeakTypeTag[A]): c.Expr[Exported[RowDecoder[A]]] = {

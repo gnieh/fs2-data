@@ -13,19 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2
-package data
-package csv
-package generic
+package fs2.data.csv.generic.internal
 
 import cats.data.NonEmptyList
 import cats.implicits._
-
+import fs2.data.csv._
 import shapeless._
 
-trait SeqShapedRowDecoder[Repr] extends RowDecoder[Repr]
+private[generic] trait SeqShapedRowDecoder[Repr] extends RowDecoder[Repr]
 
-object SeqShapedRowDecoder extends LowPrioritySeqShapedRowDecoder1 {
+private[generic] object SeqShapedRowDecoder extends LowPrioritySeqShapedRowDecoder1 {
 
   implicit def hnilOptionDecoder[Head](implicit Head: CellDecoder[Head]): SeqShapedRowDecoder[Option[Head] :: HNil] =
     new SeqShapedRowDecoder[Option[Head] :: HNil] {
@@ -58,7 +55,7 @@ object SeqShapedRowDecoder extends LowPrioritySeqShapedRowDecoder1 {
 
 }
 
-trait LowPrioritySeqShapedRowDecoder1 {
+private[generic] trait LowPrioritySeqShapedRowDecoder1 {
 
   implicit def hnilDecoder[Head](implicit Head: CellDecoder[Head]): SeqShapedRowDecoder[Head :: HNil] =
     new SeqShapedRowDecoder[Head :: HNil] {

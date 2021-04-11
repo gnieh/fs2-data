@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2
-package data
-package csv
-package generic
+package fs2.data.csv.generic.internal
 
 import cats.implicits._
+import fs2.data.csv.generic.CsvValue
+import fs2.data.csv.{CellDecoder, DecoderError}
 import shapeless._
 import shapeless.labelled._
 
-trait DerivedCellDecoder[T] extends CellDecoder[T]
+private[generic] trait DerivedCellDecoder[T] extends CellDecoder[T]
 
-object DerivedCellDecoder extends DerivedCellDecoderInstances0 {
+private[generic] object DerivedCellDecoder extends DerivedCellDecoderInstances0 {
 
   // Unary Products
 
@@ -54,7 +53,7 @@ object DerivedCellDecoder extends DerivedCellDecoderInstances0 {
 
 }
 
-trait DerivedCellDecoderInstances0 extends DerivedCellDecoderInstances1 {
+private[generic] trait DerivedCellDecoderInstances0 extends DerivedCellDecoderInstances1 {
   final implicit def decodeCConsObjAnnotated[K <: Symbol, L, R <: Coproduct](implicit
       witK: Witness.Aux[K],
       witL: Witness.Aux[L],
@@ -66,7 +65,7 @@ trait DerivedCellDecoderInstances0 extends DerivedCellDecoderInstances1 {
       else decodeR.value(s).map(Inr(_))
 }
 
-trait DerivedCellDecoderInstances1 {
+private[generic] trait DerivedCellDecoderInstances1 {
   final implicit def decodeCConsObj[K <: Symbol, L, R <: Coproduct](implicit
       witK: Witness.Aux[K],
       witL: Witness.Aux[L],

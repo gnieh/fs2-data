@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fs2.data.csv
-package generic
+package fs2.data.csv.generic.internal
 
+import fs2.data.csv.CellEncoder
+import fs2.data.csv.generic.CsvValue
 import shapeless._
 import shapeless.labelled._
 import shapeless.ops.hlist.IsHCons
 
-trait DerivedCellEncoder[T] extends CellEncoder[T]
+private[generic] trait DerivedCellEncoder[T] extends CellEncoder[T]
 
-object DerivedCellEncoder extends DerivedCellEncoderInstances0 {
+private[generic] object DerivedCellEncoder extends DerivedCellEncoderInstances0 {
 
   // Unary Products
 
@@ -50,7 +51,7 @@ object DerivedCellEncoder extends DerivedCellEncoderInstances0 {
 
 }
 
-trait DerivedCellEncoderInstances0 extends DerivedCellEncoderInstances1 {
+private[generic] trait DerivedCellEncoderInstances0 extends DerivedCellEncoderInstances1 {
   final implicit def encodeCConsObjAnnotated[K <: Symbol, L, R <: Coproduct](implicit
       annotation: Annotation[CsvValue, L],
       encodeR: Lazy[DerivedCellEncoder[R]]): DerivedCellEncoder[FieldType[K, L] :+: R] = {
@@ -59,7 +60,7 @@ trait DerivedCellEncoderInstances0 extends DerivedCellEncoderInstances1 {
   }
 }
 
-trait DerivedCellEncoderInstances1 {
+private[generic] trait DerivedCellEncoderInstances1 {
   final implicit def encodeCConsObj[K <: Symbol, L, R <: Coproduct](implicit
       witK: Witness.Aux[K],
       encodeR: Lazy[DerivedCellEncoder[R]]): DerivedCellEncoder[FieldType[K, L] :+: R] = {
