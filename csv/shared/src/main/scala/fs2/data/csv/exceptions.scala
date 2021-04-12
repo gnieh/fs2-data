@@ -19,6 +19,14 @@ class CsvException(msg: String, inner: Throwable = null) extends Exception(msg, 
 
 class DecoderError(msg: String, inner: Throwable = null) extends CsvException(msg, inner)
 
+object DecoderError {
+
+  /** Signals that a column was missing. Use this exception in your own decoders in this case to ensure
+    * correct behaviour when using defaults and @CsvEmbed.
+    */
+  class ColumnMissing(msg: String, inner: Throwable = null) extends DecoderError(msg, inner)
+}
+
 class HeaderError(msg: String, inner: Throwable = null) extends CsvException(msg, inner)
 
 /** Raised when processing a Csv row whose width doesn't match the width of the Csv header row */

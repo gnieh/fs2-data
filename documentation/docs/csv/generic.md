@@ -129,5 +129,34 @@ val decoded = stream.through(decodeUsingHeaders[MyRowDefault]())
 decoded.compile.toList
 ```
 
+#### Annotations for generic derivation on case classes
+The derivation of `CsvRowDecoder` and `CsvRowEncoder` cam be influenced by two annotations: `CsvName` and `CsvEmbed`.
+
+`CsvName` maps a field of the case class to a given header name in the CSV file. Example:
+
+```scala mdoc:nest
+import fs2.data.csv.generic.auto._
+
+case class MyRowRenamed(@CsvName("i") a: Int, j: Int, s: String)
+
+val decoded = stream.through(headers[Fallible, String]).through(decodeRow[Fallible, String, MyRowRenamed])
+decoded.compile.toList
+```
+
+`CsvEmbed` allows for encoding of non-flat case class hierarchies into the flat structure of a CSV file and vice versa. 
+The CSV must contain columns for all fields in the hierarchy which are not annotated with `CsvEmbed` (or have defaults). Example:
+
+```scala mdoc:nest
+import fs2.data.csv.generic.auto._
+
+case class Idx(i: Int)
+case class MyRowEmbed(@CsvEmbed ídx: Idx, j: Int, s: String)
+
+val decoded = stream.through(headers[Fallible, String]).through(decodeRow[Fallible, String, MyRowEmbed])
+decoded.compile.toList
+```
+
+NOTE: `CsvEmbed` and `CsvName` are mutually exclusive on the same field as the name of the embedded field is irrelevant.
+
 [csv-doc]: /documentation/csv/
 [shapeless]: https://github.com/milessabin/shapeless

@@ -24,19 +24,26 @@ trait MapShapedCsvRowEncoder[Repr] extends CsvRowEncoder[Repr, String]
 
 object MapShapedCsvRowEncoder extends LowPrioMapShapedCsvRowEncoderImplicits {
 
-  implicit def lastElemRowEncoder[Wrapped, Repr, Anno, Key <: Symbol](implicit
+  implicit def lastElemRowEncoder[Wrapped, Repr, NameAnno, Key <: Symbol](implicit
       Last: CellEncoder[Repr],
-      ev: <:<[Anno, Option[CsvName]],
-      witness: Witness.Aux[Key]): WithAnnotations[Wrapped, FieldType[Key, Repr] :: HNil, Anno :: HNil] =
-    (row: Repr :: HNil, annotation: Anno :: HNil) =>
-      CsvRow.unsafe(NonEmptyList.one(Last(row.head)),
-                    NonEmptyList.one(annotation.head.fold(witness.value.name)(_.name)))
+      ev: <:<[NameAnno, Option[CsvName]],
+      witness: Witness.Aux[Key])
+      : WithAnnotations[Wrapped, FieldType[Key, Repr] :: HNil, NameAnno :: HNil, None.type :: HNil] =
+    (row: Repr :: HNil, names: NameAnno :: HNil, _: None.type :: HNil) =>
+      CsvRow.unsafe(NonEmptyList.one(Last(row.head)), NonEmptyList.one(names.head.fold(witness.value.name)(_.name)))
+
+  implicit def lastElemEmbedRowEncoder[Wrapped, Repr, NameAnno, Key <: Symbol](implicit
+      Last: CsvRowEncoder[Repr, String],
+      names: <:<[NameAnno, None.type], // renaming is mutually exclusive with embedding
+      witness: Witness.Aux[Key])
+      : WithAnnotations[Wrapped, FieldType[Key, Repr] :: HNil, NameAnno :: HNil, Some[CsvEmbed] :: HNil] =
+    (row: Repr :: HNil, _: NameAnno :: HNil, _: Some[CsvEmbed] :: HNil) => Last(row.head)
 
 }
 
 trait LowPrioMapShapedCsvRowEncoderImplicits {
-  trait WithAnnotations[Wrapped, Repr, AnnoRepr] {
-    def fromWithAnnotation(row: Repr, annotation: AnnoRepr): CsvRow[String]
+  trait WithAnnotations[Wrapped, Repr, NameAnnoRepr, EmbedAnnoRepr] {
+    def fromWithAnnotation(row: Repr, names: NameAnnoRepr, embeds: EmbedAnnoRepr): CsvRow[String]
   }
 
   implicit def hconsRowEncoder[Wrapped,
@@ -44,16 +51,35 @@ trait LowPrioMapShapedCsvRowEncoderImplicits {
                                Head,
                                Tail <: HList,
                                DefaultTail <: HList,
-                               Anno,
-                               AnnoTail <: HList](implicit
+                               NameAnno,
+                               NameAnnoTail <: HList,
+                               EmbedAnnoTail <: HList](implicit
       witness: Witness.Aux[Key],
       Head: CellEncoder[Head],
-      ev: <:<[Anno, Option[CsvName]],
-      Tail: Lazy[WithAnnotations[Wrapped, Tail, AnnoTail]])
-      : WithAnnotations[Wrapped, FieldType[Key, Head] :: Tail, Anno :: AnnoTail] =
-    (row: FieldType[Key, Head] :: Tail, annotation: Anno :: AnnoTail) => {
-      val tailRow = Tail.value.fromWithAnnotation(row.tail, annotation.tail)
+      ev: <:<[NameAnno, Option[CsvName]],
+      Tail: Lazy[WithAnnotations[Wrapped, Tail, NameAnnoTail, EmbedAnnoTail]])
+      : WithAnnotations[Wrapped, FieldType[Key, Head] :: Tail, NameAnno :: NameAnnoTail, None.type :: EmbedAnnoTail] =
+    (row: FieldType[Key, Head] :: Tail, names: NameAnno :: NameAnnoTail, embeds: None.type :: EmbedAnnoTail) => {
+      val tailRow = Tail.value.fromWithAnnotation(row.tail, names.tail, embeds.tail)
       CsvRow.unsafe(NonEmptyList(Head(row.head), tailRow.values.toList),
-                    NonEmptyList(annotation.head.fold(witness.value.name)(_.name), tailRow.headers.get.toList))
+                    NonEmptyList(names.head.fold(witness.value.name)(_.name), tailRow.headers.get.toList))
     }
+
+  implicit def hconsEmbedRowEncoder[Wrapped,
+                                    Key <: Symbol,
+                                    Head,
+                                    Tail <: HList,
+                                    DefaultTail <: HList,
+                                    NameAnnoTail <: HList,
+                                    EmbedAnnoTail <: HList](implicit
+      witness: Witness.Aux[Key],
+      Head: CsvRowEncoder[Head, String],
+      names: <:<[None.type, Option[CsvName]], // renaming is mutually exclusive with embedding
+      Tail: Lazy[WithAnnotations[Wrapped, Tail, NameAnnoTail, EmbedAnnoTail]])
+      : WithAnnotations[Wrapped,
+                        FieldType[Key, Head] :: Tail,
+                        None.type :: NameAnnoTail,
+                        Some[CsvEmbed] :: EmbedAnnoTail] =
+    (row: FieldType[Key, Head] :: Tail, names: None.type :: NameAnnoTail, embeds: Some[CsvEmbed] :: EmbedAnnoTail) =>
+      Head(row.head) ::: Tail.value.fromWithAnnotation(row.tail, names.tail, embeds.tail)
 }

@@ -24,10 +24,11 @@ trait DerivedCsvRowEncoder[T] extends CsvRowEncoder[T, String]
 
 object DerivedCsvRowEncoder {
 
-  final implicit def productWriter[T, Repr <: HList, AnnoRepr <: HList](implicit
+  final implicit def productWriter[T, Repr <: HList, NameAnno <: HList, EmbedAnno <: HList](implicit
       gen: LabelledGeneric.Aux[T, Repr],
-      annotations: Annotations.Aux[CsvName, T, AnnoRepr],
-      cc: Lazy[MapShapedCsvRowEncoder.WithAnnotations[T, Repr, AnnoRepr]]): DerivedCsvRowEncoder[T] =
-    (elem: T) => cc.value.fromWithAnnotation(gen.to(elem), annotations())
+      names: Annotations.Aux[CsvName, T, NameAnno],
+      embeds: Annotations.Aux[CsvEmbed, T, EmbedAnno],
+      cc: Lazy[MapShapedCsvRowEncoder.WithAnnotations[T, Repr, NameAnno, EmbedAnno]]): DerivedCsvRowEncoder[T] =
+    (elem: T) => cc.value.fromWithAnnotation(gen.to(elem), names(), embeds())
 
 }

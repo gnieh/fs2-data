@@ -29,14 +29,20 @@ object CsvRowEncoderTest extends SimpleIOSuite {
   val csvRowDefaultI = CsvRow.unsafe(NonEmptyList.of("", "test", "42"), NonEmptyList.of("i", "s", "j"))
   val csvRowEmptyJ =
     CsvRow.unsafe(NonEmptyList.of("1", "test", ""), NonEmptyList.of("i", "s", "j"))
+  val csvRowA = CsvRow.unsafe(NonEmptyList.of("7", "1", "test", "42"), NonEmptyList.of("a", "i", "s", "j"))
 
   case class Test(i: Int = 0, s: String, j: Option[Int])
   case class TestRename(i: Int, s: String, @CsvName("j") k: Int)
   case class TestOptionRename(i: Int, s: String, @CsvName("j") k: Option[Int])
+  case class TestEmbed(a: Int, @CsvEmbed inner: Test)
 
   val testEncoder = deriveCsvRowEncoder[Test]
   val testRenameEncoder = deriveCsvRowEncoder[TestRename]
   val testOptionRenameEncoder = deriveCsvRowEncoder[TestOptionRename]
+  val testEmbedEncoder = {
+    implicit val embedded: CsvRowEncoder[Test, String] = testEncoder
+    deriveCsvRowEncoder[TestEmbed]
+  }
 
   pureTest("case classes should be encoded properly") {
     expect(testEncoder(Test(1, "test", Some(42))) == csvRow)
@@ -52,6 +58,10 @@ object CsvRowEncoderTest extends SimpleIOSuite {
 
   pureTest("case classes should be encoded according to their field renames if value is optional") {
     expect(testOptionRenameEncoder(TestOptionRename(1, "test", Some(42))) == csvRow)
+  }
+
+  pureTest("case classes should be embedded if annotated with @CsvEmbed") {
+    expect(testEmbedEncoder(TestEmbed(7, Test(1, "test", Some(42)))) == csvRowA)
   }
 
 }

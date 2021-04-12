@@ -32,16 +32,29 @@ object CsvRowDecoderTest extends SimpleIOSuite {
     CsvRow.unsafe(NonEmptyList.of("1", "test", ""), NonEmptyList.of("i", "s", "j"))
   val csvRowNoJ =
     CsvRow.unsafe(NonEmptyList.of("1", "test"), NonEmptyList.of("i", "s"))
+  val csvRowA = CsvRow.unsafe(NonEmptyList.of("7", "1", "test", "42"), NonEmptyList.of("a", "i", "s", "j"))
+  val csvRowAOnly = CsvRow.unsafe(NonEmptyList.of("7"), NonEmptyList.of("a"))
+  val csvRowAInvalidI = CsvRow.unsafe(NonEmptyList.of("7", "no-int", "test", "42"), NonEmptyList.of("a", "i", "s", "j"))
 
   case class Test(i: Int = 0, s: String, j: Option[Int])
   case class TestOrder(s: String, j: Int, i: Int)
   case class TestRename(s: String, @CsvName("j") k: Int, i: Int)
   case class TestOptionRename(s: String, @CsvName("j") k: Option[Int], i: Int)
+  case class TestEmbed(a: Int, @CsvEmbed inner: Test)
+  case class TestEmbedDefault(a: Int, @CsvEmbed inner: Test = Test(0, "", None))
 
   val testDecoder = deriveCsvRowDecoder[Test]
   val testOrderDecoder = deriveCsvRowDecoder[TestOrder]
   val testRenameDecoder = deriveCsvRowDecoder[TestRename]
   val testOptionRenameDecoder = deriveCsvRowDecoder[TestOptionRename]
+  val testEmbedDecoder = {
+    implicit val embedded: CsvRowDecoder[Test, String] = testDecoder
+    deriveCsvRowDecoder[TestEmbed]
+  }
+  val testEmbedDefaultDecoder = {
+    implicit val embedded: CsvRowDecoder[Test, String] = testDecoder
+    deriveCsvRowDecoder[TestEmbedDefault]
+  }
 
   pureTest("case classes should be decoded properly by header name and not position") {
     expect(testDecoder(csvRow) == Right(Test(1, "test", Some(42)))) and
@@ -71,6 +84,18 @@ object CsvRowDecoderTest extends SimpleIOSuite {
   pureTest("case classes should be decoded according to their field renames if value is optional") {
     expect(testOptionRenameDecoder(csvRow) == Right(TestOptionRename("test", Some(42), 1))) and
       expect(testOptionRenameDecoder(csvRowNoJ) == Right(TestOptionRename("test", None, 1)))
+  }
+
+  pureTest("case classes should be decoded respecting @CsvEmbed") {
+    expect(testEmbedDecoder(csvRowA) == Right(TestEmbed(7, Test(1, "test", Some(42)))))
+  }
+
+  pureTest("case classes should be handled with defaults on @CsvEmbed if nested fields are missing") {
+    expect(testEmbedDefaultDecoder(csvRowAOnly) == Right(TestEmbedDefault(7)))
+  }
+
+  pureTest("case classes should fail to decode on @CsvEmbed if nested fields are invalid") {
+    expect(testEmbedDefaultDecoder(csvRowAInvalidI).isLeft)
   }
 
 }
