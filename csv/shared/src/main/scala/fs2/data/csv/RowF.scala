@@ -28,7 +28,9 @@ import cats.implicits._
   *
   * '''Note:''' the following invariant holds when using this class: `values` and `headers` have the same size if headers are present.
   */
-case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String], headers: H[NonEmptyList[Header]]) {
+case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
+                                            headers: H[NonEmptyList[Header]],
+                                            line: Option[Long] = None) {
 
   /** Number of cells in the row. */
   def size: Int = values.size

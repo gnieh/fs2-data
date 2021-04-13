@@ -35,9 +35,9 @@ object SeqShapedRowDecoder extends LowPrioritySeqShapedRowDecoder1 {
             if (c.isEmpty)
               Right(None :: HNil)
             else
-              Head(c).map(Some(_) :: HNil)
+              Head(c).bimap(_.withLine(row.line), Some(_) :: HNil)
           case _ =>
-            Left(new DecoderError(s"expected 1 element but got ${row.values.size}"))
+            Left(new DecoderError(s"expected 1 element but got ${row.values.size}", row.line))
         }
 
     }
@@ -50,8 +50,9 @@ object SeqShapedRowDecoder extends LowPrioritySeqShapedRowDecoder1 {
         for {
           tail <- NonEmptyList
             .fromList(row.values.tail)
-            .liftTo[DecoderResult](new DecoderError("unexpected end of row"))
-          head <- if (row.values.head.isEmpty) Right(None) else Head(row.values.head).map(Some(_))
+            .liftTo[DecoderResult](new DecoderError("unexpected end of row", row.line))
+          head <-
+            if (row.values.head.isEmpty) Right(None) else Head(row.values.head).bimap(_.withLine(row.line), Some(_))
           tail <- Tail.value(Row(tail))
         } yield head :: tail
     }
@@ -65,9 +66,9 @@ trait LowPrioritySeqShapedRowDecoder1 {
       def apply(row: Row): DecoderResult[Head :: HNil] =
         row.values match {
           case NonEmptyList(c, Nil) =>
-            Head(c).map(_ :: HNil)
+            Head(c).bimap(_.withLine(row.line), _ :: HNil)
           case _ =>
-            Left(new DecoderError(s"expected 1 element but got ${row.values.size}"))
+            Left(new DecoderError(s"expected 1 element but got ${row.values.size}", row.line))
         }
 
     }
@@ -78,8 +79,10 @@ trait LowPrioritySeqShapedRowDecoder1 {
     new SeqShapedRowDecoder[Head :: Tail] {
       def apply(row: Row): DecoderResult[Head :: Tail] =
         for {
-          tail <- NonEmptyList.fromList(row.values.tail).liftTo[DecoderResult](new DecoderError("unexpect end of row"))
-          head <- Head(row.values.head)
+          tail <- NonEmptyList
+            .fromList(row.values.tail)
+            .liftTo[DecoderResult](new DecoderError("unexpect end of row", row.line))
+          head <- Head(row.values.head).leftMap(_.withLine(row.line))
           tail <- Tail.value(Row(tail))
         } yield head :: tail
     }

@@ -6,11 +6,14 @@ import cats.implicits._
 object CsvRow {
 
   /** Constructs a [[CsvRow]] and checks that the size of values and headers match. */
-  def apply[Header](values: NonEmptyList[String], headers: NonEmptyList[Header]): Either[CsvException, CsvRow[Header]] =
+  def apply[Header](values: NonEmptyList[String],
+                    headers: NonEmptyList[Header],
+                    line: Option[Long] = None): Either[CsvException, CsvRow[Header]] =
     if (values.length =!= headers.length)
       Left(
         new CsvException(
-          s"Headers have size ${headers.length} but row has size ${values.length}. Both numbers must match!"))
+          s"Headers have size ${headers.length} but row has size ${values.length}. Both numbers must match!",
+          line))
     else
       Right(new CsvRow(values, Some(headers)))
 
@@ -18,7 +21,7 @@ object CsvRow {
     apply(values, headers).fold(throw _, identity)
 
   def liftRow[Header](headers: NonEmptyList[Header])(row: Row): Either[CsvException, CsvRow[Header]] =
-    apply(row.values, headers)
+    apply(row.values, headers, row.line)
 
   def fromListHeaders[Header](l: List[(Header, String)]): Option[CsvRow[Header]] = {
     val (hs, vs) = l.unzip

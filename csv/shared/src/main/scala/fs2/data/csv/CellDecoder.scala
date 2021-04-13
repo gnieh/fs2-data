@@ -151,28 +151,28 @@ object CellDecoder
     else
       Left(new DecoderError(s"'$s' can't be decoded as unit as it is not empty"))
   implicit val booleanDecoder: CellDecoder[Boolean] = s =>
-    Either.catchNonFatal(s.toBoolean).leftMap(new DecoderError(s"unable to decode '$s' as a byte", _))
+    Either.catchNonFatal(s.toBoolean).leftMap(new DecoderError(s"unable to decode '$s' as a byte", None, _))
   implicit val byteDecoder: CellDecoder[Byte] = s =>
-    Either.catchNonFatal(s.toByte).leftMap(new DecoderError(s"unable to decode '$s' as a byte", _))
+    Either.catchNonFatal(s.toByte).leftMap(new DecoderError(s"unable to decode '$s' as a byte", None, _))
   implicit val shortDecoder: CellDecoder[Short] = s =>
-    Either.catchNonFatal(s.toShort).leftMap(new DecoderError(s"unable to decode '$s' as a short", _))
+    Either.catchNonFatal(s.toShort).leftMap(new DecoderError(s"unable to decode '$s' as a short", None, _))
   implicit val charDecoder: CellDecoder[Char] = s =>
     if (s.length == 1)
       Right(s(0))
     else
       Left(new DecoderError(s"unable to decode '$s' as a character"))
   implicit val intDecoder: CellDecoder[Int] = s =>
-    Either.catchNonFatal(s.toInt).leftMap(new DecoderError(s"unable to decode '$s' as an integer", _))
+    Either.catchNonFatal(s.toInt).leftMap(new DecoderError(s"unable to decode '$s' as an integer", None, _))
   implicit val longDecoder: CellDecoder[Long] = s =>
-    Either.catchNonFatal(s.toLong).leftMap(new DecoderError(s"unable to decode '$s' as a long", _))
+    Either.catchNonFatal(s.toLong).leftMap(new DecoderError(s"unable to decode '$s' as a long", None, _))
   implicit val floatDecoder: CellDecoder[Float] = s =>
-    Either.catchNonFatal(s.toFloat).leftMap(new DecoderError(s"unable to decode '$s' as a float", _))
+    Either.catchNonFatal(s.toFloat).leftMap(new DecoderError(s"unable to decode '$s' as a float", None, _))
   implicit val doubleDecoder: CellDecoder[Double] = s =>
-    Either.catchNonFatal(s.toDouble).leftMap(new DecoderError(s"unable to decode '$s' as a double", _))
+    Either.catchNonFatal(s.toDouble).leftMap(new DecoderError(s"unable to decode '$s' as a double", None, _))
   implicit val bigDecimalDecoder: CellDecoder[BigDecimal] = s =>
-    Try(BigDecimal(s)).toEither.leftMap(new DecoderError(s"unable to decode '$s' as a BigDecimal", _))
+    Try(BigDecimal(s)).toEither.leftMap(new DecoderError(s"unable to decode '$s' as a BigDecimal", None, _))
   implicit val bigIntDecoder: CellDecoder[BigInt] = s =>
-    Try(BigInt(s)).toEither.leftMap(new DecoderError(s"unable to decode '$s' as a BigInt", _))
+    Try(BigInt(s)).toEither.leftMap(new DecoderError(s"unable to decode '$s' as a BigInt", None, _))
   implicit val stringDecoder: CellDecoder[String] = s => Right(s)
   implicit val charArrayDecoder: CellDecoder[Array[Char]] = s => Right(s.toCharArray)
 
@@ -191,19 +191,19 @@ object CellDecoder
   implicit override val javaUriDecoder: CellDecoder[URI] = s =>
     Either
       .catchOnly[MalformedURLException](new URI(s))
-      .leftMap(t => new DecoderError(s"couldn't parse URI", t))
+      .leftMap(t => new DecoderError(s"couldn't parse URI", None, t))
 
   implicit val uuidDecoder: CellDecoder[UUID] = s =>
     Either
       .catchOnly[IllegalArgumentException](UUID.fromString(s))
-      .leftMap(t => new DecoderError(s"couldn't parse UUID", t))
+      .leftMap(t => new DecoderError(s"couldn't parse UUID", None, t))
 }
 
 trait CellDecoderInstances1 {
   implicit val durationDecoder: CellDecoder[Duration] = s =>
     Either
       .catchNonFatal(Duration(s))
-      .leftMap(t => new DecoderError("couldn't parse Duration", t))
+      .leftMap(t => new DecoderError("couldn't parse Duration", None, t))
 }
 
 // Java Time Decoders
@@ -247,7 +247,7 @@ trait CellDecoderInstances2 {
     s =>
       Either
         .catchOnly[DateTimeException](t(s))
-        .leftMap(t => new DecoderError(s"couldn't parse $name", t))
+        .leftMap(t => new DecoderError(s"couldn't parse $name", None, t))
 
   private def javaTimeDecoderWithFmt[T](name: String, t: (String, DateTimeFormatter) => T)(implicit
       fmt: DateTimeFormatter): CellDecoder[T] = {
@@ -255,7 +255,7 @@ trait CellDecoderInstances2 {
       .emap { s =>
         Either
           .catchOnly[DateTimeException](t(s, fmt))
-          .leftMap(t => new DecoderError(s"couldn't parse $name with fmt: ${fmt}", t))
+          .leftMap(t => new DecoderError(s"couldn't parse $name with fmt: ${fmt}", None, t))
       }
   }
 }

@@ -15,8 +15,6 @@
  */
 package fs2.data.csv
 
-import cats.data.NonEmptyList
-
 /** Describes how a row can be decoded to the given type.
   *
   * `RowDecoder` provides convenient methods such as `map`, `emap`, or `flatMap`
@@ -31,5 +29,5 @@ object RowDecoder {
   def apply[T: RowDecoder]: RowDecoder[T] = implicitly[RowDecoder[T]]
 
   @inline
-  def instance[T](f: NonEmptyList[String] => DecoderResult[T]): RowDecoder[T] = row => f(row.values)
+  def instance[T](f: Row => DecoderResult[T]): RowDecoder[T] = row => f(row)
 }
