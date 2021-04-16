@@ -15,12 +15,28 @@
  */
 package fs2.data.csv
 
-class CsvException(msg: String, inner: Throwable = null) extends Exception(msg, inner)
+class CsvException(msg: String, val line: Option[Long], inner: Throwable = null)
+    extends Exception(line.fold(msg)(l => s"$msg in line $l"), inner) {
+  def withLine(line: Option[Long]): CsvException = new CsvException(msg, line, inner)
+}
 
-class DecoderError(msg: String, inner: Throwable = null) extends CsvException(msg, inner)
+class DecoderError(msg: String, override val line: Option[Long] = None, inner: Throwable = null)
+    extends CsvException(msg, line, inner) {
+  override def withLine(line: Option[Long]): DecoderError = new DecoderError(msg, line, inner)
+}
 
-class HeaderError(msg: String, inner: Throwable = null) extends CsvException(msg, inner)
+class HeaderError(msg: String, override val line: Option[Long] = None, inner: Throwable = null)
+    extends CsvException(msg, line, inner) {
+  override def withLine(line: Option[Long]): HeaderError = new HeaderError(msg, line, inner)
+}
 
 /** Raised when processing a Csv row whose width doesn't match the width of the Csv header row */
-class HeaderSizeError(msg: String, val expectedColumns: Int, val actualColumns: Int, inner: Throwable = null)
-    extends HeaderError(msg, inner)
+class HeaderSizeError(msg: String,
+                      val expectedColumns: Int,
+                      val actualColumns: Int,
+                      override val line: Option[Long] = None,
+                      inner: Throwable = null)
+    extends HeaderError(msg, line, inner) {
+  override def withLine(line: Option[Long]): HeaderSizeError =
+    new HeaderSizeError(msg, expectedColumns, actualColumns, line, inner)
+}

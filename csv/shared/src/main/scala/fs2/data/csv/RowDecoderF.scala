@@ -116,10 +116,10 @@ object RowDecoderF extends ExportedRowDecoderFs {
     CsvRowDecoder.instance(_.toNonEmptyMap.asRight)
 
   implicit val toListRowDecoder: RowDecoder[List[String]] =
-    RowDecoder.instance(_.toList.asRight)
+    RowDecoder.instance(_.values.toList.asRight)
 
   implicit val toNelRowDecoder: RowDecoder[NonEmptyList[String]] =
-    RowDecoder.instance(_.asRight)
+    RowDecoder.instance(_.values.asRight)
 }
 
 trait ExportedRowDecoderFs {

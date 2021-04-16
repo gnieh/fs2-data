@@ -237,33 +237,32 @@ package object csv {
       */
     def rows[F[_], T](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
         F: RaiseThrowable[F],
-        T: CharLikeChunks[F, T]): Pipe[F, T, NonEmptyList[String]] =
+        T: CharLikeChunks[F, T]): Pipe[F, T, Row] =
       RowParser.pipe[F, T](separator, quoteHandling)
 
     /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
     def headers[F[_], Header](implicit
         F: RaiseThrowable[F],
-        Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
+        Header: ParseableHeader[Header]): Pipe[F, Row, CsvRow[Header]] =
       CsvRowParser.pipe[F, Header]
 
     /** Transforms a stream of raw CSV rows into parsed CSV rows with headers, with failures at the element level instead of failing the stream */
     def headersAttempt[F[_], Header](implicit
         F: RaiseThrowable[F],
-        Header: ParseableHeader[Header]): Pipe[F, NonEmptyList[String], Either[Throwable, CsvRow[Header]]] =
+        Header: ParseableHeader[Header]): Pipe[F, Row, Either[Throwable, CsvRow[Header]]] =
       CsvRowParser.pipeAttempt[F, Header]
 
     /** Transforms a stream of raw CSV rows into parsed CSV rows with given headers. */
     def withHeaders[F[_], Header](headers: NonEmptyList[Header])(implicit
-        F: RaiseThrowable[F]): Pipe[F, NonEmptyList[String], CsvRow[Header]] =
-      _.map(CsvRow(_, headers)).rethrow
+        F: RaiseThrowable[F]): Pipe[F, Row, CsvRow[Header]] =
+      _.map(CsvRow.liftRow(headers)).rethrow
 
     /** Transforms a stream of raw CSV rows into rows. */
-    def noHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
-      _.map(Row(_))
+    def noHeaders[F[_]]: Pipe[F, Row, Row] = identity
 
     /** Transforms a stream of raw CSV rows into rows, skipping the first row to ignore the headers. */
-    def skipHeaders[F[_]]: Pipe[F, NonEmptyList[String], Row] =
-      _.tail.map(Row(_))
+    def skipHeaders[F[_]]: Pipe[F, Row, Row] =
+      _.tail
 
     /** Decodes simple rows (without headers) into a specified type using a suitable [[RowDecoder]]. */
     def decode[F[_], R](implicit F: RaiseThrowable[F], R: RowDecoder[R]): Pipe[F, Row, R] =

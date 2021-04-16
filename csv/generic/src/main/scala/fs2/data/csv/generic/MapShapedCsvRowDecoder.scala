@@ -56,7 +56,7 @@ object MapShapedCsvRowDecoder extends LowPriorityMapShapedCsvRowDecoder1 {
                           default: Option[Option[Head]] :: DefaultTail,
                           anno: Anno :: AnnoTail): DecoderResult[FieldType[Key, Option[Head]] :: Tail] = {
         val head = row(anno.head.fold(witness.value.name)(_.name)) match {
-          case Some(head) if head.nonEmpty => Head(head).map(Some(_))
+          case Some(head) if head.nonEmpty => Head(head).bimap(_.withLine(row.line), Some(_))
           case _                           => Right(default.head.flatten)
         }
         for {
@@ -92,9 +92,10 @@ trait LowPriorityMapShapedCsvRowDecoder1 {
                           anno: Anno :: AnnoTail): DecoderResult[FieldType[Key, Head] :: Tail] = {
         val head = row(anno.head.fold(witness.value.name)(_.name)) match {
           case Some(head) if head.nonEmpty =>
-            Head(head)
+            Head(head).leftMap(_.withLine(row.line))
           case _ =>
-            default.head.liftTo[DecoderResult](new DecoderError(s"unknown column name '${witness.value.name}'"))
+            default.head.liftTo[DecoderResult](
+              new DecoderError(s"unknown column name '${witness.value.name}'", row.line))
         }
         for {
           head <- head

@@ -28,32 +28,34 @@ private[csv] object RowParser {
 
   def pipe[F[_], T](separator: Char, quoteHandling: QuoteHandling)(implicit
       F: RaiseThrowable[F],
-      T: CharLikeChunks[F, T]): Pipe[F, T, NonEmptyList[String]] = {
+      T: CharLikeChunks[F, T]): Pipe[F, T, Row] = {
 
     def rows(context: T.Context,
              currentField: StringBuilder,
              tail: List[String],
              state: State,
-             chunkAcc: VectorBuilder[NonEmptyList[String]]): Pull[F, NonEmptyList[String], Unit] =
+             line: Long,
+             chunkAcc: VectorBuilder[Row]): Pull[F, Row, Unit] =
       if (T.needsPull(context)) {
         Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(context).flatMap {
           case Some(context) =>
             chunkAcc.clear()
-            rows(context, currentField, tail, state, chunkAcc)
+            rows(context, currentField, tail, state, line, chunkAcc)
           case None =>
             // stream is exhausted, emit potential last line
             state match {
               case State.BeginningOfField =>
                 if (tail.nonEmpty)
-                  Pull.output1(NonEmptyList("", tail).reverse) >> Pull.done
+                  Pull.output1(Row(NonEmptyList("", tail).reverse, Some(line))) >> Pull.done
                 else
                   Pull.done
               case State.InUnquoted | State.InQuotedSeenQuote | State.ExpectNewLine =>
-                Pull.output1(NonEmptyList(currentField.result(), tail).reverse) >> Pull.done
+                Pull.output1(Row(NonEmptyList(currentField.result(), tail).reverse, Some(line))) >> Pull.done
               case State.InUnquotedSeenCr =>
-                Pull.output1(NonEmptyList(currentField.append('\r').result(), tail).reverse) >> Pull.done
+                Pull.output1(
+                  Row(NonEmptyList(currentField.append('\r').result(), tail).reverse, Some(line))) >> Pull.done
               case State.InQuoted =>
-                Pull.raiseError[F](new CsvException("unexpected end of input"))
+                Pull.raiseError[F](new CsvException("unexpected end of input", Some(line)))
             }
         }
       } else {
@@ -62,18 +64,20 @@ private[csv] object RowParser {
           case State.InQuoted =>
             // only handle quote specially
             if (c == '"') {
-              rows(T.advance(context), currentField, tail, State.InQuotedSeenQuote, chunkAcc)
+              rows(T.advance(context), currentField, tail, State.InQuotedSeenQuote, line, chunkAcc)
+            } else if (c == '\n') {
+              rows(T.advance(context), currentField.append(c), tail, State.InQuoted, line + 1, chunkAcc)
             } else {
-              rows(T.advance(context), currentField.append(c), tail, State.InQuoted, chunkAcc)
+              rows(T.advance(context), currentField.append(c), tail, State.InQuoted, line, chunkAcc)
             }
           case State.InQuotedSeenQuote =>
             if (c == '"') {
-              rows(T.advance(context), currentField.append(c), tail, State.InQuoted, chunkAcc)
+              rows(T.advance(context), currentField.append(c), tail, State.InQuoted, line, chunkAcc)
             } else if (c == separator) {
               // end of quoted field, go to next
               val field = currentField.result()
               currentField.clear()
-              rows(T.advance(context), currentField, field :: tail, State.BeginningOfField, chunkAcc)
+              rows(T.advance(context), currentField, field :: tail, State.BeginningOfField, line, chunkAcc)
             } else if (c == '\n') {
               val field = currentField.result()
               currentField.clear()
@@ -81,13 +85,14 @@ private[csv] object RowParser {
                    currentField,
                    Nil,
                    State.BeginningOfField,
-                   chunkAcc += NonEmptyList(field, tail).reverse)
+                   line + 1,
+                   chunkAcc += Row(NonEmptyList(field, tail).reverse, Some(line)))
             } else if (c == '\r') {
-              rows(T.advance(context), currentField, tail, State.ExpectNewLine, chunkAcc)
+              rows(T.advance(context), currentField, tail, State.ExpectNewLine, line, chunkAcc)
             } else {
               // this is an error
               Pull.output(Chunk.vector(chunkAcc.result())) >> Pull.raiseError[F](
-                new CsvException(s"unexpected character '$c'"))
+                new CsvException(s"unexpected character '$c'", Some(line)))
             }
           case State.ExpectNewLine =>
             if (c == '\n') {
@@ -97,19 +102,20 @@ private[csv] object RowParser {
                    currentField,
                    Nil,
                    State.BeginningOfField,
-                   chunkAcc += NonEmptyList(field, tail).reverse)
+                   line + 1,
+                   chunkAcc += Row(NonEmptyList(field, tail).reverse, Some(line)))
             } else {
               // this is an error
               Pull.output(Chunk.vector(chunkAcc.result())) >> Pull.raiseError[F](
-                new CsvException(s"unexpected character '$c'"))
+                new CsvException(s"unexpected character '$c'", Some(line)))
             }
           case State.BeginningOfField =>
             if (c == '"' && quoteHandling == QuoteHandling.RFCCompliant) {
               // start a quoted field
-              rows(T.advance(context), currentField, tail, State.InQuoted, chunkAcc)
+              rows(T.advance(context), currentField, tail, State.InQuoted, line, chunkAcc)
             } else if (c == separator) {
               // this is an empty field
-              rows(T.advance(context), currentField, "" :: tail, State.BeginningOfField, chunkAcc)
+              rows(T.advance(context), currentField, "" :: tail, State.BeginningOfField, line, chunkAcc)
             } else if (c == '\n') {
               // a new line, emit row if not empty and continue
               if (tail.nonEmpty) {
@@ -117,21 +123,22 @@ private[csv] object RowParser {
                      currentField,
                      Nil,
                      State.BeginningOfField,
-                     chunkAcc += NonEmptyList("", tail).reverse)
+                     line + 1,
+                     chunkAcc += Row(NonEmptyList("", tail).reverse, Some(line)))
               } else {
-                rows(T.advance(context), currentField, Nil, State.BeginningOfField, chunkAcc)
+                rows(T.advance(context), currentField, Nil, State.BeginningOfField, line, chunkAcc)
               }
             } else if (c == '\r') {
-              rows(T.advance(context), currentField, tail, State.InUnquotedSeenCr, chunkAcc)
+              rows(T.advance(context), currentField, tail, State.InUnquotedSeenCr, line, chunkAcc)
             } else {
-              rows(T.advance(context), currentField.append(c), tail, State.InUnquoted, chunkAcc)
+              rows(T.advance(context), currentField.append(c), tail, State.InUnquoted, line, chunkAcc)
             }
           case State.InUnquoted =>
             if (c == separator) {
               // this is the end of the field, not the row
               val field = currentField.result()
               currentField.clear()
-              rows(T.advance(context), currentField, field :: tail, State.BeginningOfField, chunkAcc)
+              rows(T.advance(context), currentField, field :: tail, State.BeginningOfField, line, chunkAcc)
             } else if (c == '\n') {
               // a new line, emit row and continue
               val field = currentField.result()
@@ -140,11 +147,12 @@ private[csv] object RowParser {
                    currentField,
                    Nil,
                    State.BeginningOfField,
-                   chunkAcc += NonEmptyList(field, tail).reverse)
+                   line + 1,
+                   chunkAcc += Row(NonEmptyList(field, tail).reverse, Some(line)))
             } else if (c == '\r') {
-              rows(T.advance(context), currentField, tail, State.InUnquotedSeenCr, chunkAcc)
+              rows(T.advance(context), currentField, tail, State.InUnquotedSeenCr, line, chunkAcc)
             } else {
-              rows(T.advance(context), currentField.append(c), tail, State.InUnquoted, chunkAcc)
+              rows(T.advance(context), currentField.append(c), tail, State.InUnquoted, line, chunkAcc)
             }
           case State.InUnquotedSeenCr =>
             if (c == '\n') {
@@ -155,18 +163,19 @@ private[csv] object RowParser {
                    currentField,
                    Nil,
                    State.BeginningOfField,
-                   chunkAcc += NonEmptyList(field, tail).reverse)
+                   line + 1,
+                   chunkAcc += Row(NonEmptyList(field, tail).reverse, Some(line)))
             } else {
               currentField.append('\r')
               if (c == separator) {
                 // this is the end of the field, not the row
                 val field = currentField.result()
                 currentField.clear()
-                rows(T.advance(context), currentField, field :: tail, State.BeginningOfField, chunkAcc)
+                rows(T.advance(context), currentField, field :: tail, State.BeginningOfField, line, chunkAcc)
               } else {
                 // continue parsing field
                 currentField.append(c)
-                rows(T.advance(context), currentField, tail, State.InUnquoted, chunkAcc)
+                rows(T.advance(context), currentField, tail, State.InUnquoted, line, chunkAcc)
               }
             }
         }
@@ -175,7 +184,7 @@ private[csv] object RowParser {
     s =>
       Stream
         .suspend(Stream.emit(T.create(s)))
-        .flatMap(rows(_, new StringBuilder, Nil, State.BeginningOfField, new VectorBuilder).stream)
+        .flatMap(rows(_, new StringBuilder, Nil, State.BeginningOfField, 1, new VectorBuilder).stream)
   }
 
 }
