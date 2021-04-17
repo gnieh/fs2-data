@@ -29,7 +29,7 @@ object SelectorInterpolator extends Literally[Selector] {
     new SelectorParser[Either[Throwable, *]](string).parse() match {
       case Left(JsonSelectorException(msg, idx)) => Left(s"$msg at index $idx")
       case Left(t)                               => Left(t.getMessage)
-      case Right(_)                              => Right(c.Expr(q"_root_.fs2.data.json.interpolators.SelectorParser.either($string).toOption.get"))
+      case Right(_)                              => Right(c.Expr(q"_root_.fs2.data.json.SelectorParser.either($string).toOption.get"))
     }
   }
 
