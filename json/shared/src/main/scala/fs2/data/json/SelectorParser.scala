@@ -311,18 +311,23 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
 
 }
 
-private object SelectorParser {
-  sealed trait Token {
+object SelectorParser {
+  def apply[F[_]](input: String)(implicit F: MonadError[F, Throwable]): F[Selector] =
+    new SelectorParser[F](input).parse()
+  // Mostly here for the literal selector macro, makes it simpler (esp with macro+kind-projector interaction)
+  def either(input: String): Either[Throwable, Selector] = apply[Either[Throwable, *]](input)
+
+  private sealed trait Token {
     val idx: Int
   }
-  case class LeftBracket(idx: Int) extends Token
-  case class RightBracket(idx: Int) extends Token
-  case class Dot(idx: Int) extends Token
-  case class Colon(idx: Int) extends Token
-  case class Comma(idx: Int) extends Token
-  case class QuestionMark(idx: Int) extends Token
-  case class Bang(idx: Int) extends Token
-  case class Str(s: String, idx: Int) extends Token
-  case class Name(s: String, idx: Int) extends Token
-  case class Integer(i: Int, idx: Int) extends Token
+  private case class LeftBracket(idx: Int) extends Token
+  private case class RightBracket(idx: Int) extends Token
+  private case class Dot(idx: Int) extends Token
+  private case class Colon(idx: Int) extends Token
+  private case class Comma(idx: Int) extends Token
+  private case class QuestionMark(idx: Int) extends Token
+  private case class Bang(idx: Int) extends Token
+  private case class Str(s: String, idx: Int) extends Token
+  private case class Name(s: String, idx: Int) extends Token
+  private case class Integer(i: Int, idx: Int) extends Token
 }
