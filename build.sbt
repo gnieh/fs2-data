@@ -39,7 +39,7 @@ val commonSettings = List(
 )
 
 val publishSettings = List(
-  publishArtifact in Test := false,
+  Test / publishArtifact := false,
   pomIncludeRepository := { x =>
     false
   },
@@ -67,17 +67,11 @@ val root = (project in file("."))
   .settings(
     name := "fs2-data",
     publishArtifact := false,
-    skip in publish := true,
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(benchmarks,
-                                                                               csv.js,
-                                                                               csvGeneric.js,
-                                                                               json.js,
-                                                                               jsonCirce.js,
-                                                                               jsonDiffson.js,
-                                                                               xml.js,
-                                                                               cbor.js),
-    siteSubdirName in ScalaUnidoc := "api",
-    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
+    publish / skip := true,
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject --
+      inProjects(benchmarks, cbor.js, csv.js, csvGeneric.js, json.js, jsonCirce.js, jsonDiffson.js, text.js, xml.js),
+    ScalaUnidoc / siteSubdirName := "api",
+    addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     Nanoc / sourceDirectory := file("site"),
     git.remoteRepo := scmInfo.value.get.connection.replace("scm:git:", ""),
     ghpagesNoJekyll := true
