@@ -61,7 +61,7 @@
 
     
     <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
-      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/master/documentation/docs/json/patches.md" target="_blank">
+      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/main/documentation/docs/json/patches.md" target="_blank">
         <i class="large material-icons">mode_edit</i>
       </a>
     </div>
@@ -88,7 +88,7 @@ Patching stream can be useful in several case, for instance:</p>
 <p>Let’s say you are using circe as Json AST library, you can use patches like this:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
 
-<span class="k">import</span> <span class="nn">fs2.Stream</span>
+<span class="k">import</span> <span class="nn">fs2.</span><span class="o">{</span><span class="nc">Fallible</span><span class="o">,</span> <span class="nc">Stream</span><span class="o">}</span>
 <span class="k">import</span> <span class="nn">fs2.data.json._</span>
 <span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
 <span class="k">import</span> <span class="nn">fs2.data.json.mergepatch._</span>
@@ -118,30 +118,30 @@ Patching stream can be useful in several case, for instance:</p>
 <span class="c1">//   "field3": []</span>
 <span class="c1">// }"""</span>
 
-<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">IO</span><span class="o">])</span>
-<span class="c1">// stream: Stream[IO[A], Token] = Stream(..)</span>
+<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Char</span><span class="o">])</span>
+<span class="c1">// stream: Stream[Fallible, Token] = Stream(..)</span>
 
 <span class="c1">// a patch that removes `field3`</span>
 <span class="k">val</span> <span class="nv">mergePatch</span> <span class="k">=</span> <span class="nv">JsonMergePatch</span><span class="o">.</span><span class="py">Object</span><span class="o">(</span><span class="nc">Map</span><span class="o">(</span><span class="s">"field3"</span> <span class="o">-&gt;</span> <span class="nv">Json</span><span class="o">.</span><span class="py">Null</span><span class="o">))</span>
-<span class="c1">// mergePatch: JsonMergePatch.Object[Json] = Object(</span>
-<span class="c1">//   fields = Map("field3" -&gt; null)</span>
-<span class="c1">// )</span>
+<span class="c1">// mergePatch: JsonMergePatch.Object[Json] = Object(Map("field3" -&gt; null))</span>
 
-<span class="k">val</span> <span class="nv">patched</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">patch</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">mergePatch</span><span class="o">))</span>
-<span class="c1">// patched: Stream[IO[x], Token] = Stream(..)</span>
+<span class="k">val</span> <span class="nv">patched</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">patch</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">mergePatch</span><span class="o">))</span>
+<span class="c1">// patched: Stream[Fallible[x], Token] = Stream(..)</span>
 
-<span class="nv">patched</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
-<span class="c1">// res0: List[Token] = List(</span>
-<span class="c1">//   StartObject,</span>
-<span class="c1">//   Key(value = "field1"),</span>
-<span class="c1">//   NumberValue(value = "0"),</span>
-<span class="c1">//   Key(value = "field2"),</span>
-<span class="c1">//   StringValue(value = "test"),</span>
-<span class="c1">//   EndObject,</span>
-<span class="c1">//   StartObject,</span>
-<span class="c1">//   Key(value = "field1"),</span>
-<span class="c1">//   NumberValue(value = "2"),</span>
-<span class="c1">//   EndObject</span>
+<span class="nv">patched</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res0: Either[Throwable, List[Token]] = Right(</span>
+<span class="c1">//   List(</span>
+<span class="c1">//     StartObject,</span>
+<span class="c1">//     Key("field1"),</span>
+<span class="c1">//     NumberValue("0"),</span>
+<span class="c1">//     Key("field2"),</span>
+<span class="c1">//     StringValue("test"),</span>
+<span class="c1">//     EndObject,</span>
+<span class="c1">//     StartObject,</span>
+<span class="c1">//     Key("field1"),</span>
+<span class="c1">//     NumberValue("2"),</span>
+<span class="c1">//     EndObject</span>
+<span class="c1">//   )</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 

@@ -61,7 +61,7 @@
 
     
     <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
-      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/master/documentation/docs/json/interpolators.md" target="_blank">
+      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/main/documentation/docs/json/interpolators.md" target="_blank">
         <i class="large material-icons">mode_edit</i>
       </a>
     </div>
@@ -71,7 +71,7 @@
       <div class="container">
         <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-interpolators_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-interpolators_2.13.svg" alt="Maven Central" /></a></p>
 
-<p>The <code>fs2-data-json-interpolators</code> module provides users with some useful string interpolators. The interpolators are based on <a href="https://propensive.com/opensource/contextual">contextual</a> and are statically checked.</p>
+<p>The <code>fs2-data-json-interpolators</code> module provides users with some useful string interpolators. The interpolators are based on <a href="https://github.com/typelevel/literally">literally</a> and are statically checked.</p>
 
 <p>This page covers the following topics:</p>
 <ul id="markdown-toc">
@@ -80,19 +80,15 @@
 
 <h3 id="selector-interpolator">Selector interpolator</h3>
 
-<p>You can use the <code>selector</code> interpolator to parse a string.</p>
+<p>You can use the <code>selector</code> interpolator to parse a literal string.</p>
 
 <p>The example above can be rewritten as:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.interpolators._</span>
 
 <span class="k">val</span> <span class="nv">selector</span> <span class="k">=</span> <span class="n">selector</span><span class="s">".field3.[]"</span>
 <span class="c1">// selector: fs2.data.json.Selector = PipeSelector(</span>
-<span class="c1">//   left = NameSelector(</span>
-<span class="c1">//     pred = Single(name = "field3"),</span>
-<span class="c1">//     strict = true,</span>
-<span class="c1">//     mandatory = false</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   right = IteratorSelector(strict = true)</span>
+<span class="c1">//   NameSelector(Single("field3"), true, false),</span>
+<span class="c1">//   IteratorSelector(true)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 

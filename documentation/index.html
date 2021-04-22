@@ -53,7 +53,7 @@
 
     
     <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
-      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/master/documentation/docs/index.md" target="_blank">
+      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/main/documentation/docs/index.md" target="_blank">
         <i class="large material-icons">mode_edit</i>
       </a>
     </div>
@@ -63,32 +63,21 @@
       <div class="container">
         <h1 id="fs2-data-documentation"><code>fs2-data</code> Documentation</h1>
 
+<ul id="markdown-toc">
+  <li><a href="#fs2-data-documentation" id="markdown-toc-fs2-data-documentation"><code>fs2-data</code> Documentation</a>    <ul>
+      <li><a href="#parsing-textual-formats" id="markdown-toc-parsing-textual-formats">Parsing textual formats</a></li>
+      <li><a href="#reading-text-inputs-from-a-file" id="markdown-toc-reading-text-inputs-from-a-file">Reading text inputs from a file</a>        <ul>
+          <li><a href="#utf-8-encoded-inputs" id="markdown-toc-utf-8-encoded-inputs">UTF-8 encoded inputs</a></li>
+          <li><a href="#single-byte-encoded-iso-8859-1-iso-8859-15-ascii-inputs" id="markdown-toc-single-byte-encoded-iso-8859-1-iso-8859-15-ascii-inputs">Single byte encoded (ISO-8859-1, ISO-8859-15, ASCII) inputs</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
 <p><code>fs2-data</code> consists of several modules, handling a different data format, and sub-modules for each data format, adding more features (but also more dependencies). The core module for each data format has no other dependency than <code>fs2</code> and provides tools to parse and transform data in a streaming manner.</p>
 
-<p>For each module, the entry point is an <a href="https://fs2.io/guide.html#statefully-transforming-streams">fs2 <code>Pipe</code></a> transforming a stream of characters into some tokens or events. All parsers are streaming parsers, which means that the parsed tree is never constructed in memory by the parser, but instead, is emitted as a sequence of <em>tokens</em> or <em>events</em> (similar to <a href="https://en.wikipedia.org/wiki/Simple_API_for_XML">SAX</a>), and that the input data is not fully held in memory either. The parsers read the input as it comes, and emit the tokens as soon as possible, discarding the input data that is not useful anymore.</p>
-
-<h2 id="textual-formats">Textual formats</h2>
-
-<p>As the entry points operate on stream of characters, a common pattern when using this library to read data from a file is to start by building a <code>Stream[F, Char]</code> as follows:</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
-
-<span class="k">import</span> <span class="nn">fs2._</span>
-
-<span class="k">import</span> <span class="nn">java.nio.file.Paths</span>
-
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">cs</span> <span class="k">=</span> <span class="nv">IO</span><span class="o">.</span><span class="py">contextShift</span><span class="o">(</span><span class="nv">scala</span><span class="o">.</span><span class="py">concurrent</span><span class="o">.</span><span class="py">ExecutionContext</span><span class="o">.</span><span class="py">global</span><span class="o">)</span>
-
-<span class="nc">Blocker</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="py">use</span> <span class="o">{</span> <span class="n">blocker</span> <span class="k">=&gt;</span>
-  <span class="nv">io</span><span class="o">.</span><span class="py">file</span>
-    <span class="o">.</span><span class="py">readAll</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="nv">Paths</span><span class="o">.</span><span class="py">get</span><span class="o">(</span><span class="s">"/some/path/to/a/file.data"</span><span class="o">),</span> <span class="n">blocker</span><span class="o">,</span> <span class="mi">1024</span><span class="o">)</span>
-    <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">text</span><span class="o">.</span><span class="py">utf8Decode</span><span class="o">)</span>
-    <span class="o">.</span><span class="py">flatMap</span><span class="o">(</span><span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="k">_</span><span class="o">))</span>
-    <span class="c1">// perform your parsing and transformation here</span>
-    <span class="o">.</span><span class="py">compile</span>
-    <span class="o">.</span><span class="py">drain</span>
-<span class="o">}</span>
-</code></pre></div></div>
+<p>For each module, the entry point is an <a href="https://fs2.io/guide.html#statefully-transforming-streams">fs2 <code>Pipe</code></a> transforming a stream of some input (typically <code>Char</code>, <code>String</code>, or <code>Byte</code>) into some tokens or events. All parsers are streaming parsers, which means that the parsed tree is never constructed in memory by the parser, but instead, is emitted as a sequence of <em>tokens</em> or <em>events</em> (similar to <a href="https://en.wikipedia.org/wiki/Simple_API_for_XML">SAX</a>), and that the input data is not fully held in memory either. The parsers read the input as it comes, and emit the tokens as soon as possible, discarding the input data that is not useful anymore.</p>
 
 <p>Available data modules are:</p>
 
@@ -116,6 +105,81 @@
     </ul>
   </li>
 </ul>
+
+<h3 id="parsing-textual-formats">Parsing textual formats</h3>
+
+<p>The general pattern for the text parsers (JSON, XML, CSV, …) is to have a pipe with this signature:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2._</span>
+<span class="k">import</span> <span class="nn">fs2.data.text.CharLikeChunks</span>
+
+<span class="c1">// the Token type depends on the format</span>
+<span class="k">trait</span> <span class="nc">Token</span>
+
+<span class="k">def</span> <span class="nf">tokens</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span>, <span class="kt">T</span><span class="o">](</span><span class="k">implicit</span> <span class="n">T</span><span class="k">:</span> <span class="kt">CharLikeChunks</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">T</span><span class="o">])</span><span class="k">:</span> <span class="kt">Pipe</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">T</span>, <span class="kt">Token</span><span class="o">]</span> <span class="k">=</span>
+  <span class="n">s</span> <span class="k">=&gt;</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">suspend</span><span class="o">(???)</span>
+</code></pre></div></div>
+
+<p>The input stream can be of any type <code>T</code> which can be used to read characters from. <code>fs2-data</code> provides by default implementations for types <code>Char</code> and <code>String</code>, so that you can write:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Stream of `Char`</span>
+<span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="s">"Some input string"</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">Pure</span>, <span class="kt">Char</span><span class="o">])</span>
+<span class="c1">// res0: Stream[Nothing, Token] = Stream(..)</span>
+
+<span class="c1">// Stream of `String`</span>
+<span class="nv">Stream</span><span class="o">.</span><span class="py">emit</span><span class="o">(</span><span class="s">"Some input string"</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">Pure</span>, <span class="kt">String</span><span class="o">])</span>
+<span class="c1">// res1: Stream[Nothing, Token] = Stream(..)</span>
+</code></pre></div></div>
+
+<h3 id="reading-text-inputs-from-a-file">Reading text inputs from a file</h3>
+
+<p>A common pattern when using this library to read data from a file is to start by build a <code>Stream[F, Byte]</code> as follows:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
+
+<span class="k">import</span> <span class="nn">fs2._</span>
+<span class="k">import</span> <span class="nn">fs2.io.file.Files</span>
+
+<span class="k">import</span> <span class="nn">java.nio.file.Paths</span>
+
+<span class="nc">Files</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
+  <span class="o">.</span><span class="py">readAll</span><span class="o">(</span><span class="nv">Paths</span><span class="o">.</span><span class="py">get</span><span class="o">(</span><span class="s">"/some/path/to/a/file.data"</span><span class="o">),</span> <span class="mi">1024</span><span class="o">)</span>
+  <span class="c1">// perform your decoding, parsing, and transformation here</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">drain</span>
+</code></pre></div></div>
+
+<p>For textual data formats (JSON, XML, CSV, …) this stream needs to be decoded according to the file encoding.</p>
+
+<h4 id="utf-8-encoded-inputs">UTF-8 encoded inputs</h4>
+
+<p>If your file is encoded in <strong>UTF-8</strong>, you can use the <a href="https://javadoc.io/doc/co.fs2/fs2-core_2.13/latest/fs2/text$.html"><code>fs2.text</code> decoding pipes</a> to get a stream of strings, which can then be fed to the parsers:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Files</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
+  <span class="o">.</span><span class="py">readAll</span><span class="o">(</span><span class="nv">Paths</span><span class="o">.</span><span class="py">get</span><span class="o">(</span><span class="s">"/some/path/to/a/file.data"</span><span class="o">),</span> <span class="mi">1024</span><span class="o">)</span>
+  <span class="c1">// extra decoding step is required since UTF-8 encodes character input</span>
+  <span class="c1">// up to 4 bytes, which might span several chunks</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">text</span><span class="o">.</span><span class="py">utf8Decode</span><span class="o">)</span>
+  <span class="c1">// now that we have a stream of `String`, we can parse</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">drain</span>
+</code></pre></div></div>
+
+<h4 id="single-byte-encoded-iso-8859-1-iso-8859-15-ascii-inputs">Single byte encoded (ISO-8859-1, ISO-8859-15, ASCII) inputs</h4>
+
+<p>If your file is encoded using a single-byte encoding, there is no built-in decoder for this in <code>fs2</code>. However, <code>fs2-data</code> provides support for common single-byte encodings, which live in the <a href="/api/fs2/data/text/index.html"><code>fs2.data.text</code> package</a>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// for instance if your input is encoded in ISO-8859-1 aka latin1</span>
+<span class="k">import</span> <span class="nn">fs2.data.text.latin1._</span>
+
+<span class="nc">Files</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
+  <span class="o">.</span><span class="py">readAll</span><span class="o">(</span><span class="nv">Paths</span><span class="o">.</span><span class="py">get</span><span class="o">(</span><span class="s">"/some/path/to/a/file.data"</span><span class="o">),</span> <span class="mi">1024</span><span class="o">)</span>
+  <span class="c1">// decoding is done by the now in scope `CharLikeChunks[IO, Byte]` instance</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">drain</span>
+</code></pre></div></div>
 
 
       </div>

@@ -61,7 +61,7 @@
 
     
     <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
-      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/master/documentation/docs/json/index.md" target="_blank">
+      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/main/documentation/docs/json/index.md" target="_blank">
         <i class="large material-icons">mode_edit</i>
       </a>
     </div>
@@ -92,6 +92,7 @@
 <p>To create a stream of JSON tokens from an input stream, use the <code>tokens</code> pipe in <code>fs2.data.json</code> package. This pipe accepts a stream of characters and returns a stream of JSON tokens. This produces a stream of structurally valid tokens forming the JSON documents.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
+<span class="k">import</span> <span class="nn">cats.implicits._</span>
 
 <span class="k">import</span> <span class="nn">fs2._</span>
 <span class="k">import</span> <span class="nn">fs2.data.json._</span>
@@ -115,27 +116,27 @@
 <span class="c1">//   "field3": []</span>
 <span class="c1">// }"""</span>
 
-<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">])</span>
-<span class="c1">// stream: Stream[Fallible[A], Token] = Stream(..)</span>
+<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emit</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">String</span><span class="o">])</span>
+<span class="c1">// stream: Stream[Fallible, Token] = Stream(..)</span>
 <span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res0: Either[Throwable, List[Token]] = Right(</span>
-<span class="c1">//   value = List(</span>
+<span class="c1">//   List(</span>
 <span class="c1">//     StartObject,</span>
-<span class="c1">//     Key(value = "field1"),</span>
-<span class="c1">//     NumberValue(value = "0"),</span>
-<span class="c1">//     Key(value = "field2"),</span>
-<span class="c1">//     StringValue(value = "test"),</span>
-<span class="c1">//     Key(value = "field3"),</span>
+<span class="c1">//     Key("field1"),</span>
+<span class="c1">//     NumberValue("0"),</span>
+<span class="c1">//     Key("field2"),</span>
+<span class="c1">//     StringValue("test"),</span>
+<span class="c1">//     Key("field3"),</span>
 <span class="c1">//     StartArray,</span>
-<span class="c1">//     NumberValue(value = "1"),</span>
-<span class="c1">//     NumberValue(value = "2"),</span>
-<span class="c1">//     NumberValue(value = "3"),</span>
+<span class="c1">//     NumberValue("1"),</span>
+<span class="c1">//     NumberValue("2"),</span>
+<span class="c1">//     NumberValue("3"),</span>
 <span class="c1">//     EndArray,</span>
 <span class="c1">//     EndObject,</span>
 <span class="c1">//     StartObject,</span>
-<span class="c1">//     Key(value = "field1"),</span>
-<span class="c1">//     NumberValue(value = "2"),</span>
-<span class="c1">//     Key(value = "field3"),</span>
+<span class="c1">//     Key("field1"),</span>
+<span class="c1">//     NumberValue("2"),</span>
+<span class="c1">//     Key("field3"),</span>
 <span class="c1">//     StartArray,</span>
 <span class="c1">//     EndArray,</span>
 <span class="c1">//     EndObject</span>
@@ -158,18 +159,12 @@
 
 <p>For instance, to select and enumerate elements that are in the <code>field3</code> array, you can create this selector. Only the tokens describing the values in <code>field3</code> will be emitted as a result.</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.implicits._</span>
-
-<span class="k">type</span> <span class="kt">ThrowableEither</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Either</span><span class="o">[</span><span class="kt">Throwable</span>, <span class="kt">T</span><span class="o">]</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">type</span> <span class="kt">ThrowableEither</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Either</span><span class="o">[</span><span class="kt">Throwable</span>, <span class="kt">T</span><span class="o">]</span>
 
 <span class="k">val</span> <span class="nv">selector</span> <span class="k">=</span> <span class="s">".field3.[]"</span><span class="o">.</span><span class="py">parseSelector</span><span class="o">[</span><span class="kt">ThrowableEither</span><span class="o">].</span><span class="py">toTry</span><span class="o">.</span><span class="py">get</span>
 <span class="c1">// selector: Selector = PipeSelector(</span>
-<span class="c1">//   left = NameSelector(</span>
-<span class="c1">//     pred = Single(name = "field3"),</span>
-<span class="c1">//     strict = true,</span>
-<span class="c1">//     mandatory = false</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   right = IteratorSelector(strict = true)</span>
+<span class="c1">//   NameSelector(Single("field3"), true, false),</span>
+<span class="c1">//   IteratorSelector(true)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -218,12 +213,8 @@ The selector above can be written like this with the DSL:</p>
 
 <span class="k">val</span> <span class="nv">selectorFromDsl</span> <span class="k">=</span> <span class="nv">root</span><span class="o">.</span><span class="py">field</span><span class="o">(</span><span class="s">"field3"</span><span class="o">).</span><span class="py">iterate</span><span class="o">.</span><span class="py">compile</span>
 <span class="c1">// selectorFromDsl: Selector = PipeSelector(</span>
-<span class="c1">//   left = NameSelector(</span>
-<span class="c1">//     pred = Single(name = "field3"),</span>
-<span class="c1">//     strict = true,</span>
-<span class="c1">//     mandatory = false</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   right = IteratorSelector(strict = true)</span>
+<span class="c1">//   NameSelector(Single("field3"), true, false),</span>
+<span class="c1">//   IteratorSelector(true)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -233,12 +224,8 @@ The selector above can be written like this with the DSL:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">selectorFromDsl</span> <span class="k">=</span> <span class="nv">root</span><span class="o">.</span><span class="py">field</span><span class="o">(</span><span class="s">"field3"</span><span class="o">).!.</span><span class="py">iterate</span><span class="o">.?.</span><span class="py">compile</span>
 <span class="c1">// selectorFromDsl: Selector = PipeSelector(</span>
-<span class="c1">//   left = NameSelector(</span>
-<span class="c1">//     pred = Single(name = "field3"),</span>
-<span class="c1">//     strict = true,</span>
-<span class="c1">//     mandatory = true</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   right = IteratorSelector(strict = false)</span>
+<span class="c1">//   NameSelector(Single("field3"), true, true),</span>
+<span class="c1">//   IteratorSelector(false)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -266,11 +253,7 @@ The selector above can be written like this with the DSL:</p>
 <span class="c1">// filtered: Stream[Fallible[x], Token] = Stream(..)</span>
 <span class="nv">filtered</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res3: Either[Throwable, List[Token]] = Right(</span>
-<span class="c1">//   value = List(</span>
-<span class="c1">//     NumberValue(value = "1"),</span>
-<span class="c1">//     NumberValue(value = "2"),</span>
-<span class="c1">//     NumberValue(value = "3")</span>
-<span class="c1">//   )</span>
+<span class="c1">//   List(NumberValue("1"), NumberValue("2"), NumberValue("3"))</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -281,17 +264,17 @@ If this is not desired, you can wrap the elements into arrays and objects, from 
 <span class="c1">// filteredWrapped: Stream[Fallible[x], Token] = Stream(..)</span>
 <span class="nv">filteredWrapped</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res4: Either[Throwable, List[Token]] = Right(</span>
-<span class="c1">//   value = List(</span>
+<span class="c1">//   List(</span>
 <span class="c1">//     StartObject,</span>
-<span class="c1">//     Key(value = "field3"),</span>
+<span class="c1">//     Key("field3"),</span>
 <span class="c1">//     StartArray,</span>
-<span class="c1">//     NumberValue(value = "1"),</span>
-<span class="c1">//     NumberValue(value = "2"),</span>
-<span class="c1">//     NumberValue(value = "3"),</span>
+<span class="c1">//     NumberValue("1"),</span>
+<span class="c1">//     NumberValue("2"),</span>
+<span class="c1">//     NumberValue("3"),</span>
 <span class="c1">//     EndArray,</span>
 <span class="c1">//     EndObject,</span>
 <span class="c1">//     StartObject,</span>
-<span class="c1">//     Key(value = "field3"),</span>
+<span class="c1">//     Key("field3"),</span>
 <span class="c1">//     StartArray,</span>
 <span class="c1">//     EndArray,</span>
 <span class="c1">//     EndObject</span>
@@ -304,15 +287,11 @@ On the other hand, if it selects elements in an object, then emitted values are 
 
 <p>If you want to ensure that selected object keys are present in the JSON value, you can use the <code>!</code> operator described above. For instance if you want to select <code>field2</code> and fail the stream as soon as an object does not contain it, you can do:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">mandatorySelector</span> <span class="k">=</span> <span class="s">".field2!"</span><span class="o">.</span><span class="py">parseSelector</span><span class="o">[</span><span class="kt">ThrowableEither</span><span class="o">].</span><span class="py">toTry</span><span class="o">.</span><span class="py">get</span>
-<span class="c1">// mandatorySelector: Selector = NameSelector(</span>
-<span class="c1">//   pred = Single(name = "field2"),</span>
-<span class="c1">//   strict = true,</span>
-<span class="c1">//   mandatory = true</span>
-<span class="c1">// )</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">mandatorySelector</span> <span class="k">=</span> <span class="s">".field2!"</span><span class="o">.</span><span class="py">parseSelector</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Throwable</span>, <span class="kt">*</span><span class="o">]].</span><span class="py">toTry</span><span class="o">.</span><span class="py">get</span>
+<span class="c1">// mandatorySelector: Selector = NameSelector(Single("field2"), true, true)</span>
 <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">mandatorySelector</span><span class="o">)).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res5: Either[Throwable, List[Token]] = Left(</span>
-<span class="c1">//   value = fs2.data.json.JsonMissingFieldException: missing mandatory fields: field2</span>
+<span class="c1">//   fs2.data.json.JsonMissingFieldException: missing mandatory fields: field2</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -343,19 +322,17 @@ On the other hand, if it selects elements in an object, then emitted values are 
 
 <p>For instance, let’s say you want to write the resulting JSON stream to a file in compact form (i.e. with no space or new lines), you can do:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">java.nio.file.Paths</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.io.file.Files</span>
 
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">cs</span> <span class="k">=</span> <span class="nv">IO</span><span class="o">.</span><span class="py">contextShift</span><span class="o">(</span><span class="nv">scala</span><span class="o">.</span><span class="py">concurrent</span><span class="o">.</span><span class="py">ExecutionContext</span><span class="o">.</span><span class="py">global</span><span class="o">)</span>
+<span class="k">import</span> <span class="nn">java.nio.file.Paths</span>
 
-<span class="nc">Blocker</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="py">use</span> <span class="o">{</span> <span class="n">blocker</span> <span class="k">=&gt;</span>
-  <span class="n">stream</span>
-    <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">render</span><span class="o">.</span><span class="py">compact</span><span class="o">)</span>
-    <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">text</span><span class="o">.</span><span class="py">utf8Encode</span><span class="o">)</span>
-    <span class="o">.</span><span class="py">lift</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
-    <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">io</span><span class="o">.</span><span class="py">file</span><span class="o">.</span><span class="py">writeAll</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="nv">Paths</span><span class="o">.</span><span class="py">get</span><span class="o">(</span><span class="s">"/some/path/to/file.json"</span><span class="o">),</span> <span class="n">blocker</span><span class="o">))</span>
-    <span class="o">.</span><span class="py">compile</span>
-    <span class="o">.</span><span class="py">drain</span>
-<span class="o">}</span>
+<span class="n">stream</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">render</span><span class="o">.</span><span class="py">compact</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">text</span><span class="o">.</span><span class="py">utf8Encode</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">lift</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nc">Files</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="py">writeAll</span><span class="o">(</span><span class="nv">Paths</span><span class="o">.</span><span class="py">get</span><span class="o">(</span><span class="s">"/some/path/to/file.json"</span><span class="o">)))</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">drain</span>
 </code></pre></div></div>
 
 <p>There exists also a <code>pretty()</code> renderer, that indents inner elements by the given indent string.</p>
@@ -364,13 +341,13 @@ On the other hand, if it selects elements in an object, then emitted values are 
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">compact</span><span class="o">)</span>
 <span class="c1">// res7: Either[Throwable, collector.compact.Out] = Right(</span>
-<span class="c1">//   value = "{\"field1\":0,\"field2\":\"test\",\"field3\":[1,2,3]}{\"field1\":2,\"field3\":[]}"</span>
+<span class="c1">//   "{\"field1\":0,\"field2\":\"test\",\"field3\":[1,2,3]}{\"field1\":2,\"field3\":[]}"</span>
 <span class="c1">// )</span>
 
 <span class="c1">// default indentation is 2 spaces</span>
 <span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">())</span>
 <span class="c1">// res8: Either[Throwable, String] = Right(</span>
-<span class="c1">//   value = """{</span>
+<span class="c1">//   """{</span>
 <span class="c1">//   "field1": 0,</span>
 <span class="c1">//   "field2": "test",</span>
 <span class="c1">//   "field3": [</span>
@@ -387,7 +364,7 @@ On the other hand, if it selects elements in an object, then emitted values are 
 <span class="c1">// if you are more into tabs (or any other indentation size) you can change the indentation string</span>
 <span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">(</span><span class="s">"\t"</span><span class="o">))</span>
 <span class="c1">// res9: Either[Throwable, String] = Right(</span>
-<span class="c1">//   value = """{</span>
+<span class="c1">//   """{</span>
 <span class="c1">// 	"field1": 0,</span>
 <span class="c1">// 	"field2": "test",</span>
 <span class="c1">// 	"field3": [</span>
