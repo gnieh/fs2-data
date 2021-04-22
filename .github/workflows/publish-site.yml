@@ -4,6 +4,7 @@ on:
   release:
     types:
       - published
+      - edited
 
 jobs:
   publish:
@@ -22,4 +23,7 @@ jobs:
       - name: "Build site"
         run: "sbt makeSite"
       - name: "Publish site"
-        run: "sbt ghpagesPushSite"
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/site
