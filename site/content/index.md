@@ -14,7 +14,7 @@ Artefacts are published on maven, use your favorite build tool to bring it into 
 Following modules are available:
   - `fs2-data-json`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json_2.13) A JSON parser and manipulation library
   - `fs2-data-json-circe`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-circe_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-circe_2.13) [circe][circe] support for parsed JSON.
-  - `fs2-data-json-interpolators`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-interpolators_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-interpolators_2.13) [contextual][contextual] support for statically checked JSON interpolators.
+  - `fs2-data-json-interpolators`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-interpolators_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-interpolators_2.13) [literally][literally] support for statically checked JSON interpolators.
   - `fs2-data-json-diffson`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-diffson_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-diffson_2.13) [diffson][diffson] support for patching JSON streams.
   - `fs2-data-xml`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-xml_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-xml_2.13) An XML parser
   - `fs2-data-csv`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv_2.13) A CSV parser
@@ -28,4 +28,4 @@ Following modules are available:
 [fs2]: https://fs2.io
 [circe]: https://circe.github.io/circe/
 [diffson]: https://github.com/gnieh/diffson
-[contextual]: https://propensive.com/opensource/contextual
+[literally]: https://github.com/typelevel/literally
