@@ -1,12 +1,9 @@
 name: Publish Website
 
 on:
-  push:
-    branches:
-      - main
-  #  release:
-  #    types:
-  #      - published
+  release:
+    types:
+      - published
 
 jobs:
   publish:
