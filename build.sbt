@@ -8,7 +8,7 @@ val scalaJavaTimeVersion = "2.2.1"
 
 val commonSettings = List(
   scalaVersion := scala3,
-  crossScalaVersions := Seq(scala213, scala212, scala3),
+  crossScalaVersions := Seq(scala3, scala213, scala212),
   // Copied from circe
   Compile / unmanagedSourceDirectories ++= {
     def extraDirs(suffix: String) =
@@ -146,7 +146,7 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform)
   .dependsOn(text)
 
 lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Pure)
+  .crossType(CrossType.Full)
   .in(file("csv/generic"))
   .settings(commonSettings)
   .settings(publishSettings)
