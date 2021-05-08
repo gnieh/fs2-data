@@ -16,7 +16,7 @@
 package fs2.data.csv
 package generic
 
-import fs2.data.csv.generic.internal.ExportMacros
+//import fs2.data.csv.generic.internal.ExportMacros
 
 trait AutoDerivedRowDecoders {
   implicit def exportRowDecoder[A]: Exported[RowDecoder[A]] =

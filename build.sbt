@@ -20,6 +20,16 @@ val commonSettings = List(
       case _            => Nil
     }
   },
+  Test / unmanagedSourceDirectories ++= {
+    def extraDirs(suffix: String) =
+      CrossType.Full.sharedSrcDir(baseDirectory.value, "test").toList.map(f => file(f.getPath + suffix))
+
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, y)) => extraDirs("-2") ++ (if (y >= 13) extraDirs("-2.13+") else Nil)
+      case Some((3, _)) => extraDirs("-3") ++ extraDirs("-2.13+")
+      case _            => Nil
+    }
+  },
   organization := "org.gnieh",
   headerLicense := Some(HeaderLicense.ALv2("2021", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
@@ -35,7 +45,7 @@ val commonSettings = List(
       case Some((2, n)) if n < 13 =>
         List("-Ypartial-unification", "-language:higherKinds")
       case Some((3, _)) =>
-        List("-Ykind-projector")
+        List("-Ykind-projector", "-Yretain-trees")
     }
     .toList
     .flatten,
@@ -44,7 +54,12 @@ val commonSettings = List(
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.4",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "co.fs2" %% "fs2-io" % fs2Version % "test",
-    "com.disneystreaming" %%% "weaver-cats" % "0.7.0" % "test"
+    ("com.disneystreaming" % "weaver-cats_3.0.0-RC2" % "0.7.2" % "test").intransitive(),
+    ("com.disneystreaming" % "weaver-cats-core_3.0.0-RC2" % "0.7.2" % "test").intransitive(),
+    ("com.disneystreaming" % "weaver-core_3.0.0-RC2" % "0.7.2" % "test").intransitive(),
+    ("com.disneystreaming" % "weaver-framework_3.0.0-RC2" % "0.7.2" % "test").intransitive(),
+    ("com.eed3si9n.expecty" % "expecty_3.0.0-RC2" % "0.15.2" % "test").intransitive(),
+    "org.portable-scala" %%% "portable-scala-reflect" % "1.1.1" cross CrossVersion.for3Use2_13
   ) ++ PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
       List(
@@ -146,8 +161,8 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform)
     ))
   .dependsOn(text)
 
-lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Pure)
+lazy val csvGeneric = crossProject(JVMPlatform /*, JSPlatform*/ )
+  .crossType(CrossType.Full)
   .in(file("csv/generic"))
   .settings(commonSettings)
   .settings(publishSettings)
@@ -158,6 +173,10 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
       List(
         "com.chuusai" %%% "shapeless" % shapelessVersion,
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
+      )
+    ) ++ onScala3(scalaVersion.value)(
+      List(
+        "org.typelevel" %%% "shapeless3-deriving" % "3.0.0-M3"
       )
     ),
     libraryDependencies ++=
@@ -176,11 +195,12 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
           Seq(
             "-Ymacro-annotations"
           )
+        //case Some((3, _)) => Seq("-Xprint:inlining")
       }
       .toList
       .flatten
   )
-  .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test)
+  //.jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test)
   .dependsOn(csv)
 
 lazy val json = crossProject(JVMPlatform, JSPlatform)
@@ -298,6 +318,13 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform)
 
 def onScala2[T](version: String)(values: => List[T]): List[T] = PartialFunction
   .condOpt(CrossVersion.partialVersion(version)) { case Some((2, _)) =>
+    values
+  }
+  .toList
+  .flatten
+
+def onScala3[T](version: String)(values: => List[T]): List[T] = PartialFunction
+  .condOpt(CrossVersion.partialVersion(version)) { case Some((3, _)) =>
     values
   }
   .toList

@@ -52,8 +52,11 @@ object CellEncoder
   def instance[T](f: T => String): CellEncoder[T] = s => f(s)
 
   @inline
+  def const[T](r: String): CellEncoder[T] = _ => r
+
+  @inline
   def fromToString[A]: CellEncoder[A] = _.toString
-  
+
   // Primitives
   implicit val unitEncoder: CellEncoder[Unit] = _ => ""
   implicit val booleanEncoder: CellEncoder[Boolean] = fromToString(_)

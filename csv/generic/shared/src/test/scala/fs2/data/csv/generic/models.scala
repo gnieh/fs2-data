@@ -7,7 +7,7 @@ case object Off extends Simple
 
 sealed trait Complex
 case object Active extends Complex
-object Inactive extends Complex
+//object Inactive extends Complex
 case class Numbered(n: Int) extends Complex
 case class Unknown(state: String) extends Complex
 
