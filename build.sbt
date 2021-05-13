@@ -25,7 +25,7 @@ val commonSettings = List(
     }
     .toList
     .flatten,
-  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.11.3" cross CrossVersion.full),
+  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.12.0" cross CrossVersion.full),
   addCompilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary),
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
