@@ -199,7 +199,7 @@ lazy val jsonInterpolators = project
     name := "fs2-data-json-interpolators",
     description := "Json interpolators support",
     libraryDependencies ++= List(
-      "org.typelevel" %% "literally" % "1.0.1",
+      "org.typelevel" %% "literally" % "1.0.2",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     )
   )
