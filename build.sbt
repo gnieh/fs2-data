@@ -1,8 +1,8 @@
 val scala212 = "2.12.13"
 val scala213 = "2.13.5"
-val fs2Version = "3.0.2"
+val fs2Version = "3.0.3"
 val circeVersion = "0.13.0"
-val shapelessVersion = "2.3.4"
+val shapelessVersion = "2.3.6"
 val scalaJavaTimeVersion = "2.2.2"
 
 val commonSettings = List(
@@ -25,11 +25,11 @@ val commonSettings = List(
     }
     .toList
     .flatten,
-  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.11.3" cross CrossVersion.full),
+  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.12.0" cross CrossVersion.full),
   addCompilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary),
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
-    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.3",
+    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.4",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "co.fs2" %% "fs2-io" % fs2Version % "test",
     "com.disneystreaming" %%% "weaver-cats" % "0.7.2" % "test"
@@ -199,7 +199,7 @@ lazy val jsonInterpolators = project
     name := "fs2-data-json-interpolators",
     description := "Json interpolators support",
     libraryDependencies ++= List(
-      "org.typelevel" %% "literally" % "1.0.1",
+      "org.typelevel" %% "literally" % "1.0.2",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     )
   )
