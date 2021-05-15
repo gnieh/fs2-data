@@ -23,11 +23,7 @@ private[generic] object DerivedCellDecoder {
     (in: String) => decoders.foldRight(new DecoderError("Didn't match any value").asLeft)(_.apply(in).orElse(_))
   }
 
-  inline given deriveSingleton[T](using m: Mirror.ProductOf[T] { type MirroredElemTypes = EmptyTuple }): DerivedCellDecoder[T] = summonFrom {
-    //case cd: CellDecoder[T] => (in: String) => cd(in)
-    case a: Annotation[CsvValue, T] => expect(a().value, m.fromProduct(EmptyTuple))
-    case _ => expect(constValue[m.MirroredLabel], m.fromProduct(EmptyTuple))
-  }
+  inline given deriveSingleton[T](using cv: CellValue[T], m: Mirror.ProductOf[T]): DerivedCellDecoder[T] = expect(cv.value, m.fromProduct(EmptyTuple))
 
 }
 
