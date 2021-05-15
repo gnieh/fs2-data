@@ -28,7 +28,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   */
 @implicitNotFound(
   "No implicit CellEncoder found for type ${T}.\nYou can define one using CellEncoder.instance, by calling contramap on another CellEncoder or by using generic derivation for coproducts and unary products.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val cellEncoder: CellEncoder[${T}] = deriveCellEncoder\n\n")
-trait CellEncoder[T] {
+@FunctionalInterface trait CellEncoder[T] {
   def apply(cell: T): String
 
   def contramap[B](f: B => T): CellEncoder[B] = (cell: B) => apply(f(cell))

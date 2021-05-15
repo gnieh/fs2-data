@@ -30,12 +30,12 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   * `CellDecoder` provides convenient methods such as `map`, `emap`, or `flatMap` to build new decoders out of more
   * basic one.
   *
-  * Actually, `CellDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.htmlcats `MonadError`]] instance. To
+  * Actually, `CellDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.htmlcats`MonadError`]] instance. To
   * get the full power of it, import `cats.implicits._`.
   */
 @implicitNotFound(
   "No implicit CellDecoder found for type ${T}.\nYou can define one using CellDecoder.instance, by calling map on another CellDecoder or by using generic derivation for coproducts and unary products.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val cellDecoder: CellDecoder[${T}] = deriveCellDecoder\n\n")
-trait CellDecoder[T] {
+@FunctionalInterface trait CellDecoder[T] {
   def apply(cell: String): DecoderResult[T]
 
   /** Map the parsed value.
