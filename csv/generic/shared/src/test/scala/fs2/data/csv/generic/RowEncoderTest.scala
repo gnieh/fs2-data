@@ -51,18 +51,4 @@ object RowEncoderTest extends SimpleIOSuite {
       expect(testOptJEncoder(TestOptJ(1, "test", None)) == csvRowEmptyJ)
   }
 
-  /*pureTest("hlist should be handled properly") {
-    expect(
-      RowEncoder[Int :: String :: Int :: HNil]
-        .apply(1 :: "test" :: 42 :: HNil) == csvRow)
-  }
-
-  pureTest("hlist should be handled properly with optional columns") {
-    val encoder = RowEncoder[Option[Int] :: String :: Option[Int] :: HNil]
-
-    expect(encoder(Some(1) :: "test" :: Some(42) :: HNil) == csvRow) and
-      expect(encoder(None :: "test" :: Some(42) :: HNil) == csvRowEmptyI) and
-      expect(encoder(Some(1) :: "test" :: None :: HNil) == csvRowEmptyJ)
-  }*/
-
 }

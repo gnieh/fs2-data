@@ -18,9 +18,7 @@ package data.csv
 package generic
 
 import semiauto._
-//import hlist._
 
-import cats.implicits._
 import cats.data.NonEmptyList
 
 import weaver._
@@ -52,17 +50,5 @@ object RowDecoderTest extends SimpleIOSuite {
       expect(testOptJDecoder(csvRow) == Right(TestOptJ(1, "test", Some(42)))) and
       expect(testOptJDecoder(csvRowEmptyJ) == Right(TestOptJ(1, "test", None)))
   }
-
-  /*pureTest("hlist should be handled properly") {
-    expect(RowDecoder[Int :: String :: Int :: HNil].apply(csvRow) == Right(1 :: "test" :: 42 :: HNil))
-  }
-
-  pureTest("hlist should be handled properly with optional columns") {
-    val decoder = RowDecoder[Option[Int] :: String :: Option[Int] :: HNil]
-
-    expect(decoder(csvRow) == Right(Some(1) :: "test" :: Some(42) :: HNil)) and
-      expect(decoder(csvRowEmptyI) == Right(None :: "test" :: Some(42) :: HNil)) and
-      expect(decoder(csvRowEmptyJ) == Right(Some(1) :: "test" :: None :: HNil))
-  }*/
 
 }

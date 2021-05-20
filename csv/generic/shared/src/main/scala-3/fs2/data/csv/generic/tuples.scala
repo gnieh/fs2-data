@@ -18,12 +18,15 @@ package data
 package csv
 package generic
 
+import internal.OptCellDecoder
+import shapeless3.deriving.K0
+
 object tuples {
 
-  final implicit def tupleDecoder[T <: Tuple]: RowDecoder[T] =
-    ???
+  given tupleDecoder[T <: Tuple](using ic: K0.ProductInstances[OptCellDecoder, T]): RowDecoder[T] =
+    semiauto.deriveRowDecoder
 
-  final implicit def tupleEncoder[T <: Tuple]: RowEncoder[T] =
-    ???
+  given tupleEncoder[T <: Tuple](using ic: K0.ProductInstances[CellEncoder, T]): RowEncoder[T] =
+    semiauto.deriveRowEncoder
 
 }

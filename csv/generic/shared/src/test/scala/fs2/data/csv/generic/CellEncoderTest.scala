@@ -1,33 +1,11 @@
 package fs2.data.csv.generic
 
-import cats.implicits._
 import fs2.data.csv.CellEncoder
 import weaver._
-
-import scala.deriving._
-import scala.compiletime._
-import scala.quoted._
-
-//sealed trait MySimple
-//@CsvValue("ACTIVE") case object MyOn extends MySimple
-//case object MyOff extends MySimple
 
 case class WithDef(a: Int = 1, b: String = "BBBB")
 
 object CellEncoderTest extends SimpleIOSuite {
-
-  /*loggedTest("debug") { log =>
-    //log.info(shapeless3.deriving.Annotations[CsvValue, Simple].toString).as(expect(false))
-    //log.info(codeOf(summonInline[Mirror.Of[Inactive.type]].toString)) >>
-    log.info(summonInline[shapeless3.deriving.Annotation[CsvValue, Alpha.type]].apply().toString) >>
-      //log.info(semiauto.DerivedCellEncoder.deriveLabel[Inactive.type].apply(Inactive)) >>
-      //log.info(summonInline[semiauto.DerivedCellEncoder[On.type]].toString) >>
-      log.info(summonInline[semiauto.DerivedCellEncoder[Simple]].toString).as(expect(false))
-  }*/
-
-  /*loggedTest("debug defaults") { log =>
-    log.info(defaults[WithDef].toString).as(expect(false))
-  }*/
 
   pureTest("derivation for coproducts should work out of the box for enum-style sealed traits") {
     val simpleEncoder: CellEncoder[Simple] = semiauto.deriveCellEncoder

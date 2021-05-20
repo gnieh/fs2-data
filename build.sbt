@@ -1,10 +1,10 @@
 val scala212 = "2.12.13"
 val scala213 = "2.13.5"
 val scala3 = "3.0.0"
-val fs2Version = "3.0.1"
-val circeVersion = "0.14.0-M5"
-val shapelessVersion = "2.3.3"
-val scalaJavaTimeVersion = "2.2.1"
+val fs2Version = "3.0.3"
+val circeVersion = "0.14.0-M7"
+val shapelessVersion = "2.3.7"
+val scalaJavaTimeVersion = "2.3.0"
 
 val commonSettings = List(
   scalaVersion := scala3,
@@ -45,7 +45,7 @@ val commonSettings = List(
       case Some((2, n)) if n < 13 =>
         List("-Ypartial-unification", "-language:higherKinds")
       case Some((3, _)) =>
-        List("-Ykind-projector", "-Yretain-trees")
+        List("-Ykind-projector")
     }
     .toList
     .flatten,
@@ -54,16 +54,16 @@ val commonSettings = List(
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.4",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "co.fs2" %% "fs2-io" % fs2Version % "test",
-    ("com.disneystreaming" % "weaver-cats_3.0.0-RC2" % "0.7.2" % "test").intransitive(),
-    ("com.disneystreaming" % "weaver-cats-core_3.0.0-RC2" % "0.7.2" % "test").intransitive(),
-    ("com.disneystreaming" % "weaver-core_3.0.0-RC2" % "0.7.2" % "test").intransitive(),
-    ("com.disneystreaming" % "weaver-framework_3.0.0-RC2" % "0.7.2" % "test").intransitive(),
-    ("com.eed3si9n.expecty" % "expecty_3.0.0-RC2" % "0.15.2" % "test").intransitive(),
+    "com.disneystreaming" %%% "weaver-cats" % "0.7.3" % "test",
+    "com.disneystreaming" %%% "weaver-cats-core" % "0.7.3" % "test",
+    "com.disneystreaming" %%% "weaver-core" % "0.7.3" % "test",
+    "com.disneystreaming" %%% "weaver-framework" % "0.7.3" % "test",
+    "com.eed3si9n.expecty" %%% "expecty" % "0.15.3" % "test",
     "org.portable-scala" %%% "portable-scala-reflect" % "1.1.1" cross CrossVersion.for3Use2_13
   ) ++ PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
       List(
-        compilerPlugin("org.typelevel" % "kind-projector" % "0.11.3" cross CrossVersion.full),
+        compilerPlugin("org.typelevel" % "kind-projector" % "0.13.0" cross CrossVersion.full),
         compilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary)
       )
     }
@@ -104,14 +104,14 @@ val root = (project in file("."))
     publishArtifact := false,
     publish / skip := true,
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects( //benchmarks,
-                                                                              cbor.js,
-                                                                              csv.js,
-                                                                              //csvGeneric.js,
-                                                                              json.js,
-                                                                              //jsonCirce.js,
-                                                                              //jsonDiffson.js,
-                                                                              text.js,
-                                                                              xml.js),
+      cbor.js,
+      csv.js,
+      csvGeneric.js,
+      json.js,
+      //jsonCirce.js,
+      //jsonDiffson.js,
+      text.js,
+      xml.js),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     Nanoc / sourceDirectory := file("site"),
@@ -123,8 +123,8 @@ val root = (project in file("."))
     text.js,
     csv.jvm,
     csv.js,
-    //csvGeneric.jvm,
-    //csvGeneric.js,
+    csvGeneric.jvm,
+    csvGeneric.js,
     json.jvm,
     json.js,
     //jsonCirce.jvm,
@@ -161,7 +161,7 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform)
     ))
   .dependsOn(text)
 
-lazy val csvGeneric = crossProject(JVMPlatform /*, JSPlatform*/ )
+lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
   .in(file("csv/generic"))
   .settings(commonSettings)
@@ -176,7 +176,7 @@ lazy val csvGeneric = crossProject(JVMPlatform /*, JSPlatform*/ )
       )
     ) ++ onScala3(scalaVersion.value)(
       List(
-        "org.typelevel" %%% "shapeless3-deriving" % "3.0.0-M3"
+        "org.typelevel" %% "shapeless3-deriving" % "3.0.0"
       )
     ),
     libraryDependencies ++=
@@ -195,12 +195,11 @@ lazy val csvGeneric = crossProject(JVMPlatform /*, JSPlatform*/ )
           Seq(
             "-Ymacro-annotations"
           )
-        //case Some((3, _)) => Seq("-Xprint:inlining")
       }
       .toList
       .flatten
   )
-  //.jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test)
+  .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test)
   .dependsOn(csv)
 
 lazy val json = crossProject(JVMPlatform, JSPlatform)

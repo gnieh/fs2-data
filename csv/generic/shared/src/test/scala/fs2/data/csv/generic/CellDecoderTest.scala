@@ -1,7 +1,6 @@
 package fs2.data.csv
 package generic
 
-import cats.implicits._
 import weaver._
 
 object CellDecoderTest extends SimpleIOSuite {
