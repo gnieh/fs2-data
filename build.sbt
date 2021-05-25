@@ -172,7 +172,7 @@ lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
     description := "Streaming JSON library with support for circe ASTs",
     libraryDependencies ++= List(
       "io.circe" %%% "circe-core" % circeVersion,
-      "org.gnieh" %%% "diffson-circe" % "4.0.3" % "test"
+      "org.gnieh" %%% "diffson-circe" % "4.1.0" % "test"
     )
   )
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
@@ -186,7 +186,7 @@ lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform)
     name := "fs2-data-json-diffson",
     description := "Streaming JSON library with support for patches",
     libraryDependencies ++= List(
-      "org.gnieh" %%% "diffson-core" % "4.0.3"
+      "org.gnieh" %%% "diffson-core" % "4.1.0"
     )
   )
   .dependsOn(json % "compile->compile;test->test")
@@ -236,7 +236,7 @@ lazy val documentation = project
     mdocOut := file("site/content/documentation"),
     libraryDependencies ++= List(
       "com.beachape" %% "enumeratum" % "1.5.15",
-      "org.gnieh" %% "diffson-circe" % "4.0.3",
+      "org.gnieh" %% "diffson-circe" % "4.1.0",
       "io.circe" %% "circe-generic-extras" % circeVersion,
       "co.fs2" %% "fs2-io" % fs2Version
     )
