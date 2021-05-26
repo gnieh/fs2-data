@@ -104,15 +104,15 @@ val root = (project in file("."))
     name := "fs2-data",
     publishArtifact := false,
     publish / skip := true,
-    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects( //benchmarks,
-      cbor.js,
-      csv.js,
-      csvGeneric.js,
-      json.js,
-      jsonCirce.js,
-      jsonDiffson.js,
-      text.js,
-      xml.js),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(benchmarks,
+                                                                             cbor.js,
+                                                                             csv.js,
+                                                                             csvGeneric.js,
+                                                                             json.js,
+                                                                             jsonCirce.js,
+                                                                             jsonDiffson.js,
+                                                                             text.js,
+                                                                             xml.js),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     Nanoc / sourceDirectory := file("site"),
@@ -284,11 +284,13 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform)
       .flatten
   )
 
-/*lazy val documentation = project
+lazy val documentation = project
   .in(file("documentation"))
   .enablePlugins(MdocPlugin)
   .settings(commonSettings)
   .settings(
+    scalaVersion := scala213,
+    crossScalaVersions := List(scala212, scala213),
     mdocIn := file("documentation/docs"),
     mdocOut := file("site/content/documentation"),
     libraryDependencies ++= List(
@@ -298,21 +300,13 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform)
       "co.fs2" %% "fs2-io" % fs2Version
     )
   )
-  .dependsOn(csv.jvm,
-             //csvGeneric.jvm,
-             json.jvm, /*jsonDiffson.jvm, jsonCirce.jvm, jsonInterpolators,*/ xml.jvm,
-             cbor.jvm)*/
+  .dependsOn(csv.jvm, csvGeneric.jvm, json.jvm, jsonDiffson.jvm, jsonCirce.jvm, jsonInterpolators, xml.jvm, cbor.jvm)
 
-/*lazy val benchmarks = project
+lazy val benchmarks = project
   .in(file("benchmarks"))
   .enablePlugins(JmhPlugin)
   .settings(commonSettings)
-  .settings(
-    libraryDependencies ++= List(
-      "com.github.pathikrit" %% "better-files" % "3.9.1"
-    )
-  )
-  .dependsOn(csv.jvm)*/
+  .dependsOn(csv.jvm)
 
 // Utils
 

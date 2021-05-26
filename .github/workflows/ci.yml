@@ -37,5 +37,5 @@ jobs:
       - if: ${{ github.event_name == 'pull_request' }}
         run: 'sbt scalafmtCheckAll'
       - run: 'sbt ++${{ matrix.scala }} test'
-      - if: matrix.scala == '2.13.5'
+      - if: matrix.scala == '2.13.6'
         run: sbt ++${{ matrix.scala }} documentation/mdoc
