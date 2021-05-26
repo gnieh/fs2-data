@@ -16,22 +16,19 @@
 package fs2.data.csv
 
 import io.circe.parser.parse
-
 import fs2._
 import fs2.io.file.Files
-
 import cats.effect._
-import cats.implicits._
-
+import cats.syntax.all._
 import weaver._
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 
 object CsvParserTest extends SimpleIOSuite {
 
-  private val testFileDir = Paths.get("csv/jvm/src/test/resources/csv-spectrum/csvs/")
+  private val testFileDir: Path = Paths.get("csv/jvm/src/test/resources/csv-spectrum/csvs/")
 
-  def allExpected() =
+  lazy val allExpected: Stream[IO, (java.nio.file.Path, List[Map[String, String]])] =
     Files[IO]
       .directoryStream(testFileDir)
       .evalMap { path =>
@@ -50,7 +47,7 @@ object CsvParserTest extends SimpleIOSuite {
       }
 
   test("Standard test suite should pass") {
-    allExpected()
+    allExpected
       .evalMap { case (path, expected) =>
         Files[IO]
           .readAll(path, 1024)
@@ -66,13 +63,13 @@ object CsvParserTest extends SimpleIOSuite {
   }
 
   test("Standard test suite files should be encoded and parsed correctly") {
-    allExpected()
+    allExpected
       .evalMap { case (path, expected) =>
         Stream
           .emits(expected)
           .map(m => CsvRow.fromListHeaders(m.toList))
           .unNone
-          .through(encodeUsingFirstHeaders[CsvRow[String]]())
+          .through[IO, String](encodeUsingFirstHeaders[CsvRow[String]]())
           .covary[IO]
           .through(decodeUsingHeaders[CsvRow[String]]())
           .compile
