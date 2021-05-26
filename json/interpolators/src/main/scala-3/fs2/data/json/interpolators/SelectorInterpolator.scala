@@ -25,10 +25,10 @@ import org.typelevel.literally.Literally
 object SelectorInterpolator extends Literally[Selector] {
 
   def validate(string: String)(using Quotes) = {
-    new SelectorParser[Either[Throwable, *]](string).parse() match {
+    SelectorParser.either(string) match {
       case Left(JsonSelectorException(msg, idx)) => Left(msg)
       case Left(t)                               => Left(t.getMessage)
-      case Right(v)                              => Right('{new SelectorParser[Either[Throwable, *]](${Expr(string)}).parse().toOption.get})
+      case Right(v)                              => Right('{SelectorParser.either(${Expr(string)}).toOption.get})
     }
   }
 
