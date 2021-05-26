@@ -1,10 +1,11 @@
 val scala212 = "2.12.13"
-val scala213 = "2.13.5"
+val scala213 = "2.13.6"
 val scala3 = "3.0.0"
-val fs2Version = "3.0.3"
-val circeVersion = "0.14.0-M7"
+val fs2Version = "3.0.4"
+val circeVersion = "0.14.1"
 val shapelessVersion = "2.3.7"
 val scalaJavaTimeVersion = "2.3.0"
+val diffsonVersion = "4.1.0"
 
 val commonSettings = List(
   scalaVersion := scala3,
@@ -108,8 +109,8 @@ val root = (project in file("."))
       csv.js,
       csvGeneric.js,
       json.js,
-      //jsonCirce.js,
-      //jsonDiffson.js,
+      jsonCirce.js,
+      jsonDiffson.js,
       text.js,
       xml.js),
     ScalaUnidoc / siteSubdirName := "api",
@@ -127,10 +128,10 @@ val root = (project in file("."))
     csvGeneric.js,
     json.jvm,
     json.js,
-    //jsonCirce.jvm,
-    //jsonCirce.js,
-    //jsonDiffson.jvm,
-    //jsonDiffson.js,
+    jsonCirce.jvm,
+    jsonCirce.js,
+    jsonDiffson.jvm,
+    jsonDiffson.js,
     jsonInterpolators,
     xml.jvm,
     xml.js,
@@ -210,7 +211,7 @@ lazy val json = crossProject(JVMPlatform, JSPlatform)
   .settings(name := "fs2-data-json", description := "Streaming JSON manipulation library")
   .dependsOn(text)
 
-/*lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
+lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
   .in(file("json/circe"))
   .settings(commonSettings)
@@ -220,12 +221,12 @@ lazy val json = crossProject(JVMPlatform, JSPlatform)
     description := "Streaming JSON library with support for circe ASTs",
     libraryDependencies ++= List(
       "io.circe" %%% "circe-core" % circeVersion,
-      "org.gnieh" %%% "diffson-circe" % "4.0.3" % "test"
+      "org.gnieh" %%% "diffson-circe" % diffsonVersion % "test"
     )
   )
-  .dependsOn(json % "compile->compile;test->test" , jsonDiffson % "test->test" )*/
+  .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
 
-/*lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform)
+lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("json/diffson"))
   .settings(commonSettings)
@@ -234,10 +235,10 @@ lazy val json = crossProject(JVMPlatform, JSPlatform)
     name := "fs2-data-json-diffson",
     description := "Streaming JSON library with support for patches",
     libraryDependencies ++= List(
-      "org.gnieh" %%% "diffson-core" % "4.0.3"
+      "org.gnieh" %%% "diffson-core" % diffsonVersion
     )
   )
-  .dependsOn(json % "compile->compile;test->test")*/
+  .dependsOn(json % "compile->compile;test->test")
 
 lazy val jsonInterpolators = project
   .in(file("json/interpolators"))
@@ -292,7 +293,7 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform)
     mdocOut := file("site/content/documentation"),
     libraryDependencies ++= List(
       "com.beachape" %% "enumeratum" % "1.5.15",
-      "org.gnieh" %% "diffson-circe" % "4.0.3",
+      "org.gnieh" %% "diffson-circe" % diffsonVersion,
       "io.circe" %% "circe-generic-extras" % circeVersion,
       "co.fs2" %% "fs2-io" % fs2Version
     )

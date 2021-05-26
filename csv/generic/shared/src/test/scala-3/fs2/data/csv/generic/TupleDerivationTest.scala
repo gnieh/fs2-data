@@ -28,19 +28,21 @@ object TupleDerivationTest extends SimpleIOSuite {
   val csvRowEmptyJ = Row(NonEmptyList.of("1", "test", ""))
 
   pureTest("tuple encoding should be handled properly") {
-    expect(RowEncoder[(Int, String, Int)].apply((1, "test", 42)) == csvRow)
+    val encoder = RowEncoder[(Int, String, Int)]
+    expect(encoder.apply((1, "test", 42)) == csvRow)
   }
 
   pureTest("tuple encoding should be handled properly with optional columns") {
     val encoder = RowEncoder[(Option[Int], String, Option[Int])]
 
-    expect(encoder((Some(1), "test", Some(42))) == csvRow) /*and
+    expect(encoder((Some(1), "test", Some(42))) == csvRow) and
       expect(encoder((None, "test", Some(42))) == csvRowEmptyI) and
-      expect(encoder((Some(1), "test", None)) == csvRowEmptyJ)*/
+      expect(encoder((Some(1), "test", None)) == csvRowEmptyJ)
   }
 
   pureTest("tuple decoding should be handled properly") {
-    expect(RowDecoder[(Int, String, Int)].apply(csvRow) == Right((1, "test", 42)))
+    val decoder = RowDecoder[(Int, String, Int)]
+    expect(decoder.apply(csvRow) == Right((1, "test", 42)))
   }
 
   pureTest("tuple decoding should be handled properly with optional columns") {

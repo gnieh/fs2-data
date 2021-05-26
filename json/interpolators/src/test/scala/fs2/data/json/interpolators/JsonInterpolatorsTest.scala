@@ -6,7 +6,9 @@ import weaver._
 object JsonInterpolatorsTest extends SimpleIOSuite {
 
   pureTest("handles a selector literal correctly") {
-    expect(Right(selector".[].b.c") == new SelectorParser[Either[Throwable, *]](".[].b.c").parse())
+    val sel = selector".[].b.c"
+    val manual = new SelectorParser[Either[Throwable, *]](".[].b.c").parse()
+    expect.same(manual, Right(sel))
   }
 
 }
