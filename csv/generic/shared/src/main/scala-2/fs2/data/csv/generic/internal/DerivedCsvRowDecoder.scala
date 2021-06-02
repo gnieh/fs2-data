@@ -19,9 +19,9 @@ import fs2.data.csv.generic.CsvName
 import fs2.data.csv.{CsvRow, CsvRowDecoder, DecoderResult}
 import shapeless._
 
-private[generic] trait DerivedCsvRowDecoder[T] extends CsvRowDecoder[T, String]
+trait DerivedCsvRowDecoder[T] extends CsvRowDecoder[T, String]
 
-private[generic] object DerivedCsvRowDecoder {
+object DerivedCsvRowDecoder {
 
   final implicit def productReader[T, Repr <: HList, DefaultRepr <: HList, AnnoRepr <: HList](implicit
       gen: LabelledGeneric.Aux[T, Repr],

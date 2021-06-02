@@ -19,9 +19,9 @@ import fs2.data.csv.CsvRowEncoder
 import fs2.data.csv.generic.CsvName
 import shapeless._
 
-private[generic] trait DerivedCsvRowEncoder[T] extends CsvRowEncoder[T, String]
+trait DerivedCsvRowEncoder[T] extends CsvRowEncoder[T, String]
 
-private[generic] object DerivedCsvRowEncoder {
+object DerivedCsvRowEncoder {
 
   final implicit def productWriter[T, Repr <: HList, AnnoRepr <: HList](implicit
       gen: LabelledGeneric.Aux[T, Repr],

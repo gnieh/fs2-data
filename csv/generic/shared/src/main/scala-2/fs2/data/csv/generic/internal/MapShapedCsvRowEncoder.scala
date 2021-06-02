@@ -21,9 +21,9 @@ import fs2.data.csv.{CellEncoder, CsvRow, CsvRowEncoder}
 import shapeless._
 import shapeless.labelled._
 
-private[generic] trait MapShapedCsvRowEncoder[Repr] extends CsvRowEncoder[Repr, String]
+trait MapShapedCsvRowEncoder[Repr] extends CsvRowEncoder[Repr, String]
 
-private[generic] object MapShapedCsvRowEncoder extends LowPrioMapShapedCsvRowEncoderImplicits {
+object MapShapedCsvRowEncoder extends LowPrioMapShapedCsvRowEncoderImplicits {
 
   implicit def lastElemRowEncoder[Wrapped, Repr, Anno, Key <: Symbol](implicit
       Last: CellEncoder[Repr],

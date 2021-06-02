@@ -21,9 +21,9 @@ import shapeless._
 import shapeless.labelled._
 import shapeless.ops.hlist.IsHCons
 
-private[generic] trait DerivedCellEncoder[T] extends CellEncoder[T]
+trait DerivedCellEncoder[T] extends CellEncoder[T]
 
-private[generic] object DerivedCellEncoder extends DerivedCellEncoderInstances0 {
+object DerivedCellEncoder extends DerivedCellEncoderInstances0 {
 
   // Unary Products
 

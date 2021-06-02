@@ -7,9 +7,9 @@ import shapeless3.deriving._
 import scala.compiletime._
 import scala.deriving.Mirror
 
-private[generic] trait DerivedCellEncoder[T] extends CellEncoder[T]
+trait DerivedCellEncoder[T] extends CellEncoder[T]
 
-private[generic] object DerivedCellEncoder {
+object DerivedCellEncoder {
   given deriveUnaryProduct[T <: Product](using m: Mirror.ProductOf[T] { type MirroredElemTypes <: Any *: EmptyTuple }, ce: CellEncoder[Tuple.Head[m.MirroredElemTypes]]): DerivedCellEncoder[T] = {
     (t: T) => ce(t.productElement(0).asInstanceOf[Tuple.Head[m.MirroredElemTypes]])
   }

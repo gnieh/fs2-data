@@ -8,9 +8,9 @@ import shapeless3.deriving._
 import scala.compiletime._
 import scala.deriving.Mirror
 
-private[generic] trait DerivedCellDecoder[T] extends CellDecoder[T]
+trait DerivedCellDecoder[T] extends CellDecoder[T]
 
-private[generic] object DerivedCellDecoder {
+object DerivedCellDecoder {
   def expect[T](e: String, r: T): DerivedCellDecoder[T] = (in: String) =>
     Either.cond(in == e, r, new DecoderError(s"Expected $e, got $in"))
 

@@ -21,7 +21,7 @@ import scala.reflect.macros.blackbox
 
 /** Macros used to circumvent divergence checker restrictions in the compiler. Inspired by pureconfig and circe.
   */
-private[generic] class ExportMacros(val c: blackbox.Context) {
+class ExportMacros(val c: blackbox.Context) {
   import c.universe._
 
   final def exportRowDecoder[A](implicit a: c.WeakTypeTag[A]): c.Expr[Exported[RowDecoder[A]]] = {

@@ -20,9 +20,9 @@ import cats.implicits._
 import fs2.data.csv._
 import shapeless._
 
-private[generic] trait SeqShapedRowDecoder[Repr] extends RowDecoder[Repr]
+trait SeqShapedRowDecoder[Repr] extends RowDecoder[Repr]
 
-private[generic] object SeqShapedRowDecoder extends LowPrioritySeqShapedRowDecoder1 {
+object SeqShapedRowDecoder extends LowPrioritySeqShapedRowDecoder1 {
 
   implicit def hnilOptionDecoder[Head](implicit Head: CellDecoder[Head]): SeqShapedRowDecoder[Option[Head] :: HNil] =
     new SeqShapedRowDecoder[Option[Head] :: HNil] {

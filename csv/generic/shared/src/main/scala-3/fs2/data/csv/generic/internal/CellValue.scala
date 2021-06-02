@@ -6,11 +6,11 @@ import shapeless3.deriving.Annotation
 import scala.compiletime.*
 import scala.deriving.*
 
-private[generic] trait CellValue[T] {
+trait CellValue[T] {
   def value: String
 }
 
-private[generic] object CellValue {
+object CellValue {
   inline given deriveSingleton[T](using m: Mirror.ProductOf[T] { type MirroredElemTypes = EmptyTuple }): CellValue[T] = summonFrom {
     case a: Annotation[CsvValue, T] => new CellValue[T] { def value: String = a().value }
     case _ => new CellValue[T] { def value: String = constValue[m.MirroredLabel] }

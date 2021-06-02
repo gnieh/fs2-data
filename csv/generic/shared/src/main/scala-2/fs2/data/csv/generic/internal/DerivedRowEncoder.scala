@@ -18,9 +18,9 @@ package fs2.data.csv.generic.internal
 import fs2.data.csv.RowEncoder
 import shapeless._
 
-private[generic] trait DerivedRowEncoder[T] extends RowEncoder[T]
+trait DerivedRowEncoder[T] extends RowEncoder[T]
 
-private[generic] object DerivedRowEncoder {
+object DerivedRowEncoder {
 
   final implicit def productEncoder[T, Repr <: HList](implicit
       gen: Generic.Aux[T, Repr],

@@ -21,9 +21,9 @@ import fs2.data.csv.generic.CsvName
 import shapeless._
 import shapeless.labelled._
 
-private[generic] trait MapShapedCsvRowDecoder[Repr] extends CsvRowDecoder[Repr, String]
+trait MapShapedCsvRowDecoder[Repr] extends CsvRowDecoder[Repr, String]
 
-private[generic] object MapShapedCsvRowDecoder extends LowPriorityMapShapedCsvRowDecoder1 {
+object MapShapedCsvRowDecoder extends LowPriorityMapShapedCsvRowDecoder1 {
 
   implicit def hnilRowDecoder[Wrapped]: WithDefaults[Wrapped, HNil, HNil, HNil] =
     new WithDefaults[Wrapped, HNil, HNil, HNil] {

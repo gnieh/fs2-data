@@ -19,9 +19,9 @@ import cats.data.NonEmptyList
 import fs2.data.csv.{CellEncoder, Row, RowEncoder}
 import shapeless._
 
-private[generic] trait SeqShapedRowEncoder[Repr] extends RowEncoder[Repr]
+trait SeqShapedRowEncoder[Repr] extends RowEncoder[Repr]
 
-private[generic] object SeqShapedRowEncoder {
+object SeqShapedRowEncoder {
 
   implicit def lastElemEncoder[Head](implicit Head: CellEncoder[Head]): SeqShapedRowEncoder[Head :: HNil] =
     (last: Head :: HNil) => Row(NonEmptyList.one(Head(last.head)))

@@ -21,9 +21,9 @@ import fs2.data.csv.{CellDecoder, DecoderError}
 import shapeless._
 import shapeless.labelled._
 
-private[generic] trait DerivedCellDecoder[T] extends CellDecoder[T]
+trait DerivedCellDecoder[T] extends CellDecoder[T]
 
-private[generic] object DerivedCellDecoder extends DerivedCellDecoderInstances0 {
+object DerivedCellDecoder extends DerivedCellDecoderInstances0 {
 
   // Unary Products
 
