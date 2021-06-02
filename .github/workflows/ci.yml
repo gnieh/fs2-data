@@ -11,6 +11,7 @@ jobs:
   build:
     name: Check format, build, test, check documentation
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         scala: [2.12.13, 2.13.6, 3.0.0]
