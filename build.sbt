@@ -178,7 +178,7 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
       )
     ) ++ onScala3(scalaVersion.value)(
       List(
-        "org.typelevel" %% "shapeless3-deriving" % shapeless3Version
+        "org.typelevel" %%% "shapeless3-deriving" % shapeless3Version
       )
     ),
     libraryDependencies ++=
