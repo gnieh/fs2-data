@@ -43,11 +43,12 @@ object CsvParserTest extends SimpleIOSuite {
               .flatMap(_.as[List[Map[String, String]]])
               .liftTo[IO]
           }
-          .map(path -> _)
+          .tupleLeft(path)
       }
 
-  test("Standard test suite should pass") {
+  loggedTest("Standard test suite should pass") { log =>
     allExpected
+      .evalTap { case (path, _) => log.info(path.getFileName.toString) }
       .evalMap { case (path, expected) =>
         Files[IO]
           .readAll(path, 1024)
@@ -56,14 +57,15 @@ object CsvParserTest extends SimpleIOSuite {
           .compile
           .toList
           .map(_.map(_.toMap))
-          .map(actual => expect(actual == expected, s"Invalid file $path"))
+          .map(actual => expect.eql(expected, actual))
       }
       .compile
       .foldMonoid
   }
 
-  test("Standard test suite files should be encoded and parsed correctly") {
+  loggedTest("Standard test suite files should be encoded and parsed correctly") { log =>
     allExpected
+      .evalTap { case (path, _) => log.info(path.getFileName.toString) }
       .evalMap { case (path, expected) =>
         Stream
           .emits(expected)
@@ -75,7 +77,7 @@ object CsvParserTest extends SimpleIOSuite {
           .compile
           .toList
           .map(_.map(_.toMap))
-          .map(reencoded => expect(reencoded == expected, s"Invalid file $path"))
+          .map(reencoded => expect.eql(expected, reencoded))
       }
       .compile
       .foldMonoid
@@ -104,6 +106,6 @@ object CsvParserTest extends SimpleIOSuite {
       .compile
       .toList
       .map(_.map(_.toMap))
-      .map(actual => expect(actual == expected))
+      .map(actual => expect.eql(expected, actual))
   }
 }
