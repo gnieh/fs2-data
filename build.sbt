@@ -3,9 +3,10 @@ val scala213 = "2.13.6"
 val scala3 = "3.0.0"
 val fs2Version = "3.0.4"
 val circeVersion = "0.14.1"
-val shapelessVersion = "2.3.7"
+val shapeless2Version = "2.3.7"
+val shapeless3Version = "3.0.1"
 val scalaJavaTimeVersion = "2.3.0"
-val diffsonVersion = "4.1.0"
+val diffsonVersion = "4.1.1"
 
 val commonSettings = List(
   scalaVersion := scala3,
@@ -172,12 +173,12 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
     description := "Generic CSV row decoder generation",
     libraryDependencies ++= onScala2(scalaVersion.value)(
       List(
-        "com.chuusai" %%% "shapeless" % shapelessVersion,
+        "com.chuusai" %%% "shapeless" % shapeless2Version,
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
       )
     ) ++ onScala3(scalaVersion.value)(
       List(
-        "org.typelevel" %% "shapeless3-deriving" % "3.0.0"
+        "org.typelevel" %% "shapeless3-deriving" % shapeless3Version
       )
     ),
     libraryDependencies ++=
