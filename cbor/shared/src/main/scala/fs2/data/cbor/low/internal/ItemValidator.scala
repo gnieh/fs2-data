@@ -111,14 +111,14 @@ private[cbor] object ItemValidator {
             item match {
               case CborItem.TextString(_) => validateChunk(chunk, idx + 1, ctx)
               case CborItem.Break         => validateChunk(chunk, idx + 1, rest)
-              case _                      => raiseAt(chunk, idx, "only definite size text strings are allowed in indefinite text strings")
+              case _ => raiseAt(chunk, idx, "only definite size text strings are allowed in indefinite text strings")
             }
           case StackElement.IndefiniteByteString :: rest =>
             // only definite text strings are allowed until break
             item match {
               case CborItem.ByteString(_) => validateChunk(chunk, idx + 1, ctx)
               case CborItem.Break         => validateChunk(chunk, idx + 1, rest)
-              case _                      => raiseAt(chunk, idx, "only definite size byte strings are allowed in indefinite byte strings")
+              case _ => raiseAt(chunk, idx, "only definite size byte strings are allowed in indefinite byte strings")
             }
           case StackElement.IndefiniteArray :: rest =>
             // pop the array if break is encountered

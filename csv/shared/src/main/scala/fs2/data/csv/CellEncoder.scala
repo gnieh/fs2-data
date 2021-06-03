@@ -28,7 +28,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   */
 @implicitNotFound(
   "No implicit CellEncoder found for type ${T}.\nYou can define one using CellEncoder.instance, by calling contramap on another CellEncoder or by using generic derivation for coproducts and unary products.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val cellEncoder: CellEncoder[${T}] = deriveCellEncoder\n\n")
-trait CellEncoder[T] {
+@FunctionalInterface trait CellEncoder[T] {
   def apply(cell: T): String
 
   def contramap[B](f: B => T): CellEncoder[B] = (cell: B) => apply(f(cell))
@@ -38,6 +38,7 @@ object CellEncoder
     extends CellEncoderInstances1
     with CellEncoderInstances2
     with LiteralCellEncoders
+    with EnumEncoders
     with ExportedCellEncoders
     with PlatformCellEncoders {
 
@@ -51,10 +52,10 @@ object CellEncoder
   def instance[T](f: T => String): CellEncoder[T] = s => f(s)
 
   @inline
-  def fromToString[A]: CellEncoder[A] = _.toString
+  def const[T](r: String): CellEncoder[T] = _ => r
 
-  implicit def enumerationEncoder[E <: Enumeration]: CellEncoder[E#Value] =
-    _.toString
+  @inline
+  def fromToString[A]: CellEncoder[A] = _.toString
 
   // Primitives
   implicit val unitEncoder: CellEncoder[Unit] = _ => ""
@@ -68,7 +69,9 @@ object CellEncoder
   implicit val doubleEncoder: CellEncoder[Double] = fromToString(_)
   implicit val bigDecimalEncoder: CellEncoder[BigDecimal] = fromToString(_)
   implicit val bigIntEncoder: CellEncoder[BigInt] = fromToString(_)
-  implicit val stringEncoder: CellEncoder[String] = identity
+  implicit val stringEncoder: CellEncoder[String] = new CellEncoder[String] {
+    override def apply(cell: String): String = cell
+  }
   implicit val charArrayEncoder: CellEncoder[Array[Char]] = new String(_)
 
   // Standard Library types

@@ -14,7 +14,7 @@ import scala.annotation.tailrec
   * Actually, `RowDecoderF` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
   * instance. To get the full power of it, import `cats.implicits._`.
   */
-trait RowDecoderF[H[+a] <: Option[a], T, Header] {
+@FunctionalInterface trait RowDecoderF[H[+a] <: Option[a], T, Header] {
   def apply(row: RowF[H, Header]): DecoderResult[T]
 
   /** Map the parsed value.

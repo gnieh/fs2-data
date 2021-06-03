@@ -27,46 +27,57 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /** Describes how a cell can be decoded to the given type.
   *
-  * `CellDecoder` provides convenient methods such as `map`, `emap`, or `flatMap`
-  * to build new decoders out of more basic one.
+  * `CellDecoder` provides convenient methods such as `map`, `emap`, or `flatMap` to build new decoders out of more
+  * basic one.
   *
-  * Actually, `CellDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
-  * instance. To get the full power of it, import `cats.implicits._`.
+  * Actually, `CellDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.htmlcats`MonadError`]] instance. To
+  * get the full power of it, import `cats.implicits._`.
   */
 @implicitNotFound(
   "No implicit CellDecoder found for type ${T}.\nYou can define one using CellDecoder.instance, by calling map on another CellDecoder or by using generic derivation for coproducts and unary products.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val cellDecoder: CellDecoder[${T}] = deriveCellDecoder\n\n")
-trait CellDecoder[T] {
+@FunctionalInterface trait CellDecoder[T] {
   def apply(cell: String): DecoderResult[T]
 
   /** Map the parsed value.
-    * @param f the mapping function
-    * @tparam T2 the result type
-    * @return a cell decoder reading the mapped type
+    * @param f
+    *   the mapping function
+    * @tparam T2
+    *   the result type
+    * @return
+    *   a cell decoder reading the mapped type
     */
   def map[T2](f: T => T2): CellDecoder[T2] =
     s => apply(s).map(f)
 
-  /** Map the parsed value to a new decoder, which in turn will be applied to
-    * the parsed value.
-    * @param f the mapping function
-    * @tparam T2 the result type
-    * @return a cell decoder reading the mapped type
+  /** Map the parsed value to a new decoder, which in turn will be applied to the parsed value.
+    * @param f
+    *   the mapping function
+    * @tparam T2
+    *   the result type
+    * @return
+    *   a cell decoder reading the mapped type
     */
   def flatMap[T2](f: T => CellDecoder[T2]): CellDecoder[T2] =
     s => apply(s).flatMap(f(_)(s))
 
   /** Map the parsed value, potentially failing.
-    * @param f the mapping function
-    * @tparam T2 the result type
-    * @return a cell decoder reading the mapped type
+    * @param f
+    *   the mapping function
+    * @tparam T2
+    *   the result type
+    * @return
+    *   a cell decoder reading the mapped type
     */
   def emap[T2](f: T => DecoderResult[T2]): CellDecoder[T2] =
     s => apply(s).flatMap(f)
 
   /** Fail-over. If this decoder fails, try the supplied other decoder.
-    * @param cd the fail-over decoder
-    * @tparam TT the return type
-    * @return a decoder combining this and the other decoder
+    * @param cd
+    *   the fail-over decoder
+    * @tparam TT
+    *   the return type
+    * @return
+    *   a decoder combining this and the other decoder
     */
   def or[TT >: T](cd: => CellDecoder[TT]): CellDecoder[TT] =
     s =>
@@ -77,9 +88,12 @@ trait CellDecoder[T] {
 
   /** Similar to [[or]], but return the result as an Either signaling which cell decoder succeeded. Allows for parsing
     * an unrelated type in case of failure.
-    * @param cd the alternative decoder
-    * @tparam B the type the alternative decoder returns
-    * @return a decoder combining both decoders
+    * @param cd
+    *   the alternative decoder
+    * @tparam B
+    *   the type the alternative decoder returns
+    * @return
+    *   a decoder combining both decoders
     */
   def either[B](cd: CellDecoder[B]): CellDecoder[Either[T, B]] =
     s =>
@@ -120,7 +134,7 @@ object CellDecoder
     def tailRecM[A, B](a: A)(f: A => CellDecoder[Either[A, B]]): CellDecoder[B] = {
       @tailrec
       def step(s: String, a: A): DecoderResult[B] =
-        f(a)(s) match {
+        f.apply(a)(s) match {
           case left @ Left(_)          => left.rightCast[B]
           case Right(Left(a))          => step(s, a)
           case Right(right @ Right(_)) => right.leftCast[DecoderError]
@@ -135,14 +149,12 @@ object CellDecoder
 
   @inline
   def instance[T](f: String => DecoderResult[T]): CellDecoder[T] = s => f(s)
+
+  @inline
+  def const[T](r: T): CellDecoder[T] = _ => r.asRight
+
   @inline
   def fromString[T](f: String => T): CellDecoder[T] = s => f(s).asRight
-
-  def enumerationDecoder[E <: Enumeration](enum: E): CellDecoder[E#Value] =
-    s =>
-      enum.values
-        .find(_.toString === s)
-        .toRight(new DecoderError(s"unable to decode '$s' as a ${enum.toString()} value"))
 
   // Primitives
   implicit val unitDecoder: CellDecoder[Unit] = s =>

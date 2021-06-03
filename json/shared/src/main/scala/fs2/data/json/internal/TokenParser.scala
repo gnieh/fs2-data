@@ -54,7 +54,7 @@ private[json] object TokenParser {
               case 'r'  => string_(T.advance(context), key, StringState.Normal, 0, acc.append('\r'), chunkAcc)
               case 't'  => string_(T.advance(context), key, StringState.Normal, 0, acc.append('\t'), chunkAcc)
               case 'u'  => string_(T.advance(context), key, StringState.Expect4Unicode, 0, acc, chunkAcc)
-              case _    => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unknown escaped character '$c'"))
+              case _ => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unknown escaped character '$c'"))
             }
           case StringState.Normal =>
             if (c == '"')

@@ -1,13 +1,37 @@
 val scala212 = "2.12.13"
-val scala213 = "2.13.5"
-val fs2Version = "3.0.3"
-val circeVersion = "0.13.0"
-val shapelessVersion = "2.3.6"
+val scala213 = "2.13.6"
+val scala3 = "3.0.0"
+val fs2Version = "3.0.4"
+val circeVersion = "0.14.1"
+val shapeless2Version = "2.3.7"
+val shapeless3Version = "3.0.1"
 val scalaJavaTimeVersion = "2.3.0"
+val diffsonVersion = "4.1.1"
 
 val commonSettings = List(
-  scalaVersion := scala212,
-  crossScalaVersions := Seq(scala213, scala212),
+  scalaVersion := scala3,
+  crossScalaVersions := Seq(scala213, scala212, scala3),
+  // Copied from circe
+  Compile / unmanagedSourceDirectories ++= {
+    def extraDirs(suffix: String) =
+      CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + suffix))
+
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, y)) => extraDirs("-2") ++ (if (y >= 13) extraDirs("-2.13+") else Nil)
+      case Some((3, _)) => extraDirs("-3") ++ extraDirs("-2.13+")
+      case _            => Nil
+    }
+  },
+  Test / unmanagedSourceDirectories ++= {
+    def extraDirs(suffix: String) =
+      CrossType.Full.sharedSrcDir(baseDirectory.value, "test").toList.map(f => file(f.getPath + suffix))
+
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, y)) => extraDirs("-2") ++ (if (y >= 13) extraDirs("-2.13+") else Nil)
+      case Some((3, _)) => extraDirs("-3") ++ extraDirs("-2.13+")
+      case _            => Nil
+    }
+  },
   organization := "org.gnieh",
   headerLicense := Some(HeaderLicense.ALv2("2021", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
@@ -22,18 +46,31 @@ val commonSettings = List(
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
       case Some((2, n)) if n < 13 =>
         List("-Ypartial-unification", "-language:higherKinds")
+      case Some((3, _)) =>
+        List("-Ykind-projector")
     }
     .toList
     .flatten,
-  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.0" cross CrossVersion.full),
-  addCompilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary),
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.4",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "co.fs2" %% "fs2-io" % fs2Version % "test",
-    "com.disneystreaming" %%% "weaver-cats" % "0.7.2" % "test"
-  ),
+    "com.disneystreaming" %%% "weaver-cats" % "0.7.3" % "test",
+    "com.disneystreaming" %%% "weaver-cats-core" % "0.7.3" % "test",
+    "com.disneystreaming" %%% "weaver-core" % "0.7.3" % "test",
+    "com.disneystreaming" %%% "weaver-framework" % "0.7.3" % "test",
+    "com.eed3si9n.expecty" %%% "expecty" % "0.15.3" % "test",
+    "org.portable-scala" %%% "portable-scala-reflect" % "1.1.1" cross CrossVersion.for3Use2_13
+  ) ++ PartialFunction
+    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
+      List(
+        compilerPlugin("org.typelevel" % "kind-projector" % "0.13.0" cross CrossVersion.full),
+        compilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary)
+      )
+    }
+    .toList
+    .flatten,
   testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
   scmInfo := Some(ScmInfo(url("https://github.com/satabin/fs2-data"), "scm:git:git@github.com:satabin/fs2-data.git"))
 )
@@ -68,8 +105,15 @@ val root = (project in file("."))
     name := "fs2-data",
     publishArtifact := false,
     publish / skip := true,
-    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject --
-      inProjects(benchmarks, cbor.js, csv.js, csvGeneric.js, json.js, jsonCirce.js, jsonDiffson.js, text.js, xml.js),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(benchmarks,
+                                                                             cbor.js,
+                                                                             csv.js,
+                                                                             csvGeneric.js,
+                                                                             json.js,
+                                                                             jsonCirce.js,
+                                                                             jsonDiffson.js,
+                                                                             text.js,
+                                                                             xml.js),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     Nanoc / sourceDirectory := file("site"),
@@ -120,16 +164,22 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform)
   .dependsOn(text)
 
 lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Pure)
+  .crossType(CrossType.Full)
   .in(file("csv/generic"))
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
     name := "fs2-data-csv-generic",
     description := "Generic CSV row decoder generation",
-    libraryDependencies ++= List(
-      "com.chuusai" %%% "shapeless" % shapelessVersion,
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    libraryDependencies ++= onScala2(scalaVersion.value)(
+      List(
+        "com.chuusai" %%% "shapeless" % shapeless2Version,
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value
+      )
+    ) ++ onScala3(scalaVersion.value)(
+      List(
+        "org.typelevel" %%% "shapeless3-deriving" % shapeless3Version
+      )
     ),
     libraryDependencies ++=
       (CrossVersion.partialVersion(scalaVersion.value) match {
@@ -172,7 +222,7 @@ lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
     description := "Streaming JSON library with support for circe ASTs",
     libraryDependencies ++= List(
       "io.circe" %%% "circe-core" % circeVersion,
-      "org.gnieh" %%% "diffson-circe" % "4.0.3" % "test"
+      "org.gnieh" %%% "diffson-circe" % diffsonVersion % "test"
     )
   )
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
@@ -186,7 +236,7 @@ lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform)
     name := "fs2-data-json-diffson",
     description := "Streaming JSON library with support for patches",
     libraryDependencies ++= List(
-      "org.gnieh" %%% "diffson-core" % "4.0.3"
+      "org.gnieh" %%% "diffson-core" % diffsonVersion
     )
   )
   .dependsOn(json % "compile->compile;test->test")
@@ -199,9 +249,12 @@ lazy val jsonInterpolators = project
     name := "fs2-data-json-interpolators",
     description := "Json interpolators support",
     libraryDependencies ++= List(
-      "org.typelevel" %% "literally" % "1.0.2",
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value
-    )
+      "org.typelevel" %% "literally" % "1.0.2"
+    ) ++ PartialFunction
+      .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value
+      }
+      .toList
   )
   .dependsOn(json.jvm % "compile->compile;test->test")
 
@@ -224,7 +277,12 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "fs2-data-cbor",
     description := "Streaming CBOR manipulation library",
-    scalacOptions ++= List("-opt:l:inline", "-opt-inline-from:fs2.data.cbor.low.internal.ItemParser$")
+    scalacOptions ++= PartialFunction
+      .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
+        List("-opt:l:inline", "-opt-inline-from:fs2.data.cbor.low.internal.ItemParser$")
+      }
+      .toList
+      .flatten
   )
 
 lazy val documentation = project
@@ -232,11 +290,13 @@ lazy val documentation = project
   .enablePlugins(MdocPlugin)
   .settings(commonSettings)
   .settings(
+    scalaVersion := scala213,
+    crossScalaVersions := List(scala212, scala213),
     mdocIn := file("documentation/docs"),
     mdocOut := file("site/content/documentation"),
     libraryDependencies ++= List(
       "com.beachape" %% "enumeratum" % "1.5.15",
-      "org.gnieh" %% "diffson-circe" % "4.0.3",
+      "org.gnieh" %% "diffson-circe" % diffsonVersion,
       "io.circe" %% "circe-generic-extras" % circeVersion,
       "co.fs2" %% "fs2-io" % fs2Version
     )
@@ -247,9 +307,20 @@ lazy val benchmarks = project
   .in(file("benchmarks"))
   .enablePlugins(JmhPlugin)
   .settings(commonSettings)
-  .settings(
-    libraryDependencies ++= List(
-      "com.github.pathikrit" %% "better-files" % "3.9.1"
-    )
-  )
   .dependsOn(csv.jvm)
+
+// Utils
+
+def onScala2[T](version: String)(values: => List[T]): List[T] = PartialFunction
+  .condOpt(CrossVersion.partialVersion(version)) { case Some((2, _)) =>
+    values
+  }
+  .toList
+  .flatten
+
+def onScala3[T](version: String)(values: => List[T]): List[T] = PartialFunction
+  .condOpt(CrossVersion.partialVersion(version)) { case Some((3, _)) =>
+    values
+  }
+  .toList
+  .flatten

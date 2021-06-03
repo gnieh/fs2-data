@@ -24,7 +24,7 @@ import scala.annotation.implicitNotFound
   */
 @implicitNotFound(
   "No implicit RowEncoderF[H,  found for type ${T}.\nYou can define one using RowEncoderF[H, .instance, by calling contramap on another RowEncoderF[H,  or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val csvRowEncoder: RowEncoderF[H, [${T}] = deriveRowEncoderF[H, \nMake sure to have instances of CellEncoder for every member type in scope.\n")
-trait RowEncoderF[H[+a] <: Option[a], T, Header] {
+@FunctionalInterface trait RowEncoderF[H[+a] <: Option[a], T, Header] {
   def apply(elem: T): RowF[H, Header]
 
   def contramap[B](f: B => T): RowEncoderF[H, B, Header] = elem => apply(f(elem))

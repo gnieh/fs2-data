@@ -4,7 +4,6 @@ package data.benchmarks
 import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 
-import better.files.File
 import cats.effect.SyncIO
 
 /* Default settings for benchmarks in this class */
@@ -20,7 +19,7 @@ class CsvParserBenchmarks {
 
   @Setup
   def readCsv(): Unit = csvContent = {
-    File("resources/benchmark.csv").contentAsString.grouped(4096).toList
+    scala.io.Source.fromResource("resources/benchmark.csv").mkString.grouped(4096).toList
   }
 
   def csvStream: Stream[SyncIO, String] = Stream.emits(csvContent).covary[SyncIO]

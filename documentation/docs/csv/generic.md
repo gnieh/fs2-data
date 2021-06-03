@@ -6,7 +6,9 @@ module: csv
 
 Module: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv-generic_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv-generic_2.13)
 
-The `fs2-data-csv-generic` module provides automatic and semi-automatic derivation for `RowDecoder` and `CsvRowDecoder`. It makes it easier to support custom row types but is based on [shapeless][shapeless], which can have a significant impact on compilation time.
+The `fs2-data-csv-generic` module provides automatic (Scala 2-only) and semi-automatic derivation for `RowDecoder` and `CsvRowDecoder`. 
+
+It makes it easier to support custom row types but is based on [shapeless][shapeless], which can have a significant impact on compilation time on Scala 2. On Scala 3, it relies on mix of hand-written derivation on top of `scala.deriving.Mirror` and the more light-weight [shapeless-3][shapeless-3], so that compile times shouldn't be problematic as on Scala 2. Note that auto derivation is currently not yet supported on Scala, same goes for using default constructor arguments of `case class`es (for background see [dotty#11667][dotty#11667]).  
 
 To demonstrate how it works, let's work again with the CSV data from the [core][csv-doc] module documentation.
 
@@ -131,3 +133,5 @@ decoded.compile.toList
 
 [csv-doc]: /documentation/csv/
 [shapeless]: https://github.com/milessabin/shapeless
+[shapeless-3]: https://github.com/typelevel/shapeless-3
+[dotty#11667]: https://github.com/lampepfl/dotty/pull/11667
