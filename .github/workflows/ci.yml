@@ -35,8 +35,8 @@ jobs:
             ~/.coursier/cache/v1
             ~/.cache/coursier/v1
           key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-      #- if: ${{ github.event_name == 'pull_request' }}
-      #  run: 'sbt scalafmtCheckAll'
+      - if: ${{ github.event_name == 'pull_request' }}
+        run: 'sbt scalafmtCheckAll'
       - run: 'sbt ++${{ matrix.scala }} test'
       - if: matrix.scala == '2.13.6'
         run: sbt ++${{ matrix.scala }} documentation/mdoc
