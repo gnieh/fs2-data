@@ -18,7 +18,7 @@ jobs:
         run: |
           gem install nanoc kramdown-parser-gfm rouge
       - name: "Compile documentation"
-        run: "sbt documentation/mdoc"
+        run: "sbt ++2.13.6 documentation/mdoc"
       - name: "Build site"
         run: "sbt makeSite"
       - name: "Publish site"
