@@ -84,7 +84,7 @@ private[xml] object EventParser {
       // The constants represent groups Mc, Me, Mn, Lm, and Nd.
       isNCNameStart(c) || (getType(c).toByte match {
         case COMBINING_SPACING_MARK | ENCLOSING_MARK | NON_SPACING_MARK | MODIFIER_LETTER | DECIMAL_DIGIT_NUMBER => true
-        case _                                                                                                   => ".-·".contains(c)
+        case _ => ".-·".contains(c)
       })
     }
 

@@ -22,7 +22,7 @@ import scala.language.experimental.macros
 package object interpolators {
 
   extension (inline ctx: StringContext) {
-    inline def selector(inline args: Any*): Selector = ${SelectorInterpolator('ctx, 'args)}
+    inline def selector(inline args: Any*): Selector = ${ SelectorInterpolator('ctx, 'args) }
   }
 
 }

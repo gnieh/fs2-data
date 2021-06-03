@@ -16,6 +16,7 @@ object OptCellDecoder extends LowPrioOptCellDecoders {
 
 trait LowPrioOptCellDecoders {
   given makeOpt[A: CellDecoder]: OptCellDecoder[Option[A]] = new OptCellDecoder[Option[A]] {
-    override def apply(name: String, value: Option[String]): DecoderResult[Option[A]] = value.traverse(CellDecoder[A].apply(_))
+    override def apply(name: String, value: Option[String]): DecoderResult[Option[A]] =
+      value.traverse(CellDecoder[A].apply(_))
   }
 }

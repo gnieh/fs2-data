@@ -33,32 +33,12 @@ object semiauto {
   def deriveRowDecoder[T](using ic: K0.ProductInstances[OptCellDecoder, T]): RowDecoder[T] = {
     new RowDecoder[T] {
       override def apply(row: Row): DecoderResult[T] = {
-        val ((_, _, errorOpt), decodedOpt) = ic.unfold[(Int, List[String], Option[DecoderError])]((0, row.values.toList, None))(
-          [t] => (acc: (Int, List[String], Option[DecoderError]), cd: OptCellDecoder[t]) => {
-            val result = cd(s"at index ${acc._1}", acc._2.headOption.filter(_.nonEmpty))
-            ((acc._1 + 1, acc._2.tail, result.left.toOption), result.toOption)
-          }
-        )
-        decodedOpt.toRight(errorOpt.getOrElse(new DecoderError("Bug in derivation logic.")))
-      }
-    }
-  }
-
-  def deriveRowEncoder[T](using ic: K0.ProductInstances[CellEncoder, T]): RowEncoder[T] = new RowEncoder[T] {
-    override def apply(elem: T): Row = Row(cats.data.NonEmptyList.fromListUnsafe(ic.foldLeft(elem)(List.empty[String])(
-      [t] => (acc: List[String], ce: CellEncoder[t], e: t) => Continue[List[String]](ce(e) :: acc)
-    )).reverse)
-  }
-
-  def deriveCsvRowDecoder[T](using ic: K0.ProductInstances[OptCellDecoder, T], labels: Labelling[T], annotations: Annotations[CsvName, T]): CsvRowDecoder[T, String] = {
-    val names: List[String] = namesFor[T]
-    new CsvRowDecoder[T, String] {
-      override def apply(row: CsvRow[String]): DecoderResult[T] = {
-        val ((_, _, errorOpt), decodedOpt) = ic.unfold[(Int, CsvRow[String], Option[DecoderError])]((0, row, None))(
-            [t] => (acc: (Int, CsvRow[String], Option[DecoderError]), cd: OptCellDecoder[t]) => {
-              val columnName = names(acc._1)
-              val result = cd.apply(columnName, acc._2(columnName).filter(_.nonEmpty))
-              ((acc._1 + 1, row, result.left.toOption), result.toOption)
+        val ((_, _, errorOpt), decodedOpt) =
+          ic.unfold[(Int, List[String], Option[DecoderError])]((0, row.values.toList, None))(
+            [t] =>
+              (acc: (Int, List[String], Option[DecoderError]), cd: OptCellDecoder[t]) => {
+                val result = cd(s"at index ${acc._1}", acc._2.headOption.filter(_.nonEmpty))
+                ((acc._1 + 1, acc._2.tail, result.left.toOption), result.toOption)
             }
           )
         decodedOpt.toRight(errorOpt.getOrElse(new DecoderError("Bug in derivation logic.")))
@@ -66,13 +46,48 @@ object semiauto {
     }
   }
 
-  def deriveCsvRowEncoder[T](using ic: K0.ProductInstances[CellEncoder, T], labels: Labelling[T], annotations: Annotations[CsvName, T]) = new CsvRowEncoder[T, String] {
+  def deriveRowEncoder[T](using ic: K0.ProductInstances[CellEncoder, T]): RowEncoder[T] = new RowEncoder[T] {
+    override def apply(elem: T): Row = Row(
+      cats.data.NonEmptyList
+        .fromListUnsafe(
+          ic.foldLeft(elem)(List.empty[String])(
+            [t] => (acc: List[String], ce: CellEncoder[t], e: t) => Continue[List[String]](ce(e) :: acc)
+          ))
+        .reverse)
+  }
+
+  def deriveCsvRowDecoder[T](using
+      ic: K0.ProductInstances[OptCellDecoder, T],
+      labels: Labelling[T],
+      annotations: Annotations[CsvName, T]): CsvRowDecoder[T, String] = {
+    val names: List[String] = namesFor[T]
+    new CsvRowDecoder[T, String] {
+      override def apply(row: CsvRow[String]): DecoderResult[T] = {
+        val ((_, _, errorOpt), decodedOpt) = ic.unfold[(Int, CsvRow[String], Option[DecoderError])]((0, row, None))(
+          [t] =>
+            (acc: (Int, CsvRow[String], Option[DecoderError]), cd: OptCellDecoder[t]) => {
+              val columnName = names(acc._1)
+              val result = cd.apply(columnName, acc._2(columnName).filter(_.nonEmpty))
+              ((acc._1 + 1, row, result.left.toOption), result.toOption)
+          }
+        )
+        decodedOpt.toRight(errorOpt.getOrElse(new DecoderError("Bug in derivation logic.")))
+      }
+    }
+  }
+
+  def deriveCsvRowEncoder[T](using
+      ic: K0.ProductInstances[CellEncoder, T],
+      labels: Labelling[T],
+      annotations: Annotations[CsvName, T]) = new CsvRowEncoder[T, String] {
     val names: List[String] = namesFor[T]
     type Acc = (List[String], List[(String, String)])
     override def apply(elem: T): CsvRow[String] = {
-      val columns = ic.foldLeft[Acc](elem)(names -> List.empty[(String, String)])(
-        [t] => (acc: Acc, ce: CellEncoder[t], e: t) => Continue((acc._1.tail, ((acc._1.head -> ce(e)) :: acc._2)))
-      )._2
+      val columns = ic
+        .foldLeft[Acc](elem)(names -> List.empty[(String, String)])(
+          [t] => (acc: Acc, ce: CellEncoder[t], e: t) => Continue((acc._1.tail, ((acc._1.head -> ce(e)) :: acc._2)))
+        )
+        ._2
       CsvRow.fromNelHeaders(cats.data.NonEmptyList.fromListUnsafe(columns.reverse))
     }
   }

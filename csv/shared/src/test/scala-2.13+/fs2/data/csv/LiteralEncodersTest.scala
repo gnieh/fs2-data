@@ -12,9 +12,9 @@ object LiteralEncodersTest extends SimpleIOSuite {
 
   pureTest("The literal encoders should encode the precise same value") {
     expect(CellEncoder["foo"].apply("foo") == "foo") and
-    expect(CellEncoder[1].apply(1) == "1") and
-    expect(CellEncoder[true].apply(true) == "true") and
-    expect(CellEncoder['C'].apply('C') == "C")
+      expect(CellEncoder[1].apply(1) == "1") and
+      expect(CellEncoder[true].apply(true) == "true") and
+      expect(CellEncoder['C'].apply('C') == "C")
   }
 
 }
