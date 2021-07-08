@@ -18,6 +18,7 @@ package fs2.data.csv
 import cats._
 import cats.data._
 import cats.implicits._
+import scala.annotation.nowarn
 
 /** A CSV row with or without headers. The presence of headers is encoded via the first type param
   * which is a subtype of [[scala.Option]]. By preserving this information in types, it's possible to define
@@ -112,14 +113,14 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     * An empty cell value results in `Some("")`.
     */
   def apply(header: Header)(implicit hasHeaders: HasHeaders[H, Header]): Option[String] =
-    byHeader.get(header)
+    byHeader.get(header): @nowarn("msg=HasHeaders")
 
   /** Returns the decoded content of the cell at `header`.
     * Fails if the field doesn't exist or cannot be decoded
     * to the expected type.
     */
   def as[T](header: Header)(implicit hasHeaders: HasHeaders[H, Header], decoder: CellDecoder[T]): DecoderResult[T] =
-    byHeader.get(header) match {
+    (byHeader: @nowarn("msg=HasHeaders")).get(header) match {
       case Some(v) => decoder(v)
       case None    => Left(new DecoderError(s"unknown field $header"))
     }
@@ -127,7 +128,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
   /** Returns a representation of this row as Map from headers to corresponding cell values.
     */
   def toMap(implicit hasHeaders: HasHeaders[H, Header]): Map[Header, String] =
-    byHeader
+    byHeader: @nowarn("msg=HasHeaders")
 
   /** Returns a representation of this row as NonEmptyMap from headers to corresponding cell values.
     */
@@ -139,7 +140,13 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     */
   def dropHeaders: Row = Row(values)
 
-  private def byHeader(implicit hasHeaders: HasHeaders[H, Header]): Map[Header, String] =
+  // let's cache this to avoid recomputing it for every call to `as` or similar method
+  // the `Option.get` call is safe since this field is only called in a context where a `HasHeaders`
+  // instance is provided, meaning that the `Option` is `Some`
+  // of course using a lazy val prevents us to make this constraint statistically checked, but
+  // the gain is significant enough to allow for this local unsafety
+  @deprecated("Have you checked that you have a `HasHeaders` instance in scope?")
+  private lazy val byHeader: Map[Header, String] =
     headers.get.toList.zip(values.toList).toMap
 
   // Like Traverse[Option], but preserves the H type
