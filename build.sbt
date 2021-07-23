@@ -4,7 +4,7 @@ val scala3 = "3.0.1"
 val fs2Version = "3.0.6"
 val circeVersion = "0.14.1"
 val shapeless2Version = "2.3.7"
-val shapeless3Version = "3.0.1"
+val shapeless3Version = "3.0.2"
 val scalaJavaTimeVersion = "2.3.0"
 val diffsonVersion = "4.1.1"
 
