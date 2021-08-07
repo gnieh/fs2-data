@@ -18,12 +18,11 @@ package data
 package json
 
 import ast._
-import io.file.Files
+import io.file.{Files, Flags, Path}
 
 import cats.effect._
 
 import weaver._
-import java.nio.file.Paths
 
 sealed trait Expectation
 object Expectation {
@@ -34,24 +33,24 @@ object Expectation {
 
 abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends SimpleIOSuite {
 
-  private val testFileDir = Paths.get("json/jvm/src/test/resources/test-parsing/")
+  private val testFileDir = Path("json/jvm/src/test/resources/test-parsing/")
 
   test("Standard test suite files should be parsed correctly") {
     Files[IO]
-      .directoryStream(testFileDir)
+      .list(testFileDir)
       .evalMap { path =>
         val expectation =
-          if (path.toFile.getName.startsWith("y_"))
+          if (path.fileName.startsWith("y_"))
             Expectation.Valid
-          else if (path.toFile.getName.startsWith("n_"))
+          else if (path.fileName.startsWith("n_"))
             Expectation.Invalid
           else
             Expectation.ImplementationDefined
 
         val contentStream =
           Files[IO]
-            .readAll(path, 1024)
-            .through(fs2.text.utf8Decode)
+            .readAll(path, 1024, Flags.Read)
+            .through(fs2.text.utf8.decode)
 
         contentStream
           .through(tokens)

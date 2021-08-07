@@ -169,15 +169,13 @@ Once you got a JSON token stream, selected and transformed what you needed in it
 For instance, let's say you want to write the resulting JSON stream to a file in compact form (i.e. with no space or new lines), you can do:
 
 ```scala mdoc:compile-only
-import fs2.io.file.Files
-
-import java.nio.file.Paths
+import fs2.io.file.{Files, Flags, Path}
 
 stream
   .through(render.compact)
-  .through(text.utf8Encode)
+  .through(text.utf8.encode)
   .lift[IO]
-  .through(Files[IO].writeAll(Paths.get("/some/path/to/file.json")))
+  .through(Files[IO].writeAll(Path("/some/path/to/file.json"), Flags.Write))
   .compile
   .drain
 ```
