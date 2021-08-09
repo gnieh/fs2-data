@@ -342,15 +342,13 @@ On the other hand, if it selects elements in an object, then emitted values are 
 
 <p>For instance, let’s say you want to write the resulting JSON stream to a file in compact form (i.e. with no space or new lines), you can do:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.io.file.Files</span>
-
-<span class="k">import</span> <span class="nn">java.nio.file.Paths</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.io.file.</span><span class="o">{</span><span class="nc">Files</span><span class="o">,</span> <span class="nc">Flags</span><span class="o">,</span> <span class="nc">Path</span><span class="o">}</span>
 
 <span class="n">stream</span>
   <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">render</span><span class="o">.</span><span class="py">compact</span><span class="o">)</span>
-  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">text</span><span class="o">.</span><span class="py">utf8Encode</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">text</span><span class="o">.</span><span class="py">utf8</span><span class="o">.</span><span class="py">encode</span><span class="o">)</span>
   <span class="o">.</span><span class="py">lift</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
-  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nc">Files</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="py">writeAll</span><span class="o">(</span><span class="nv">Paths</span><span class="o">.</span><span class="py">get</span><span class="o">(</span><span class="s">"/some/path/to/file.json"</span><span class="o">)))</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nc">Files</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="py">writeAll</span><span class="o">(</span><span class="nc">Path</span><span class="o">(</span><span class="s">"/some/path/to/file.json"</span><span class="o">),</span> <span class="nv">Flags</span><span class="o">.</span><span class="py">Write</span><span class="o">))</span>
   <span class="o">.</span><span class="py">compile</span>
   <span class="o">.</span><span class="py">drain</span>
 </code></pre></div></div>
