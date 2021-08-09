@@ -52,12 +52,10 @@ A common pattern when using this library to read data from a file is to start by
 import cats.effect._
 
 import fs2._
-import fs2.io.file.Files
-
-import java.nio.file.Paths
+import fs2.io.file.{Files, Flags, Path}
 
 Files[IO]
-  .readAll(Paths.get("/some/path/to/a/file.data"), 1024)
+  .readAll(Path("/some/path/to/a/file.data"), 1024, Flags.Read)
   // perform your decoding, parsing, and transformation here
   .compile
   .drain
@@ -71,10 +69,10 @@ If your file is encoded in **UTF-8**, you can use the [`fs2.text` decoding pipes
 
 ```scala mdoc:silent
 Files[IO]
-  .readAll(Paths.get("/some/path/to/a/file.data"), 1024)
+  .readAll(Path("/some/path/to/a/file.data"), 1024, Flags.Read)
   // extra decoding step is required since UTF-8 encodes character input
   // up to 4 bytes, which might span several chunks
-  .through(text.utf8Decode)
+  .through(text.utf8.decode)
   // now that we have a stream of `String`, we can parse
   .through(tokens)
   .compile
@@ -90,7 +88,7 @@ If your file is encoded using a single-byte encoding, there is no built-in decod
 import fs2.data.text.latin1._
 
 Files[IO]
-  .readAll(Paths.get("/some/path/to/a/file.data"), 1024)
+  .readAll(Path("/some/path/to/a/file.data"), 1024, Flags.Read)
   // decoding is done by the now in scope `CharLikeChunks[IO, Byte]` instance
   .through(tokens)
   .compile

@@ -17,25 +17,23 @@ package fs2.data.csv
 
 import io.circe.parser.parse
 import fs2._
-import fs2.io.file.Files
+import fs2.io.file.{Files, Flags, Path}
 import cats.effect._
 import cats.syntax.all._
 import weaver._
 
-import java.nio.file.{Path, Paths}
-
 object CsvParserTest extends SimpleIOSuite {
 
-  private val testFileDir: Path = Paths.get("csv/jvm/src/test/resources/csv-spectrum/csvs/")
+  private val testFileDir: Path = Path("csv/jvm/src/test/resources/csv-spectrum/csvs/")
 
-  lazy val allExpected: Stream[IO, (java.nio.file.Path, List[Map[String, String]])] =
+  lazy val allExpected: Stream[IO, (Path, List[Map[String, String]])] =
     Files[IO]
-      .directoryStream(testFileDir)
+      .list(testFileDir)
       .evalMap { path =>
-        val name = path.getFileName.toFile.getName.stripSuffix(".csv")
+        val name = path.fileName.toString.stripSuffix(".csv")
         Files[IO]
-          .readAll(Paths.get(s"csv/jvm/src/test/resources/csv-spectrum/json/$name.json"), 1024)
-          .through(text.utf8Decode)
+          .readAll(Path(s"csv/jvm/src/test/resources/csv-spectrum/json/$name.json"), 1024, Flags.Read)
+          .through(text.utf8.decode)
           .compile
           .string
           .flatMap { rawExpected =>
@@ -48,11 +46,11 @@ object CsvParserTest extends SimpleIOSuite {
 
   loggedTest("Standard test suite should pass") { log =>
     allExpected
-      .evalTap { case (path, _) => log.info(path.getFileName.toString) }
+      .evalTap { case (path, _) => log.info(path.fileName.toString) }
       .evalMap { case (path, expected) =>
         Files[IO]
-          .readAll(path, 1024)
-          .through(fs2.text.utf8Decode)
+          .readAll(path, 1024, Flags.Read)
+          .through(fs2.text.utf8.decode)
           .through(decodeUsingHeaders[CsvRow[String]]())
           .compile
           .toList
@@ -65,7 +63,7 @@ object CsvParserTest extends SimpleIOSuite {
 
   loggedTest("Standard test suite files should be encoded and parsed correctly") { log =>
     allExpected
-      .evalTap { case (path, _) => log.info(path.getFileName.toString) }
+      .evalTap { case (path, _) => log.info(path.fileName.toString) }
       .evalMap { case (path, expected) =>
         Stream
           .emits(expected)

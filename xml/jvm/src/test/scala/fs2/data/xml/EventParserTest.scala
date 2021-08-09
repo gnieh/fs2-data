@@ -18,22 +18,21 @@ package fs2.data.xml
 import cats.effect._
 
 import fs2._
-import fs2.io.file.Files
+import fs2.io.file.{Files, Flags, Path}
 
 import weaver._
-import java.nio.file.Paths
 
 object EventParserTest extends SimpleIOSuite {
 
-  val testFileDir = Paths.get("xml/jvm/src/test/resources/xmlconf")
+  val testFileDir = Path("xml/jvm/src/test/resources/xmlconf")
   test("Standard test suite should pass") {
-    (Files[IO].walk(testFileDir.resolve("xmltest/valid")).filter(_.toFile.getName.endsWith(".xml")) ++
-      Files[IO].directoryStream(testFileDir.resolve("sun/valid")))
+    (Files[IO].walk(testFileDir.resolve("xmltest/valid")).filter(_.fileName.endsWith(".xml")) ++
+      Files[IO].list(testFileDir.resolve("sun/valid")))
       .evalMap { path =>
         // valid tests
         Files[IO]
-          .readAll(path, 1024)
-          .through(fs2.text.utf8Decode)
+          .readAll(path, 1024, Flags.Read)
+          .through(fs2.text.utf8.decode)
           .flatMap(Stream.emits(_))
           .through(events)
           .compile
