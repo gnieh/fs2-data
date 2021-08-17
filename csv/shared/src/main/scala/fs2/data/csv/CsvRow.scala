@@ -111,6 +111,17 @@ case class CsvRow[Header] private[csv] (override val values: NonEmptyList[String
   def updated(header: Header, value: String): CsvRow[Header] =
     updated(headers.toList.indexOf(header), value)
 
+  /** Returns the row with the cell at `header` set to `value`.
+    * If the row does not contain this header yet, it is added to the end.
+    */
+  def set(header: Header, value: String): CsvRow[Header] = {
+    val idx = headers.toList.indexOf(header)
+    if(idx < 0)
+      new CsvRow[Header](values :+ value, headers :+ header)
+    else
+      updated(idx, value)
+  }
+
   /** Returns the row without the cell at the given `idx`.
     * If the resulting row is empty, returns `None`.
     */
