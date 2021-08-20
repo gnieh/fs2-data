@@ -83,6 +83,21 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
   def updated(header: Header, value: String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] =
     hasHeaders(updatedAt(headers.get.toList.indexOf(header), value))
 
+  /** Returns the row with the cell at `header` modified to `value`.
+    * If the header wasn't present in the row, it is added to the end of the fields.
+    *
+    * **Note:** Only the first occurrence of the values with the given header
+    * will be modified. It shouldn't be a problem in the general case as headers
+    * should not be duplicated.
+    */
+  def set(header: Header, value: String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] = {
+    val idx = headers.get.toList.indexOf(header)
+    if (idx < 0)
+      hasHeaders(new RowF(values :+ value, headers.map(_ :+ header).asInstanceOf[H[NonEmptyList[Header]]]))
+    else
+      hasHeaders(updatedAt(idx, value))
+  }
+
   /** Returns the row without the cell at the given `idx`.
     * If the resulting row is empty, returns `None`.
     */
