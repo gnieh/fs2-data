@@ -56,10 +56,10 @@ val commonSettings = List(
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.5.0",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "co.fs2" %% "fs2-io" % fs2Version % "test",
-    "com.disneystreaming" %%% "weaver-cats" % "0.7.5" % "test",
-    "com.disneystreaming" %%% "weaver-cats-core" % "0.7.5" % "test",
-    "com.disneystreaming" %%% "weaver-core" % "0.7.5" % "test",
-    "com.disneystreaming" %%% "weaver-framework" % "0.7.5" % "test",
+    "com.disneystreaming" %%% "weaver-cats" % "0.7.6" % "test",
+    "com.disneystreaming" %%% "weaver-cats-core" % "0.7.6" % "test",
+    "com.disneystreaming" %%% "weaver-core" % "0.7.6" % "test",
+    "com.disneystreaming" %%% "weaver-framework" % "0.7.6" % "test",
     "com.eed3si9n.expecty" %%% "expecty" % "0.15.4" % "test",
     "org.portable-scala" %%% "portable-scala-reflect" % "1.1.1" cross CrossVersion.for3Use2_13
   ) ++ PartialFunction
