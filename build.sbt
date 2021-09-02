@@ -9,7 +9,7 @@ val scalaJavaTimeVersion = "2.3.0"
 val diffsonVersion = "4.1.1"
 
 val commonSettings = List(
-  scalaVersion := scala3,
+  scalaVersion := scala213,
   crossScalaVersions := Seq(scala213, scala212, scala3),
   // Copied from circe
   Compile / unmanagedSourceDirectories ++= {

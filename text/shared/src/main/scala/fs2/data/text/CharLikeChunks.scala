@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Lucas Satabin
+ * Copyright 2021 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package fs2
 package data
 package text
@@ -20,6 +21,7 @@ package text
 import scala.annotation.implicitNotFound
 
 import java.nio.charset.Charset
+import scala.collection.immutable.VectorBuilder
 
 /** A typeclass witnessing that a stream of type `In` has chunks
   * that can be iterated over to get characters.
@@ -66,6 +68,13 @@ trait CharLikeChunks[F[_], In] {
     */
   def current(ctx: Context): Char
 
+  /** Emits characters while the predicate holds, stopping at the first non matching one.
+    *
+    * Implementations must emit all characters until the first non matching one and should preserve
+    * chunk structure.
+    */
+  def emitWhile(ctx: Context, pred: Char => Boolean): Pull[F, In, Option[Context]]
+
 }
 
 private class CharLikeCharChunks[F[_]] extends CharLikeChunks[F, Char] {
@@ -95,6 +104,26 @@ private class CharLikeCharChunks[F[_]] extends CharLikeChunks[F, Char] {
   def current(ctx: CharContext): Char =
     ctx.chunk(ctx.idx)
 
+  def emitWhile(ctx: Context, pred: Char => Boolean): Pull[F, Char, Option[Context]] = {
+    def loop(ctx: Context, acc: VectorBuilder[Char]): Pull[F, Char, Option[Context]] =
+      if (needsPull(ctx)) {
+        Pull.output(Chunk.vector(acc.result())) >> pullNext(ctx).flatMap {
+          case Some(ctx) =>
+            acc.clear()
+            loop(ctx, acc)
+          case None => Pull.pure(None)
+        }
+      } else {
+        val c = current(ctx)
+        if (pred(c))
+          loop(advance(ctx), acc.addOne(c))
+        else
+          Pull.output(Chunk.vector(acc.result())).as(Some(ctx))
+      }
+
+    loop(ctx, new VectorBuilder)
+  }
+
 }
 
 private class CharLikeStringChunks[F[_]] extends CharLikeChunks[F, String] {
@@ -123,6 +152,26 @@ private class CharLikeStringChunks[F[_]] extends CharLikeChunks[F, String] {
 
   def current(ctx: StringContext): Char =
     ctx.string(ctx.sidx)
+
+  def emitWhile(ctx: Context, pred: Char => Boolean): Pull[F, String, Option[Context]] = {
+    def loop(ctx: Context, acc: StringBuilder): Pull[F, String, Option[Context]] =
+      if (needsPull(ctx)) {
+        Pull.output1(acc.result()) >> pullNext(ctx).flatMap {
+          case Some(ctx) =>
+            acc.clear()
+            loop(ctx, acc)
+          case None => Pull.pure(None)
+        }
+      } else {
+        val c = current(ctx)
+        if (pred(c))
+          loop(advance(ctx), acc.addOne(c))
+        else
+          Pull.output1(acc.result()).as(Some(ctx))
+      }
+
+    loop(ctx, new StringBuilder)
+  }
 
 }
 
@@ -156,6 +205,26 @@ private class CharLikeSingleByteChunks[F[_]](charset: Charset) extends CharLikeC
 
   def current(ctx: Context): Char =
     ctx.chunk(ctx.idx)
+
+  def emitWhile(ctx: Context, pred: Char => Boolean): Pull[F, Byte, Option[Context]] = {
+    def loop(ctx: Context, bytes: Array[Byte], acc: VectorBuilder[Byte]): Pull[F, Byte, Option[Context]] =
+      if (needsPull(ctx)) {
+        Pull.output(Chunk.vector(acc.result())) >> pullNext(ctx).flatMap {
+          case Some(ctx) =>
+            acc.clear()
+            loop(ctx, ctx.chunk.getBytes(charset), acc)
+          case None => Pull.pure(None)
+        }
+      } else {
+        val c = current(ctx)
+        if (pred(c))
+          loop(advance(ctx), bytes, acc.addOne(bytes(ctx.idx)))
+        else
+          Pull.output(Chunk.vector(acc.result())).as(Some(ctx))
+      }
+
+    loop(ctx, ctx.chunk.getBytes(charset), new VectorBuilder)
+  }
 
 }
 

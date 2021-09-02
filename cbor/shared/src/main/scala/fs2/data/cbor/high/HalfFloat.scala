@@ -1,6 +1,5 @@
 /*
- * Copyright 2020 Lucas Satabin
- * Adapted from https://gist.github.com/non/29f8d66036afca402f96
+ * Copyright 2021 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
