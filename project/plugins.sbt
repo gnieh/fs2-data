@@ -1,4 +1,4 @@
-addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.3")
+addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.5.0")
 
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.3")
 
