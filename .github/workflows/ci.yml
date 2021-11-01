@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        scala: [2.12.15, 2.13.6, 3.0.0]
+        scala: [2.12.15, 2.13.7, 3.0.0]
         java: [adopt@1.11]
     runs-on: ${{ matrix.os }}
     steps:
@@ -38,5 +38,5 @@ jobs:
       - if: ${{ github.event_name == 'pull_request' }}
         run: 'sbt scalafmtCheckAll'
       - run: 'sbt ++${{ matrix.scala }} test'
-      - if: matrix.scala == '2.13.6'
+      - if: matrix.scala == '2.13.7'
         run: sbt ++${{ matrix.scala }} documentation/mdoc
