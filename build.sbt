@@ -36,6 +36,7 @@ val commonSettings = List(
   headerLicense := Some(HeaderLicense.ALv2("2021", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
+  versionScheme := Some("early-semver"),
   scalacOptions ++= List("-feature",
                          "-deprecation",
                          "-unchecked",
