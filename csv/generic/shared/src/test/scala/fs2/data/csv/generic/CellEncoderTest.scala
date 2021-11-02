@@ -21,7 +21,7 @@ object CellEncoderTest extends SimpleIOSuite {
     val complexEncoder: CellEncoder[Complex] = semiauto.deriveCellEncoder
 
     expect(complexEncoder(Active) == "Active") and
-      //expect(complexEncoder(Inactive) == "Inactive") and
+      // expect(complexEncoder(Inactive) == "Inactive") and
       expect(complexEncoder(Unknown("inactive")) == "inactive") and
       expect(complexEncoder(Numbered(7)) == "7") and
       expect(complexEncoder(Unknown("foo")) == "foo")
