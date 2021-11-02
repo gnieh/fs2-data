@@ -57,6 +57,7 @@ site/output
 
 .metals/
 .bloop/
+.bsp/
 metals.sbt
 
 .vscode/settings.json
