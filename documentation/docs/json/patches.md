@@ -20,8 +20,6 @@ In order for patches to be applied, you need a `Tokenizer` for some `Json` type 
 
 Let's say you are using circe as Json AST library, you can use patches like this:
 ```scala mdoc
-import cats.effect._
-
 import fs2.{Fallible, Stream}
 import fs2.data.json._
 import fs2.data.json.circe._

@@ -24,44 +24,67 @@ import scala.collection.immutable.VectorBuilder
 
 private[json] object TokenSelector {
 
-  private def transformValue[F[_], Json](chunk: Chunk[Token],
-                                         idx: Int,
-                                         rest: Stream[F, Token],
-                                         f: Json => Option[Json],
-                                         context: JsonContext,
-                                         chunkAcc: VectorBuilder[Token],
-                                         key: Option[String])(implicit
-      F: RaiseThrowable[F],
-      builder: Builder[Json],
-      tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, VectorBuilder[Token]]] =
-    ValueParser.pullValue(chunk, idx, rest).flatMap {
-      case Some((chunk, idx, rest, json)) =>
-        val chunkAcc1 = f(json) match {
-          case Some(json) => chunkAcc ++= key.map(Token.Key(_)) ++= tokenizer.tokenize(json).toList
-          case None       => chunkAcc
-        }
-        Pull.pure(Some((chunk, idx, rest, chunkAcc1)))
-      case None => Pull.pure(None)
-    }
-
-  private def transformValueF[F[_], Json](chunk: Chunk[Token],
-                                          idx: Int,
-                                          rest: Stream[F, Token],
-                                          f: Json => F[Json],
-                                          context: JsonContext,
-                                          chunkAcc: VectorBuilder[Token],
-                                          key: Option[String])(implicit
+  private def transformValue[F[_], Json, A, B](chunk: Chunk[Token],
+                                               idx: Int,
+                                               rest: Stream[F, Token],
+                                               toA: Json => Either[JsonException, A],
+                                               f: A => B,
+                                               fromB: B => Option[Json],
+                                               context: JsonContext,
+                                               chunkAcc: VectorBuilder[Token],
+                                               key: Option[String])(implicit
       F: RaiseThrowable[F],
       builder: Builder[Json],
       tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, VectorBuilder[Token]]] =
     ValueParser.pullValue(chunk, idx, rest).flatMap {
       case Some((chunk, idx, rest, json)) =>
         Pull
-          .eval(f(json))
+          .pure(toA(json))
+          .flatMap {
+            case Left(e) =>
+              Pull.raiseError(new JsonException("An error occurred while transforming Json data", Some(context), e))
+            case Right(v) =>
+              val chunkAcc1 = fromB(f(v)) match {
+                case Some(json) => chunkAcc ++= key.map(Token.Key(_)) ++= tokenizer.tokenize(json).toList
+                case None       => chunkAcc
+              }
+              Pull.pure(Some((chunk, idx, rest, chunkAcc1)))
+          }
+      case None => Pull.pure(None)
+    }
+
+  private def transformValueF[F[_], Json, A, B](chunk: Chunk[Token],
+                                                idx: Int,
+                                                rest: Stream[F, Token],
+                                                toA: Json => Either[JsonException, A],
+                                                f: A => F[B],
+                                                fromB: B => Option[Json],
+                                                context: JsonContext,
+                                                chunkAcc: VectorBuilder[Token],
+                                                key: Option[String])(implicit
+      F: RaiseThrowable[F],
+      builder: Builder[Json],
+      tokenizer: Tokenizer[Json]): Pull[F, Token, Result[F, VectorBuilder[Token]]] =
+    ValueParser.pullValue(chunk, idx, rest).flatMap {
+      case Some((chunk, idx, rest, json)) =>
+        Pull
+          .pure(toA(json))
+          .flatMap {
+            case Left(e)  => Pull.raiseError(e)
+            case Right(v) => Pull.pure(v)
+          }
+          .flatMap(a => Pull.eval(f(a)))
           .handleErrorWith(t =>
             emitChunk(chunkAcc) >> Pull.raiseError(
               new JsonException("An error occurred while transforming Json data", Some(context), t)))
-          .map(transformed => Some((chunk, idx, rest, chunkAcc ++= tokenizer.tokenize(transformed).toList)))
+          .map { transformed =>
+            val chunkAcc1 = fromB(transformed) match {
+              case Some(transformed) =>
+                chunkAcc ++= key.map(Token.Key(_)) ++= tokenizer.tokenize(transformed).toList
+              case None => chunkAcc
+            }
+            Some((chunk, idx, rest, chunkAcc1))
+          }
       case None => Pull.pure(None)
     }
 
@@ -334,7 +357,11 @@ private[json] object TokenSelector {
   def pipe[F[_]](selector: Selector, wrap: Boolean)(implicit F: RaiseThrowable[F]): Pipe[F, Token, Token] =
     s => go(Chunk.empty, 0, s, selector, false, wrap, true, JsonContext.Root, emit[F], new VectorBuilder).stream
 
-  def transformPipe[F[_], Json: Builder: Tokenizer](selector: Selector, f: Json => Option[Json])(implicit
+  def transformPipe[F[_], Json: Builder: Tokenizer, A, B](selector: Selector,
+                                                          toA: Json => Either[JsonException, A],
+                                                          f: A => B,
+                                                          fromB: B => Option[Json],
+                                                          emitEarly: Boolean)(implicit
       F: RaiseThrowable[F]): Pipe[F, Token, Token] =
     s =>
       go(Chunk.empty,
@@ -343,23 +370,9 @@ private[json] object TokenSelector {
          selector,
          true,
          true,
-         false,
+         emitEarly,
          JsonContext.Root,
-         transform[F, Json](f),
-         new VectorBuilder).stream
-
-  def transformPipeF[F[_], Json: Builder: Tokenizer](selector: Selector, f: Json => F[Json])(implicit
-      F: RaiseThrowable[F]): Pipe[F, Token, Token] =
-    s =>
-      go(Chunk.empty,
-         0,
-         s,
-         selector,
-         true,
-         true,
-         true,
-         JsonContext.Root,
-         transformF[F, Json](f),
+         transform[F, Json, A, B](toA, f, fromB),
          new VectorBuilder).stream
 
   private def emit[F[_]](chunk: Chunk[Token],
@@ -371,22 +384,44 @@ private[json] object TokenSelector {
       F: RaiseThrowable[F]): Pull[F, Token, Result[F, VectorBuilder[Token]]] =
     emitValue[F](chunk, idx, rest, 0, chunkAcc)
 
-  private def transform[F[_], Json: Builder: Tokenizer](f: Json => Option[Json])(chunk: Chunk[Token],
-                                                                                 idx: Int,
-                                                                                 rest: Stream[F, Token],
-                                                                                 context: JsonContext,
-                                                                                 chunkAcc: VectorBuilder[Token],
-                                                                                 key: Option[String])(implicit
-      F: RaiseThrowable[F]): Pull[F, Token, Result[F, VectorBuilder[Token]]] =
-    transformValue(chunk, idx, rest, f, context, chunkAcc, key)
+  def transformPipeF[F[_], Json: Builder: Tokenizer, A, B](selector: Selector,
+                                                           toA: Json => Either[JsonException, A],
+                                                           f: A => F[B],
+                                                           fromB: B => Option[Json],
+                                                           emitEarly: Boolean)(implicit
+      F: RaiseThrowable[F]): Pipe[F, Token, Token] =
+    s =>
+      go(Chunk.empty,
+         0,
+         s,
+         selector,
+         true,
+         true,
+         emitEarly,
+         JsonContext.Root,
+         transformF(toA, f, fromB),
+         new VectorBuilder).stream
 
-  private def transformF[F[_], Json: Builder: Tokenizer](f: Json => F[Json])(chunk: Chunk[Token],
-                                                                             idx: Int,
-                                                                             rest: Stream[F, Token],
-                                                                             context: JsonContext,
-                                                                             chunkAcc: VectorBuilder[Token],
-                                                                             key: Option[String])(implicit
+  private def transform[F[_], Json: Builder: Tokenizer, A, B](toA: Json => Either[JsonException, A],
+                                                              f: A => B,
+                                                              fromB: B => Option[Json])(chunk: Chunk[Token],
+                                                                                        idx: Int,
+                                                                                        rest: Stream[F, Token],
+                                                                                        context: JsonContext,
+                                                                                        chunkAcc: VectorBuilder[Token],
+                                                                                        key: Option[String])(implicit
       F: RaiseThrowable[F]): Pull[F, Token, Result[F, VectorBuilder[Token]]] =
-    transformValueF(chunk, idx, rest, f, context, chunkAcc, key)
+    transformValue(chunk, idx, rest, toA, f, fromB, context, chunkAcc, key)
+
+  private def transformF[F[_], Json: Builder: Tokenizer, A, B](toA: Json => Either[JsonException, A],
+                                                               f: A => F[B],
+                                                               fromB: B => Option[Json])(chunk: Chunk[Token],
+                                                                                         idx: Int,
+                                                                                         rest: Stream[F, Token],
+                                                                                         context: JsonContext,
+                                                                                         chunkAcc: VectorBuilder[Token],
+                                                                                         key: Option[String])(implicit
+      F: RaiseThrowable[F]): Pull[F, Token, Result[F, VectorBuilder[Token]]] =
+    transformValueF(chunk, idx, rest, toA, f, fromB, context, chunkAcc, key)
 
 }

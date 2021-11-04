@@ -9,7 +9,7 @@ val scalaJavaTimeVersion = "2.3.0"
 val diffsonVersion = "4.1.1"
 
 val commonSettings = List(
-  scalaVersion := scala3,
+  scalaVersion := scala213,
   crossScalaVersions := Seq(scala213, scala212, scala3),
   // Copied from circe
   Compile / unmanagedSourceDirectories ++= {
@@ -300,7 +300,8 @@ lazy val documentation = project
       "org.gnieh" %% "diffson-circe" % diffsonVersion,
       "io.circe" %% "circe-generic-extras" % circeVersion,
       "co.fs2" %% "fs2-io" % fs2Version
-    )
+    ),
+    scalacOptions += "-Ymacro-annotations"
   )
   .dependsOn(csv.jvm, csvGeneric.jvm, json.jvm, jsonDiffson.jvm, jsonCirce.jvm, jsonInterpolators, xml.jvm, cbor.jvm)
 
