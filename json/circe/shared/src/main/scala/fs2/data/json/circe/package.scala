@@ -37,7 +37,7 @@ package object circe {
   }
 
   implicit object CirceTokenizer extends Tokenizer[Json] {
-    private def one(token: Token) = NonEmptyList.one(token)
+    import NonEmptyList.one
     private def tokenizeArray(values: Vector[Json]) =
       NonEmptyList(Token.StartArray, values.toList.flatMap(tokenize(_).toList)).append(Token.EndArray)
     private def tokenizeObject(fields: List[(String, Json)]) =
