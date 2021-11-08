@@ -116,7 +116,7 @@ abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer
              Token.Key("g"),
              Token.StringValue("test"),
              Token.EndObject)
-        .through(transformOpt[Fallible, Json](selector, _ => Some(builder.makeFalse)))
+        .through(ast.transformOpt[Fallible, Json](selector, _ => Some(builder.makeFalse)))
         .compile
         .toList
     expect(
@@ -138,7 +138,7 @@ abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer
              Token.Key("g"),
              Token.StringValue("test"),
              Token.EndObject)
-        .through(transformOpt[Fallible, Json](selector, _ => None))
+        .through(ast.transformOpt[Fallible, Json](selector, _ => None))
         .compile
         .toList
     expect(transformed == Right(List(Token.StartObject, Token.Key("g"), Token.StringValue("test"), Token.EndObject)))
@@ -157,7 +157,7 @@ abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer
         Token.Key("g"),
         Token.StringValue("test"),
         Token.EndObject
-      ).through(transformOpt[Fallible, Json](selector, _ => None)).compile.toList
+      ).through(ast.transformOpt[Fallible, Json](selector, _ => None)).compile.toList
     expect(
       transformed == Right(
         List(Token.StartObject,
@@ -181,7 +181,7 @@ abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer
            Token.Key("g"),
            Token.StringValue("test"),
            Token.EndObject)
-      .through(transformF[IO, Json](selector, _ => IO.raiseError(exn)))
+      .through(ast.transformF[IO, Json](selector, _ => IO.raiseError(exn)))
       .attempt
       .compile
       .toList

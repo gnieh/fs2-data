@@ -143,24 +143,65 @@ The `filter` preserves the chunk structure, so that the stream fails as soon as 
 
 ### AST builder and tokenizer
 
+To handle Json ASTs, you can use the types and pipes available in the `fs2.data.json.ast` package.
+
 JSON ASTs can be built if you provider an implicit [`Builder[Json]`][builder-api] to the `values` pipe. The `Builder[Json]` typeclass describes how JSON ASTs of type `Json` are built from streams.
 
-```scala
-implicit val builder: Builder[SomeJsonType] = ...
-val asts = stream.through(values[F, SomeJsonType])
+```scala mdoc:compile-only
+import ast._
+
+trait SomeJsonType
+
+implicit val builder: Builder[SomeJsonType] = ???
+stream.through(values[Fallible, SomeJsonType])
 ```
 
 The `asts` stream emits all top-level JSON values parsed, in our example, the two objects are emitted.
 
-If you provide an implicit [`Tokenizer[Json]`][tokenizer-api], which describes how a JSON AST is transformed into JSON tokens, you can apply transformations to the JSON stream. For instance, you can wrap all values in the `fields3` array by using this code:
+If you provide an implicit [`Tokenizer[Json]`][tokenizer-api], which describes how a JSON AST is transformed into JSON tokens, you can apply transformations to the JSON stream. For instance, you can apply a function `fun` to all values in the `fields3` array by using this code:
 
-```scala
-implicit tokenizer: Tokenizer[SomeJsonType] = ...
-val transformed = stream.through(transform[Fallible, Json](selector, json => SomeJsonObject("test" -> json)))
+```scala mdoc:compile-only
+import ast._
+
+trait SomeJsonType
+
+implicit val builder: Builder[SomeJsonType] = ???
+implicit val tokenizer: Tokenizer[SomeJsonType] = ???
+
+def fun(json: SomeJsonType): SomeJsonType = ???
+
+stream.through(transform[Fallible, SomeJsonType](selector, fun))
 ```
-For concrete examples of provided `Builder`s and `Tokenizer`s, please refer to [the JSON library binding modules documentation][json-lib-doc]
+For concrete examples of provided `Builder`s and `Tokenizer`s, please refer to [the JSON library binding modules documentation][json-lib-doc].
 
 Sometimes you would like to delete some Json values from the input stream, based o some predicate at a given path, and keep the rest untouched. In this case, you can use the `transformOpt` pipe, and return `None` for values you want to remove from the stream.
+
+### Serializers and deserializers
+
+To handle Json (de)serialized values, you can use the types and pipes available in the `fs2.data.json.codec` package.
+
+Values can be automatically deserialized from a stream of JSON tokens by providing a [`Deserializer[T]`][deserializer-api].
+
+```scala mdoc:compile-only
+import codec._
+
+implicit val deserializer: Deserializer[Int] = ???
+stream.through(deserialize[Fallible, Int])
+```
+
+You can also serialize a stream of values by providing a [`Serializer[T]`][serializer-api].
+
+```scala mdoc:compile-only
+import codec._
+
+implicit val serializer: Serializer[String] = ???
+
+Stream("a", "b", "c").through(serialize)
+```
+
+The `codec` package also contains various transformation pipes, acting directly on values. Please refer to the [package API documentation][codec-api] for more details.
+
+For concrete examples of provided `Deserializer`s and `Serializer`s, please refer to [the JSON library binding modules documentation][json-lib-doc].
 
 ### JSON Renderers
 
@@ -230,7 +271,7 @@ You can generate a stream of JSON token wrapped in an object at a key named `eve
 ```scala mdoc
 import fs2.data.json.circe._
 
-val wrappedTokens = events.through(tokenize).through(wrap.asArrayInObject(at = "events"))
+val wrappedTokens = events.through(ast.tokenize).through(wrap.asArrayInObject(at = "events"))
 ```
 
 You can use the renderers described above to generate the rendered chunks to send to the client.
@@ -245,7 +286,7 @@ You can also add other fields to the the generated object stream. For instance, 
 import _root_.io.circe.Json
 
 events
-  .through(tokenize)
+  .through(ast.tokenize)
   .through(wrap.asArrayInObject(at = "events", in = Map("size" -> Json.fromInt(4))))
   .through(render.compact)
   .compile
@@ -258,6 +299,9 @@ For more pipes and options, please refer to the [API documentation][wrap-api].
 [interpolator-doc]: /documentation/json/libraries
 [builder-api]: /api/fs2/data/json/ast/Builder.html
 [tokenizer-api]: /api/fs2/data/json/ast/Tokenizer.html
+[deserializer-api]: /api/fs2/data/json/codec/Deserializer.html
+[serializer-api]: /api/fs2/data/json/codec/Serializer.html
+[codec-api]: /api/fs2/data/json/codec/
 [wrap-api]: /api/fs2/data/json/package$$wrap$.html
 [monad-error]: https://typelevel.org/cats/api/cats/MonadError.html
 [collector-doc]: https://oss.sonatype.org/service/local/repositories/releases/archive/co/fs2/fs2-core_2.13/2.3.0/fs2-core_2.13-2.3.0-javadoc.jar/!/fs2/Collector.html

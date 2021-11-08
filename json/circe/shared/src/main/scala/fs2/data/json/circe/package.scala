@@ -16,8 +16,10 @@
 package fs2.data.json
 
 import ast._
+import codec._
 
 import cats.data.NonEmptyList
+import cats.syntax.either._
 
 import io.circe._
 import io.circe.syntax._
@@ -53,6 +55,22 @@ package object circe {
         o => tokenizeObject(o.toList)
       )
   }
+
+  implicit def deserializerForDecoder[A](implicit decoder: Decoder[A]): Deserializer.Aux[A, Json] =
+    new Deserializer[A] {
+      type Json = io.circe.Json
+      implicit val builder: Builder[Json] = CirceBuilder
+      def deserialize(json: Json): Either[JsonException, A] = decoder
+        .decodeJson(json)
+        .leftMap(t => JsonException("an error occured while deserializing Json values", inner = t))
+    }
+
+  implicit def serializerForEncoder[A](implicit encoder: Encoder[A]): Serializer.Aux[A, Json] =
+    new Serializer[A] {
+      type Json = io.circe.Json
+      implicit val tokenizer: Tokenizer[Json] = CirceTokenizer
+      def serialize(a: A): Json = encoder(a)
+    }
 
   implicit def tokenizerForEncoder[T](implicit encoder: Encoder[T]): Tokenizer[T] =
     new Tokenizer[T] {
