@@ -109,5 +109,14 @@ val transformed = stream.through(codec.transformOpt(f1, (i: Int) => (i > 0).guar
 transformed.compile.to(collector.pretty())
 ```
 
+### Play! JSON
+
+Module: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-play_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-play_2.13)
+
+The `fs2-data-json-play` module provides `Builder` and `Tokenizer` instances for the [Play! JSON][play-json] `JsValue` type and a `Tokenizer` instance for each type `T` having an implicit `Writes[T]` in scope.
+
+It also provides `Deserializer` for types with a `Reads` instance and `Serializer` for the ones with a `Writes` instance.
+
 [json-doc]: /documentation/json/
 [circe]: https://circe.github.io/circe/
+[play-json]: https://www.playframework.com/
