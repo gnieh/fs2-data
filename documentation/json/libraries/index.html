@@ -9,7 +9,7 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
-    <meta name="generator" content="Nanoc 4.12.3">
+    <meta name="generator" content="Nanoc 4.12.0">
   </head>
   <body>
     <header>
@@ -74,13 +74,12 @@
 <p>This page covers the following libraries:</p>
 <ul id="markdown-toc">
   <li><a href="#circe" id="markdown-toc-circe">Circe</a></li>
+  <li><a href="#play-json" id="markdown-toc-play-json">Play! JSON</a></li>
 </ul>
 
 <p>Examples on this page use the following input:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
-
-<span class="k">import</span> <span class="nn">fs2.</span><span class="o">{</span><span class="nc">Fallible</span><span class="o">,</span> <span class="nc">Stream</span><span class="o">}</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.</span><span class="o">{</span><span class="nc">Fallible</span><span class="o">,</span> <span class="nc">Stream</span><span class="o">}</span>
 <span class="k">import</span> <span class="nn">fs2.data.json._</span>
 <span class="k">import</span> <span class="nn">fs2.data.json.selector._</span>
 
@@ -130,7 +129,7 @@ For instance both examples from the <a href="/documentation/json/">core module d
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
 <span class="k">import</span> <span class="nn">io.circe._</span>
 
-<span class="k">val</span> <span class="nv">asts</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">values</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">])</span>
+<span class="k">val</span> <span class="nv">asts</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">ast</span><span class="o">.</span><span class="py">values</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">])</span>
 <span class="c1">// asts: Stream[Fallible[x], Json] = Stream(..)</span>
 <span class="nv">asts</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res0: Either[Throwable, List[Json]] = Right(</span>
@@ -149,7 +148,7 @@ For instance both examples from the <a href="/documentation/json/">core module d
 <span class="c1">//   )</span>
 <span class="c1">// )</span>
 
-<span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">transform</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">sel</span><span class="o">,</span> <span class="n">json</span> <span class="k">=&gt;</span> <span class="nv">Json</span><span class="o">.</span><span class="py">obj</span><span class="o">(</span><span class="s">"test"</span> <span class="o">-&gt;</span> <span class="n">json</span><span class="o">)))</span>
+<span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">ast</span><span class="o">.</span><span class="py">transform</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">sel</span><span class="o">,</span> <span class="n">json</span> <span class="k">=&gt;</span> <span class="nv">Json</span><span class="o">.</span><span class="py">obj</span><span class="o">(</span><span class="s">"test"</span> <span class="o">-&gt;</span> <span class="n">json</span><span class="o">)))</span>
 <span class="c1">// transformed: Stream[Fallible[x], Token] = Stream(..)</span>
 <span class="nv">transformed</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">())</span>
 <span class="c1">// res1: Either[Throwable, String] = Right(</span>
@@ -188,7 +187,7 @@ For instance both examples from the <a href="/documentation/json/">core module d
 <span class="c1">//   mandatory = false</span>
 <span class="c1">// )</span>
 
-<span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">transformOpt</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">f1</span><span class="o">,</span> <span class="n">json</span> <span class="k">=&gt;</span> <span class="nv">json</span><span class="o">.</span><span class="py">as</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="py">toOption</span><span class="o">.</span><span class="py">filter</span><span class="o">(</span><span class="k">_</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="o">).</span><span class="py">as</span><span class="o">(</span><span class="n">json</span><span class="o">)))</span>
+<span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">ast</span><span class="o">.</span><span class="py">transformOpt</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">f1</span><span class="o">,</span> <span class="n">json</span> <span class="k">=&gt;</span> <span class="nv">json</span><span class="o">.</span><span class="py">as</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="py">toOption</span><span class="o">.</span><span class="py">filter</span><span class="o">(</span><span class="k">_</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="o">).</span><span class="py">as</span><span class="o">(</span><span class="n">json</span><span class="o">)))</span>
 <span class="c1">// transformed: Stream[Fallible[x], Token] = Stream(..)</span>
 <span class="nv">transformed</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">())</span>
 <span class="c1">// res2: Either[Throwable, String] = Right(</span>
@@ -206,6 +205,105 @@ For instance both examples from the <a href="/documentation/json/">core module d
 <span class="c1">// }"""</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
+
+<p>The circe integration also provides <code>Deserializer</code> and <code>Serializer</code> based on the circe <code>Decoder</code>s and <code>Encoder</code>s.</p>
+
+<p>Let’s say we defined our data model as follows:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">io.circe.generic.JsonCodec</span>
+
+<span class="nd">@JsonCodec</span>
+<span class="k">case</span> <span class="k">class</span> <span class="nc">Data</span><span class="o">(</span><span class="n">field1</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">field2</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">String</span><span class="o">],</span> <span class="n">field3</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">])</span>
+
+<span class="nd">@JsonCodec</span>
+<span class="k">case</span> <span class="k">class</span> <span class="nc">WrappedData</span><span class="o">(</span><span class="n">field1</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">field2</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">String</span><span class="o">],</span> <span class="n">field3</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Wrapped</span><span class="o">])</span>
+
+<span class="nd">@JsonCodec</span>
+<span class="k">case</span> <span class="k">class</span> <span class="nc">Wrapped</span><span class="o">(</span><span class="n">test</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span>
+</code></pre></div></div>
+<p>We could write the previous wrapping transformation using these case classes.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
+<span class="k">import</span> <span class="nn">io.circe._</span>
+
+<span class="k">val</span> <span class="nv">values</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">codec</span><span class="o">.</span><span class="py">deserialize</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Data</span><span class="o">])</span>
+<span class="c1">// values: Stream[Fallible[x], Data] = Stream(..)</span>
+<span class="nv">values</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res3: Either[Throwable, List[Data]] = Right(</span>
+<span class="c1">//   value = List(</span>
+<span class="c1">//     Data(field1 = 0, field2 = Some(value = "test"), field3 = List(1, 2, 3)),</span>
+<span class="c1">//     Data(field1 = 2, field2 = None, field3 = List())</span>
+<span class="c1">//   )</span>
+<span class="c1">// )</span>
+
+<span class="k">def</span> <span class="nf">wrap</span><span class="o">(</span><span class="n">data</span><span class="k">:</span> <span class="kt">Data</span><span class="o">)</span><span class="k">:</span> <span class="kt">WrappedData</span> <span class="o">=</span>
+  <span class="nc">WrappedData</span><span class="o">(</span><span class="nv">data</span><span class="o">.</span><span class="py">field1</span><span class="o">,</span> <span class="nv">data</span><span class="o">.</span><span class="py">field2</span><span class="o">,</span> <span class="nv">data</span><span class="o">.</span><span class="py">field3</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nc">Wrapped</span><span class="o">(</span><span class="k">_</span><span class="o">)))</span>
+
+<span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">codec</span><span class="o">.</span><span class="py">transform</span><span class="o">(</span><span class="n">sel</span><span class="o">,</span> <span class="n">wrap</span><span class="o">))</span>
+<span class="c1">// transformed: Stream[Fallible[x], Token] = Stream(..)</span>
+<span class="nv">transformed</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">())</span>
+<span class="c1">// res4: Either[Throwable, String] = Left(</span>
+<span class="c1">//   value = JsonException(</span>
+<span class="c1">//     msg = "An error occurred while transforming Json data",</span>
+<span class="c1">//     context = Some(</span>
+<span class="c1">//       value = Index(</span>
+<span class="c1">//         idx = 0L,</span>
+<span class="c1">//         parent = Key(</span>
+<span class="c1">//           name = "field3",</span>
+<span class="c1">//           parent = Key(</span>
+<span class="c1">//             name = "field2",</span>
+<span class="c1">//             parent = Key(name = "field1", parent = Root)</span>
+<span class="c1">//           )</span>
+<span class="c1">//         )</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     inner = JsonException(</span>
+<span class="c1">//       msg = "an error occured while deserializing Json values",</span>
+<span class="c1">//       context = None,</span>
+<span class="c1">//       inner = DecodingFailure(Attempt to decode value on failed cursor, List(DownField(field1)))</span>
+<span class="c1">//     )</span>
+<span class="c1">//   )</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>Dropping values can be done similarly.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
+<span class="k">import</span> <span class="nn">io.circe._</span>
+<span class="k">import</span> <span class="nn">cats.implicits._</span>
+
+<span class="k">val</span> <span class="nv">f1</span> <span class="k">=</span> <span class="nv">root</span><span class="o">.</span><span class="py">field</span><span class="o">(</span><span class="s">"field1"</span><span class="o">).</span><span class="py">compile</span>
+<span class="c1">// f1: Selector = NameSelector(</span>
+<span class="c1">//   pred = Single(name = "field1"),</span>
+<span class="c1">//   strict = true,</span>
+<span class="c1">//   mandatory = false</span>
+<span class="c1">// )</span>
+
+<span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">codec</span><span class="o">.</span><span class="py">transformOpt</span><span class="o">(</span><span class="n">f1</span><span class="o">,</span> <span class="o">(</span><span class="n">i</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">).</span><span class="py">guard</span><span class="o">[</span><span class="kt">Option</span><span class="o">].</span><span class="py">as</span><span class="o">(</span><span class="n">i</span><span class="o">)))</span>
+<span class="c1">// transformed: Stream[Fallible[x], Token] = Stream(..)</span>
+<span class="nv">transformed</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">())</span>
+<span class="c1">// res5: Either[Throwable, String] = Right(</span>
+<span class="c1">//   value = """{</span>
+<span class="c1">//   "field2": "test",</span>
+<span class="c1">//   "field3": [</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     2,</span>
+<span class="c1">//     3</span>
+<span class="c1">//   ]</span>
+<span class="c1">// }</span>
+<span class="c1">// {</span>
+<span class="c1">//   "field1": 2,</span>
+<span class="c1">//   "field3": []</span>
+<span class="c1">// }"""</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<h3 id="play-json">Play! JSON</h3>
+
+<p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-play_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-play_2.13.svg" alt="Maven Central" /></a></p>
+
+<p>The <code>fs2-data-json-play</code> module provides <code>Builder</code> and <code>Tokenizer</code> instances for the <a href="https://www.playframework.com/">Play! JSON</a> <code>JsValue</code> type and a <code>Tokenizer</code> instance for each type <code>T</code> having an implicit <code>Writes[T]</code> in scope.</p>
+
+<p>It also provides <code>Deserializer</code> for types with a <code>Reads</code> instance and <code>Serializer</code> for the ones with a <code>Writes</code> instance.</p>
 
 
       </div>
