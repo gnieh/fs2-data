@@ -114,6 +114,7 @@ val root = (project in file("."))
                                                                              json.js,
                                                                              jsonCirce.js,
                                                                              jsonDiffson.js,
+                                                                             jsonPlay.js,
                                                                              text.js,
                                                                              xml.js),
     ScalaUnidoc / siteSubdirName := "api",
