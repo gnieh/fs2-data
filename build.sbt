@@ -116,7 +116,8 @@ val root = (project in file("."))
                                                                              jsonDiffson.js,
                                                                              jsonPlay.js,
                                                                              text.js,
-                                                                             xml.js),
+                                                                             xml.js,
+                                                                             transducers.js),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     Nanoc / sourceDirectory := file("site"),
@@ -140,7 +141,9 @@ val root = (project in file("."))
     xml.jvm,
     xml.js,
     cbor.jvm,
-    cbor.js
+    cbor.js,
+    transducers.jvm,
+    transducers.js
   )
 
 lazy val text = crossProject(JVMPlatform, JSPlatform)
@@ -302,6 +305,16 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform)
       }
       .toList
       .flatten
+  )
+
+lazy val transducers = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Full)
+  .in(file("transducers"))
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "fs2-data-transducers",
+    description := "Streaming transducers library"
   )
 
 lazy val documentation = project
