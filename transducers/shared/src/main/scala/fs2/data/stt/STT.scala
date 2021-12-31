@@ -156,91 +156,105 @@ class STT[F[_], In, Out, StackElem](initial: Int,
   }
 
   def apply(s: Stream[F, In]): Stream[F, Out] = {
-    def go(s: Stream[F, In],
+    def go(chunk: Chunk[In],
+           idx: Int,
+           rest: Stream[F, In],
            state: Int,
            stack: List[(StackElem, Env[Variable.Stack, Out])],
            env: Env[Variable.Normal, Out],
            lastKnownFinal: Option[(Int, Env[Variable.Normal, Out])],
-           accSinceLastFinal: Chain[In]): Pull[F, Out, Unit] =
-      s.pull.peek1.flatMap {
-        case Some((in, s)) =>
-          Pull
-            // try to step with the current input character
-            .eval(step(state, stack, env)(in).value)
-            .flatMap {
-              case Some((state, stack, env)) if isFinal(state) =>
-                // we can step and the target state is final,
-                // register this as the last encountered final state,
-                // reinitialize the input buffer to empty, and proceed
-                // consume the input symbol
-                go(s.tail, state, stack, env, (state, env).some, Chain.empty)
-              case Some((state, stack, env)) =>
-                // we can step and the target state is NOT final,
-                // add the just read input into the buffer of read
-                // inputs since last final state, and proceed
-                go(s.tail, state, stack, env, lastKnownFinal, accSinceLastFinal.append(in))
+           accSinceLastFinal: Chain[In],
+           chunkAcc: Chain[Out]): Pull[F, Out, Unit] =
+      if (idx >= chunk.size) {
+        Pull.output(Chunk.chain(chunkAcc)) >> rest.pull.uncons.flatMap {
+          case Some((hd, tl)) =>
+            go(hd, 0, tl, state, stack, env, lastKnownFinal, accSinceLastFinal, Chain.empty)
+          case None =>
+            // we are at the end of the input
+            // did we reach a final state?
+            lastKnownFinal match {
+              case Some((state, env)) =>
+                // we did reach a final state, emit the outputs from the last one reached
+                // and push back the input read since into the stream, then proceed
+                Pull
+                  .eval(eval0(env, finalStates(state)))
+                  .flatMap(outs =>
+                    go(Chunk.chain(accSinceLastFinal),
+                       0,
+                       Stream.empty,
+                       initial,
+                       Nil,
+                       Env.create(variables),
+                       None,
+                       Chain.empty,
+                       chunkAcc ++ outs))
               case None =>
-                // we cannot step from this state, is it final?
-                finalStates.get(state) match {
-                  case Some(finalExpr) if accSinceLastFinal.nonEmpty =>
-                    // it is a final state, emit the associated output, reset buffer,
-                    // reset to initial state, and proceed without consuming the input
-                    Pull
-                      .eval(eval0(env, finalExpr))
-                      .flatMap(outs =>
-                        Pull.output(Chunk.chain(outs)) >> go(s, initial, Nil, Env.create(variables), None, Chain.empty))
-                  case _ =>
-                    // it is not a final state
-                    lastKnownFinal match {
-                      case Some((state, env)) =>
-                        // we reached a final state before, let's emit what should have been emitted
-                        // there, and push the input buffer back to the stream
-                        Pull
-                          .eval(eval0(env, finalStates(state)))
-                          .flatMap(outs =>
-                            Pull.output(Chunk.chain(outs)) >> go(Stream.chunk(Chunk.chain(accSinceLastFinal)) ++ s,
-                                                                 initial,
-                                                                 Nil,
-                                                                 Env.create(variables),
-                                                                 None,
-                                                                 Chain.empty))
-                      case None =>
-                        // there is no known final, we will emit nothing and just fail
-                        Pull.raiseError(
-                          STTException(
-                            show"malformed input, prefix ${(accSinceLastFinal :+ in).mkString_(", ")} is not accepted"))
-                    }
+                // we did not reach a final state, do we have leftover inputs?
+                if (accSinceLastFinal.isEmpty) {
+                  // no we don't, everything has been processed, stop here
+                  Pull.done
+                } else {
+                  // we do have unprocessed inputs, this is an error
+                  Pull.raiseError(STTException("malformed input"))
                 }
             }
-        case None =>
-          // we are at the end of the input
-          // did we reach a final state?
-          lastKnownFinal match {
-            case Some((state, env)) =>
-              // we did reach a final state, emit the outputs from the last one reached
-              // and push back the input read since into the stream, then proceed
-              Pull
-                .eval(eval0(env, finalStates(state)))
-                .flatMap(outs =>
-                  Pull.output(Chunk.chain(outs)) >> go(Stream.chunk(Chunk.chain(accSinceLastFinal)),
-                                                       initial,
-                                                       Nil,
-                                                       Env.create(variables),
-                                                       None,
-                                                       Chain.empty))
+        }
+      } else {
+        val in = chunk(idx)
+        Pull
+          // try to step with the current input character
+          .eval(step(state, stack, env)(in).value)
+          .flatMap {
+            case Some((state, stack, env)) if isFinal(state) =>
+              // we can step and the target state is final,
+              // register this as the last encountered final state,
+              // reinitialize the input buffer to empty, and proceed
+              // consume the input symbol
+              go(chunk, idx + 1, rest, state, stack, env, (state, env).some, Chain.empty, chunkAcc)
+            case Some((state, stack, env)) =>
+              // we can step and the target state is NOT final,
+              // add the just read input into the buffer of read
+              // inputs since last final state, and proceed
+              go(chunk, idx + 1, rest, state, stack, env, lastKnownFinal, accSinceLastFinal.append(in), chunkAcc)
             case None =>
-              // we did not reach a final state, do we have leftover inputs?
-              if (accSinceLastFinal.isEmpty) {
-                // no we don't, everything has been processed, stop here
-                Pull.done
-              } else {
-                // we do have unprocessed inputs, this is an error
-                Pull.raiseError(STTException("malformed input"))
+              // we cannot step from this state, is it final?
+              finalStates.get(state) match {
+                case Some(finalExpr) if accSinceLastFinal.nonEmpty =>
+                  // it is a final state, emit the associated output, reset buffer,
+                  // reset to initial state, and proceed without consuming the input
+                  Pull
+                    .eval(eval0(env, finalExpr))
+                    .flatMap(outs =>
+                      go(chunk, idx, rest, initial, Nil, Env.create(variables), None, Chain.empty, chunkAcc ++ outs))
+                case _ =>
+                  // it is not a final state
+                  lastKnownFinal match {
+                    case Some((state, env)) =>
+                      // we reached a final state before, let's emit what should have been emitted
+                      // there, and push the input buffer back to the stream
+                      Pull
+                        .eval(eval0(env, finalStates(state)))
+                        .flatMap(outs =>
+                          go(Chunk.chain(accSinceLastFinal),
+                             0,
+                             rest,
+                             initial,
+                             Nil,
+                             Env.create(variables),
+                             None,
+                             Chain.empty,
+                             chunkAcc ++ outs))
+                    case None =>
+                      // there is no known final, we will emit nothing and just fail
+                      Pull.output(Chunk.chain(chunkAcc)) >> Pull.raiseError(
+                        STTException(
+                          show"malformed input, prefix ${(accSinceLastFinal :+ in).mkString_(", ")} is not accepted"))
+                  }
               }
           }
       }
 
-    go(s, initial, List.empty, Env.create(variables), None, Chain.empty).stream
+    go(Chunk.empty, 0, s, initial, List.empty, Env.create(variables), None, Chain.empty, Chain.empty).stream
 
   }
 

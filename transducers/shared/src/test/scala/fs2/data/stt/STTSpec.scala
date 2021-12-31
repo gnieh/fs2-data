@@ -80,6 +80,7 @@ object STTSpec extends SimpleIOSuite {
                                     Map("x" -> Type.Type0, "y" -> Type.Type0, "z" -> Type.Type1))
 
     Stream(openA, openB, leaf0, closeB, leaf1, closeA, openB, closeB)
+      .rechunkRandomly()
       .through(reverse)
       .compile
       .toList
