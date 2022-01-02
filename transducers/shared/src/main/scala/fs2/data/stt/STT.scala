@@ -31,13 +31,14 @@ case class CallTransition[Out, StackElem](target: Int, push: StackElem, update: 
 case class ReturnTransition[Out](target: Int, update: List[Assignment[Variable, Out]])
 
 /** A copyless streaming tree transducer implementation. */
-class STT[F[_], In, Out, StackElem](initial: Int,
-                                    internalTransitions: Map[(Int, In), InternalTransition[Out]],
-                                    callTransitions: Map[(Int, In), CallTransition[Out, StackElem]],
-                                    returnTransitions: Map[(Int, StackElem, In), ReturnTransition[Out]],
-                                    finalStates: Map[Int, Expr0[Out]],
-                                    variables: Map[String, Type])(implicit
+class STT[F[_], T[_, _], In, Out, StackElem](initial: Int,
+                                             internalTransitions: T[(Int, In), InternalTransition[Out]],
+                                             callTransitions: T[(Int, In), CallTransition[Out, StackElem]],
+                                             returnTransitions: T[(Int, StackElem, In), ReturnTransition[Out]],
+                                             finalStates: Map[Int, Expr0[Out]],
+                                             variables: Map[String, Type])(implicit
     F: MonadError[F, Throwable],
+    T: Table[T],
     In: HasTag[In],
     showIn: Show[In],
     showOut: Show[Out])
