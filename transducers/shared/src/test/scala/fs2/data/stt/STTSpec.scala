@@ -20,6 +20,7 @@ package stt
 
 import weaver._
 import cats.Show
+import cats.effect.IO
 
 sealed trait Tree
 object Tree {
@@ -75,12 +76,12 @@ object STTSpec extends SimpleIOSuite {
     )
     val finalStates = Map(0 -> Expr0.Var[Tree](x))
     val reverse =
-      new STT(0,
-              internalTransition,
-              callTransition,
-              returnTransition,
-              finalStates,
-              Map("x" -> Type.Type0, "y" -> Type.Type0, "z" -> Type.Type1))
+      new STT[IO, Map, Tree, Tree, Tree](0,
+                                         internalTransition,
+                                         callTransition,
+                                         returnTransition,
+                                         finalStates,
+                                         Map("x" -> Type.Type0, "y" -> Type.Type0, "z" -> Type.Type1))
 
     Stream(openA, openB, leaf0, closeB, leaf1, closeA, openB, closeB)
       .rechunkRandomly()
@@ -105,12 +106,12 @@ object STTSpec extends SimpleIOSuite {
     }
     val finalStates = Map(0 -> Expr0.Var[Tree](x))
     val reverse =
-      new STT(0,
-              internalTransition,
-              callTransition,
-              returnTransition,
-              finalStates,
-              Map("x" -> Type.Type0, "y" -> Type.Type0, "z" -> Type.Type1))
+      new STT[IO, PartialFunction, Tree, Tree, Tree](0,
+                                                     internalTransition,
+                                                     callTransition,
+                                                     returnTransition,
+                                                     finalStates,
+                                                     Map("x" -> Type.Type0, "y" -> Type.Type0, "z" -> Type.Type1))
 
     Stream(openA, openB, leaf0, closeB, leaf1, closeA, openB, closeB)
       .rechunkRandomly()
@@ -120,6 +121,37 @@ object STTSpec extends SimpleIOSuite {
       .map(result => expect(result == List(openB, closeB, openA, leaf1, openB, leaf0, closeB, closeA)))
   }
 
-  test("")
+  test("emit until error") {
+    import Assignment._
+    val internalTransition =
+      Map[(Int, Tree), InternalTransition[Tree]]()
+    val callTransition = Map[(Int, Tree), CallTransition[Tree, Unit]](
+      (0, openA) ->
+        CallTransition(0, (), List(Char(y, openA), Append(x, y))))
+    val returnTransition = Map[(Int, Unit, Tree), ReturnTransition[Tree]](
+      (0, (), closeA) ->
+        ReturnTransition(0, List(Char(y, closeA), Append(x, y), Prepend(x, xp)))
+    )
+    val finalStates = Map(0 -> Expr0.Var[Tree](x))
+    val onlyA = new STT[IO, Map, Tree, Tree, Unit](0,
+                                                   internalTransition,
+                                                   callTransition,
+                                                   returnTransition,
+                                                   finalStates,
+                                                   Map("x" -> Type.Type0, "y" -> Type.Type0))
+    Stream(openA, openA, closeA, closeA, openB, closeB)
+      .through(onlyA)
+      .attempt
+      .compile
+      .toList
+      .map { result =>
+        expect(
+          result == List(Right(openA),
+                         Right(openA),
+                         Right(closeA),
+                         Right(closeA),
+                         Left(STTException("malformed input, prefix <b is not accepted"))))
+      }
+  }
 
 }
