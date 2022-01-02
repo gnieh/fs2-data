@@ -18,8 +18,6 @@ package fs2
 package data
 package stt
 
-import cats.effect._
-
 import weaver._
 import cats.Show
 
@@ -29,16 +27,16 @@ object Tree {
   case class Close(name: String) extends Tree
   case class Leaf(value: Int) extends Tree
 
-  implicit val hasTags: HasTag[Tree] = {
-    case Open(_)  => Tag.Call
-    case Close(_) => Tag.Return
-    case Leaf(_)  => Tag.Internal
-  }
-
   implicit val show: Show[Tree] = Show.show {
     case Open(name)  => s"<$name"
     case Close(name) => s"$name>"
     case Leaf(v)     => v.toString
+  }
+
+  implicit val hasTags: HasTag[Tree] = {
+    case Open(_)  => Tag.Call
+    case Close(_) => Tag.Return
+    case Leaf(_)  => Tag.Internal
   }
 
 }
@@ -57,27 +55,62 @@ object STTSpec extends SimpleIOSuite {
   val z = Variable.Normal("z")
   val xp = Variable.Stack("x")
 
-  test("reverse tree") {
+  test("reverse tree (map)") {
 
     import Assignment._
-    val internalTransition = Map(
-      (0, leaf0) -> InternalTransition(0, List(Char(y, leaf0), Prepend(x, y))),
-      (0, leaf1) -> InternalTransition(0, List(Char(y, leaf1), Prepend(x, y)))
-    )
-    val callTransition = Map((0, openA) -> CallTransition[Tree, Tree](0, openA, Nil),
-                             (0, openB) -> CallTransition[Tree, Tree](0, openB, Nil))
-    val returnTransition = Map(
-      (0, openA, closeA) -> ReturnTransition(0, List(Subtree(z, openA, closeA), SubstInY(x, z), Append(x, xp))),
-      (0, openB, closeB) -> ReturnTransition(0, List(Subtree(z, openB, closeB), SubstInY(x, z), Append(x, xp)))
+    val internalTransition =
+      Map[(Int, Tree), InternalTransition[Tree]]((0, leaf0) ->
+                                                   InternalTransition(0, List(Char(y, leaf0), Prepend(x, y))),
+                                                 (0, leaf1) ->
+                                                   InternalTransition(0, List(Char(y, leaf1), Prepend(x, y))))
+    val callTransition = Map[(Int, Tree), CallTransition[Tree, Tree]]((0, openA) ->
+                                                                        CallTransition(0, openA, Nil),
+                                                                      (0, openB) ->
+                                                                        CallTransition(0, openB, Nil))
+    val returnTransition = Map[(Int, Tree, Tree), ReturnTransition[Tree]](
+      (0, openA, closeA) ->
+        ReturnTransition(0, List(Subtree(z, openA, closeA), SubstInY(x, z), Append(x, xp))),
+      (0, openB, closeB) ->
+        ReturnTransition(0, List(Subtree(z, openB, closeB), SubstInY(x, z), Append(x, xp)))
     )
     val finalStates = Map(0 -> Expr0.Var[Tree](x))
     val reverse =
-      new STT[IO, Tree, Tree, Tree](0,
-                                    internalTransition,
-                                    callTransition,
-                                    returnTransition,
-                                    finalStates,
-                                    Map("x" -> Type.Type0, "y" -> Type.Type0, "z" -> Type.Type1))
+      new STT(0,
+              internalTransition,
+              callTransition,
+              returnTransition,
+              finalStates,
+              Map("x" -> Type.Type0, "y" -> Type.Type0, "z" -> Type.Type1))
+
+    Stream(openA, openB, leaf0, closeB, leaf1, closeA, openB, closeB)
+      .rechunkRandomly()
+      .through(reverse)
+      .compile
+      .toList
+      .map(result => expect(result == List(openB, closeB, openA, leaf1, openB, leaf0, closeB, closeA)))
+  }
+
+  test("reverse tree (symbolic)") {
+
+    import Assignment._
+    val internalTransition: PartialFunction[(Int, Tree), InternalTransition[Tree]] = { case (0, l @ Tree.Leaf(_)) =>
+      InternalTransition(0, List(Char(y, l), Prepend(x, y)))
+    }
+    val callTransition: PartialFunction[(Int, Tree), CallTransition[Tree, Tree]] = { case (0, o @ Tree.Open(_)) =>
+      CallTransition(0, o, Nil)
+    }
+    val returnTransition: PartialFunction[(Int, Tree, Tree), ReturnTransition[Tree]] = {
+      case (0, open @ Tree.Open(nopen), close @ Tree.Close(nclose)) if nopen == nclose =>
+        ReturnTransition(0, List(Subtree(z, open, close), SubstInY(x, z), Append(x, xp)))
+    }
+    val finalStates = Map(0 -> Expr0.Var[Tree](x))
+    val reverse =
+      new STT(0,
+              internalTransition,
+              callTransition,
+              returnTransition,
+              finalStates,
+              Map("x" -> Type.Type0, "y" -> Type.Type0, "z" -> Type.Type1))
 
     Stream(openA, openB, leaf0, closeB, leaf1, closeA, openB, closeB)
       .rechunkRandomly()
