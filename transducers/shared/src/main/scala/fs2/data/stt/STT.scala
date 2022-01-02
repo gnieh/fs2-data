@@ -232,13 +232,14 @@ class STT[F[_], T[_, _], In, Out, StackElem](initial: Int,
                   lastKnownFinal match {
                     case Some((state, env)) =>
                       // we reached a final state before, let's emit what should have been emitted
-                      // there, and push the input buffer back to the stream
+                      // there, and push the input buffer back to the stream,
+                      // as well as unconsumed current chunk
                       Pull
                         .eval(eval0(env, finalStates(state)))
                         .flatMap(outs =>
                           go(Chunk.chain(accSinceLastFinal),
                              0,
-                             rest,
+                             Stream.chunk(chunk.drop(idx)) ++ rest,
                              initial,
                              Nil,
                              Env.create(variables),
