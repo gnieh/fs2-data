@@ -1,0 +1,19 @@
+start: stripini >> ini2json
+// Strips the comments
+stripini := (~comment | ~blank | /[^\n]*\n/)*
+comment := ws /;[^\n]*/
+blank := ws /\n/
+// Convert the stripped file
+ini2json := "{\n" sections "}\n"
+sections := (section "," /\n/)* section /\n/
+section :=
+  ind "\"" header "\": {\n" (~/\n/ keyvalues)? ind "}"
+header := ~ws ~/\[/ /[^\n\]]*/ ~/]/ ~ws
+keyvalue := ind ind key ": " ~/=/ value
+keyvalues := (keyvalue "," /\n/)* keyvalue "\n"
+key := ~ws "\"" /[^; \t=\[\n]*/ "\"" ~ws
+value := ~ws /"[^\n]*"/ ~ws
+| ~ws "\"" escapedValue "\"" ~ws
+escapedValue := (~/\\/ "\\\\" | ~/"/ "\\\"" | /[^\n]/)*
+ws := /[ \t]*/
+ind := "    "

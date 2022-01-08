@@ -1,0 +1,38 @@
+// A Kleenex program starts with what we call a pipeline declaration.
+// This one can be understood: First remove the comments,
+// then gather the numbers at the bottom.
+start: remComments >> gatherNumbers
+
+// If no pipeline is specified, "main" is picked
+// as the starting point.
+// The most basic Kleenex term is matching. It matches
+// the input against a regular expression, outputting it directly.
+line := /[^\n]*\n/
+// Often you don’t want all the input turned into output.
+// The ~ operator lets suppress the output otherwise produced
+// by a term, in this case removing lines that start with "#",
+// and preserving ones that don’t.
+// When there’s ambiguity, the leftmost choice is always chosen.
+commentLine := ~(/#/ line) | line
+// Recursion is allowed, but only in tail position. Here we
+// terminate the recursion with "1", which consumes nothing and
+// always succeeds.
+remComments := commentLine remComments | 1
+
+// We also allow regex operators like *, + and ? on terms:
+thousandSepLines := (thousandSep /\n/ | line)*
+
+// It’s possible to output text without matching by using "...".
+// In this case, we use it to insert thousands separators into a number.
+thousandSep := digit{1,3} ("," digit{3})* /\n/
+digit := /[0-9]/
+
+// We also allow for more complicated operations. We call these ’actions’.
+// reg@term runs the term as normal, but all output it would produce is
+// stored in the register named reg.
+// [ ... += ... ] allows you to append things to a register, both contents
+// of other registers, as well as string constants.
+// !reg outputs the contents of a register.
+gatherNumbers :=
+  (num@thousandSep [ numbers += num ] | line)*
+  !numbers

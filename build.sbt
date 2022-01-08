@@ -119,7 +119,8 @@ val root = (project in file("."))
                                                                              jsonPlay.js,
                                                                              text.js,
                                                                              xml.js,
-                                                                             transducers.js),
+                                                                             transducers.js,
+                                                                             kleenex.js),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     Nanoc / sourceDirectory := file("site"),
@@ -145,7 +146,9 @@ val root = (project in file("."))
     cbor.jvm,
     cbor.js,
     transducers.jvm,
-    transducers.js
+    transducers.js,
+    kleenex.jvm,
+    kleenex.js
   )
 
 lazy val text = crossProject(JVMPlatform, JSPlatform)
@@ -318,6 +321,18 @@ lazy val transducers = crossProject(JVMPlatform, JSPlatform)
     name := "fs2-data-transducers",
     description := "Streaming transducers library"
   )
+
+lazy val kleenex = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Full)
+  .in(file("kleenex"))
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "fs2-data-kleenex",
+    description := "Streaming text processing library",
+    libraryDependencies += "org.typelevel" %%% "cats-parse" % "0.3.6"
+  )
+  .dependsOn(text, transducers)
 
 lazy val documentation = project
   .in(file("documentation"))

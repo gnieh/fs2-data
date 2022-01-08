@@ -1,0 +1,36 @@
+main := ( escape | comment | term | symbol | ignored | ws * )*
+
+term := black /~/ (constant | match | ident) end
+      | (teal constant | yellow match | blue ident) end
+
+ignored := /[\]()|{},:[]/
+
+ident := (letter | /[0-9_]/)+
+
+symbol := yellow /<-|\+=|:=|>>|\*|\?|\+/ end
+
+constant := /"/ ( /\\./ | /[^\\"]/ )* /"/
+
+comment := black ( /\/\/[^\n]*\n/ | /\/\*[^*\/]*\*\// ) end
+
+match := /\// ( /[^\/\n]/ | /\\./ )+ /\//
+
+escape := /\\\\/
+        | blue /\\x[0-9a-fA-F]{2}/ end
+        | /\\[tnr]/
+
+sp := / /*
+
+letter := /[a-zA-Z]/
+
+word := letter+
+
+ws := /[\t\r\n ]/
+
+red := "\x1b[31m"
+green := "\x1b[32m"
+yellow:= "\x1b[33m"
+blue := "\x1b[34m"
+end := "\x1b[39;49m"
+black := "\x1b[30m"
+teal := "\x1b[36m"

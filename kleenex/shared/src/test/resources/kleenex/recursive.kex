@@ -1,0 +1,3 @@
+main := as | bs
+as := "a" bs | 1
+bs := "b" as | 1

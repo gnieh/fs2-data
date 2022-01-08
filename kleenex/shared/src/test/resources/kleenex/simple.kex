@@ -1,0 +1,1 @@
+main := id @ /[a-z][a-z0-9]*/ !id !id
