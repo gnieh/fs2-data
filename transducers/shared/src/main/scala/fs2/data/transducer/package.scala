@@ -16,11 +16,18 @@
 
 package fs2.data
 
-package object stt {
+package object transducer {
 
-  implicit class MappableOps[M[_, _], From, To](val m: M[From, To]) extends AnyVal {
-    def get(from: From)(implicit M: Table[M]): Option[To] =
+  type CharRanges = RangeSet[Char]
+
+  implicit class TableOps[T[_, _], From, To](val m: T[From, To]) extends AnyVal {
+    def get(from: From)(implicit M: Table[T]): Option[To] =
       M.get(m)(from)
+  }
+
+  implicit class SetLikeOps[S](val s: S) extends AnyVal {
+    def contains[C](c: C)(implicit S: SetLike[S, C]): Boolean =
+      S.contains(s)(c)
   }
 
 }

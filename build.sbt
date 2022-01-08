@@ -9,6 +9,7 @@ val shapeless2Version = "2.3.9"
 val shapeless3Version = "3.1.0"
 val scalaJavaTimeVersion = "2.4.0"
 val diffsonVersion = "4.1.1"
+val weaverVersion = "0.7.9"
 
 val commonSettings = List(
   scalaVersion := scala213,
@@ -238,7 +239,7 @@ lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
     description := "Streaming JSON library with support for circe ASTs",
     libraryDependencies ++= List(
       "io.circe" %%% "circe-core" % circeVersion,
-      "org.gnieh" %%% "diffson-circe" % diffsonVersion % "test"
+      "org.gnieh" %%% "diffson-circe" % diffsonVersion % Test
     )
   )
   .jsSettings(
@@ -262,7 +263,7 @@ lazy val jsonPlay = crossProject(JVMPlatform, JSPlatform)
     crossScalaVersions := Seq(scala212, scala213),
     libraryDependencies ++= List(
       "com.typesafe.play" %%% "play-json" % playVersion,
-      "org.gnieh" %%% "diffson-play-json" % diffsonVersion % "test"
+      "org.gnieh" %%% "diffson-play-json" % diffsonVersion % Test
     )
   )
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
