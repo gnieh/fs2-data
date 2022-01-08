@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package fs2.data.stt
+package fs2.data.transducer
 
 import scala.annotation.implicitNotFound
 
 /** A typeclass indicating that some type `T` can be used as a lookup table.
   */
-@implicitNotFound("Cannot prove that type ${T} can be used as a lookup table. Make sure to provide an implicit instance of `fs2.data.stt.Table[${T}]` in scope")
-trait Table[T[_, _]] {
-  def get[From, To](m: T[From, To])(from: From): Option[To]
+@implicitNotFound(
+  "Cannot prove that type ${T} can be used as a lookup table. Make sure to provide an implicit instance of `fs2.data.transducer.Table[${T}]` in scope")
+trait Table[T[_, _]] extends NTable[T] {
+  def get[From, To](t: T[From, To])(from: From): Option[To]
+  def getOrdered[From, To](t: T[From, To])(from: From): List[To] = get(t)(from).toList
 }
 
 object Table {
@@ -35,4 +37,10 @@ object Table {
   implicit object MapTable extends Table[Map] {
     def get[From, To](m: Map[From, To])(from: From): Option[To] = m.get(from)
   }
+}
+
+@implicitNotFound(
+  "Cannot prove that type ${T} can be used as a non deterministic lookup table. Make sure to provide an implicit instance of `fs2.data.transducer.NTable[${T}]` in scope")
+trait NTable[T[_, _]] {
+  def getOrdered[From, To](t: T[From, To])(f: From): List[To]
 }

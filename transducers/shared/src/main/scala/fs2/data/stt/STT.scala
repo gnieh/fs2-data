@@ -18,6 +18,8 @@ package fs2
 package data
 package stt
 
+import transducer._
+
 import cats.syntax.all._
 import cats.MonadError
 import cats.data.OptionT

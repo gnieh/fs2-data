@@ -8,6 +8,7 @@ val shapeless2Version = "2.3.7"
 val shapeless3Version = "3.0.3"
 val scalaJavaTimeVersion = "2.3.0"
 val diffsonVersion = "4.1.1"
+val weaverVersion = "0.7.9"
 
 val commonSettings = List(
   scalaVersion := scala213,
@@ -56,13 +57,14 @@ val commonSettings = List(
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.6.0",
-    "io.circe" %%% "circe-parser" % circeVersion % "test",
-    "co.fs2" %% "fs2-io" % fs2Version % "test",
-    "com.disneystreaming" %%% "weaver-cats" % "0.7.9" % "test",
-    "com.disneystreaming" %%% "weaver-cats-core" % "0.7.9" % "test",
-    "com.disneystreaming" %%% "weaver-core" % "0.7.9" % "test",
-    "com.disneystreaming" %%% "weaver-framework" % "0.7.9" % "test",
-    "com.eed3si9n.expecty" %%% "expecty" % "0.15.4" % "test",
+    "io.circe" %%% "circe-parser" % circeVersion % Test,
+    "co.fs2" %% "fs2-io" % fs2Version % Test,
+    "com.disneystreaming" %%% "weaver-cats" % weaverVersion % Test,
+    "com.disneystreaming" %%% "weaver-cats-core" % weaverVersion % Test,
+    "com.disneystreaming" %%% "weaver-core" % weaverVersion % Test,
+    "com.disneystreaming" %%% "weaver-framework" % weaverVersion % Test,
+    "com.disneystreaming" %% "weaver-scalacheck" % weaverVersion % Test,
+    "com.eed3si9n.expecty" %%% "expecty" % "0.15.4" % Test,
     "org.portable-scala" %%% "portable-scala-reflect" % "1.1.1" cross CrossVersion.for3Use2_13
   ) ++ PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
@@ -228,7 +230,7 @@ lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
     description := "Streaming JSON library with support for circe ASTs",
     libraryDependencies ++= List(
       "io.circe" %%% "circe-core" % circeVersion,
-      "org.gnieh" %%% "diffson-circe" % diffsonVersion % "test"
+      "org.gnieh" %%% "diffson-circe" % diffsonVersion % Test
     )
   )
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
@@ -244,7 +246,7 @@ lazy val jsonPlay = crossProject(JVMPlatform, JSPlatform)
     crossScalaVersions := Seq(scala212, scala213),
     libraryDependencies ++= List(
       "com.typesafe.play" %%% "play-json" % playVersion,
-      "org.gnieh" %%% "diffson-play-json" % diffsonVersion % "test"
+      "org.gnieh" %%% "diffson-play-json" % diffsonVersion % Test
     )
   )
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
