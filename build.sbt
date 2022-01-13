@@ -136,7 +136,8 @@ val root = (project in file("."))
     jsonCirce.js,
     jsonDiffson.jvm,
     jsonDiffson.js,
-    jsonInterpolators,
+    jsonInterpolators.jvm,
+    jsonInterpolators.js,
     xml.jvm,
     xml.js,
     cbor.jvm,
@@ -260,7 +261,8 @@ lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform)
   )
   .dependsOn(json % "compile->compile;test->test")
 
-lazy val jsonInterpolators = project
+lazy val jsonInterpolators = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
   .in(file("json/interpolators"))
   .settings(commonSettings)
   .settings(publishSettings)
@@ -268,14 +270,14 @@ lazy val jsonInterpolators = project
     name := "fs2-data-json-interpolators",
     description := "Json interpolators support",
     libraryDependencies ++= List(
-      "org.typelevel" %% "literally" % "1.0.2"
+      "org.typelevel" %%% "literally" % "1.0.2"
     ) ++ PartialFunction
       .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
       }
       .toList
   )
-  .dependsOn(json.jvm % "compile->compile;test->test")
+  .dependsOn(json % "compile->compile;test->test")
 
 lazy val xml = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -321,7 +323,14 @@ lazy val documentation = project
     ),
     scalacOptions += "-Ymacro-annotations"
   )
-  .dependsOn(csv.jvm, csvGeneric.jvm, json.jvm, jsonDiffson.jvm, jsonCirce.jvm, jsonInterpolators, xml.jvm, cbor.jvm)
+  .dependsOn(csv.jvm,
+             csvGeneric.jvm,
+             json.jvm,
+             jsonDiffson.jvm,
+             jsonCirce.jvm,
+             jsonInterpolators.jvm,
+             xml.jvm,
+             cbor.jvm)
 
 lazy val benchmarks = project
   .in(file("benchmarks"))
