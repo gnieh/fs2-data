@@ -24,7 +24,7 @@ import weaver._
 
 object CsvParserTest extends SimpleIOSuite {
 
-  private val testFileDir: Path = Path("csv/jvm/src/test/resources/csv-spectrum/csvs/")
+  private val testFileDir: Path = Path("csv/shared/src/test/resources/csv-spectrum/csvs/")
 
   lazy val allExpected: Stream[IO, (Path, List[Map[String, String]])] =
     Files[IO]
@@ -32,7 +32,7 @@ object CsvParserTest extends SimpleIOSuite {
       .evalMap { path =>
         val name = path.fileName.toString.stripSuffix(".csv")
         Files[IO]
-          .readAll(Path(s"csv/jvm/src/test/resources/csv-spectrum/json/$name.json"), 1024, Flags.Read)
+          .readAll(Path(s"csv/shared/src/test/resources/csv-spectrum/json/$name.json"), 1024, Flags.Read)
           .through(text.utf8.decode)
           .compile
           .string

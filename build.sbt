@@ -164,7 +164,9 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= List(
       "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test,
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion % Test
-    ))
+    ),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
   .dependsOn(text)
 
 lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
