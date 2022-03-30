@@ -26,7 +26,7 @@ object EventParserTest extends SimpleIOSuite {
 
   val testFileDir = Path("xml/src/test/resources/xmlconf")
   test("Standard test suite should pass") {
-    (Files[IO].walk(testFileDir.resolve("xmltest/valid")).filter(_.fileName.endsWith(".xml")) ++
+    (Files[IO].walk(testFileDir.resolve("xmltest/valid")).filter(_.extName == ".xml") ++
       Files[IO].list(testFileDir.resolve("sun/valid")))
       .evalMap { path =>
         // valid tests
