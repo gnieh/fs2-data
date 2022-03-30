@@ -15,7 +15,7 @@ object CsvRow {
           s"Headers have size ${headers.length} but row has size ${values.length}. Both numbers must match!",
           line))
     else
-      Right(new CsvRow(values, Some(headers)))
+      Right(new CsvRow(values, Some(headers), line))
 
   def unsafe[Header](values: NonEmptyList[String], headers: NonEmptyList[Header]): CsvRow[Header] =
     apply(values, headers).fold(throw _, identity)

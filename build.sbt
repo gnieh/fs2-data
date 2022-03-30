@@ -1,10 +1,10 @@
 val scala212 = "2.12.15"
 val scala213 = "2.13.7"
-val scala3 = "3.1.0"
-val fs2Version = "3.2.2"
+val scala3 = "3.1.1"
+val fs2Version = "3.2.6"
 val circeVersion = "0.14.1"
 val playVersion = "2.9.2"
-val shapeless2Version = "2.3.7"
+val shapeless2Version = "2.3.9"
 val shapeless3Version = "3.0.3"
 val scalaJavaTimeVersion = "2.3.0"
 val diffsonVersion = "4.1.1"
@@ -55,13 +55,13 @@ val commonSettings = List(
     .flatten,
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
-    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.6.0",
+    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "co.fs2" %% "fs2-io" % fs2Version % "test",
-    "com.disneystreaming" %%% "weaver-cats" % "0.7.7" % "test",
-    "com.disneystreaming" %%% "weaver-cats-core" % "0.7.7" % "test",
-    "com.disneystreaming" %%% "weaver-core" % "0.7.7" % "test",
-    "com.disneystreaming" %%% "weaver-framework" % "0.7.7" % "test",
+    "com.disneystreaming" %%% "weaver-cats" % "0.7.11" % "test",
+    "com.disneystreaming" %%% "weaver-cats-core" % "0.7.11" % "test",
+    "com.disneystreaming" %%% "weaver-core" % "0.7.11" % "test",
+    "com.disneystreaming" %%% "weaver-framework" % "0.7.11" % "test",
     "com.eed3si9n.expecty" %%% "expecty" % "0.15.4" % "test",
     "org.portable-scala" %%% "portable-scala-reflect" % "1.1.1" cross CrossVersion.for3Use2_13
   ) ++ PartialFunction
@@ -136,7 +136,8 @@ val root = (project in file("."))
     jsonCirce.js,
     jsonDiffson.jvm,
     jsonDiffson.js,
-    jsonInterpolators,
+    jsonInterpolators.jvm,
+    jsonInterpolators.js,
     xml.jvm,
     xml.js,
     cbor.jvm,
@@ -260,7 +261,8 @@ lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform)
   )
   .dependsOn(json % "compile->compile;test->test")
 
-lazy val jsonInterpolators = project
+lazy val jsonInterpolators = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
   .in(file("json/interpolators"))
   .settings(commonSettings)
   .settings(publishSettings)
@@ -268,14 +270,14 @@ lazy val jsonInterpolators = project
     name := "fs2-data-json-interpolators",
     description := "Json interpolators support",
     libraryDependencies ++= List(
-      "org.typelevel" %% "literally" % "1.0.2"
+      "org.typelevel" %%% "literally" % "1.0.2"
     ) ++ PartialFunction
       .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
       }
       .toList
   )
-  .dependsOn(json.jvm % "compile->compile;test->test")
+  .dependsOn(json % "compile->compile;test->test")
 
 lazy val xml = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -321,7 +323,14 @@ lazy val documentation = project
     ),
     scalacOptions += "-Ymacro-annotations"
   )
-  .dependsOn(csv.jvm, csvGeneric.jvm, json.jvm, jsonDiffson.jvm, jsonCirce.jvm, jsonInterpolators, xml.jvm, cbor.jvm)
+  .dependsOn(csv.jvm,
+             csvGeneric.jvm,
+             json.jvm,
+             jsonDiffson.jvm,
+             jsonCirce.jvm,
+             jsonInterpolators.jvm,
+             xml.jvm,
+             cbor.jvm)
 
 lazy val benchmarks = project
   .in(file("benchmarks"))
