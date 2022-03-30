@@ -57,7 +57,7 @@ val commonSettings = List(
     "co.fs2" %%% "fs2-core" % fs2Version,
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
-    "co.fs2" %% "fs2-io" % fs2Version % "test",
+    "co.fs2" %%% "fs2-io" % fs2Version % "test",
     "com.disneystreaming" %%% "weaver-cats" % "0.7.11" % "test",
     "com.disneystreaming" %%% "weaver-cats-core" % "0.7.11" % "test",
     "com.disneystreaming" %%% "weaver-core" % "0.7.11" % "test",
@@ -280,13 +280,16 @@ lazy val jsonInterpolators = crossProject(JVMPlatform, JSPlatform)
   .dependsOn(json % "compile->compile;test->test")
 
 lazy val xml = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Full)
+  .crossType(CrossType.Pure)
   .in(file("xml"))
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
     name := "fs2-data-xml",
     description := "Streaming XML manipulation library"
+  )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
   .dependsOn(text)
 

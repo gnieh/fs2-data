@@ -24,7 +24,7 @@ import weaver._
 
 object EventParserTest extends SimpleIOSuite {
 
-  val testFileDir = Path("xml/jvm/src/test/resources/xmlconf")
+  val testFileDir = Path("xml/src/test/resources/xmlconf")
   test("Standard test suite should pass") {
     (Files[IO].walk(testFileDir.resolve("xmltest/valid")).filter(_.fileName.endsWith(".xml")) ++
       Files[IO].list(testFileDir.resolve("sun/valid")))
