@@ -1,10 +1,10 @@
 val scala212 = "2.12.15"
 val scala213 = "2.13.7"
 val scala3 = "3.1.1"
-val fs2Version = "3.2.5"
+val fs2Version = "3.2.6"
 val circeVersion = "0.14.1"
 val playVersion = "2.9.2"
-val shapeless2Version = "2.3.7"
+val shapeless2Version = "2.3.9"
 val shapeless3Version = "3.0.3"
 val scalaJavaTimeVersion = "2.3.0"
 val diffsonVersion = "4.1.1"
@@ -55,7 +55,7 @@ val commonSettings = List(
     .flatten,
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
-    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.6.0",
+    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "co.fs2" %% "fs2-io" % fs2Version % "test",
     "com.disneystreaming" %%% "weaver-cats" % "0.7.9" % "test",
