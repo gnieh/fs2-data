@@ -20,5 +20,5 @@ import io.circe._
 
 object CirceJsonParserSpec extends JsonParserTest[Json] {
   def parse(content: String): Either[Throwable, Json] =
-    parser.parse(content)
+    jawn.parse(content) // use the jawn parser to guarantee identical cross-platform semantics
 }

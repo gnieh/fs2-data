@@ -1,7 +1,7 @@
 val scala212 = "2.12.15"
 val scala213 = "2.13.7"
 val scala3 = "3.1.1"
-val fs2Version = "3.2.6"
+val fs2Version = "3.2.7"
 val circeVersion = "0.14.1"
 val playVersion = "2.9.2"
 val shapeless2Version = "2.3.9"
@@ -57,6 +57,7 @@ val commonSettings = List(
     "co.fs2" %%% "fs2-core" % fs2Version,
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
+    "io.circe" %%% "circe-jawn" % "0.15.0-M1" % "test",
     "co.fs2" %%% "fs2-io" % fs2Version % "test",
     "com.disneystreaming" %%% "weaver-cats" % "0.7.11" % "test",
     "com.disneystreaming" %%% "weaver-cats-core" % "0.7.11" % "test",
@@ -211,7 +212,7 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
   .dependsOn(csv)
 
 lazy val json = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Full)
+  .crossType(CrossType.Pure)
   .in(file("json"))
   .settings(commonSettings)
   .settings(publishSettings)
@@ -219,7 +220,7 @@ lazy val json = crossProject(JVMPlatform, JSPlatform)
   .dependsOn(text)
 
 lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Full)
+  .crossType(CrossType.Pure)
   .in(file("json/circe"))
   .settings(commonSettings)
   .settings(publishSettings)
@@ -230,6 +231,14 @@ lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
       "io.circe" %%% "circe-core" % circeVersion,
       "org.gnieh" %%% "diffson-circe" % diffsonVersion % "test"
     )
+  )
+  .jsSettings(
+    scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.CommonJSModule)
+        .withSemantics( // jawn parser used for tests is fast-and-loose for performance
+          _.withAsInstanceOfs(org.scalajs.linker.interface.CheckedBehavior.Unchecked)
+            .withArrayIndexOutOfBounds(org.scalajs.linker.interface.CheckedBehavior.Unchecked))
+    }
   )
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
 

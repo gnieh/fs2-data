@@ -33,7 +33,7 @@ object Expectation {
 
 abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends SimpleIOSuite {
 
-  private val testFileDir = Path("json/jvm/src/test/resources/test-parsing/")
+  private val testFileDir = Path("json/src/test/resources/test-parsing/")
 
   test("Standard test suite files should be parsed correctly") {
     Files[IO]
