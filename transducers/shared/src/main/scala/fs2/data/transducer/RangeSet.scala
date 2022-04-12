@@ -214,7 +214,7 @@ object RangeSet {
             if (low < range.lower) {
               // the new range lower bound is strictly smaller than the next lower bound
               // fill in the gap
-              builder.addOne(Range(low, T.cyclePrevious(range.lower)))
+              builder += Range(low, T.cyclePrevious(range.lower))
               if (range.upper < T.maxBound)
                 loop(idx + 1, T.cycleNext(range.upper), builder)
               else
@@ -224,7 +224,7 @@ object RangeSet {
               loop(idx + 1, T.cycleNext(range.upper), builder)
             }
           case None =>
-            builder.addOne(Range(low, T.maxBound)).result()
+            (builder += Range(low, T.maxBound)).result()
         }
       NonEmptyVector.fromVectorUnsafe(loop(0, T.minBound, new VectorBuilder))
     }
