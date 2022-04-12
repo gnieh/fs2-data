@@ -24,12 +24,24 @@ import cats.kernel.BoundedEnumerable
 import cats.syntax.all._
 
 import scala.collection.compat.immutable.LazyList
+import scala.annotation.tailrec
+import scala.collection.immutable.VectorBuilder
 
 /** A set of ranges for some enumerable type. */
 sealed trait RangeSet[T] {
 
   /** Indicates whether this set of ranges contains the given character. */
   def contains(c: T): Boolean
+
+  /** Returns the index of the given character in this set of ranges, or `-1`
+    * if it is not contained.
+    */
+  def indexOf(c: T): Int
+
+  /** Returns the character at the given index in this set of ranges,
+    * or `None` if idex is out of bounds.
+    */
+  def charAt(idx: Int): Option[T]
 
   /** Inverts this set of character ranges.
     * Forall c, this.contains(c) == !this.invert.contains(c)
@@ -48,6 +60,9 @@ sealed trait RangeSet[T] {
   /** Indicates whether this sets contains no characters. */
   def isEmpty: Boolean
 
+  /** Returns the number of character in this set of ranges. */
+  def size: Int
+
   /** Indicates whether `this` overlaps with `that`.
     * Returns `true` iif the exists `t`, such that
     * `this.contains(t) && that.contains(t)`
@@ -59,21 +74,21 @@ sealed trait RangeSet[T] {
 object RangeSet {
 
   /** The empty set of character ranges */
-  def empty[T: BoundedEnumerable]: RangeSet[T] = Empty()
+  def empty[T: BoundedEnumerable: Integral]: RangeSet[T] = Empty()
 
   /** The set that contains all characters */
-  def all[T: BoundedEnumerable]: RangeSet[T] = All()
+  def all[T: BoundedEnumerable: Integral]: RangeSet[T] = All()
 
   /** Creates a singleton set of a singleton range */
-  def char[T: BoundedEnumerable](c: T): RangeSet[T] =
+  def char[T: BoundedEnumerable: Integral](c: T): RangeSet[T] =
     Ranges(NonEmptyVector.one(Range(c, c)), false)
 
   /** Creates a set of ranges based on the provided single characters */
-  def chars[T: BoundedEnumerable](c1: T, c2: T, cs: T*): RangeSet[T] =
+  def chars[T: BoundedEnumerable: Integral](c1: T, c2: T, cs: T*): RangeSet[T] =
     ranges((c1, c1), (c2, c2), cs.map(c => (c, c)): _*)
 
   /** Creates a singleton set of ranges */
-  def range[T](r: (T, T))(implicit T: BoundedEnumerable[T]): RangeSet[T] = {
+  def range[T](r: (T, T))(implicit T: BoundedEnumerable[T], I: Integral[T]): RangeSet[T] = {
     implicit val order = T.order
     val lower = r._1.min(r._2)
     val upper = r._1.max(r._2)
@@ -84,7 +99,7 @@ object RangeSet {
   }
 
   /** Creates a set of ranges */
-  def ranges[T](r1: (T, T), r2: (T, T), rs: (T, T)*)(implicit T: BoundedEnumerable[T]): RangeSet[T] = {
+  def ranges[T](r1: (T, T), r2: (T, T), rs: (T, T)*)(implicit T: BoundedEnumerable[T], I: Integral[T]): RangeSet[T] = {
     implicit val order = T.order
     val ranges =
       NonEmptyList(r1, r2 :: rs.toList)
@@ -103,16 +118,36 @@ object RangeSet {
 
   }
 
-  private case class Range[T](lower: T, upper: T)(implicit T: BoundedEnumerable[T]) {
-    implicit val order: Order[T] = T.order
-    def contains(c: T): Boolean =
+  private case class Range[T](lower: T, upper: T) {
+    def contains(c: T)(implicit T: BoundedEnumerable[T]): Boolean = {
+      implicit val order: Order[T] = T.order
       lower <= c && upper >= c
-    def overlapsOrAdjacent(that: Range[T]): Boolean =
+    }
+    def indexOf(c: T)(implicit T: BoundedEnumerable[T], I: Integral[T]): Int =
+      if (contains(c))
+        I.toInt(I.minus(c, lower))
+      else
+        -1
+    def at(idx: Int)(implicit I: Integral[T]): Option[T] = {
+      if (idx < 0 || idx >= size)
+        None
+      else
+        I.plus(lower, I.fromInt(idx)).some
+    }
+    def overlapsOrAdjacent(that: Range[T])(implicit T: BoundedEnumerable[T]): Boolean = {
+      implicit val order: Order[T] = T.order
       this.upper >= T.cyclePrevious(that.lower) && this.lower <= T.cycleNext(that.upper)
-    def merge(that: Range[T]): Range[T] =
+    }
+    def merge(that: Range[T])(implicit T: BoundedEnumerable[T]): Range[T] = {
+      implicit val order: Order[T] = T.order
       Range(this.lower.min(that.lower), this.upper.max(that.upper))
-    def enumerate: LazyList[T] =
-      LazyList.iterate(lower)(T.cycleNext(_)).takeWhile(_ <= upper)
+    }
+    def enumerate(implicit T: BoundedEnumerable[T]): LazyList[T] = {
+      implicit val order: Order[T] = T.order
+      LazyList.iterate(lower)(T.cycleNext(_)).takeWhile(t => t >= lower && t <= upper)
+    }
+    def size(implicit I: Integral[T]): Int =
+      I.toInt(I.minus(upper, lower)) + 1
   }
 
   private object Range {
@@ -132,46 +167,128 @@ object RangeSet {
     }
   }
 
-  private case class All[T]()(implicit T: BoundedEnumerable[T]) extends RangeSet[T] {
+  private case class All[T]()(implicit T: BoundedEnumerable[T], I: Integral[T]) extends RangeSet[T] {
     def contains(c: T): Boolean = true
+    def indexOf(c: T): Int =
+      I.toInt(I.minus(c, T.minBound))
+    def charAt(idx: Int): Option[T] =
+      if (idx < 0 || idx >= size)
+        None
+      else
+        I.plus(T.minBound, I.fromInt(idx)).some
     def invert: RangeSet[T] = Empty()
     def enumerate: LazyList[T] = LazyList.from(T.membersAscending)
     def min: Option[T] = T.minBound.some
     def max: Option[T] = T.maxBound.some
     def overlap(that: RangeSet[T]): Boolean = that != Empty()
     def isEmpty: Boolean = false
+    def size: Int = I.toInt(I.minus(T.maxBound, T.minBound)) + 1
   }
 
-  private case class Empty[T: BoundedEnumerable]() extends RangeSet[T] {
+  private case class Empty[T: BoundedEnumerable: Integral]() extends RangeSet[T] {
     def contains(c: T): Boolean = false
+    def indexOf(c: T): Int = -1
+    def charAt(idx: Int): Option[T] = None
     def invert: RangeSet[T] = All()
     def enumerate: LazyList[T] = LazyList.empty
     def min: Option[T] = None
     def max: Option[T] = None
     def overlap(that: RangeSet[T]): Boolean = false
     def isEmpty: Boolean = true
+    def size: Int = 0
   }
 
-  private case class Ranges[T](ranges: NonEmptyVector[Range[T]], inverted: Boolean) extends RangeSet[T] {
-    implicit val order: Order[T] = ranges.head.order
-    def contains(c: T): Boolean = {
-      def search(low: Int, high: Int): Boolean =
+  private case class Ranges[T](ranges: NonEmptyVector[Range[T]], inverted: Boolean)(implicit
+      T: BoundedEnumerable[T],
+      I: Integral[T])
+      extends RangeSet[T] {
+    implicit val order: Order[T] = T.order
+    // if there is only one range, it does not represent all the values
+    // this ensures that the complement cannot be empty
+    assert(ranges.length > 1 || ranges.head.lower != T.minBound || ranges.last.upper != T.maxBound)
+
+    private lazy val complement: NonEmptyVector[Range[T]] = {
+      def loop(idx: Int, low: T, builder: VectorBuilder[Range[T]]): Vector[Range[T]] =
+        ranges.get(idx) match {
+          case Some(range) =>
+            if (low < range.lower) {
+              // the new range lower bound is strictly smaller than the next lower bound
+              // fill in the gap
+              builder.addOne(Range(low, T.cyclePrevious(range.lower)))
+              if (range.upper < T.maxBound)
+                loop(idx + 1, T.cycleNext(range.upper), builder)
+              else
+                // there is no room after for any range, this is the end
+                builder.result()
+            } else {
+              loop(idx + 1, T.cycleNext(range.upper), builder)
+            }
+          case None =>
+            builder.addOne(Range(low, T.maxBound)).result()
+        }
+      NonEmptyVector.fromVectorUnsafe(loop(0, T.minBound, new VectorBuilder))
+    }
+
+    private def search(c: T, ranges: NonEmptyVector[Range[T]]): Int = {
+      @tailrec
+      def loop(low: Int, high: Int): Int =
         if (low > high) {
-          inverted
+          -1
         } else {
           val mid = (low + high) / 2
           val range = ranges.getUnsafe(mid)
-          if (range.contains(c))
-            !inverted
+          val idx = range.indexOf(c)
+          if (idx >= 0)
+            ranges.iterator.map(_.size).take(mid).sum + idx
           else if (c < range.lower)
-            search(low, mid - 1)
+            loop(low, mid - 1)
           else
-            search(mid + 1, high)
+            loop(mid + 1, high)
         }
-      search(0, ranges.length - 1)
+      loop(0, ranges.length - 1)
     }
+
+    private def at(idx: Int, ranges: NonEmptyVector[Range[T]]): Option[T] = {
+      if (idx < 0 || idx >= size) {
+        None
+      } else {
+        @tailrec
+        def loop(ridx: Int, idx: Int): Option[T] =
+          if (ridx >= ranges.length) {
+            None
+          } else {
+            val range = ranges.getUnsafe(ridx)
+            val rangeSize = range.size
+            if (idx < rangeSize)
+              range.at(idx)
+            else
+              loop(ridx + 1, idx - rangeSize)
+          }
+        loop(0, idx)
+      }
+    }
+
+    def contains(c: T): Boolean =
+      search(c, ranges) != -1 ^ inverted
+    def indexOf(c: T): Int =
+      if (inverted) {
+        // search in the complement
+        search(c, complement)
+      } else {
+        // search in the ranges
+        search(c, ranges)
+      }
+    def charAt(idx: Int): Option[T] =
+      if (inverted)
+        at(idx, complement)
+      else
+        at(idx, ranges)
     def invert: RangeSet[T] = copy(inverted = !inverted)
-    def enumerate: LazyList[T] = LazyList.from(ranges.iterator).flatMap(_.enumerate)
+    def enumerate: LazyList[T] =
+      if (inverted)
+        LazyList.from(complement.iterator).flatMap(_.enumerate)
+      else
+        LazyList.from(ranges.iterator).flatMap(_.enumerate)
     def min: Option[T] = ranges.head.lower.some
     def max: Option[T] = ranges.last.upper.some
     def overlap(that: RangeSet[T]): Boolean =
@@ -181,6 +298,11 @@ object RangeSet {
         case _       => enumerate.exists(that.contains(_))
       }
     def isEmpty: Boolean = false
+    def size: Int =
+      if (inverted)
+        complement.map(_.size).sumAll
+      else
+        ranges.map(_.size).sumAll
   }
 
   implicit def RangeSetShow[T: Show]: Show[RangeSet[T]] = Show.show {

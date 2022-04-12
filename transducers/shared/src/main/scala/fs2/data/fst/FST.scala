@@ -28,6 +28,8 @@ import cats.{Monoid, Show}
   *  - epsilon transitions, or
   *  - symbol transitions but
   *  - not both
+  * Transitions are ordered: in case of ambiguity in final match,
+  * the first one will be picked.
   */
 case class FST[Q, Pred, Fun, In, Out](initial: Q,
                                       states: Set[Q],
@@ -54,6 +56,7 @@ case class FST[Q, Pred, Fun, In, Out](initial: Q,
     FST(q2int(initial), q2int.values.toSet, intedges, finals.map(q2int(_)))
   }
 
+  /** Returns the ordered list of edges that allow to step from `q` with input `in`. */
   def evalEdges(q: Q, in: In)(implicit Pred: SetLike[Pred, In]): List[(Out, Q)] =
     edges.forward.get(q) match {
       case None => Nil
@@ -65,6 +68,28 @@ case class FST[Q, Pred, Fun, In, Out](initial: Q,
             Nil
         }
     }
+
+  /** Returns the ordered list of epsilon edges stepping from `q`. */
+  def evalEpsilonEdges(q: Q): List[(Out, Q)] =
+    edges.forwardEpsilon.getOrElse(q, Nil)
+
+  /** Maps the edges of this FST with both functions, one for symbol transitions, the other one for epsilon transitions.
+    * This allows to turn symbol edges into epsilon ones, and conversely.
+    * Note: edges originally from epsilon transitions appear after the ones originally from symbol transitions.
+    */
+  def mapEdges[Pred1, Fun1, In1, Out1](symFun: (Q, List[(Pred, Fun, Q)]) => List[(Either[(Pred1, Fun1), Out1], Q)],
+                                       epsFun: (Q, List[(Out, Q)]) => List[(Either[(Pred1, Fun1), Out1], Q)])(implicit
+      Fun1: Func.Aux[Fun1, In1, Out1]): FST[Q, Pred1, Fun1, In1, Out1] = {
+    val mappedSym =
+      edges.forward.toList.flatMap { case (q, ts) =>
+        symFun(q, ts).map { case (t, tgt) => (q, t, tgt) }
+      }
+    val mappedEps =
+      edges.forwardEpsilon.toList.flatMap { case (q, ts) =>
+        epsFun(q, ts).map { case (t, tgt) => (q, t, tgt) }
+      }
+    copy(edges = OrderedEdgeSet.fromList(mappedSym ++ mappedEps))
+  }
 
   def rightClosure(q: Q)(implicit Out: Monoid[Out]): List[(Out, Q)] = {
     def go(q: Q, visited: Set[Q], out: Out): (Set[Q], List[(Out, Q)]) =

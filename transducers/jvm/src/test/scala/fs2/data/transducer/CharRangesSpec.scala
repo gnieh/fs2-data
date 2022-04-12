@@ -93,4 +93,43 @@ object CharRangesSpec extends SimpleIOSuite with Checkers {
     }
   }
 
+  test("index of non inverted") {
+    forall { (ranges: CharRanges, c: Char) =>
+      ranges.enumerate.zipWithIndex.find(_._1 == c).map(_._2) match {
+        case Some(idx) => expect(ranges.indexOf(c) == idx)
+        case None      => expect(ranges.indexOf(c) == -1)
+      }
+    }
+  }
+
+  test("index of inverted") {
+    forall { (ranges: CharRanges, c: Char) =>
+      val inverted = ranges.invert
+      inverted.enumerate.zipWithIndex.find(_._1 == c).map(_._2) match {
+        case Some(idx) => expect(inverted.indexOf(c) == idx)
+        case None      => expect(inverted.indexOf(c) == -1)
+      }
+    }
+  }
+
+  test("size") {
+    forall { (ranges: CharRanges) =>
+      expect(ranges.size == ranges.enumerate.size)
+    }
+  }
+
+  test("size of invert") {
+    forall { (ranges: CharRanges) =>
+      val inverted = ranges.invert
+      expect(inverted.size == inverted.enumerate.size)
+    }
+  }
+
+  test("indexOf/charAt") {
+    forall { (ranges: CharRanges, c: Char) =>
+      expect(ranges.contains(c) && ranges.charAt(ranges.indexOf(c)) == Some(c))
+        .or(expect(ranges.charAt(ranges.indexOf(c)) == None))
+    }
+  }
+
 }

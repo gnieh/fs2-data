@@ -66,6 +66,9 @@ val commonSettings = List(
     "com.disneystreaming" %%% "weaver-cats-core" % "0.7.13" % "test",
     "com.disneystreaming" %%% "weaver-core" % "0.7.13" % "test",
     "com.disneystreaming" %%% "weaver-framework" % "0.7.13" % "test",
+    "com.disneystreaming" %% "weaver-scalacheck" % weaverVersion % Test,
+    "com.disneystreaming" %%% "weaver-discipline" % weaverVersion % Test,
+    "org.typelevel" %%% "cats-laws" % "2.0.0" % Test,
     "com.eed3si9n.expecty" %%% "expecty" % "0.15.4" % "test",
     "org.portable-scala" %%% "portable-scala-reflect" % "1.1.2" cross CrossVersion.for3Use2_13
   ) ++ PartialFunction
@@ -352,7 +355,7 @@ lazy val transducers = crossProject(JVMPlatform, JSPlatform)
   .settings(publishSettings)
   .settings(
     name := "fs2-data-transducers",
-    description := "Streaming transducers library"
+    description := "Streaming transducers library",
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
