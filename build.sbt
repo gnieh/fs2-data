@@ -44,7 +44,7 @@ val commonSettings = List(
       case _            => Nil
     }
   },
-  headerLicense := Some(HeaderLicense.ALv2("2021", "Lucas Satabin")),
+  headerLicense := Some(HeaderLicense.ALv2("2022", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
   versionScheme := Some("early-semver"),
