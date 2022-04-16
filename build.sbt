@@ -9,9 +9,20 @@ val shapeless3Version = "3.0.3"
 val scalaJavaTimeVersion = "2.3.0"
 val diffsonVersion = "4.1.1"
 
+ThisBuild / tlBaseVersion := "1.3"
+
+ThisBuild / organization := "org.gnieh"
+ThisBuild / organizationName := "Gnieh"
+ThisBuild / licenses := Seq(License.Apache2)
+ThisBuild / developers := List(
+  // your GitHub handle and name
+  tlGitHubDev("satabin", "Lucas Satabin")
+)
+
+ThisBuild / crossScalaVersions := Seq(scala212, scala213, scala3)
+ThisBuild / scalaVersion := scala213
+
 val commonSettings = List(
-  scalaVersion := scala213,
-  crossScalaVersions := Seq(scala213, scala212, scala3),
   // Copied from circe
   Compile / unmanagedSourceDirectories ++= {
     def extraDirs(suffix: String) =
@@ -33,7 +44,6 @@ val commonSettings = List(
       case _            => Nil
     }
   },
-  organization := "org.gnieh",
   headerLicense := Some(HeaderLicense.ALv2("2021", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),

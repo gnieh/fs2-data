@@ -62,7 +62,7 @@ private[cbor] object ValueSerializer {
               go(Chunk.seq(values), 0, Stream.empty, CborItem.StartIndefiniteArray :: acc) >>
                 go(chunk, idx + 1, rest, List(CborItem.Break))
             else
-              go(Chunk.seq(values), 0, Stream.empty, CborItem.StartArray(values.size) :: acc) >>
+              go(Chunk.seq(values), 0, Stream.empty, CborItem.StartArray(values.size.toLong) :: acc) >>
                 go(chunk, idx + 1, rest, Nil)
           case CborValue.Map(values, indefinite) =>
             if (indefinite)
@@ -75,7 +75,7 @@ private[cbor] object ValueSerializer {
               go(Chunk.iterable(values.flatMap(p => List(p._1, p._2))),
                  0,
                  Stream.empty,
-                 CborItem.StartMap(values.size) :: acc) >>
+                 CborItem.StartMap(values.size.toLong) :: acc) >>
                 go(chunk, idx + 1, rest, Nil)
           case CborValue.TextString(text) =>
             go(chunk, idx + 1, rest, CborItem.TextString(text) :: acc)

@@ -17,8 +17,6 @@ package fs2
 package data
 package json
 
-import scala.language.experimental.macros
-
 package object interpolators {
 
   implicit class SelectorStringContext(val sc: StringContext) extends AnyVal {
