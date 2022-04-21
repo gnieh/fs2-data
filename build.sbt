@@ -1,6 +1,6 @@
 val scala212 = "2.12.15"
 val scala213 = "2.13.8"
-val scala3 = "3.1.1"
+val scala3 = "3.1.2"
 val fs2Version = "3.2.7"
 val circeVersion = "0.14.1"
 val playVersion = "2.9.2"
