@@ -64,7 +64,7 @@ val commonSettings = List(
     "com.disneystreaming" %%% "weaver-core" % "0.7.11" % "test",
     "com.disneystreaming" %%% "weaver-framework" % "0.7.11" % "test",
     "com.eed3si9n.expecty" %%% "expecty" % "0.15.4" % "test",
-    "org.portable-scala" %%% "portable-scala-reflect" % "1.1.2" cross CrossVersion.for3Use2_13
+    "org.portable-scala" %%% "portable-scala-reflect" % "1.1.1" cross CrossVersion.for3Use2_13
   ) ++ PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
       List(
