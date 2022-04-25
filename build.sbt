@@ -48,21 +48,6 @@ val commonSettings = List(
   licenses += ("The Apache Software License, Version 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
   versionScheme := Some("early-semver"),
-  scalacOptions ++= List("-feature",
-                         "-deprecation",
-                         "-unchecked",
-                         "-Ypatmat-exhaust-depth",
-                         "off",
-                         "-Ywarn-unused:imports,privates"),
-  scalacOptions ++= PartialFunction
-    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
-      case Some((2, n)) if n < 13 =>
-        List("-Ypartial-unification", "-language:higherKinds")
-      case Some((3, _)) =>
-        List("-Ykind-projector")
-    }
-    .toList
-    .flatten,
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0",
