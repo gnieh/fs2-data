@@ -3,6 +3,7 @@ val scala213 = "2.13.8"
 val scala3 = "3.1.2"
 val fs2Version = "3.2.7"
 val circeVersion = "0.14.2"
+val circeExtrasVersion = "0.14.1"
 val playVersion = "2.9.2"
 val shapeless2Version = "2.3.9"
 val shapeless3Version = "3.0.4"
@@ -57,7 +58,7 @@ val commonSettings = List(
     "co.fs2" %%% "fs2-core" % fs2Version,
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
-    "io.circe" %%% "circe-jawn" % "0.15.0-M1" % "test",
+    "io.circe" %%% "circe-jawn" % circeVersion % "test",
     "co.fs2" %%% "fs2-io" % fs2Version % "test",
     "com.disneystreaming" %%% "weaver-cats" % "0.7.11" % "test",
     "com.disneystreaming" %%% "weaver-cats-core" % "0.7.11" % "test",
@@ -332,7 +333,7 @@ lazy val documentation = project
     libraryDependencies ++= List(
       "com.beachape" %% "enumeratum" % "1.5.15",
       "org.gnieh" %% "diffson-circe" % diffsonVersion,
-      "io.circe" %% "circe-generic-extras" % circeVersion,
+      "io.circe" %% "circe-generic-extras" % circeExtrasVersion,
       "co.fs2" %% "fs2-io" % fs2Version
     ),
     scalacOptions += "-Ymacro-annotations"
