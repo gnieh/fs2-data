@@ -63,7 +63,7 @@ Files[IO]
 
 For textual data formats (JSON, XML, CSV, ...) this stream needs to be decoded according to the file encoding.
 
-#### UTF-8 and single byte encoded (ISO-8859-1, ISO-8859-15, ASCII) inputs
+#### Decoding textual inputs
 
 If your file is encoded using UTF-8 or a common single-byte encoding, you can use the built-in support `fs2-data` has for these encodings, which lives in the [`fs2.data.text` package][fs2-data-text-api].
 
