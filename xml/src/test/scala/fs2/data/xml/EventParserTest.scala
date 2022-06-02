@@ -24,6 +24,74 @@ import weaver._
 
 object EventParserTest extends SimpleIOSuite {
 
+  test("XML should generate proper events") {
+    val input = """<root>
+                  |  <a attr="value">
+                  |    <b>Text</b>
+                  |  </a>
+                  |</root>""".stripMargin
+
+    Stream
+      .emits(input)
+      .covary[IO]
+      .through(events)
+      .compile
+      .toList
+      .map(events =>
+        expect(
+          events == List(
+            XmlEvent.StartDocument,
+            XmlEvent.StartTag(QName("root"), Nil, false),
+            XmlEvent.XmlString("\n  ", false),
+            XmlEvent.StartTag(QName("a"), List(Attr(QName("attr"), List(XmlEvent.XmlString("value", false)))), false),
+            XmlEvent.XmlString("\n    ", false),
+            XmlEvent.StartTag(QName("b"), Nil, false),
+            XmlEvent.XmlString("Text", false),
+            XmlEvent.EndTag(QName("b")),
+            XmlEvent.XmlString("\n  ", false),
+            XmlEvent.EndTag(QName("a")),
+            XmlEvent.XmlString("\n", false),
+            XmlEvent.EndTag(QName("root")),
+            XmlEvent.EndDocument
+          )))
+  }
+
+  test("Empty XML document emits no events") {
+    Stream
+      .emits("")
+      .covary[IO]
+      .through(events)
+      .compile
+      .toList
+      .map(events => expect(events.isEmpty))
+  }
+
+  test("Start and end document events should be properly emitted when several roots are in the input stream") {
+    val input = "<a></a><a></a><a></a>"
+    Stream
+      .emits(input)
+      .covary[IO]
+      .through(events)
+      .compile
+      .toList
+      .map(events =>
+        expect(
+          events == List(
+            XmlEvent.StartDocument,
+            XmlEvent.StartTag(QName("a"), Nil, false),
+            XmlEvent.EndTag(QName("a")),
+            XmlEvent.EndDocument,
+            XmlEvent.StartDocument,
+            XmlEvent.StartTag(QName("a"), Nil, false),
+            XmlEvent.EndTag(QName("a")),
+            XmlEvent.EndDocument,
+            XmlEvent.StartDocument,
+            XmlEvent.StartTag(QName("a"), Nil, false),
+            XmlEvent.EndTag(QName("a")),
+            XmlEvent.EndDocument
+          )))
+  }
+
   val testFileDir = Path("xml/src/test/resources/xmlconf")
   test("Standard test suite should pass") {
     (Files[IO].walk(testFileDir.resolve("xmltest/valid")).filter(_.extName == ".xml") ++
