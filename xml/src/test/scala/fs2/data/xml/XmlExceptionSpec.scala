@@ -29,7 +29,8 @@ object XmlExceptionSpec extends SimpleIOSuite {
 
     expect(stream.compile.toList match {
       case Right(
-            List(Right(XmlEvent.StartTag(QName(None, "a"), Nil, false)),
+            List(Right(XmlEvent.StartDocument),
+                 Right(XmlEvent.StartTag(QName(None, "a"), Nil, false)),
                  Right(XmlEvent.StartTag(QName(None, "b"), Nil, false)),
                  Right(XmlEvent.XmlString("c", false)),
                  Left(_: XmlException))) =>
