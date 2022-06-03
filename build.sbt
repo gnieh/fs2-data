@@ -35,7 +35,7 @@ val commonSettings = List(
     }
   },
   organization := "org.gnieh",
-  headerLicense := Some(HeaderLicense.ALv2("2021", "Lucas Satabin")),
+  headerLicense := Some(HeaderLicense.ALv2("2022", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
   versionScheme := Some("early-semver"),
@@ -50,7 +50,7 @@ val commonSettings = List(
       case Some((2, n)) if n < 13 =>
         List("-Ypartial-unification", "-language:higherKinds")
       case Some((3, _)) =>
-        List("-Ykind-projector")
+        List("-Ykind-projector", "-source:future-migration", "-no-indent")
     }
     .toList
     .flatten,
@@ -118,7 +118,8 @@ val root = (project in file("."))
                                                                              jsonDiffson.js,
                                                                              jsonPlay.js,
                                                                              text.js,
-                                                                             xml.js),
+                                                                             xml.js,
+                                                                             scalaXml.js),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     Nanoc / sourceDirectory := file("site"),
@@ -142,6 +143,8 @@ val root = (project in file("."))
     jsonInterpolators.js,
     xml.jvm,
     xml.js,
+    scalaXml.jvm,
+    scalaXml.js,
     cbor.jvm,
     cbor.js
   )
@@ -305,6 +308,21 @@ lazy val xml = crossProject(JVMPlatform, JSPlatform)
   )
   .dependsOn(text)
 
+lazy val scalaXml = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("xml/scala-xml"))
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "fs2-data-xml-scala-xml",
+    description := "Support for Scala XML ASTs",
+    libraryDependencies += "org.scala-lang.modules" %%% "scala-xml" % "2.1.0"
+  )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+  .dependsOn(xml)
+
 lazy val cbor = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
   .in(file("cbor"))
@@ -345,6 +363,7 @@ lazy val documentation = project
              jsonCirce.jvm,
              jsonInterpolators.jvm,
              xml.jvm,
+             scalaXml.jvm,
              cbor.jvm)
 
 lazy val benchmarks = project
