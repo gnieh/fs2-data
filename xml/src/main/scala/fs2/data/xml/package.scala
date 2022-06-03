@@ -29,11 +29,24 @@ package object xml {
 
   /** Transforms a stream of characters into a stream of XML events.
     * Emitted tokens are guaranteed to be valid up to that point.
-    * If the streams ends without failure, the sequence of tokens is sensured
+    * If the streams ends without failure, the sequence of tokens is ensured
     * to represent a (potentially empty) sequence of valid XML documents.
     */
+  @deprecated(message = "Use `fs2.data.xml.events()` instead.", since = "fs2-data 1.4.0")
   def events[F[_], T](implicit F: RaiseThrowable[F], T: CharLikeChunks[F, T]): Pipe[F, T, XmlEvent] =
-    EventParser.pipe[F, T]
+    EventParser.pipe[F, T](false)
+
+  /** Transforms a stream of characters into a stream of XML events.
+    * Emitted tokens are guaranteed to be valid up to that point.
+    * If the streams ends without failure, the sequence of tokens is ensured
+    * to represent a (potentially empty) sequence of valid XML documents.
+    *
+    * if `includeComments` is `true`, then comment events will be emitted
+    * together with the comment content.
+    */
+  def events[F[_], T](
+      includeComments: Boolean = false)(implicit F: RaiseThrowable[F], T: CharLikeChunks[F, T]): Pipe[F, T, XmlEvent] =
+    EventParser.pipe[F, T](includeComments)
 
   /** Resolves the character and entity references in the XML stream.
     * Entities are already defined and validated (especially no recursion),

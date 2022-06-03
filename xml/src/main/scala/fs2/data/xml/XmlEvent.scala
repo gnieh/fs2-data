@@ -51,4 +51,6 @@ object XmlEvent {
 
   case object EndDocument extends XmlEvent
 
+  case class Comment(comment: String) extends XmlEvent
+
 }

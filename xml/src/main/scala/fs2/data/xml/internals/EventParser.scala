@@ -20,6 +20,8 @@ package internals
 
 import text._
 
+import cats.syntax.all._
+
 import scala.collection.immutable.VectorBuilder
 
 private[xml] object EventParser {
@@ -28,7 +30,8 @@ private[xml] object EventParser {
 
   val valueDelimiters = " \t\r\n<&"
 
-  def pipe[F[_], T](implicit F: RaiseThrowable[F], T: CharLikeChunks[F, T]): Pipe[F, T, XmlEvent] = {
+  def pipe[F[_], T](
+      includeComments: Boolean)(implicit F: RaiseThrowable[F], T: CharLikeChunks[F, T]): Pipe[F, T, XmlEvent] = {
 
     val eos = T.create(Stream.empty)
 
@@ -273,7 +276,7 @@ private[xml] object EventParser {
               case '!' =>
                 peekChar(T.advance(ctx), chunkAcc).flatMap {
                   case Some((ctx, chunkAcc, '-')) =>
-                    skipComment(T.advance(ctx), chunkAcc)
+                    readComment(T.advance(ctx), chunkAcc)
                   case Some((ctx, chunkAcc, '[')) =>
                     readCDATA(T.advance(ctx), chunkAcc)
                   case Some((ctx, chunkAcc, _)) =>
@@ -293,25 +296,29 @@ private[xml] object EventParser {
       }
 
     /** We have read '<!-' so far */
-    def skipComment(
+    def readComment(
         ctx: T.Context,
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], MarkupToken)] =
       acceptChar(ctx, '-', "15", "second dash missing to open comment", chunkAcc).flatMap { case (ctx, chunkAcc) =>
         def loop(ctx: T.Context,
+                 builder: StringBuilder,
                  chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
           nextChar(ctx, chunkAcc).flatMap {
             case (ctx, chunkAcc, '-') =>
               nextChar(ctx, chunkAcc).flatMap {
                 case (ctx, chunkAcc, '-') =>
                   acceptChar(ctx, '>', "15", "'--' is not inside comments", chunkAcc)
-                case (ctx, chunkAcc, _) =>
-                  loop(ctx, chunkAcc)
+                case (ctx, chunkAcc, c) =>
+                  if (includeComments) builder.append('-').append(c)
+                  loop(ctx, builder, chunkAcc)
               }
-            case (ctx, chunkAcc, _) =>
-              loop(ctx, chunkAcc)
+            case (ctx, chunkAcc, c) =>
+              if (includeComments) builder.append(c)
+              loop(ctx, builder, chunkAcc)
           }
-        loop(ctx, chunkAcc).map { case (ctx, chunkAcc) =>
-          (ctx, chunkAcc, MarkupToken.CommentToken)
+        val builder = new StringBuilder
+        loop(ctx, builder, chunkAcc).map { case (ctx, chunkAcc) =>
+          (ctx, chunkAcc, MarkupToken.CommentToken(includeComments.guard[Option].as(builder.result())))
         }
       }
 
@@ -411,11 +418,13 @@ private[xml] object EventParser {
         peekChar(ctx, chunkAcc).flatMap {
           case Some((ctx, chunkAcc, '<')) =>
             readMarkupToken(ctx, chunkAcc).flatMap {
-              case (ctx, chunkAcc, MarkupToken.CommentToken) => scanMisc(ctx, chunkAcc)
-              case res @ (_, _, MarkupToken.PIToken(_))      => Pull.pure(Some(res))
-              case res @ (_, _, MarkupToken.DeclToken(_))    => Pull.pure(Some(res))
-              case res @ (_, _, MarkupToken.StartToken(_))   => Pull.pure(Some(res))
-              case (_, chunkAcc, t)                          => fail("22", s"unexpected token '$t'", Some(chunkAcc))
+              case (ctx, chunkAcc, MarkupToken.CommentToken(None)) => scanMisc(ctx, chunkAcc)
+              case (ctx, chunkAcc, MarkupToken.CommentToken(Some(comment))) =>
+                scanMisc(ctx, chunkAcc += XmlEvent.Comment(comment))
+              case res @ (_, _, MarkupToken.PIToken(_))    => Pull.pure(Some(res))
+              case res @ (_, _, MarkupToken.DeclToken(_))  => Pull.pure(Some(res))
+              case res @ (_, _, MarkupToken.StartToken(_)) => Pull.pure(Some(res))
+              case (_, chunkAcc, t)                        => fail("22", s"unexpected token '$t'", Some(chunkAcc))
             }
           case Some((_, chunkAcc, c)) =>
             fail("22", s"unexpected character '$c'", Some(chunkAcc))
@@ -667,8 +676,10 @@ private[xml] object EventParser {
       peekChar(ctx, chunkAcc).flatMap {
         case Some((ctx, chunkAcc, '<')) =>
           readMarkupToken(ctx, chunkAcc).flatMap {
-            case (ctx, chunkAcc, MarkupToken.CommentToken) =>
+            case (ctx, chunkAcc, MarkupToken.CommentToken(None)) =>
               readCharData(ctx, is11, chunkAcc)
+            case (ctx, chunkAcc, MarkupToken.CommentToken(Some(comment))) =>
+              readCharData(ctx, is11, chunkAcc += XmlEvent.Comment(comment))
             case (_, chunkAcc, MarkupToken.DeclToken(n)) =>
               fail("14", s"unexpected declaration '$n'", Some(chunkAcc))
             case (ctx, chunkAcc, MarkupToken.CDataToken) =>
@@ -751,8 +762,10 @@ private[xml] object EventParser {
                 }
               case (ctx, chunkAcc, MarkupToken.StartToken(name)) =>
                 readElement(ctx, false, name, chunkAcc).map(Some(_))
-              case (ctx, chunkAcc, MarkupToken.CommentToken) =>
+              case (ctx, chunkAcc, MarkupToken.CommentToken(None)) =>
                 scanPrologToken1(ctx, false, chunkAcc)
+              case (ctx, chunkAcc, MarkupToken.CommentToken(Some(comment))) =>
+                scanPrologToken1(ctx, false, chunkAcc += XmlEvent.Comment(comment))
               case (_, chunkAcc, t) =>
                 fail("22", s"unexpected markup $t", Some(chunkAcc))
             }

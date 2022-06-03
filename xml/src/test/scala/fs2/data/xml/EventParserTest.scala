@@ -34,7 +34,7 @@ object EventParserTest extends SimpleIOSuite {
     Stream
       .emits(input)
       .covary[IO]
-      .through(events)
+      .through(events())
       .compile
       .toList
       .map(events =>
@@ -60,7 +60,7 @@ object EventParserTest extends SimpleIOSuite {
     Stream
       .emits("")
       .covary[IO]
-      .through(events)
+      .through(events())
       .compile
       .toList
       .map(events => expect(events.isEmpty))
@@ -71,7 +71,7 @@ object EventParserTest extends SimpleIOSuite {
     Stream
       .emits(input)
       .covary[IO]
-      .through(events)
+      .through(events())
       .compile
       .toList
       .map(events =>
@@ -92,6 +92,56 @@ object EventParserTest extends SimpleIOSuite {
           )))
   }
 
+  test("Comments should be ignored by default") {
+    val input = """<!-- some comment -->
+                  |<a>
+                  |<!-- and another one -->
+                  |Text
+                  |</a>""".stripMargin
+    Stream
+      .emits(input)
+      .covary[IO]
+      .through(events())
+      .compile
+      .toList
+      .map(events =>
+        expect(
+          events == List(
+            XmlEvent.StartDocument,
+            XmlEvent.StartTag(QName("a"), Nil, false),
+            XmlEvent.XmlString("\n", false),
+            XmlEvent.XmlString("\nText\n", false),
+            XmlEvent.EndTag(QName("a")),
+            XmlEvent.EndDocument
+          )))
+  }
+
+  test("Comments should be emitted if asked for") {
+    val input = """<!-- some comment -->
+                  |<a>
+                  |<!-- and another one -->
+                  |Text
+                  |</a>""".stripMargin
+    Stream
+      .emits(input)
+      .covary[IO]
+      .through(events(includeComments = true))
+      .compile
+      .toList
+      .map(events =>
+        expect(
+          events == List(
+            XmlEvent.StartDocument,
+            XmlEvent.Comment(" some comment "),
+            XmlEvent.StartTag(QName("a"), Nil, false),
+            XmlEvent.XmlString("\n", false),
+            XmlEvent.Comment(" and another one "),
+            XmlEvent.XmlString("\nText\n", false),
+            XmlEvent.EndTag(QName("a")),
+            XmlEvent.EndDocument
+          )))
+  }
+
   val testFileDir = Path("xml/src/test/resources/xmlconf")
   test("Standard test suite should pass") {
     (Files[IO].walk(testFileDir.resolve("xmltest/valid")).filter(_.extName == ".xml") ++
@@ -102,7 +152,7 @@ object EventParserTest extends SimpleIOSuite {
           .readAll(path, 1024, Flags.Read)
           .through(fs2.text.utf8.decode)
           .flatMap(Stream.emits(_))
-          .through(events)
+          .through(events())
           .compile
           .drain
           .attempt

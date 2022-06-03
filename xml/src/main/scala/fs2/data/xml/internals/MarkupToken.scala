@@ -40,8 +40,8 @@ private object MarkupToken {
     def render: String = s"<!$name"
   }
 
-  case object CommentToken extends MarkupToken {
-    def render: String = "<!-- ... -->"
+  case class CommentToken(content: Option[String]) extends MarkupToken {
+    def render: String = s"<!-- ${content.getOrElse("...")} -->"
   }
 
   case object CDataToken extends MarkupToken {
