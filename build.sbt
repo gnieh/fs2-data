@@ -7,7 +7,7 @@ val circeExtrasVersion = "0.14.1"
 val playVersion = "2.9.2"
 val shapeless2Version = "2.3.9"
 val shapeless3Version = "3.1.0"
-val scalaJavaTimeVersion = "2.3.0"
+val scalaJavaTimeVersion = "2.4.0"
 val diffsonVersion = "4.1.1"
 
 val commonSettings = List(
