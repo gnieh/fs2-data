@@ -326,11 +326,13 @@ package object csv {
       */
     def encodeRowWithFirstHeaders[F[_], Header](implicit
         H: WriteableHeader[Header]): Pipe[F, CsvRow[Header], NonEmptyList[String]] =
-      _.pull.peek1.flatMap {
-        case Some((CsvRow(_, headers), stream)) =>
-          Pull.output1(H(headers)) >> stream.map(_.values).pull.echo
-        case None => Pull.done
-      }.stream
+      _.pull.peek1
+        .flatMap {
+          case Some((CsvRow(_, headers), stream)) =>
+            Pull.output1(H(headers)) >> stream.map(_.values).pull.echo
+          case None => Pull.done
+        }
+        .stream
 
   }
 }
