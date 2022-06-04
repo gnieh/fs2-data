@@ -25,7 +25,7 @@ object XmlExceptionSpec extends SimpleIOSuite {
 
     val input = """<a><b>c</a>"""
 
-    val stream = Stream.emit(input).through(events[Fallible, String]).attempt
+    val stream = Stream.emit(input).through(events[Fallible, String]()).attempt
 
     expect(stream.compile.toList match {
       case Right(
