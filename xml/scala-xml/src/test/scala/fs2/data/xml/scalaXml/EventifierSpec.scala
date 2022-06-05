@@ -16,17 +16,10 @@
 package fs2
 package data
 package xml
+package scalaXml
 
-package object dom {
+import dom._
 
-  /** Transforms a stream of XML events into a stream of XML document trees.
-    */
-  def documents[F[_], Node](implicit F: RaiseThrowable[F], builder: Builder[Node]): Pipe[F, XmlEvent, Node] =
-    new TreeParser[F, Node].pipe
+import scala.xml.NodeSeq
 
-  /** Transforms a stream of XML nodes into a stream of XML events.
-    */
-  def eventify[F[_], Node](implicit eventifier: Eventifier[Node]): Pipe[F, Node, XmlEvent] =
-    _.flatMap(node => eventifier.eventify(node))
-
-}
+object ScalaXmlEventifierSpec extends EventifierSpec[NodeSeq]

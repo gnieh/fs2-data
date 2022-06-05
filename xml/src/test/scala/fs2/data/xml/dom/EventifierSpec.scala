@@ -1,0 +1,43 @@
+/*
+ * Copyright 2022 Lucas Satabin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package fs2
+package data
+package xml
+package dom
+
+import weaver._
+
+abstract class EventifierSpec[Node](implicit builder: Builder[Node], eventifier: Eventifier[Node])
+    extends SimpleIOSuite {
+
+  pureTest("`eventifier` and `documents` should work well together") {
+
+    val input = Stream.emits("""<?xml version="1.1" encoding="utf-8"?>
+                               |<a att1="value1" att2="&amp; another one">
+                               |  <!-- a comment -->
+                               |  <b>Test</b>
+                               |  <b/>
+                               |</a>""".stripMargin)
+
+    val evts = input.through(events[Fallible, Char]())
+
+    val roundtrip = evts.through(documents).through(eventify)
+
+    expect(evts.compile.toList == roundtrip.compile.toList)
+
+  }
+
+}

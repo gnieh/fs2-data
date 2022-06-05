@@ -321,7 +321,7 @@ lazy val scalaXml = crossProject(JVMPlatform, JSPlatform)
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
-  .dependsOn(xml)
+  .dependsOn(xml % "compile->compile;test->test")
 
 lazy val cbor = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)

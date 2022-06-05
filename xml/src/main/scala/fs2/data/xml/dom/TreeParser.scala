@@ -112,9 +112,9 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: Builder[Nod
         Pull.raiseError(new XmlTreeException(s"unexpected event '$evt'"))
     }
 
-  private def parseDocument(chunk: Chunk[XmlEvent],
-                            idx: Int,
-                            rest: Stream[F, XmlEvent]): Pull[F, Node, (Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
+  private def document(chunk: Chunk[XmlEvent],
+                       idx: Int,
+                       rest: Stream[F, XmlEvent]): Pull[F, Node, (Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
     next(chunk, idx, rest).flatMap {
       case (XmlEvent.StartDocument, chunk, idx, rest) =>
         for {
@@ -140,7 +140,7 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: Builder[Nod
           case None           => Pull.done
         }
       } else {
-        parseDocument(chunk, idx, rest).flatMap { case (chunk, idx, rest) => go(chunk, idx, rest) }
+        document(chunk, idx, rest).flatMap { case (chunk, idx, rest) => go(chunk, idx, rest) }
       }
     s => go(Chunk.empty, 0, s).stream
   }
