@@ -314,7 +314,7 @@ lazy val scalaXml = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    name := "fs2-data-xml-scala-xml",
+    name := "fs2-data-xml-scala",
     description := "Support for Scala XML ASTs",
     libraryDependencies += "org.scala-lang.modules" %%% "scala-xml" % "2.1.0"
   )

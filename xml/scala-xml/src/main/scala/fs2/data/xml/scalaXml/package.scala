@@ -26,27 +26,31 @@ import scala.xml._
 
 package object scalaXml {
 
-  implicit object ScalaXmlBuilder extends Builder[NodeSeq] {
+  implicit object ScalaXmlBuilder extends Builder[Document] {
+
+    type Content = Node
+    type Elem = scala.xml.Elem
+    type Misc = Node
 
     def makeDocument(version: Option[String],
                      encoding: Option[String],
                      standalone: Option[Boolean],
                      doctype: Option[XmlEvent.XmlDoctype],
-                     prolog: List[NodeSeq],
-                     root: NodeSeq): NodeSeq = {
+                     prolog: List[Misc],
+                     root: Elem): Document = {
       val document = new Document()
       document.version = version
       document.encoding = encoding
       document.standAlone = standalone
-      document.children = prolog.flatten ++ root
+      document.children = prolog :+ root
       document.docElem = root.head
       document
     }
 
-    def makeComment(content: String): Option[NodeSeq] =
+    def makeComment(content: String): Option[Misc] =
       Comment(content).some
 
-    def makeText(texty: XmlEvent.XmlTexty): NodeSeq =
+    def makeText(texty: XmlEvent.XmlTexty): Content =
       texty match {
         case XmlEvent.XmlCharRef(value)   => Text(new String(Character.toChars(value)))
         case XmlEvent.XmlEntityRef(name)  => EntityRef(name)
@@ -54,23 +58,26 @@ package object scalaXml {
         case XmlEvent.XmlString(s, true)  => PCData(s)
       }
 
-    def makeElement(name: QName, attributes: List[Attr], isEmpty: Boolean, children: List[NodeSeq]): NodeSeq = {
+    def makeElement(name: QName, attributes: List[Attr], isEmpty: Boolean, children: List[Content]): Elem = {
       val attrs = attributes.foldRight(Null: MetaData) { (attr, acc) =>
         attr.name.prefix match {
-          case Some(prefix) => new PrefixedAttribute(prefix, attr.name.local, attr.value.flatMap(makeText(_)), acc)
-          case None         => new UnprefixedAttribute(attr.name.local, attr.value.flatMap(makeText(_)), acc)
+          case Some(prefix) => new PrefixedAttribute(prefix, attr.name.local, attr.value.map(makeText(_)), acc)
+          case None         => new UnprefixedAttribute(attr.name.local, attr.value.map(makeText(_)), acc)
         }
       }
-      Elem(name.prefix.getOrElse(null), name.local, attrs, TopScope, isEmpty, children.flatten: _*)
+      Elem(name.prefix.getOrElse(null), name.local, attrs, TopScope, isEmpty, children: _*)
     }
 
-    def makePI(target: String, content: String): NodeSeq =
+    def makePI(target: String, content: String): Misc =
       ProcInstr(target, content)
 
   }
 
-  implicit object ScalaXmlEventifier extends Eventifier[NodeSeq] {
-    def eventify(node: NodeSeq): Stream[Pure, XmlEvent] =
+  implicit object ScalaXmlEventifier extends Eventifier[Document] {
+    def eventify(node: Document): Stream[Pure, XmlEvent] =
+      innerEventify(node)
+
+    def innerEventify(node: NodeSeq): Stream[Pure, XmlEvent] =
       node match {
         case Comment(comment)           => Stream.emit(XmlEvent.Comment(comment))
         case PCData(content)            => Stream.emit(XmlEvent.XmlString(content, true))
@@ -82,13 +89,13 @@ package object scalaXml {
           val name = QName(Option(e.prefix), e.label)
           Stream.emit(XmlEvent.StartTag(name, makeAttributes(e.attributes, Nil), isEmpty)) ++ Stream
             .emits(e.child)
-            .flatMap(eventify(_)) ++ Stream.emit(XmlEvent.EndTag(name))
+            .flatMap(innerEventify(_)) ++ Stream.emit(XmlEvent.EndTag(name))
         case doc: Document =>
           Stream.emit(XmlEvent.StartDocument) ++ Stream.emits(
             doc.version.map(version => XmlEvent.XmlDecl(version, doc.encoding, doc.standAlone)).toSeq) ++ Stream
             .emits(doc.children)
-            .flatMap(eventify(_)) ++ Stream.emit(XmlEvent.EndDocument)
-        case Group(children) => Stream.emits(children).flatMap(eventify(_))
+            .flatMap(innerEventify(_)) ++ Stream.emit(XmlEvent.EndDocument)
+        case Group(children) => Stream.emits(children).flatMap(innerEventify(_))
         case other           => Stream.empty
       }
 

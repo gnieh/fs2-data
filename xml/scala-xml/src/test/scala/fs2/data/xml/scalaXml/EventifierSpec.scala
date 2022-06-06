@@ -20,6 +20,6 @@ package scalaXml
 
 import dom._
 
-import scala.xml.NodeSeq
+import scala.xml.Document
 
-object ScalaXmlEventifierSpec extends EventifierSpec[NodeSeq]
+object ScalaXmlEventifierSpec extends EventifierSpec[Document]

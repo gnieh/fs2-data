@@ -53,10 +53,14 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: Builder[Nod
       case (evt, _, _, _)            => Pull.raiseError(new XmlTreeException(s"unepexted event '$evt'"))
     }
 
-  private def prolog(chunk: Chunk[XmlEvent], idx: Int, rest: Stream[F, XmlEvent]): Pull[
-    F,
-    INothing,
-    (Option[XmlEvent.XmlDecl], Option[XmlEvent.XmlDoctype], List[Node], Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
+  private def prolog(chunk: Chunk[XmlEvent], idx: Int, rest: Stream[F, XmlEvent]): Pull[F,
+                                                                                        INothing,
+                                                                                        (Option[XmlEvent.XmlDecl],
+                                                                                         Option[XmlEvent.XmlDoctype],
+                                                                                         List[builder.Misc],
+                                                                                         Chunk[XmlEvent],
+                                                                                         Int,
+                                                                                         Stream[F, XmlEvent])] =
     peek(chunk, idx, rest)
       .map {
         case (decl @ XmlEvent.XmlDecl(_, _, _), chunk, idx, rest) =>
@@ -65,7 +69,7 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: Builder[Nod
           (None, chunk, idx, rest)
       }
       .flatMap { case (decl, chunk, idx, rest) =>
-        (chunk, idx, rest, none[XmlEvent.XmlDoctype], new ListBuffer[Node]).tailRecM {
+        (chunk, idx, rest, none[XmlEvent.XmlDoctype], new ListBuffer[builder.Misc]).tailRecM {
           case (chunk, idx, rest, doctype, misc) =>
             peek(chunk, idx, rest).flatMap {
               case (dt @ XmlEvent.XmlDoctype(_, _, _), chunk, idx, rest) =>
@@ -83,12 +87,13 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: Builder[Nod
         }
       }
 
-  private def element(chunk: Chunk[XmlEvent],
-                      idx: Int,
-                      rest: Stream[F, XmlEvent]): Pull[F, INothing, (Node, Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
+  private def element(
+      chunk: Chunk[XmlEvent],
+      idx: Int,
+      rest: Stream[F, XmlEvent]): Pull[F, INothing, (builder.Elem, Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
     next(chunk, idx, rest).flatMap {
       case (XmlEvent.StartTag(name, attrs, isEmpty), chunk, idx, rest) =>
-        (chunk, idx, rest, new ListBuffer[Node]).tailRecM { case (chunk, idx, rest, children) =>
+        (chunk, idx, rest, new ListBuffer[builder.Content]).tailRecM { case (chunk, idx, rest, children) =>
           peek(chunk, idx, rest).flatMap {
             case (XmlEvent.EndTag(`name`), chunk, idx, rest) =>
               Pull.pure((builder.makeElement(name, attrs, isEmpty, children.result()), chunk, idx + 1, rest).asRight)
