@@ -17,4 +17,4 @@ package fs2
 package data
 package xml
 
-class XmlException(val error: XmlError, msg: String) extends Exception(msg)
+case class XmlException(val error: XmlError, msg: String) extends Exception(msg)
