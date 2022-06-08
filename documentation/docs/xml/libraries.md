@@ -4,7 +4,7 @@ index: 1
 module: xml
 ---
 
-Bindings to new Scala XML DOM librariy can be added by implementing the `Builder` and `Eventifier` traites. `fs2-data` provides some of them out of the box.
+Bindings to new Scala XML DOM librariy can be added by implementing the `DocumentBuilder` and `DocumentEventifier` traites. `fs2-data` provides some of them out of the box.
 
 This page covers the following libraries:
 * Contents
@@ -14,7 +14,7 @@ This page covers the following libraries:
 
 Module: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-xml-scala_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-xml-scala_2.13)
 
-The `fs2-data-xml-scala` module provides `Builder` and `Eventifier` instances for the [scala-xml][scala-xml] `NodeSeq` type.
+The `fs2-data-xml-scala` module provides `DocumentBuilder` and `DocumentEventifier` instances for the [scala-xml][scala-xml] `Document` type.
 
 The `documents` Pipe emits `scala.xml.Document`s.
 

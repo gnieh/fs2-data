@@ -23,7 +23,7 @@ import scala.collection.mutable.ListBuffer
 
 class XmlTreeException(msg: String) extends Exception(msg)
 
-class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: Builder[Node]) {
+class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: DocumentBuilder[Node]) {
 
   private def next(
       chunk: Chunk[XmlEvent],

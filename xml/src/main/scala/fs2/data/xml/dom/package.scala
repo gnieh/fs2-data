@@ -21,12 +21,12 @@ package object dom {
 
   /** Transforms a stream of XML events into a stream of XML document trees.
     */
-  def documents[F[_], Node](implicit F: RaiseThrowable[F], builder: Builder[Node]): Pipe[F, XmlEvent, Node] =
+  def documents[F[_], Node](implicit F: RaiseThrowable[F], builder: DocumentBuilder[Node]): Pipe[F, XmlEvent, Node] =
     new TreeParser[F, Node].pipe
 
   /** Transforms a stream of XML nodes into a stream of XML events.
     */
-  def eventify[F[_], Node](implicit eventifier: Eventifier[Node]): Pipe[F, Node, XmlEvent] =
+  def eventify[F[_], Node](implicit eventifier: DocumentEventifier[Node]): Pipe[F, Node, XmlEvent] =
     _.flatMap(node => eventifier.eventify(node))
 
 }

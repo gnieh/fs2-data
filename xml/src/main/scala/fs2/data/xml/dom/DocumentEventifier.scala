@@ -18,25 +18,8 @@ package data
 package xml
 package dom
 
-trait Builder[Document] {
+trait DocumentEventifier[Document] {
 
-  type Content
-  type Misc <: Content
-  type Elem <: Content
-
-  def makeDocument(version: Option[String],
-                   encoding: Option[String],
-                   standalone: Option[Boolean],
-                   doctype: Option[XmlEvent.XmlDoctype],
-                   prolog: List[Misc],
-                   root: Elem): Document
-
-  def makeComment(content: String): Option[Misc]
-
-  def makeText(texty: XmlEvent.XmlTexty): Content
-
-  def makeElement(name: QName, attributes: List[Attr], isEmpty: Boolean, children: List[Content]): Elem
-
-  def makePI(target: String, content: String): Misc
+  def eventify(node: Document): Stream[Pure, XmlEvent]
 
 }

@@ -20,7 +20,7 @@ package dom
 
 import weaver._
 
-abstract class EventifierSpec[Node](implicit builder: Builder[Node], eventifier: Eventifier[Node])
+abstract class EventifierSpec[Doc](implicit builder: DocumentBuilder[Doc], eventifier: DocumentEventifier[Doc])
     extends SimpleIOSuite {
 
   pureTest("`eventifier` and `documents` should work well together") {

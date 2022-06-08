@@ -18,7 +18,7 @@ package fs2
 package data
 package xml
 
-import dom.{Builder, Eventifier}
+import dom.{DocumentBuilder, DocumentEventifier}
 
 import cats.syntax.all._
 
@@ -26,7 +26,7 @@ import scala.xml._
 
 package object scalaXml {
 
-  implicit object ScalaXmlBuilder extends Builder[Document] {
+  implicit object ScalaXmlBuilder extends DocumentBuilder[Document] {
 
     type Content = Node
     type Elem = scala.xml.Elem
@@ -73,7 +73,8 @@ package object scalaXml {
 
   }
 
-  implicit object ScalaXmlEventifier extends Eventifier[Document] {
+  implicit object ScalaXmlEventifier extends DocumentEventifier[Document] {
+
     def eventify(node: Document): Stream[Pure, XmlEvent] =
       innerEventify(node)
 
