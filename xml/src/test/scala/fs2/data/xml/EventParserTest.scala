@@ -24,6 +24,54 @@ import weaver._
 
 object EventParserTest extends SimpleIOSuite {
 
+  test("XML parser should handle all kind of XML elements") {
+    val input = Stream.emits("""<?xml version="1.1" encoding="utf-8"?>
+                               |<a att1="value1" att2="&amp; another one">
+                               |  <!-- a comment -->
+                               |  <b><![CDATA[Test]]></b>
+                               |  <b/>
+                               |</a>
+                               |<?target content?>
+                               |<!-- closing comment -->""".stripMargin)
+
+    input
+      .covary[IO]
+      .through(events(true))
+      .compile
+      .toList
+      .map(events =>
+        expect(
+          events == List(
+            XmlEvent.StartDocument,
+            XmlEvent.XmlDecl("1.1", Some("utf-8"), None),
+            XmlEvent.StartTag(
+              QName("a"),
+              List(
+                Attr(QName("att1"), List(XmlEvent.XmlString("value1", false))),
+                Attr(QName("att2"),
+                     List(XmlEvent.XmlString("", false),
+                          XmlEvent.XmlEntityRef("amp"),
+                          XmlEvent.XmlString(" another one", false)))
+              ),
+              false
+            ),
+            XmlEvent.XmlString("\n  ", false),
+            XmlEvent.Comment(" a comment "),
+            XmlEvent.XmlString("\n  ", false),
+            XmlEvent.StartTag(QName("b"), Nil, false),
+            XmlEvent.XmlString("Test", true),
+            XmlEvent.EndTag(QName("b")),
+            XmlEvent.XmlString("\n  ", false),
+            XmlEvent.StartTag(QName("b"), Nil, true),
+            XmlEvent.EndTag(QName("b")),
+            XmlEvent.XmlString("\n", false),
+            XmlEvent.EndTag(QName("a")),
+            XmlEvent.XmlPI("target", "content"),
+            XmlEvent.Comment(" closing comment "),
+            XmlEvent.EndDocument
+          )))
+  }
+
   test("XML should generate proper events") {
     val input = """<root>
                   |  <a attr="value">
@@ -84,6 +132,35 @@ object EventParserTest extends SimpleIOSuite {
             XmlEvent.StartDocument,
             XmlEvent.StartTag(QName("a"), Nil, false),
             XmlEvent.EndTag(QName("a")),
+            XmlEvent.EndDocument,
+            XmlEvent.StartDocument,
+            XmlEvent.StartTag(QName("a"), Nil, false),
+            XmlEvent.EndTag(QName("a")),
+            XmlEvent.EndDocument
+          )))
+  }
+
+  test("Postlog has precedence over prolog when several documents are concatenated") {
+    val input = """<a></a><?target content?><?xml version="1.1"?><a></a><!-- comment --><a></a>"""
+    Stream
+      .emits(input)
+      .covary[IO]
+      .through(events(true))
+      .compile
+      .toList
+      .map(events =>
+        expect(
+          events == List(
+            XmlEvent.StartDocument,
+            XmlEvent.StartTag(QName("a"), Nil, false),
+            XmlEvent.EndTag(QName("a")),
+            XmlEvent.XmlPI("target", "content"),
+            XmlEvent.EndDocument,
+            XmlEvent.StartDocument,
+            XmlEvent.XmlDecl("1.1", None, None),
+            XmlEvent.StartTag(QName("a"), Nil, false),
+            XmlEvent.EndTag(QName("a")),
+            XmlEvent.Comment(" comment "),
             XmlEvent.EndDocument,
             XmlEvent.StartDocument,
             XmlEvent.StartTag(QName("a"), Nil, false),
@@ -171,13 +248,18 @@ object EventParserTest extends SimpleIOSuite {
           .through(fs2.text.utf8.decode)
           .flatMap(Stream.emits(_))
           .through(events())
-          .compile
-          .drain
           .attempt
-          .map(res => expect(res.isRight, s"Failed to parse $path"))
+          .compile
+          .toList
+          .map(expectWellFormed(_))
       }
       .compile
       .foldMonoid
   }
+
+  def expectWellFormed(res: List[Either[Throwable, XmlEvent]]): Expectations =
+    expect(res.isEmpty) ||
+      expect(res.head == Right(XmlEvent.StartDocument)) &&
+      expect(res.last == Right(XmlEvent.EndDocument))
 
 }
