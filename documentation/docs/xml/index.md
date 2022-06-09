@@ -33,7 +33,7 @@ val input = """<a xmlns:ns="http://test.ns">
               |  test entity resolution &amp; normalization
               |</a>""".stripMargin
 
-val stream = Stream.emit(input).through(events[IO, String])
+val stream = Stream.emit(input).through(events[IO, String]())
 stream.compile.toList.unsafeRunSync()
 ```
 
@@ -63,3 +63,35 @@ Once entites and namespaces are resolved, the events might be numerous and can b
 val normalized = entityResolved.through(normalize)
 normalized.compile.toList.unsafeRunSync()
 ```
+
+### DOM builder and eventifier
+
+To handle XML DOM, you can use the types and pipes available in the `fs2.data.xml.dom` package.
+
+XML DOM can be built if you provide an implicit [`DocumentBuilder[Doc]`][builder-api] to the `documents` pipe. The `DocumentBuilder[Doc]` typeclass describes how XML DOM of type `Doc` are built from an XML event stream.
+
+```scala mdoc:compile-only
+import dom._
+
+trait SomeDocType
+
+implicit val builder: DocumentBuilder[SomeDocType] = ???
+stream.through(documents[IO, SomeDocType])
+```
+
+Conversely, the pipe transforming a stream of `Doc`s into a stream of XML events is called `eventify` and requires an implicit [`DocumentEventifier[Doc]`][eventifier-api] in scope.
+
+```scala mdoc:compile-only
+import dom._
+
+trait SomeDocType
+
+implicit val builder: DocumentBuilder[SomeDocType] = ???
+implicit val eventifier: DocumentEventifier[SomeDocType] = ???
+
+stream.through(documents[IO, SomeDocType])
+      .through(eventify[IO, SomeDocType])
+```
+
+[builder-api]: /api/fs2/data/xml/dom/DocumentBuilder.html
+[eventifier-api]: /api/fs2/data/xml/dom/DocumentEventifier.html

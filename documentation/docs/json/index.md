@@ -145,7 +145,7 @@ The `filter` preserves the chunk structure, so that the stream fails as soon as 
 
 To handle Json ASTs, you can use the types and pipes available in the `fs2.data.json.ast` package.
 
-JSON ASTs can be built if you provider an implicit [`Builder[Json]`][builder-api] to the `values` pipe. The `Builder[Json]` typeclass describes how JSON ASTs of type `Json` are built from streams.
+JSON ASTs can be built if you provide an implicit [`Builder[Json]`][builder-api] to the `values` pipe. The `Builder[Json]` typeclass describes how JSON ASTs of type `Json` are built from streams.
 
 ```scala mdoc:compile-only
 import ast._

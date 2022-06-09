@@ -713,7 +713,7 @@ private[xml] object EventParser {
         case Some((ctx, chunkAcc, _)) =>
           slowPath(ctx, new StringBuilder, chunkAcc)
         case None =>
-          Pull.pure((eos, new VectorBuilder[XmlEvent], XmlEvent.EndDocument))
+          fail("1", "unexpected end of input", None)
       }
 
     def slowPath(ctx: T.Context, sb: StringBuilder, chunkAcc: VectorBuilder[XmlEvent])

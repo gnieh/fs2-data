@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,4 +17,16 @@ package fs2
 package data
 package xml
 
-case class XmlException(val error: XmlError, msg: String) extends Exception(msg)
+package object dom {
+
+  /** Transforms a stream of XML events into a stream of XML document trees.
+    */
+  def documents[F[_], Node](implicit F: RaiseThrowable[F], builder: DocumentBuilder[Node]): Pipe[F, XmlEvent, Node] =
+    new TreeParser[F, Node].pipe
+
+  /** Transforms a stream of XML nodes into a stream of XML events.
+    */
+  def eventify[F[_], Node](implicit eventifier: DocumentEventifier[Node]): Pipe[F, Node, XmlEvent] =
+    _.flatMap(node => eventifier.eventify(node))
+
+}

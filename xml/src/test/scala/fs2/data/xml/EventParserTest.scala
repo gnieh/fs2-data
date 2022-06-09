@@ -142,6 +142,24 @@ object EventParserTest extends SimpleIOSuite {
           )))
   }
 
+  test("An error should occur in case of early stream termination") {
+    Stream
+      .emits("<a>content")
+      .through(events[IO, Char]())
+      .attempt
+      .compile
+      .toList
+      .map { evts =>
+        expect(
+          evts == List(
+            Right(XmlEvent.StartDocument),
+            Right(XmlEvent.StartTag(QName("a"), Nil, false)),
+            Right(XmlEvent.XmlString("content", false)),
+            Left(new XmlException(XmlSyntax("1"), "unexpected end of input"))
+          ))
+      }
+  }
+
   val testFileDir = Path("xml/src/test/resources/xmlconf")
   test("Standard test suite should pass") {
     (Files[IO].walk(testFileDir.resolve("xmltest/valid")).filter(_.extName == ".xml") ++
