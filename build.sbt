@@ -117,6 +117,7 @@ val root = (project in file("."))
                                                                              jsonCirce.js,
                                                                              jsonDiffson.js,
                                                                              jsonPlay.js,
+                                                                             jsonInterpolators.js,
                                                                              text.js,
                                                                              xml.js,
                                                                              scalaXml.js),
