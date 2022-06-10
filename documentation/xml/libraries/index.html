@@ -1,0 +1,135 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>fs2-data - XML Libraries</title>
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <link rel="stylesheet" href="/css/syntax.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
+    <style>body{font-family: overpass, sans-serif; }</style>
+
+    <meta name="generator" content="Nanoc 4.12.7">
+  </head>
+  <body>
+    <header>
+        <nav class="nav-extended red darken-2">
+          <a href="#!" class="brand-logo right">fs2-data</a>
+          <a href="#" data-target="collapsed" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+          <div class="nav-wrapper">
+            <ul id="nav-mobile" class="left hide-on-med-and-down">
+              <li><a href="/">Home</a></li>
+              <li><a href="/documentation/">Documentation</a></li>
+              <li><a href="/api/">Scaladoc</a></li>
+              <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+            </ul>
+          </div>
+          
+          
+          <div class="nav-content">
+            <ul class="tabs tabs-transparent">
+              
+              
+              <li class="tab"><a href="/documentation/xml/">XML</a></li>
+              
+              
+              
+              <li class="tab active"><a href="/documentation/xml/libraries/">XML Libraries</a></li>
+              
+              
+            </ul>
+          </div>
+          
+        </nav>
+
+    </header>
+
+    <ul class="sidenav" id="collapsed">
+      <li><a href="/">Home</a></li>
+      <li><a href="/documentation/">Documentation</a></li>
+      <li><a href="/api/">Scaladoc</a></li>
+      <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+    </ul>
+
+    
+    <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
+      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/main/documentation/docs/xml/libraries.md" target="_blank">
+        <i class="large material-icons">mode_edit</i>
+      </a>
+    </div>
+    
+
+    <main>
+      <div class="container">
+        <p>Bindings to new Scala XML DOM librariy can be added by implementing the <code>DocumentBuilder</code> and <code>DocumentEventifier</code> traites. <code>fs2-data</code> provides some of them out of the box.</p>
+
+<p>This page covers the following libraries:</p>
+<ul id="markdown-toc">
+  <li><a href="#scala-xml" id="markdown-toc-scala-xml"><code>scala-xml</code></a></li>
+</ul>
+
+<h3 id="scala-xml"><code>scala-xml</code></h3>
+
+<p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-xml-scala_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-xml-scala_2.13.svg" alt="Maven Central" /></a></p>
+
+<p>The <code>fs2-data-xml-scala</code> module provides <code>DocumentBuilder</code> and <code>DocumentEventifier</code> instances for the <a href="https://github.com/scala/scala-xml">scala-xml</a> <code>Document</code> type.</p>
+
+<p>The <code>documents</code> Pipe emits <code>scala.xml.Document</code>s.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.</span><span class="o">{</span><span class="nc">Fallible</span><span class="o">,</span> <span class="nc">Stream</span><span class="o">}</span>
+<span class="k">import</span> <span class="nn">fs2.data.xml._</span>
+<span class="k">import</span> <span class="nn">fs2.data.xml.dom._</span>
+<span class="k">import</span> <span class="nn">fs2.data.xml.scalaXml._</span>
+
+<span class="k">val</span> <span class="nv">input</span> <span class="k">=</span> <span class="s">"""&lt;?xml version="1.1" ?&gt;
+              |&lt;root attr1="value1" attr2="value2"&gt;
+              |  &lt;!-- a comment --&gt;
+              |  Some text &amp;amp; a child.
+              |  &lt;nested&gt;With text&lt;/nested&gt;
+              |&lt;/root&gt;"""</span><span class="o">.</span><span class="py">stripMargin</span>
+<span class="c1">// input: String = &lt;?xml version="1.1" ?&gt;</span>
+<span class="c1">// &lt;root attr1="value1" attr2="value2"&gt;</span>
+<span class="c1">//   &lt;!-- a comment --&gt;</span>
+<span class="c1">//   Some text &amp;amp; a child.</span>
+<span class="c1">//   &lt;nested&gt;With text&lt;/nested&gt;</span>
+<span class="c1">// &lt;/root&gt;</span>
+
+<span class="k">val</span> <span class="nv">evts</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">)</span>
+                 <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">events</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Char</span><span class="o">]())</span>
+                 <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">documents</span><span class="o">)</span>
+<span class="c1">// evts: Stream[[x]Fallible[x], xml.Document] = Stream(..)</span>
+
+<span class="nv">evts</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res0: Either[Throwable, List[xml.Document]] = Right(List(&lt;root attr1="value1" attr2="value2"&gt;</span>
+<span class="c1">//   </span>
+<span class="c1">//   Some text &amp;amp; a child.</span>
+<span class="c1">//   &lt;nested&gt;With text&lt;/nested&gt;</span>
+<span class="c1">// &lt;/root&gt;))</span>
+</code></pre></div></div>
+
+
+      </div>
+    </main>
+
+    <footer class="page-footer red lighten-2">
+      <div class="footer-copyright red darken-2">
+        <div class="container">
+          Copyright © 2020 <a class="grey-text text-lighten-4" href="https://twitter.com/lucassatabin">@lucassatabin</a>
+          <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" class="grey-text text-lighten-4 right" /></a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+    <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.sidenav');
+      var instances = M.Sidenav.init(elems, {});
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.tooltipped');
+      var instances = M.Tooltip.init(elems, {});
+    });
+    </script>
+  </body>
+</html>

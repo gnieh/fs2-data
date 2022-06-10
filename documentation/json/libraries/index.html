@@ -9,7 +9,7 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
-    <meta name="generator" content="Nanoc 4.12.3">
+    <meta name="generator" content="Nanoc 4.12.7">
   </head>
   <body>
     <header>
@@ -103,7 +103,7 @@
 <span class="c1">// }"""</span>
 
 <span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emit</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">String</span><span class="o">])</span>
-<span class="c1">// stream: Stream[Fallible[A], Token] = Stream(..)</span>
+<span class="c1">// stream: Stream[[A]Fallible[A], Token] = Stream(..)</span>
 
 <span class="k">val</span> <span class="nv">sel</span> <span class="k">=</span> <span class="nv">root</span><span class="o">.</span><span class="py">field</span><span class="o">(</span><span class="s">"field3"</span><span class="o">).</span><span class="py">iterate</span><span class="o">.</span><span class="py">compile</span>
 <span class="c1">// sel: Selector = PipeSelector(</span>
@@ -116,7 +116,7 @@
 <span class="c1">// )</span>
 
 <span class="k">val</span> <span class="nv">filtered</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">sel</span><span class="o">))</span>
-<span class="c1">// filtered: Stream[Fallible[x], Token] = Stream(..)</span>
+<span class="c1">// filtered: Stream[[x]Fallible[x], Token] = Stream(..)</span>
 </code></pre></div></div>
 
 <h3 id="circe">Circe</h3>
@@ -130,7 +130,7 @@ For instance both examples from the <a href="/documentation/json/">core module d
 <span class="k">import</span> <span class="nn">io.circe._</span>
 
 <span class="k">val</span> <span class="nv">asts</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">ast</span><span class="o">.</span><span class="py">values</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">])</span>
-<span class="c1">// asts: Stream[Fallible[x], Json] = Stream(..)</span>
+<span class="c1">// asts: Stream[[x]Fallible[x], Json] = Stream(..)</span>
 <span class="nv">asts</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res0: Either[Throwable, List[Json]] = Right(</span>
 <span class="c1">//   value = List(</span>
@@ -149,7 +149,7 @@ For instance both examples from the <a href="/documentation/json/">core module d
 <span class="c1">// )</span>
 
 <span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">ast</span><span class="o">.</span><span class="py">transform</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">sel</span><span class="o">,</span> <span class="n">json</span> <span class="k">=&gt;</span> <span class="nv">Json</span><span class="o">.</span><span class="py">obj</span><span class="o">(</span><span class="s">"test"</span> <span class="o">-&gt;</span> <span class="n">json</span><span class="o">)))</span>
-<span class="c1">// transformed: Stream[Fallible[x], Token] = Stream(..)</span>
+<span class="c1">// transformed: Stream[[x]Fallible[x], Token] = Stream(..)</span>
 <span class="nv">transformed</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">())</span>
 <span class="c1">// res1: Either[Throwable, String] = Right(</span>
 <span class="c1">//   value = """{</span>
@@ -188,7 +188,7 @@ For instance both examples from the <a href="/documentation/json/">core module d
 <span class="c1">// )</span>
 
 <span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">ast</span><span class="o">.</span><span class="py">transformOpt</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">f1</span><span class="o">,</span> <span class="n">json</span> <span class="k">=&gt;</span> <span class="nv">json</span><span class="o">.</span><span class="py">as</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="py">toOption</span><span class="o">.</span><span class="py">filter</span><span class="o">(</span><span class="k">_</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="o">).</span><span class="py">as</span><span class="o">(</span><span class="n">json</span><span class="o">)))</span>
-<span class="c1">// transformed: Stream[Fallible[x], Token] = Stream(..)</span>
+<span class="c1">// transformed: Stream[[x]Fallible[x], Token] = Stream(..)</span>
 <span class="nv">transformed</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">())</span>
 <span class="c1">// res2: Either[Throwable, String] = Right(</span>
 <span class="c1">//   value = """{</span>
@@ -226,7 +226,7 @@ For instance both examples from the <a href="/documentation/json/">core module d
 <span class="k">import</span> <span class="nn">io.circe._</span>
 
 <span class="k">val</span> <span class="nv">values</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">codec</span><span class="o">.</span><span class="py">deserialize</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Data</span><span class="o">])</span>
-<span class="c1">// values: Stream[Fallible[x], Data] = Stream(..)</span>
+<span class="c1">// values: Stream[[x]Fallible[x], Data] = Stream(..)</span>
 <span class="nv">values</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res3: Either[Throwable, List[Data]] = Right(</span>
 <span class="c1">//   value = List(</span>
@@ -239,7 +239,7 @@ For instance both examples from the <a href="/documentation/json/">core module d
   <span class="nc">WrappedData</span><span class="o">(</span><span class="nv">data</span><span class="o">.</span><span class="py">field1</span><span class="o">,</span> <span class="nv">data</span><span class="o">.</span><span class="py">field2</span><span class="o">,</span> <span class="nv">data</span><span class="o">.</span><span class="py">field3</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nc">Wrapped</span><span class="o">(</span><span class="k">_</span><span class="o">)))</span>
 
 <span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">codec</span><span class="o">.</span><span class="py">transform</span><span class="o">(</span><span class="n">sel</span><span class="o">,</span> <span class="n">wrap</span><span class="o">))</span>
-<span class="c1">// transformed: Stream[Fallible[x], Token] = Stream(..)</span>
+<span class="c1">// transformed: Stream[[x]Fallible[x], Token] = Stream(..)</span>
 <span class="nv">transformed</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">())</span>
 <span class="c1">// res4: Either[Throwable, String] = Left(</span>
 <span class="c1">//   value = JsonException(</span>
@@ -259,7 +259,7 @@ For instance both examples from the <a href="/documentation/json/">core module d
 <span class="c1">//     inner = JsonException(</span>
 <span class="c1">//       msg = "an error occured while deserializing Json values",</span>
 <span class="c1">//       context = None,</span>
-<span class="c1">//       inner = DecodingFailure(Attempt to decode value on failed cursor, List(DownField(field1)))</span>
+<span class="c1">//       inner = DecodingFailure(Missing required field, List(DownField(field1)))</span>
 <span class="c1">//     )</span>
 <span class="c1">//   )</span>
 <span class="c1">// )</span>
@@ -279,7 +279,7 @@ For instance both examples from the <a href="/documentation/json/">core module d
 <span class="c1">// )</span>
 
 <span class="k">val</span> <span class="nv">transformed</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">codec</span><span class="o">.</span><span class="py">transformOpt</span><span class="o">(</span><span class="n">f1</span><span class="o">,</span> <span class="o">(</span><span class="n">i</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">).</span><span class="py">guard</span><span class="o">[</span><span class="kt">Option</span><span class="o">].</span><span class="py">as</span><span class="o">(</span><span class="n">i</span><span class="o">)))</span>
-<span class="c1">// transformed: Stream[Fallible[x], Token] = Stream(..)</span>
+<span class="c1">// transformed: Stream[[x]Fallible[x], Token] = Stream(..)</span>
 <span class="nv">transformed</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">())</span>
 <span class="c1">// res5: Either[Throwable, String] = Right(</span>
 <span class="c1">//   value = """{</span>

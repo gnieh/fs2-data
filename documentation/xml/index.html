@@ -9,7 +9,7 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
-    <meta name="generator" content="Nanoc 4.12.3">
+    <meta name="generator" content="Nanoc 4.12.7">
   </head>
   <body>
     <header>
@@ -31,6 +31,10 @@
               
               
               <li class="tab active"><a href="/documentation/xml/">XML</a></li>
+              
+              
+              
+              <li class="tab"><a href="/documentation/xml/libraries/">XML Libraries</a></li>
               
               
             </ul>
@@ -66,6 +70,7 @@
   <li><a href="#basic-usage" id="markdown-toc-basic-usage">Basic usage</a></li>
   <li><a href="#resolvers" id="markdown-toc-resolvers">Resolvers</a></li>
   <li><a href="#normalization" id="markdown-toc-normalization">Normalization</a></li>
+  <li><a href="#dom-builder-and-eventifier" id="markdown-toc-dom-builder-and-eventifier">DOM builder and eventifier</a></li>
 </ul>
 
 <h3 id="basic-usage">Basic usage</h3>
@@ -93,10 +98,11 @@
 <span class="c1">//   test entity resolution &amp;amp; normalization</span>
 <span class="c1">// &lt;/a&gt;"""</span>
 
-<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emit</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">events</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">String</span><span class="o">])</span>
-<span class="c1">// stream: Stream[IO[A], XmlEvent] = Stream(..)</span>
+<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emit</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">events</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">String</span><span class="o">]())</span>
+<span class="c1">// stream: Stream[[A]IO[A], XmlEvent] = Stream(..)</span>
 <span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res0: List[XmlEvent] = List(</span>
+<span class="c1">//   StartDocument,</span>
 <span class="c1">//   StartTag(</span>
 <span class="c1">//     name = QName(prefix = None, local = "a"),</span>
 <span class="c1">//     attributes = List(</span>
@@ -130,6 +136,8 @@
 <span class="c1">//     isCDATA = false</span>
 <span class="c1">//   ),</span>
 <span class="c1">//   EndTag(name = QName(prefix = None, local = "a")),</span>
+<span class="c1">//   EndDocument,</span>
+<span class="c1">//   StartDocument,</span>
 <span class="c1">//   StartTag(</span>
 <span class="c1">//     name = QName(prefix = None, local = "a"),</span>
 <span class="c1">//     attributes = List(),</span>
@@ -142,9 +150,6 @@
 <span class="c1">//   ),</span>
 <span class="c1">//   StartTag(</span>
 <span class="c1">//     name = QName(prefix = None, local = "b"),</span>
-<span class="c1">//     attributes = List(),</span>
-<span class="c1">//     isEmpty = true</span>
-<span class="c1">//   ),</span>
 <span class="c1">// ...</span>
 </code></pre></div></div>
 
@@ -155,9 +160,10 @@
 <p>Namespace can be resolved by using the <code>namespaceResolver</code> pipe.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">nsResolved</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">namespaceResolver</span><span class="o">[</span><span class="kt">IO</span><span class="o">])</span>
-<span class="c1">// nsResolved: Stream[IO[x], XmlEvent] = Stream(..)</span>
+<span class="c1">// nsResolved: Stream[[x]IO[x], XmlEvent] = Stream(..)</span>
 <span class="nv">nsResolved</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res1: List[XmlEvent] = List(</span>
+<span class="c1">//   StartDocument,</span>
 <span class="c1">//   StartTag(</span>
 <span class="c1">//     name = QName(</span>
 <span class="c1">//       prefix = Some(value = "http://www.w3.org/XML/1998/namespace"),</span>
@@ -199,22 +205,22 @@
 <span class="c1">//       local = "a"</span>
 <span class="c1">//     )</span>
 <span class="c1">//   ),</span>
+<span class="c1">//   EndDocument,</span>
+<span class="c1">//   StartDocument,</span>
 <span class="c1">//   StartTag(</span>
 <span class="c1">//     name = QName(</span>
 <span class="c1">//       prefix = Some(value = "http://www.w3.org/XML/1998/namespace"),</span>
 <span class="c1">//       local = "a"</span>
-<span class="c1">//     ),</span>
-<span class="c1">//     attributes = List(),</span>
-<span class="c1">//     isEmpty = false</span>
 <span class="c1">// ...</span>
 </code></pre></div></div>
 
 <p>Using the <code>referenceResolver</code> pipe, entity and character references can be resolved. By defaut the standard <code>xmlEntities</code> mapping is used, but it can be replaced by any mapping you see fit.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">entityResolved</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">referenceResolver</span><span class="o">[</span><span class="kt">IO</span><span class="o">]())</span>
-<span class="c1">// entityResolved: Stream[IO[x], XmlEvent] = Stream(..)</span>
+<span class="c1">// entityResolved: Stream[[x]IO[x], XmlEvent] = Stream(..)</span>
 <span class="nv">entityResolved</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res2: List[XmlEvent] = List(</span>
+<span class="c1">//   StartDocument,</span>
 <span class="c1">//   StartTag(</span>
 <span class="c1">//     name = QName(prefix = None, local = "a"),</span>
 <span class="c1">//     attributes = List(</span>
@@ -248,6 +254,8 @@
 <span class="c1">//     isCDATA = false</span>
 <span class="c1">//   ),</span>
 <span class="c1">//   EndTag(name = QName(prefix = None, local = "a")),</span>
+<span class="c1">//   EndDocument,</span>
+<span class="c1">//   StartDocument,</span>
 <span class="c1">//   StartTag(</span>
 <span class="c1">//     name = QName(prefix = None, local = "a"),</span>
 <span class="c1">//     attributes = List(),</span>
@@ -260,9 +268,6 @@
 <span class="c1">//   ),</span>
 <span class="c1">//   StartTag(</span>
 <span class="c1">//     name = QName(prefix = None, local = "b"),</span>
-<span class="c1">//     attributes = List(),</span>
-<span class="c1">//     isEmpty = true</span>
-<span class="c1">//   ),</span>
 <span class="c1">// ...</span>
 </code></pre></div></div>
 
@@ -271,9 +276,10 @@
 <p>Once entites and namespaces are resolved, the events might be numerous and can be normalized to avoid emitting too many of them. For instance, after reference resolution, consecutive text events can be merged. This is achieved by using the <code>normalize</code> pipe.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">normalized</span> <span class="k">=</span> <span class="nv">entityResolved</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">normalize</span><span class="o">)</span>
-<span class="c1">// normalized: Stream[IO[x], XmlEvent] = Stream(..)</span>
+<span class="c1">// normalized: Stream[[x]IO[x], XmlEvent] = Stream(..)</span>
 <span class="nv">normalized</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res3: List[XmlEvent] = List(</span>
+<span class="c1">//   StartDocument,</span>
 <span class="c1">//   StartTag(</span>
 <span class="c1">//     name = QName(prefix = None, local = "a"),</span>
 <span class="c1">//     attributes = List(</span>
@@ -307,6 +313,8 @@
 <span class="c1">//     isCDATA = false</span>
 <span class="c1">//   ),</span>
 <span class="c1">//   EndTag(name = QName(prefix = None, local = "a")),</span>
+<span class="c1">//   EndDocument,</span>
+<span class="c1">//   StartDocument,</span>
 <span class="c1">//   StartTag(</span>
 <span class="c1">//     name = QName(prefix = None, local = "a"),</span>
 <span class="c1">//     attributes = List(),</span>
@@ -319,11 +327,36 @@
 <span class="c1">//   ),</span>
 <span class="c1">//   StartTag(</span>
 <span class="c1">//     name = QName(prefix = None, local = "b"),</span>
-<span class="c1">//     attributes = List(),</span>
-<span class="c1">//     isEmpty = true</span>
-<span class="c1">//   ),</span>
 <span class="c1">// ...</span>
 </code></pre></div></div>
+
+<h3 id="dom-builder-and-eventifier">DOM builder and eventifier</h3>
+
+<p>To handle XML DOM, you can use the types and pipes available in the <code>fs2.data.xml.dom</code> package.</p>
+
+<p>XML DOM can be built if you provide an implicit <a href="/api/fs2/data/xml/dom/DocumentBuilder.html"><code>DocumentBuilder[Doc]</code></a> to the <code>documents</code> pipe. The <code>DocumentBuilder[Doc]</code> typeclass describes how XML DOM of type <code>Doc</code> are built from an XML event stream.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">dom._</span>
+
+<span class="k">trait</span> <span class="nc">SomeDocType</span>
+
+<span class="k">implicit</span> <span class="k">val</span> <span class="nv">builder</span><span class="k">:</span> <span class="kt">DocumentBuilder</span><span class="o">[</span><span class="kt">SomeDocType</span><span class="o">]</span> <span class="k">=</span> <span class="o">???</span>
+<span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">documents</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">SomeDocType</span><span class="o">])</span>
+</code></pre></div></div>
+
+<p>Conversely, the pipe transforming a stream of <code>Doc</code>s into a stream of XML events is called <code>eventify</code> and requires an implicit <a href="/api/fs2/data/xml/dom/DocumentEventifier.html"><code>DocumentEventifier[Doc]</code></a> in scope.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">dom._</span>
+
+<span class="k">trait</span> <span class="nc">SomeDocType</span>
+
+<span class="k">implicit</span> <span class="k">val</span> <span class="nv">builder</span><span class="k">:</span> <span class="kt">DocumentBuilder</span><span class="o">[</span><span class="kt">SomeDocType</span><span class="o">]</span> <span class="k">=</span> <span class="o">???</span>
+<span class="k">implicit</span> <span class="k">val</span> <span class="nv">eventifier</span><span class="k">:</span> <span class="kt">DocumentEventifier</span><span class="o">[</span><span class="kt">SomeDocType</span><span class="o">]</span> <span class="k">=</span> <span class="o">???</span>
+
+<span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">documents</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">SomeDocType</span><span class="o">])</span>
+      <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">eventify</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">SomeDocType</span><span class="o">])</span>
+</code></pre></div></div>
+
 
       </div>
     </main>

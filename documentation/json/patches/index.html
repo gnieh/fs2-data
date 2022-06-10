@@ -9,7 +9,7 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
-    <meta name="generator" content="Nanoc 4.12.3">
+    <meta name="generator" content="Nanoc 4.12.7">
   </head>
   <body>
     <header>
@@ -117,7 +117,7 @@ Patching stream can be useful in several case, for instance:</p>
 <span class="c1">// }"""</span>
 
 <span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Char</span><span class="o">])</span>
-<span class="c1">// stream: Stream[Fallible[A], Token] = Stream(..)</span>
+<span class="c1">// stream: Stream[[A]Fallible[A], Token] = Stream(..)</span>
 
 <span class="c1">// a patch that removes `field3`</span>
 <span class="k">val</span> <span class="nv">mergePatch</span> <span class="k">=</span> <span class="nv">JsonMergePatch</span><span class="o">.</span><span class="py">Object</span><span class="o">(</span><span class="nc">Map</span><span class="o">(</span><span class="s">"field3"</span> <span class="o">-&gt;</span> <span class="nv">Json</span><span class="o">.</span><span class="py">Null</span><span class="o">))</span>
@@ -126,7 +126,7 @@ Patching stream can be useful in several case, for instance:</p>
 <span class="c1">// )</span>
 
 <span class="k">val</span> <span class="nv">patched</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">patch</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">](</span><span class="n">mergePatch</span><span class="o">))</span>
-<span class="c1">// patched: Stream[Fallible[x], Token] = Stream(..)</span>
+<span class="c1">// patched: Stream[[x]Fallible[x], Token] = Stream(..)</span>
 
 <span class="nv">patched</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res0: Either[Throwable, List[Token]] = Right(</span>

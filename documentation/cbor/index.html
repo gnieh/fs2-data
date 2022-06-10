@@ -9,7 +9,7 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
-    <meta name="generator" content="Nanoc 4.12.3">
+    <meta name="generator" content="Nanoc 4.12.7">
   </head>
   <body>
     <header>
@@ -89,10 +89,10 @@
 <span class="k">import</span> <span class="nn">scodec.bits._</span>
 
 <span class="k">val</span> <span class="nv">byteStream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">chunk</span><span class="o">(</span><span class="nv">Chunk</span><span class="o">.</span><span class="py">byteVector</span><span class="o">(</span><span class="n">hex</span><span class="s">"8301820203820405"</span><span class="o">))</span>
-<span class="c1">// byteStream: Stream[Nothing, Byte] = Stream(..)</span>
+<span class="c1">// byteStream: Stream[[x]Pure[x], Byte] = Stream(..)</span>
 
 <span class="k">val</span> <span class="nv">itemStream</span> <span class="k">=</span> <span class="nv">byteStream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">items</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">])</span>
-<span class="c1">// itemStream: Stream[Fallible[A], CborItem] = Stream(..)</span>
+<span class="c1">// itemStream: Stream[[A]Fallible[A], CborItem] = Stream(..)</span>
 <span class="nv">itemStream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res0: Either[Throwable, List[CborItem]] = Right(</span>
 <span class="c1">//   value = List(</span>
@@ -100,7 +100,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@3d58075e,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@417bc589,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -110,7 +110,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@5cd6aa13,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@11cd5f6a,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -119,7 +119,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@5d6a62db,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@72d91f80,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -129,7 +129,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@57ad1841,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@e6f5354,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -138,7 +138,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@3c9b8d4b,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@16601409,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -170,7 +170,7 @@
       <span class="nv">CborItem</span><span class="o">.</span><span class="py">StartArray</span><span class="o">(</span><span class="mi">3</span><span class="o">),</span>
       <span class="nv">CborItem</span><span class="o">.</span><span class="py">TextString</span><span class="o">(</span><span class="s">"an"</span><span class="o">),</span>
       <span class="nv">CborItem</span><span class="o">.</span><span class="py">TextString</span><span class="o">(</span><span class="s">"array"</span><span class="o">)))</span>
-<span class="c1">// invalid: Stream[Nothing, Product with CborItem with Serializable] = Stream(..)</span>
+<span class="c1">// invalid: Stream[[x]Pure[x], Product with CborItem with Serializable] = Stream(..)</span>
 
 <span class="n">invalid</span>
   <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">toBinary</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">])</span>
@@ -184,7 +184,7 @@
 <p>The pipe is fine when you are sure that the input stream is valid or when throughput doesn’t matter. In the case source is safe, or throughput matters more than correctness, you can use the <code>toNonValidatedBinary</code> pipe instead, which will silently generate a non valid byte stream.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">invalidBytes</span> <span class="k">=</span> <span class="nv">invalid</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">toNonValidatedBinary</span><span class="o">)</span>
-<span class="c1">// invalidBytes: Stream[Nothing, Byte] = Stream(..)</span>
+<span class="c1">// invalidBytes: Stream[[x]Pure[x], Byte] = Stream(..)</span>
 
 <span class="n">invalidBytes</span>
   <span class="o">.</span><span class="py">compile</span>
@@ -211,7 +211,7 @@
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.cbor.high._</span>
 
 <span class="k">val</span> <span class="nv">valueStream</span> <span class="k">=</span> <span class="nv">byteStream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">values</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">])</span>
-<span class="c1">// valueStream: Stream[Fallible[A], CborValue] = Stream(..)</span>
+<span class="c1">// valueStream: Stream[[A]Fallible[A], CborValue] = Stream(..)</span>
 <span class="nv">valueStream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res5: Either[Throwable, List[CborValue]] = Right(</span>
 <span class="c1">//   value = List(</span>
@@ -277,7 +277,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@5b06e226,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@57b2189a,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -287,7 +287,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@64569617,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@23b304cb,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -296,7 +296,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@447be03,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@35659ce8,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -306,7 +306,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@70305b84,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@3131e5cb,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -315,7 +315,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@1c4b8076,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@76005dbf,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -340,7 +340,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@757343ec,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@54b5dd79,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -350,7 +350,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@7edcabd,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@6a146599,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -359,7 +359,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@4765a206,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@1e8d20c1,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -369,7 +369,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@61606247,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@27cd0022,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -378,7 +378,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@e6331a4,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@5de95fb7,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>

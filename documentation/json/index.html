@@ -9,7 +9,7 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
-    <meta name="generator" content="Nanoc 4.12.3">
+    <meta name="generator" content="Nanoc 4.12.7">
   </head>
   <body>
     <header>
@@ -118,7 +118,7 @@
 <span class="c1">// }"""</span>
 
 <span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emit</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">String</span><span class="o">])</span>
-<span class="c1">// stream: Stream[Fallible[A], Token] = Stream(..)</span>
+<span class="c1">// stream: Stream[[A]Fallible[A], Token] = Stream(..)</span>
 <span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res0: Either[Throwable, List[Token]] = Right(</span>
 <span class="c1">//   value = List(</span>
@@ -263,7 +263,7 @@ The selector above can be written like this with the DSL:</p>
 <p>Using the selector defined above, we can filter the stream of tokens, to only emit selected tokens downstream. This can be used to drastically reduce the amount of emitted data, to only the parts that are of interest for you.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">filtered</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">selector</span><span class="o">))</span>
-<span class="c1">// filtered: Stream[Fallible[x], Token] = Stream(..)</span>
+<span class="c1">// filtered: Stream[[x]Fallible[x], Token] = Stream(..)</span>
 <span class="nv">filtered</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res3: Either[Throwable, List[Token]] = Right(</span>
 <span class="c1">//   value = List(</span>
@@ -278,7 +278,7 @@ The selector above can be written like this with the DSL:</p>
 If this is not desired, you can wrap the elements into arrays and objects, from the root by calling <code>filter</code> with <code>wrap</code> set to <code>true</code>.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">filteredWrapped</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">selector</span><span class="o">,</span> <span class="n">wrap</span> <span class="k">=</span> <span class="kc">true</span><span class="o">))</span>
-<span class="c1">// filteredWrapped: Stream[Fallible[x], Token] = Stream(..)</span>
+<span class="c1">// filteredWrapped: Stream[[x]Fallible[x], Token] = Stream(..)</span>
 <span class="nv">filteredWrapped</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res4: Either[Throwable, List[Token]] = Right(</span>
 <span class="c1">//   value = List(</span>
@@ -322,7 +322,7 @@ On the other hand, if it selects elements in an object, then emitted values are 
 
 <p>To handle Json ASTs, you can use the types and pipes available in the <code>fs2.data.json.ast</code> package.</p>
 
-<p>JSON ASTs can be built if you provider an implicit <a href="/api/fs2/data/json/ast/Builder.html"><code>Builder[Json]</code></a> to the <code>values</code> pipe. The <code>Builder[Json]</code> typeclass describes how JSON ASTs of type <code>Json</code> are built from streams.</p>
+<p>JSON ASTs can be built if you provide an implicit <a href="/api/fs2/data/json/ast/Builder.html"><code>Builder[Json]</code></a> to the <code>values</code> pipe. The <code>Builder[Json]</code> typeclass describes how JSON ASTs of type <code>Json</code> are built from streams.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">ast._</span>
 
@@ -467,7 +467,7 @@ On the other hand, if it selects elements in an object, then emitted values are 
     <span class="nc">RemoveCounter</span><span class="o">(</span><span class="s">"counter2"</span><span class="o">)</span>
   <span class="o">)</span>
 <span class="o">)</span>
-<span class="c1">// events: Stream[Nothing, Event] = Stream(..)</span>
+<span class="c1">// events: Stream[[x]Pure[x], Event] = Stream(..)</span>
 </code></pre></div></div>
 
 <p>You can generate a stream of JSON token wrapped in an object at a key named <code>events</code> like this:</p>
@@ -475,7 +475,7 @@ On the other hand, if it selects elements in an object, then emitted values are 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
 
 <span class="k">val</span> <span class="nv">wrappedTokens</span> <span class="k">=</span> <span class="nv">events</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">ast</span><span class="o">.</span><span class="py">tokenize</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="nv">wrap</span><span class="o">.</span><span class="py">asArrayInObject</span><span class="o">(</span><span class="n">at</span> <span class="k">=</span> <span class="s">"events"</span><span class="o">))</span>
-<span class="c1">// wrappedTokens: Stream[Nothing, Token] = Stream(..)</span>
+<span class="c1">// wrappedTokens: Stream[[x]Pure[x], Token] = Stream(..)</span>
 </code></pre></div></div>
 
 <p>You can use the renderers described above to generate the rendered chunks to send to the client.</p>

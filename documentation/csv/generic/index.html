@@ -9,7 +9,7 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
-    <meta name="generator" content="Nanoc 4.12.3">
+    <meta name="generator" content="Nanoc 4.12.7">
   </head>
   <body>
     <header>
@@ -106,7 +106,7 @@
 <span class="o">}</span>
 
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">stateDecoder</span> <span class="k">=</span> <span class="n">deriveCellDecoder</span><span class="o">[</span><span class="kt">State</span><span class="o">]</span>
-<span class="c1">// stateDecoder: CellDecoder[State] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@3625cee0</span>
+<span class="c1">// stateDecoder: CellDecoder[State] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@148fcb59</span>
 <span class="c1">// use stateDecoder to derive decoders for rows...or just test:</span>
 <span class="nf">stateDecoder</span><span class="o">(</span><span class="s">"On"</span><span class="o">)</span>
 <span class="c1">// res1: DecoderResult[State] = Right(value = On)</span>
@@ -115,7 +115,7 @@
 
 <span class="c1">// same goes for the encoder</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">stateEncoder</span> <span class="k">=</span> <span class="n">deriveCellEncoder</span><span class="o">[</span><span class="kt">State</span><span class="o">]</span>
-<span class="c1">// stateEncoder: CellEncoder[State] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@7ccbd779</span>
+<span class="c1">// stateEncoder: CellEncoder[State] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@189ab884</span>
 <span class="nf">stateEncoder</span><span class="o">(</span><span class="nv">State</span><span class="o">.</span><span class="py">On</span><span class="o">)</span>
 <span class="c1">// res3: String = "On"</span>
 </code></pre></div></div>
@@ -132,9 +132,9 @@
 
 <span class="c1">// works as we have an implicit CellDecoder[String]</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">unknownDecoder</span> <span class="k">=</span> <span class="n">deriveCellDecoder</span><span class="o">[</span><span class="kt">Advanced.Unknown</span><span class="o">]</span>
-<span class="c1">// unknownDecoder: CellDecoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$unaryProductDecoder$3@79ce6645</span>
+<span class="c1">// unknownDecoder: CellDecoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$unaryProductDecoder$3@d3d9510</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">advancedDecoder</span> <span class="k">=</span> <span class="n">deriveCellDecoder</span><span class="o">[</span><span class="kt">Advanced</span><span class="o">]</span>
-<span class="c1">// advancedDecoder: CellDecoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@2c4f52be</span>
+<span class="c1">// advancedDecoder: CellDecoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@3ef5fa25</span>
 
 <span class="nf">advancedDecoder</span><span class="o">(</span><span class="s">"Active"</span><span class="o">)</span>
 <span class="c1">// res4: DecoderResult[Advanced] = Right(value = On)</span>
@@ -142,9 +142,9 @@
 <span class="c1">// res5: DecoderResult[Advanced] = Right(value = Unknown(name = "Off"))</span>
 
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">unknownEncoder</span> <span class="k">=</span> <span class="n">deriveCellEncoder</span><span class="o">[</span><span class="kt">Advanced.Unknown</span><span class="o">]</span>
-<span class="c1">// unknownEncoder: CellEncoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$unaryProductEncoder$3@3485db19</span>
+<span class="c1">// unknownEncoder: CellEncoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$unaryProductEncoder$3@544a2ba1</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">advancedEncoder</span> <span class="k">=</span> <span class="n">deriveCellEncoder</span><span class="o">[</span><span class="kt">Advanced</span><span class="o">]</span>
-<span class="c1">// advancedEncoder: CellEncoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@1657b2ef</span>
+<span class="c1">// advancedEncoder: CellEncoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@1959e734</span>
 
 <span class="nf">advancedEncoder</span><span class="o">(</span><span class="nv">Advanced</span><span class="o">.</span><span class="py">On</span><span class="o">)</span>
 <span class="c1">// res6: String = "Active"</span>
@@ -161,7 +161,7 @@
 
 <span class="c1">// .tail drops the header line</span>
 <span class="k">val</span> <span class="nv">hlists</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decodeSkippingHeaders</span><span class="o">[</span><span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="kt">::</span> <span class="kt">String</span> <span class="kt">::</span> <span class="kt">Int</span> <span class="kt">::</span> <span class="kt">HNil</span><span class="o">]())</span>
-<span class="c1">// hlists: Stream[Fallible[x], Option[Int] :: String :: Int :: HNil] = Stream(..)</span>
+<span class="c1">// hlists: Stream[[x]Fallible[x], Option[Int] :: String :: Int :: HNil] = Stream(..)</span>
 <span class="nv">hlists</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res8: Either[Throwable, List[Option[Int] :: String :: Int :: HNil]] = Right(</span>
 <span class="c1">//   value = List(</span>
@@ -185,7 +185,7 @@
 <span class="k">val</span> <span class="nv">roundtrip</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decodeUsingHeaders</span><span class="o">[</span><span class="kt">MyRow</span><span class="o">]())</span>
   <span class="c1">// and back - note that types and corresponding are all inferred</span>
   <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">encodeUsingFirstHeaders</span><span class="o">(</span><span class="n">fullRows</span> <span class="k">=</span> <span class="kc">true</span><span class="o">))</span>
-<span class="c1">// roundtrip: Stream[Fallible[x], String] = Stream(..)</span>
+<span class="c1">// roundtrip: Stream[[x]Fallible[x], String] = Stream(..)</span>
 <span class="nv">roundtrip</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">string</span>
 <span class="c1">// res9: Either[Throwable, String] = Right(</span>
 <span class="c1">//   value = """i,j,s</span>
@@ -200,10 +200,10 @@
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.csv.generic.semiauto._</span>
 
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">MyRowDecoder</span><span class="k">:</span> <span class="kt">CsvRowDecoder</span><span class="o">[</span><span class="kt">MyRow</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="n">deriveCsvRowDecoder</span><span class="o">[</span><span class="kt">MyRow</span><span class="o">]</span>
-<span class="c1">// MyRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@6f25e3ed</span>
+<span class="c1">// MyRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@3abc8eab</span>
 
 <span class="k">val</span> <span class="nv">decoded</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decodeUsingHeaders</span><span class="o">[</span><span class="kt">MyRow</span><span class="o">]())</span>
-<span class="c1">// decoded: Stream[Fallible[x], MyRow] = Stream(..)</span>
+<span class="c1">// decoded: Stream[[x]Fallible[x], MyRow] = Stream(..)</span>
 <span class="nv">decoded</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res10: Either[Throwable, List[MyRow]] = Right(</span>
 <span class="c1">//   value = List(</span>
@@ -220,7 +220,7 @@
 <span class="k">case</span> <span class="k">class</span> <span class="nc">MyRowDefault</span><span class="o">(</span><span class="n">i</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">42</span><span class="o">,</span> <span class="n">j</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
 
 <span class="k">val</span> <span class="nv">decoded</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decodeUsingHeaders</span><span class="o">[</span><span class="kt">MyRowDefault</span><span class="o">]())</span>
-<span class="c1">// decoded: Stream[Fallible[x], MyRowDefault] = Stream(..)</span>
+<span class="c1">// decoded: Stream[[x]Fallible[x], MyRowDefault] = Stream(..)</span>
 <span class="nv">decoded</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// res11: Either[Throwable, List[MyRowDefault]] = Right(</span>
 <span class="c1">//   value = List(</span>
