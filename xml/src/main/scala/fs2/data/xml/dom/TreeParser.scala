@@ -117,6 +117,21 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: DocumentBui
         Pull.raiseError(new XmlTreeException(s"unexpected event '$evt'"))
     }
 
+  private def postlog(
+      chunk: Chunk[XmlEvent],
+      idx: Int,
+      rest: Stream[F, XmlEvent]): Pull[F, INothing, (List[builder.Misc], Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
+    (chunk, idx, rest, new ListBuffer[builder.Misc]).tailRecM { case (chunk, idx, rest, misc) =>
+      peek(chunk, idx, rest).flatMap {
+        case (XmlEvent.Comment(comment), chunk, idx, rest) =>
+          Pull.pure((chunk, idx + 1, rest, misc ++= builder.makeComment(comment)).asLeft)
+        case (XmlEvent.XmlPI(target, content), chunk, idx, rest) =>
+          Pull.pure((chunk, idx + 1, rest, misc += builder.makePI(target, content)).asLeft)
+        case (_, chunk, idx, rest) =>
+          Pull.pure((misc.result(), chunk, idx, rest).asRight)
+      }
+    }
+
   private def document(chunk: Chunk[XmlEvent],
                        idx: Int,
                        rest: Stream[F, XmlEvent]): Pull[F, Node, (Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
@@ -125,6 +140,7 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: DocumentBui
         for {
           (decl, doctype, prolog, chunk, idx, rest) <- prolog(chunk, idx, rest)
           (node, chunk, idx, rest) <- element(chunk, idx, rest)
+          (postlog, chunk, idx, rest) <- postlog(chunk, idx, rest)
           (chunk, idx, rest) <- expect(XmlEvent.EndDocument, chunk, idx, rest)
           () <- Pull.output1(
             builder.makeDocument(decl.map(_.version),
@@ -132,7 +148,8 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: DocumentBui
                                  decl.flatMap(_.standalone),
                                  doctype,
                                  prolog,
-                                 node))
+                                 node,
+                                 postlog))
         } yield (chunk, idx, rest)
       case (evt, _, _, _) => Pull.raiseError(new XmlTreeException(s"unexpected event '$evt'"))
     }

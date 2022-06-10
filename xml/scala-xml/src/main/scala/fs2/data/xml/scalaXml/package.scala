@@ -37,12 +37,13 @@ package object scalaXml {
                      standalone: Option[Boolean],
                      doctype: Option[XmlEvent.XmlDoctype],
                      prolog: List[Misc],
-                     root: Elem): Document = {
+                     root: Elem,
+                     postlog: List[Misc]): Document = {
       val document = new Document()
       document.version = version
       document.encoding = encoding
       document.standAlone = standalone
-      document.children = prolog :+ root
+      document.children = prolog ++ (root :: postlog)
       document.docElem = root.head
       document
     }

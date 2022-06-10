@@ -761,7 +761,7 @@ private[xml] object EventParser {
                   scanPrologToken2(ctx, false, chunkAcc)
                 }
               case (ctx, chunkAcc, MarkupToken.StartToken(name)) =>
-                readElement(ctx, false, name, chunkAcc).map(Some(_))
+                readElement(ctx, false, name, chunkAcc)
               case (ctx, chunkAcc, MarkupToken.CommentToken(None)) =>
                 scanPrologToken1(ctx, false, chunkAcc)
               case (ctx, chunkAcc, MarkupToken.CommentToken(Some(comment))) =>
@@ -789,11 +789,11 @@ private[xml] object EventParser {
             scanPrologToken2(ctx, is11, chunkAcc)
           }
         case Some((ctx, chunkAcc, MarkupToken.StartToken(name))) =>
-          readElement(ctx, is11, name, chunkAcc).map(Some(_))
+          readElement(ctx, is11, name, chunkAcc)
         case Some((_, chunkAcc, t)) =>
           fail("22", s"unexpected markup $t", Some(chunkAcc))
         case None =>
-          Pull.pure(None)
+          Pull.output1(XmlEvent.EndDocument).as(None)
       }
 
     def handleVersion(
@@ -1000,21 +1000,61 @@ private[xml] object EventParser {
             scanPrologToken2(ctx, is11, chunkAcc += XmlEvent.XmlPI(name, body))
           }
         case Some((ctx, chunkAcc, MarkupToken.StartToken(name))) =>
-          readElement(ctx, is11, name, chunkAcc).map(Some(_))
+          readElement(ctx, is11, name, chunkAcc)
         case Some((_, chunkAcc, t)) =>
           fail("22", s"unexpected markup $t", Some(chunkAcc))
         case None =>
-          Pull.pure(None)
+          Pull.output1(XmlEvent.EndDocument).as(None)
       }
 
-    def readElement(ctx: T.Context,
-                    is11: Boolean,
-                    name: QName,
-                    chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
+    def readElement(
+        ctx: T.Context,
+        is11: Boolean,
+        name: QName,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, Option[(T.Context, VectorBuilder[XmlEvent])]] =
       completeStartTag(ctx, is11, name, chunkAcc).flatMap {
         case (ctx, chunkAcc, startTag) if startTag.isEmpty =>
-          Pull.pure((ctx, chunkAcc += startTag += XmlEvent.EndTag(name)))
-        case (ctx, chunkAcc, startTag) => readContent(ctx, is11, name, chunkAcc += startTag)
+          scanPostlog(ctx, chunkAcc += startTag += XmlEvent.EndTag(name))
+        case (ctx, chunkAcc, startTag) =>
+          readContent(ctx, is11, name, chunkAcc += startTag).flatMap { case (ctx, chunkAcc) =>
+            scanPostlog(ctx, chunkAcc)
+          }
+      }
+
+    def scanPostlog(
+        ctx: T.Context,
+        chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, Option[(T.Context, VectorBuilder[XmlEvent])]] =
+      space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
+        peekChar(ctx, chunkAcc).flatMap {
+          case Some((ctx, chunkAcc, '<')) =>
+            readMarkupToken(ctx, chunkAcc)
+              .flatMap {
+                case (ctx, chunkAcc, MarkupToken.PIToken(name)) if name.equalsIgnoreCase("xml") =>
+                  handleXmlDecl(ctx, chunkAcc).flatMap { case (ctx, chunkAcc, (is11, decl)) =>
+                    scanPrologToken1(ctx, is11, chunkAcc += XmlEvent.EndDocument += XmlEvent.StartDocument += decl)
+                  }
+                case (ctx, chunkAcc, MarkupToken.PIToken(name)) =>
+                  readPIBody(ctx, chunkAcc).flatMap { case (ctx, chunkAcc, body) =>
+                    scanPostlog(ctx, chunkAcc += XmlEvent.XmlPI(name, body))
+                  }
+                case (ctx, chunkAcc, MarkupToken.DeclToken(name)) =>
+                  handleDecl(ctx, name, chunkAcc).flatMap { case (ctx, chunkAcc) =>
+                    scanPrologToken2(ctx, false, chunkAcc += XmlEvent.EndDocument += XmlEvent.StartDocument)
+                  }
+                case (ctx, chunkAcc, MarkupToken.StartToken(name)) =>
+                  readElement(ctx, false, name, chunkAcc += XmlEvent.EndDocument += XmlEvent.StartDocument)
+                case (ctx, chunkAcc, MarkupToken.CommentToken(None)) =>
+                  scanPostlog(ctx, chunkAcc)
+                case (ctx, chunkAcc, MarkupToken.CommentToken(Some(comment))) =>
+                  scanPostlog(ctx, chunkAcc += XmlEvent.Comment(comment))
+                case (_, chunkAcc, t) =>
+                  fail("22", s"unexpected markup $t", Some(chunkAcc))
+              }
+          case Some((ctx, chunkAcc, _)) =>
+            scanPrologToken1(ctx, false, chunkAcc += XmlEvent.EndDocument += XmlEvent.StartDocument)
+          case None =>
+            Pull.output1(XmlEvent.EndDocument).as(None)
+        }
       }
 
     def readContent(ctx: T.Context,

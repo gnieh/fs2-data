@@ -29,7 +29,8 @@ trait DocumentBuilder[Document] {
                    standalone: Option[Boolean],
                    doctype: Option[XmlEvent.XmlDoctype],
                    prolog: List[Misc],
-                   root: Elem): Document
+                   root: Elem,
+                   postlog: List[Misc]): Document
 
   def makeComment(content: String): Option[Misc]
 

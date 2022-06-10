@@ -28,11 +28,13 @@ abstract class EventifierSpec[Doc](implicit builder: DocumentBuilder[Doc], event
     val input = Stream.emits("""<?xml version="1.1" encoding="utf-8"?>
                                |<a att1="value1" att2="&amp; another one">
                                |  <!-- a comment -->
-                               |  <b>Test</b>
+                               |  <b><![CDATA[Test]]></b>
                                |  <b/>
-                               |</a>""".stripMargin)
+                               |</a>
+                               |<?target content?>
+                               |<!-- closing comment -->""".stripMargin)
 
-    val evts = input.through(events[Fallible, Char]())
+    val evts = input.through(events[Fallible, Char](true))
 
     val roundtrip = evts.through(documents).through(eventify)
 
