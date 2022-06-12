@@ -1,6 +1,7 @@
 package fs2
 package data.benchmarks
 
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 
@@ -34,16 +35,53 @@ class XmlParserBenchmarks {
   }
 
   @Benchmark
-  def parseScalaXml(): Unit = {
+  def parseSaxStream(): Unit = {
+    // This is how we anticipate http4s will work starting in 0.23.12.
     xmlStream
       .through(fs2.io.toInputStream)
-      .evalMap(in => IO.blocking {
-        val source = new InputSource()
-        source.setByteStream(in)
-        XML.loadXML(source, XML.parser)
-      })
+      .evalMap(in =>
+        IO.blocking {
+          val source = scala.xml.Source.fromInputStream(in)
+          XML.loadXML(source, XML.parser)
+        })
       .compile
       .lastOrError
+      .unsafeRunSync()
+  }
+
+  @Benchmark
+  def parseSaxReader(): Unit = {
+    // An attempt at apples-to-apples with fs2-data: operate on chars
+    // instead of bytes.  This would be a closer comparison if fs2-io
+    // provided a toReader analagous to its toInputStream.
+    xmlStream
+      .through(fs2.io.toInputStream)
+      .evalMap(in =>
+        IO.blocking {
+          val reader = new java.io.InputStreamReader(in, StandardCharsets.UTF_8)
+          val source = scala.xml.Source.fromReader(reader)
+          XML.loadXML(source, XML.parser)
+        })
+      .compile
+      .lastOrError
+      .unsafeRunSync()
+  }
+
+  @Benchmark
+  def parseSaxString(): Unit = {
+    // This parses the XML in one aggregated chunk, which is fast, but
+    // materializes the entire input before parsing any XML.  Good for
+    // CPU, terrible for memory.  This is roughly how http4s operates
+    // through 0.23.11.
+    xmlStream
+      .through(fs2.text.utf8.decode)
+      .compile
+      .string
+      .flatMap(s =>
+        IO.blocking {
+          val source = scala.xml.Source.fromString(s)
+          XML.loadXML(source, XML.parser)
+        })
       .unsafeRunSync()
   }
 }
