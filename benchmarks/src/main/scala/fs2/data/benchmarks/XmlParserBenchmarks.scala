@@ -23,6 +23,15 @@ class XmlParserBenchmarks {
     fs2.io.readClassLoaderResource[IO]("benchmark.xml", 4096)
 
   @Benchmark
+  def decode(): Unit = {
+    xmlStream
+      .through(fs2.text.utf8.decode)
+      .compile
+      .drain
+      .unsafeRunSync()
+  }
+
+  @Benchmark
   def parseFs2DataToScalaXml(): Unit = {
     xmlStream
       .through(fs2.text.utf8.decode)
