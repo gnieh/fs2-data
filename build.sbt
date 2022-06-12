@@ -371,7 +371,12 @@ lazy val benchmarks = crossProject(JVMPlatform)
   .in(file("benchmarks"))
   .enablePlugins(JmhPlugin)
   .settings(commonSettings)
-  .dependsOn(csv)
+  .settings(
+    libraryDependencies ++= Seq(
+      "co.fs2" %%% "fs2-io" % fs2Version
+    )
+  )
+  .dependsOn(csv, scalaXml)
 
 // Utils
 
