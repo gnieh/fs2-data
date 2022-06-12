@@ -35,7 +35,7 @@ val commonSettings = List(
     }
   },
   organization := "org.gnieh",
-  headerLicense := Some(HeaderLicense.ALv2("2022", "Lucas Satabin")),
+  headerLicense := Some(HeaderLicense.ALv2("2019-2022", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
   versionScheme := Some("early-semver"),
