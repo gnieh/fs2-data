@@ -8,7 +8,6 @@ import org.openjdk.jmh.annotations._
 import cats.effect.IO
 import cats.effect.unsafe.implicits._
 import fs2.data.xml.scalaXml._
-import scala.xml.InputSource
 import scala.xml.XML
 
 /* Default settings for benchmarks in this class */
@@ -24,13 +23,23 @@ class XmlParserBenchmarks {
     fs2.io.readClassLoaderResource[IO]("benchmark.xml", 4096)
 
   @Benchmark
-  def parseFs2Data(): Unit = {
+  def parseFs2DataToScalaXml(): Unit = {
     xmlStream
       .through(fs2.text.utf8.decode)
       .through(fs2.data.xml.events())
       .through(fs2.data.xml.dom.documents)
       .compile
       .lastOrError
+      .unsafeRunSync()
+  }
+
+  @Benchmark
+  def parseFs2DataToEvents(): Unit = {
+    xmlStream
+      .through(fs2.text.utf8.decode)
+      .through(fs2.data.xml.events())
+      .compile
+      .drain
       .unsafeRunSync()
   }
 
