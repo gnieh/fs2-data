@@ -126,7 +126,7 @@ private[xml] object EventParser {
           emitChunk(Some(chunkAcc)) >> T.pullNext(ctx).flatMap {
             case Some(ctx) =>
               chunkAcc.clear()
-              accept(ctx, s, chunkAcc)
+              loop(ctx, sidx, chunkAcc)
             case None =>
               Pull.pure((eos, new VectorBuilder[XmlEvent], sidx))
           }

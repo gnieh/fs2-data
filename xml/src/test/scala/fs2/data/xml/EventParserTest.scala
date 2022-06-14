@@ -238,6 +238,17 @@ object EventParserTest extends SimpleIOSuite {
       }
   }
 
+  test("Accepting strings crossing chunk boundary should work") {
+    Stream
+      .emits("<a><![CDATA[test]]></a>")
+      .chunkN(1)
+      .flatMap(Stream.chunk(_))
+      .through(events[IO, Char]())
+      .compile
+      .drain
+      .as(expect(true))
+  }
+
   val testFileDir = Path("xml/src/test/resources/xmlconf")
   test("Standard test suite should pass") {
     (Files[IO].walk(testFileDir.resolve("xmltest/valid")).filter(_.extName == ".xml") ++
