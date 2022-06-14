@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Lucas Satabin
+ * Copyright 2019-2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package fs2.data.csv.generic.internal
 
 import fs2.data.csv._

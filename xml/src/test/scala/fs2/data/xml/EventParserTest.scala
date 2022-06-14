@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Lucas Satabin
+ * Copyright 2019-2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package fs2.data.xml
 
 import cats.effect._
@@ -235,6 +236,17 @@ object EventParserTest extends SimpleIOSuite {
             Left(new XmlException(XmlSyntax("1"), "unexpected end of input"))
           ))
       }
+  }
+
+  test("Accepting strings crossing chunk boundary should work") {
+    Stream
+      .emits("<a><![CDATA[test]]></a>")
+      .chunkN(1)
+      .flatMap(Stream.chunk(_))
+      .through(events[IO, Char]())
+      .compile
+      .drain
+      .as(expect(true))
   }
 
   val testFileDir = Path("xml/src/test/resources/xmlconf")
