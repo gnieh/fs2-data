@@ -40,6 +40,6 @@ object Tags {
   final val RegularExpression: Long = 35L
   final val MimeMessage: Long = 36L
 
-  final val SelfDescribeCbor: Long = 55799L
+  final val SelfDescribedCbor: Long = 55799L
 
 }

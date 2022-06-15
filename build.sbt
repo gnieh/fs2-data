@@ -110,6 +110,7 @@ val root = (project in file("."))
     publishArtifact := false,
     publish / skip := true,
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(cbor.js,
+                                                                             cborJson.js,
                                                                              csv.js,
                                                                              csvGeneric.js,
                                                                              json.js,
@@ -146,7 +147,9 @@ val root = (project in file("."))
     scalaXml.jvm,
     scalaXml.js,
     cbor.jvm,
-    cbor.js
+    cbor.js,
+    cborJson.jvm,
+    cborJson.js
   )
 
 lazy val text = crossProject(JVMPlatform, JSPlatform)
@@ -338,6 +341,16 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform)
       .toList
       .flatten
   )
+
+lazy val cborJson = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Full)
+  .in(file("cbor-json"))
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "fs2-data-cbor-json",
+    description := "Streaming CBOR/JSON interoperability library",
+  ).dependsOn(cbor, json)
 
 lazy val documentation = project
   .in(file("documentation"))
