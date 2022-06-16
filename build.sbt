@@ -109,8 +109,7 @@ val root = (project in file("."))
     name := "fs2-data",
     publishArtifact := false,
     publish / skip := true,
-    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(benchmarks,
-                                                                             cbor.js,
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(cbor.js,
                                                                              csv.js,
                                                                              csvGeneric.js,
                                                                              json.js,
@@ -367,11 +366,17 @@ lazy val documentation = project
              scalaXml.jvm,
              cbor.jvm)
 
-lazy val benchmarks = project
+lazy val benchmarks = crossProject(JVMPlatform)
+  .crossType(CrossType.Pure)
   .in(file("benchmarks"))
   .enablePlugins(JmhPlugin)
   .settings(commonSettings)
-  .dependsOn(csv.jvm)
+  .settings(
+    libraryDependencies ++= Seq(
+      "co.fs2" %%% "fs2-io" % fs2Version
+    )
+  )
+  .dependsOn(csv, scalaXml)
 
 // Utils
 

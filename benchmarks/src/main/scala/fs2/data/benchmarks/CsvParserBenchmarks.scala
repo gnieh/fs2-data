@@ -19,7 +19,7 @@ class CsvParserBenchmarks {
 
   @Setup
   def readCsv(): Unit = csvContent = {
-    scala.io.Source.fromResource("resources/benchmark.csv").mkString.grouped(4096).toList
+    scala.io.Source.fromResource("benchmark.csv").mkString.grouped(4096).toList
   }
 
   def csvStream: Stream[SyncIO, String] = Stream.emits(csvContent).covary[SyncIO]
@@ -27,8 +27,8 @@ class CsvParserBenchmarks {
   @Benchmark
   def parseRows(): Unit = {
     csvStream
-      .through(fs2.data.csv.rows[SyncIO, String](','))
-      .through(fs2.data.csv.skipHeaders)
+      .through(fs2.data.csv.lowlevel.rows(','))
+      .through(fs2.data.csv.lowlevel.noHeaders)
       .compile
       .lastOrError
       .unsafeRunSync()

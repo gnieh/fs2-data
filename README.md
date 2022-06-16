@@ -13,7 +13,7 @@ This project builds using [sbt][sbt].
 * compile everything: `sbt compile`
 * compile & run all tests: `sbt test`
 * build the documentation: `sbt ;documentation/mdoc; makeSite`
-* run benchmarks (you can provide [JMH][jmh] arguments in the end): `sbt benchmarks/jmh:run`
+* run benchmarks (you can provide [JMH][jmh] arguments in the end): `sbt benchmarksJVM/jmh:run`
 
 [fs2]: https://fs2.io/
 [sbt]: https://scala-sbt.org
