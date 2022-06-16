@@ -59,6 +59,7 @@ val commonSettings = List(
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "io.circe" %%% "circe-jawn" % circeVersion % "test",
+    "io.circe" %%% "circe-generic" % circeVersion % "test",
     "co.fs2" %%% "fs2-io" % fs2Version % "test",
     "com.disneystreaming" %%% "weaver-cats" % "0.7.12" % "test",
     "com.disneystreaming" %%% "weaver-cats-core" % "0.7.12" % "test",
@@ -350,7 +351,7 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "fs2-data-cbor-json",
     description := "Streaming CBOR/JSON interoperability library",
-  ).dependsOn(cbor, json)
+  ).dependsOn(cbor % "compile->compile;test->test", json % "compile->compile;test->test")
 
 lazy val documentation = project
   .in(file("documentation"))

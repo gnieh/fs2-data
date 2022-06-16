@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package fs2.data.cbor.high
+package fs2.data.cbor
 
 /** HalfFloat represents 16-bit floating-point values.
   *
@@ -76,7 +76,7 @@ object HalfFloat {
       } else if ((raw & 1023) != 0) {
         Float.NaN
       } else {
-        Float.NegativeInfinity
+        Float.PositiveInfinity
       }
     if ((raw & 0x8000) == 0x8000)
       -unsigned

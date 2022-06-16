@@ -1,7 +1,6 @@
 package fs2
 package data
 
-import cbor.high.HalfFloat
 import cbor.low.CborItem
 import json.Token
 
