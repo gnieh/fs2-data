@@ -13,18 +13,27 @@ import java.lang.{Float => JFloat, Double => JDouble}
 package object cbor {
 
   private def knownTags: Set[Long] =
-    Set(Tags.ExpectedBase64Encoding, Tags.ExpectedBase64UrlEncoding, Tags.ExpectedBase16Encoding)
+    Set(Tags.PositiveBigNum,
+        Tags.NegativeBigNum,
+        Tags.ExpectedBase64Encoding,
+        Tags.ExpectedBase64UrlEncoding,
+        Tags.ExpectedBase16Encoding)
 
   private val minusOne = BigInt(-1)
 
+  /** Transforms the stream of CBOR items into a stream of JSON tokens.
+    * The transformation if performed based on rules in [[https://www.rfc-editor.org/rfc/rfc8949.html#name-converting-from-cbor-to-jso section 6.1 of RFC 8949]].
+    */
   def jsonTokens[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, CborItem, Token] = {
 
     def decode(tag: Long, bytes: ByteVector): String =
       tag match {
+        case Tags.PositiveBigNum            => bytes.toBase64UrlNoPad
+        case Tags.NegativeBigNum            => s"~${bytes.toBase64UrlNoPad}"
         case Tags.ExpectedBase64UrlEncoding => bytes.toBase64UrlNoPad
         case Tags.ExpectedBase64Encoding    => bytes.toBase64
         case Tags.ExpectedBase16Encoding    => bytes.toBase16
-        case _                              => bytes.toHex
+        case _                              => bytes.toBase64UrlNoPad
       }
 
     def tokenizeTextStrings(chunk: Chunk[CborItem],
@@ -105,10 +114,10 @@ package object cbor {
                 }
             }
           case CborItem.ByteString(bytes) =>
-            tokenizeValue(chunk, idx + 1, rest, None, chunkAcc += Token.Key(decode(tag.getOrElse(-1), bytes))).flatMap {
-              case (chunk, idx, rest, chunkAcc) =>
+            tokenizeValue(chunk, idx + 1, rest, None, chunkAcc += Token.Key(decode(tag.getOrElse(-1), bytes)))
+              .flatMap { case (chunk, idx, rest, chunkAcc) =>
                 tokenizeMap(chunk, idx, rest, tag, math.max(-1L, count - 1L), chunkAcc)
-            }
+              }
           case CborItem.StartIndefiniteByteString =>
             tokenizeByteStrings(chunk, idx + 1, rest, tag.getOrElse(-1), new StringBuilder, chunkAcc).flatMap {
               case (chunk, idx, rest, chunkAcc, s) =>
@@ -201,23 +210,26 @@ package object cbor {
             Pull.pure(
               (chunk, idx + 1, rest, chunkAcc += Token.NumberValue((minusOne - BigInt(bytes.toHex, 16)).toString(10))))
           case CborItem.Float16(raw) =>
+            val hf = HalfFloat.toFloat(raw.toShort(signed = false))
             Pull.pure(
               (chunk,
                idx + 1,
                rest,
-               chunkAcc += Token.NumberValue(HalfFloat.toFloat(raw.toShort(signed = false)).toString())))
+               chunkAcc += (if (hf.isFinite) Token.NumberValue(hf.toString()) else Token.StringValue(hf.toString()))))
           case CborItem.Float32(raw) =>
+            val f = JFloat.intBitsToFloat(raw.toInt(signed = false))
             Pull.pure(
               (chunk,
                idx + 1,
                rest,
-               chunkAcc += Token.NumberValue(JFloat.intBitsToFloat(raw.toInt(signed = false)).toString)))
+               chunkAcc += (if (f.isFinite) Token.NumberValue(f.toString) else Token.StringValue(f.toString))))
           case CborItem.Float64(raw) =>
+            val d = JDouble.longBitsToDouble(raw.toLong(signed = false))
             Pull.pure(
               (chunk,
                idx + 1,
                rest,
-               chunkAcc += Token.NumberValue(JDouble.longBitsToDouble(raw.toLong(signed = false)).toString())))
+               chunkAcc += (if (d.isFinite) Token.NumberValue(d.toString()) else Token.StringValue(d.toString()))))
           case CborItem.StartArray(size) =>
             tokenizeArray(chunk, idx + 1, rest, tag, size, chunkAcc += Token.StartArray)
           case CborItem.StartIndefiniteArray =>

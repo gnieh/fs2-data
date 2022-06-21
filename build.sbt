@@ -351,7 +351,7 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "fs2-data-cbor-json",
     description := "Streaming CBOR/JSON interoperability library",
-  ).dependsOn(cbor % "compile->compile;test->test", json % "compile->compile;test->test")
+  ).dependsOn(cbor, json)
 
 lazy val documentation = project
   .in(file("documentation"))
