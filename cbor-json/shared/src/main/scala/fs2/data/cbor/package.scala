@@ -1,8 +1,9 @@
 package fs2
 package data
+package cbor
 
-import cbor.low.CborItem
-import json.Token
+import low.CborItem
+import fs2.data.json.Token
 
 import scala.collection.mutable.ListBuffer
 
@@ -10,7 +11,7 @@ import scodec.bits.ByteVector
 
 import java.lang.{Float => JFloat, Double => JDouble}
 
-package object cbor {
+package object json {
 
   private def knownTags: Set[Long] =
     Set(Tags.PositiveBigNum,
@@ -24,7 +25,7 @@ package object cbor {
   /** Transforms the stream of CBOR items into a stream of JSON tokens.
     * The transformation if performed based on rules in [[https://www.rfc-editor.org/rfc/rfc8949.html#name-converting-from-cbor-to-jso section 6.1 of RFC 8949]].
     */
-  def jsonTokens[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, CborItem, Token] = {
+  def decodeItems[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, CborItem, Token] = {
 
     def decode(tag: Long, bytes: ByteVector): String =
       tag match {
