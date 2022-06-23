@@ -23,11 +23,13 @@ object CborToJsonSpec extends SimpleIOSuite {
       .foldMonoid
       .map(jawn.parse(_).flatMap(_.as[List[AppendixTestCase]]))
       .rethrow
-      .map(_.zipWithIndex.collect { case (AppendixTestCase(cbor, _, _, Some(json), _), idx) => (idx, cbor, json) })
+      .map(_.zipWithIndex.collect { case (AppendixTestCase(cbor, _, _, Some(json), jsonAlt, _), idx) =>
+        (idx, cbor, json, jsonAlt)
+      })
       .flatMap(
         Stream
           .emits(_)
-          .evalMap { case (idx, cbor, expected) =>
+          .evalMap { case (idx, cbor, expected, expectedAlt) =>
             Stream
               .chunk(Chunk.byteVector(cbor))
               .through(items[IO])
@@ -35,7 +37,7 @@ object CborToJsonSpec extends SimpleIOSuite {
               .through(fs2.data.json.ast.values)
               .compile
               .lastOrError
-              .map(s => expect(s == expected, s"failed test at index $idx"))
+              .map(s => expect(s == expected).or(expect(Some(s) == expectedAlt, s"failed test at index $idx")))
           }
           .compile
           .foldMonoid)

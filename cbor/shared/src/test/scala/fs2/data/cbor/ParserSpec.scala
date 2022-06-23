@@ -460,18 +460,20 @@ object ParserSpec extends SimpleIOSuite {
       .foldMonoid
       .map(jawn.parse(_).flatMap(_.as[List[AppendixTestCase]]))
       .rethrow
-      .map(_.zipWithIndex.collect { case (AppendixTestCase(cbor, _, _, _, Some(diag)), idx) => (idx, cbor, diag) })
+      .map(_.zipWithIndex.collect { case (AppendixTestCase(cbor, _, _, _, Some(diag1), diag2), idx) =>
+        (idx, cbor, diag1, diag2)
+      })
       .flatMap(
         Stream
           .emits(_)
-          .evalMap { case (idx, cbor, expected) =>
+          .evalMap { case (idx, cbor, expected, expectedAlt) =>
             Stream
               .chunk(Chunk.byteVector(cbor))
               .through(items[IO])
               .through(diagnostic[IO])
               .compile
               .foldMonoid
-              .map(s => expect(s == expected, s"failed test at index $idx"))
+              .map(s => expect(s == expected).or(expect(Some(s) == expectedAlt, s"failed test at index $idx")))
           }
           .compile
           .foldMonoid)

@@ -11,6 +11,7 @@ case class AppendixTestCase(cbor: ByteVector,
                             hex: String,
                             roundtrip: Boolean,
                             decoded: Option[Json],
+                            decodedAlt: Option[Json],
                             diagnostic: Option[String])
 
 object AppendixTestCase {

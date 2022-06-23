@@ -297,7 +297,8 @@
     "cbor": "wftB1FLZ7CAAAA==",
     "hex": "c1fb41d452d9ec200000",
     "roundtrip": true,
-    "diagnostic": "1(1.3638962405E9_3)"
+    "diagnostic": "1(1.3638962405E9_3)",
+    "diagnosticAlt": "1(1363896240.5_3)"
   },
   {
     "cbor": "10QBAgME",

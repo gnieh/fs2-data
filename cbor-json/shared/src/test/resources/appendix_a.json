@@ -117,7 +117,8 @@
     "cbor": "+YAA",
     "hex": "f98000",
     "roundtrip": true,
-    "decoded": -0.0
+    "decoded": -0.0,
+    "decodedAlt": 0
   },
   {
     "cbor": "+TwA",
@@ -153,7 +154,8 @@
     "cbor": "+n9///8=",
     "hex": "fa7f7fffff",
     "roundtrip": true,
-    "decoded": 3.4028235e+38
+    "decoded": 3.4028235e+38,
+    "decodedAlt": 3.4028234663852886e+38
   },
   {
     "cbor": "+3435DyIAHWc",
@@ -165,13 +167,15 @@
     "cbor": "+QAB",
     "hex": "f90001",
     "roundtrip": true,
-    "decoded": 5.9604645e-08
+    "decoded": 5.9604645e-08,
+    "decodedAlt": 5.960464477539063e-8
   },
   {
     "cbor": "+QQA",
     "hex": "f90400",
     "roundtrip": true,
-    "decoded": 6.1035156e-05
+    "decoded": 6.1035156e-05,
+    "decodedAlt": 0.00006103515625
   },
   {
     "cbor": "+cQA",
