@@ -342,6 +342,9 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform)
       .toList
       .flatten
   )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
 
 lazy val cborJson = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -351,6 +354,9 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "fs2-data-cbor-json",
     description := "Streaming CBOR/JSON interoperability library"
+  )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
   .dependsOn(cbor, json, jsonCirce % "test")
 

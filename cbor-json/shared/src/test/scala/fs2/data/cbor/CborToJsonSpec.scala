@@ -4,6 +4,7 @@ package cbor
 
 import low.items
 import fs2.data.json.circe._
+import fs2.io.file.{Files, Path}
 
 import weaver._
 
@@ -15,8 +16,8 @@ import _root_.io.circe._
 object CborToJsonSpec extends SimpleIOSuite {
 
   test("Specification tests should pass") {
-    fs2.io
-      .readClassLoaderResource("appendix_a.json")
+    Files[IO]
+      .readAll(Path("cbor-json/shared/src/test/resources/appendix_a.json"))
       .through(fs2.text.utf8.decode)
       .compile
       .foldMonoid
