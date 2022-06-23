@@ -30,7 +30,7 @@ object CborToJsonSpec extends SimpleIOSuite {
             Stream
               .chunk(Chunk.byteVector(cbor))
               .through(items[IO])
-              .through(fs2.data.cbor.json.tokens)
+              .through(fs2.data.cbor.json.decodeItems)
               .through(fs2.data.json.ast.values)
               .compile
               .lastOrError

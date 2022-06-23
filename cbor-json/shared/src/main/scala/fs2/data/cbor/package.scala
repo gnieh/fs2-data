@@ -27,7 +27,14 @@ package object json {
     */
   def decodeItems[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, CborItem, Token] = {
 
-    def decode(tag: Long, bytes: ByteVector): String =
+    def decode(tag: Long, bytes: ByteVector): Token =
+      tag match {
+        case Tags.PositiveBigNum => Token.NumberValue(BigInt(bytes.toArray).toString(10))
+        case Tags.NegativeBigNum => Token.NumberValue((minusOne - BigInt(bytes.toArray)).toString(10))
+        case _                   => Token.StringValue(decodeString(tag, bytes))
+      }
+
+    def decodeString(tag: Long, bytes: ByteVector): String =
       tag match {
         case Tags.PositiveBigNum            => bytes.toBase64UrlNoPad
         case Tags.NegativeBigNum            => s"~${bytes.toBase64UrlNoPad}"
@@ -115,7 +122,7 @@ package object json {
                 }
             }
           case CborItem.ByteString(bytes) =>
-            tokenizeValue(chunk, idx + 1, rest, None, chunkAcc += Token.Key(decode(tag.getOrElse(-1), bytes)))
+            tokenizeValue(chunk, idx + 1, rest, None, chunkAcc += Token.Key(decodeString(tag.getOrElse(-1), bytes)))
               .flatMap { case (chunk, idx, rest, chunkAcc) =>
                 tokenizeMap(chunk, idx, rest, tag, math.max(-1L, count - 1L), chunkAcc)
               }
@@ -189,7 +196,7 @@ package object json {
                 (chunk, idx, rest, chunkAcc += Token.StringValue(s))
             }
           case CborItem.ByteString(bytes) =>
-            Pull.pure((chunk, idx + 1, rest, chunkAcc += Token.StringValue(decode(tag.getOrElse(-1), bytes))))
+            Pull.pure((chunk, idx + 1, rest, chunkAcc += decode(tag.getOrElse(-1), bytes)))
           case CborItem.StartIndefiniteByteString =>
             tokenizeByteStrings(chunk, idx + 1, rest, tag.getOrElse(-1), new StringBuilder, chunkAcc).map {
               case (chunk, idx, rest, chunkAcc, s) =>
@@ -216,21 +223,23 @@ package object json {
               (chunk,
                idx + 1,
                rest,
-               chunkAcc += (if (hf.isFinite) Token.NumberValue(hf.toString()) else Token.StringValue(hf.toString()))))
+               chunkAcc += (if (JFloat.isFinite(hf)) Token.NumberValue(hf.toString())
+                            else Token.StringValue(hf.toString()))))
           case CborItem.Float32(raw) =>
             val f = JFloat.intBitsToFloat(raw.toInt(signed = false))
             Pull.pure(
               (chunk,
                idx + 1,
                rest,
-               chunkAcc += (if (f.isFinite) Token.NumberValue(f.toString) else Token.StringValue(f.toString))))
+               chunkAcc += (if (JFloat.isFinite(f)) Token.NumberValue(f.toString) else Token.StringValue(f.toString))))
           case CborItem.Float64(raw) =>
             val d = JDouble.longBitsToDouble(raw.toLong(signed = false))
             Pull.pure(
               (chunk,
                idx + 1,
                rest,
-               chunkAcc += (if (d.isFinite) Token.NumberValue(d.toString()) else Token.StringValue(d.toString()))))
+               chunkAcc += (if (JDouble.isFinite(d)) Token.NumberValue(d.toString())
+                            else Token.StringValue(d.toString()))))
           case CborItem.StartArray(size) =>
             tokenizeArray(chunk, idx + 1, rest, tag, size, chunkAcc += Token.StartArray)
           case CborItem.StartIndefiniteArray =>
