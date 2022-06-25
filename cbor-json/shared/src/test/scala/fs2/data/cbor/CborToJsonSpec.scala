@@ -2,8 +2,9 @@ package fs2
 package data
 package cbor
 
-import low.items
+import low.{items, CborItem}
 import fs2.data.json.circe._
+import fs2.data.json.Token
 import fs2.io.file.{Files, Path}
 
 import weaver._
@@ -12,6 +13,7 @@ import cats.syntax.all._
 import cats.effect._
 
 import _root_.io.circe._
+import scodec.bits._
 
 object CborToJsonSpec extends SimpleIOSuite {
 
@@ -41,6 +43,119 @@ object CborToJsonSpec extends SimpleIOSuite {
           }
           .compile
           .foldMonoid)
+  }
+
+  test("Tags should be propagated to array elements") {
+    Stream
+      .emits(List(
+        CborItem.Tag(Tags.ExpectedBase64Encoding),
+        CborItem.StartArray(4),
+        CborItem.ByteString(hex"6669727374"),
+        CborItem.ByteString(hex"7365636f6e64"),
+        CborItem.ByteString(hex"7468697264"),
+        CborItem.ByteString(hex"666f75727468")
+      ))
+      .through(fs2.data.cbor.json.decodeItems[IO])
+      .compile
+      .toList
+      .map(tokens =>
+        expect(
+          tokens == List(
+            Token.StartArray,
+            Token.StringValue("Zmlyc3Q="),
+            Token.StringValue("c2Vjb25k"),
+            Token.StringValue("dGhpcmQ="),
+            Token.StringValue("Zm91cnRo"),
+            Token.EndArray
+          )))
+  }
+
+  test("Byte strings are base64 URL encoded if no tag is present") {
+    Stream
+      .emits(List(
+        CborItem.StartArray(4),
+        CborItem.ByteString(hex"6669727374"),
+        CborItem.ByteString(hex"7365636f6e64"),
+        CborItem.ByteString(hex"7468697264"),
+        CborItem.ByteString(hex"666f75727468")
+      ))
+      .through(fs2.data.cbor.json.decodeItems[IO])
+      .compile
+      .toList
+      .map(tokens =>
+        expect(
+          tokens == List(Token.StartArray,
+                         Token.StringValue("Zmlyc3Q"),
+                         Token.StringValue("c2Vjb25k"),
+                         Token.StringValue("dGhpcmQ"),
+                         Token.StringValue("Zm91cnRo"),
+                         Token.EndArray)))
+  }
+
+  test("Tags should be propagated to map elements") {
+    Stream
+      .emits(List(
+        CborItem.Tag(Tags.ExpectedBase64Encoding),
+        CborItem.StartMap(4),
+        CborItem.TextString("first"),
+        CborItem.ByteString(hex"6669727374"),
+        CborItem.TextString("second"),
+        CborItem.ByteString(hex"7365636f6e64"),
+        CborItem.TextString("third"),
+        CborItem.ByteString(hex"7468697264"),
+        CborItem.TextString("fourth"),
+        CborItem.ByteString(hex"666f75727468")
+      ))
+      .through(fs2.data.cbor.json.decodeItems[IO])
+      .compile
+      .toList
+      .map(tokens =>
+        expect(
+          tokens == List(
+            Token.StartObject,
+            Token.Key("first"),
+            Token.StringValue("Zmlyc3Q="),
+            Token.Key("second"),
+            Token.StringValue("c2Vjb25k"),
+            Token.Key("third"),
+            Token.StringValue("dGhpcmQ="),
+            Token.Key("fourth"),
+            Token.StringValue("Zm91cnRo"),
+            Token.EndObject
+          )))
+  }
+
+  test("Tags should be propagated to map keys") {
+    Stream
+      .emits(List(
+        CborItem.Tag(Tags.ExpectedBase64Encoding),
+        CborItem.StartMap(4),
+        CborItem.ByteString(hex"6669727374"),
+        CborItem.TextString("first"),
+        CborItem.ByteString(hex"7365636f6e64"),
+        CborItem.TextString("second"),
+        CborItem.ByteString(hex"7468697264"),
+        CborItem.TextString("third"),
+        CborItem.ByteString(hex"666f75727468"),
+        CborItem.TextString("fourth")
+      ))
+      .through(fs2.data.cbor.json.decodeItems[IO])
+      .compile
+      .toList
+      .map(tokens =>
+        expect(
+          tokens == List(
+            Token.StartObject,
+            Token.Key("Zmlyc3Q="),
+            Token.StringValue("first"),
+            Token.Key("c2Vjb25k"),
+            Token.StringValue("second"),
+            Token.Key("dGhpcmQ="),
+            Token.StringValue("third"),
+            Token.Key("Zm91cnRo"),
+            Token.StringValue("fourth"),
+            Token.EndObject
+          )))
   }
 
 }
