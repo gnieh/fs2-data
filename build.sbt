@@ -385,7 +385,8 @@ lazy val documentation = project
              jsonInterpolators.jvm,
              xml.jvm,
              scalaXml.jvm,
-             cbor.jvm)
+             cbor.jvm,
+             cborJson.jvm)
 
 lazy val benchmarks = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)

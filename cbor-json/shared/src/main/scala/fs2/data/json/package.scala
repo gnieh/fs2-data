@@ -18,7 +18,7 @@ package object cbor {
     * available representation that represents it exactly.
     * However, this will never emit half floats.
     */
-  val encodeItems: Pipe[Pure, Token, CborItem] =
+  def encodeItems[F[_]]: Pipe[F, Token, CborItem] =
     _.mapChunks { chunk =>
       chunk.flatMap {
         case Token.FalseValue       => Chunk.singleton(CborItem.False)
@@ -41,33 +41,21 @@ package object cbor {
     if (bd.isWhole) {
       if (bd >= 0) {
         val bi = bd.toBigInt
-        if (bi.isValidByte)
-          Chunk.singleton(CborItem.PositiveInt(ByteVector.fromByte(bi.toByte)))
-        else if (bi.isValidShort)
-          Chunk.singleton(CborItem.PositiveInt(ByteVector.fromShort(bi.toShort)))
-        else if (bi.isValidInt)
-          Chunk.singleton(CborItem.PositiveInt(ByteVector.fromInt(bi.toInt)))
-        else if (bi.isValidLong)
-          Chunk.singleton(CborItem.PositiveInt(ByteVector.fromLong(bi.toLong)))
+        if (bi.isValidLong)
+          Chunk.singleton(CborItem.PositiveInt(ByteVector(bi.toByteArray)))
         else
-          Chunk(CborItem.Tag(Tags.PositiveBigNum), CborItem.ByteString(ByteVector(bi.toByteArray)))
+          Chunk(CborItem.Tag(Tags.PositiveBigNum), CborItem.ByteString(ByteVector(bi.toByteArray).dropWhile(_ == 0x00)))
       } else {
         val bi = (bd.toBigInt + 1).abs
-        if (bi.isValidByte)
-          Chunk.singleton(CborItem.NegativeInt(ByteVector.fromByte(bi.toByte)))
-        else if (bi.isValidShort)
-          Chunk.singleton(CborItem.NegativeInt(ByteVector.fromShort(bi.toShort)))
-        else if (bi.isValidInt)
-          Chunk.singleton(CborItem.NegativeInt(ByteVector.fromInt(bi.toInt)))
-        else if (bi.isValidLong)
-          Chunk.singleton(CborItem.PositiveInt(ByteVector.fromLong(bi.toLong)))
+        if (bi.isValidLong)
+          Chunk.singleton(CborItem.NegativeInt(ByteVector(bi.toByteArray)))
         else
-          Chunk(CborItem.Tag(Tags.NegativeBigNum), CborItem.ByteString(ByteVector(bi.toByteArray)))
+          Chunk(CborItem.Tag(Tags.NegativeBigNum), CborItem.ByteString(ByteVector(bi.toByteArray).dropWhile(_ == 0x00)))
       }
     } else {
-      if (bd.isDecimalFloat) {
+      if (bd.isBinaryFloat) {
         Chunk.singleton(CborItem.Float32(ByteVector.fromInt(JFloat.floatToIntBits(bd.toFloat))))
-      } else if (bd.isDecimalDouble) {
+      } else if (bd.isBinaryDouble) {
         Chunk.singleton(CborItem.Float64(ByteVector.fromLong(JDouble.doubleToLongBits(bd.toDouble))))
       } else {
         val unscaled = BigDecimal(bd.underlying.unscaledValue())

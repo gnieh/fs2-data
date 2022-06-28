@@ -451,7 +451,7 @@
   {
     "cbor": "ogECAwQ=",
     "hex": "a201020304",
-    "roundtrip": true,
+    "roundtrip": false,
     "diagnostic": "{1: 2, 3: 4}"
   },
   {
