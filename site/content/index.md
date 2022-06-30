@@ -22,6 +22,7 @@ Following modules are available:
   - `fs2-data-csv`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv_2.13) A CSV parser
     - `fs2-data-csv-generic`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv-generic_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv-generic_2.13) generic decoder for CSV files
   - `fs2-data-cbor`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-cbor_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-cbor_2.13) CBOR parser and trasformation
+  - `fs2-data-cbor-json`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-cbor-json_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-cbor-json_2.13) CBOR/JSON interoperability library
 
 
 [api]: /api/

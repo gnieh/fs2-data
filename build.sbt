@@ -59,6 +59,7 @@ val commonSettings = List(
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "io.circe" %%% "circe-jawn" % circeVersion % "test",
+    "io.circe" %%% "circe-generic" % circeVersion % "test",
     "co.fs2" %%% "fs2-io" % fs2Version % "test",
     "com.disneystreaming" %%% "weaver-cats" % "0.7.13" % "test",
     "com.disneystreaming" %%% "weaver-cats-core" % "0.7.13" % "test",
@@ -110,6 +111,7 @@ val root = (project in file("."))
     publishArtifact := false,
     publish / skip := true,
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(cbor.js,
+                                                                             cborJson.js,
                                                                              csv.js,
                                                                              csvGeneric.js,
                                                                              json.js,
@@ -146,7 +148,9 @@ val root = (project in file("."))
     scalaXml.jvm,
     scalaXml.js,
     cbor.jvm,
-    cbor.js
+    cbor.js,
+    cborJson.jvm,
+    cborJson.js
   )
 
 lazy val text = crossProject(JVMPlatform, JSPlatform)
@@ -338,6 +342,23 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform)
       .toList
       .flatten
   )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+
+lazy val cborJson = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Full)
+  .in(file("cbor-json"))
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "fs2-data-cbor-json",
+    description := "Streaming CBOR/JSON interoperability library"
+  )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+  .dependsOn(cbor, json, jsonCirce % "test")
 
 lazy val documentation = project
   .in(file("documentation"))
@@ -364,7 +385,8 @@ lazy val documentation = project
              jsonInterpolators.jvm,
              xml.jvm,
              scalaXml.jvm,
-             cbor.jvm)
+             cbor.jvm,
+             cborJson.jvm)
 
 lazy val benchmarks = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
