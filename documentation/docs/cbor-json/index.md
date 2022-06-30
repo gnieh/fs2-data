@@ -38,7 +38,7 @@ Stream
   .toList
 ```
 
-CBOR is more expressive than JSON and allows to express more kind of data, so no all CBOR item streams can be successfully converted, or some information loss might occur.
+CBOR is more expressive than JSON and allows to express more kind of data, so not all CBOR item streams can be successfully converted, or some information loss might occur.
 
 In particular restrictions are:
  - maps with non string (text or byte) keys are not supported
