@@ -154,6 +154,8 @@ val root = (project in file("."))
     scalaXml.js,
     cbor.jvm,
     cbor.js,
+    cborJson.jvm,
+    cborJson.js,
     transducers.jvm,
     transducers.js
   )
