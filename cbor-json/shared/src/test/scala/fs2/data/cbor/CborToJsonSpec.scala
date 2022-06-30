@@ -4,7 +4,7 @@ package cbor
 
 import low.{items, CborItem}
 import fs2.data.json.circe._
-import fs2.data.json.Token
+import fs2.data.json.{Token, ast}
 import fs2.io.file.{Files, Path}
 
 import weaver._
@@ -35,11 +35,11 @@ object CborToJsonSpec extends SimpleIOSuite {
             Stream
               .chunk(Chunk.byteVector(cbor))
               .through(items[IO])
-              .through(fs2.data.cbor.json.decodeItems)
-              .through(fs2.data.json.ast.values)
+              .through(json.decodeItems)
+              .through(ast.values)
               .compile
               .lastOrError
-              .map(s => expect(s == expected).or(expect(Some(s) == expectedAlt, s"failed test at index $idx")))
+              .map(s => expect.same(expected, s).or(expect.same(expectedAlt, Some(s))))
           }
           .compile
           .foldMonoid)
@@ -55,19 +55,21 @@ object CborToJsonSpec extends SimpleIOSuite {
         CborItem.ByteString(hex"7468697264"),
         CborItem.ByteString(hex"666f75727468")
       ))
-      .through(fs2.data.cbor.json.decodeItems[IO])
+      .through(cbor.json.decodeItems[IO])
       .compile
       .toList
       .map(tokens =>
-        expect(
-          tokens == List(
+        expect.same(
+          List(
             Token.StartArray,
             Token.StringValue("Zmlyc3Q="),
             Token.StringValue("c2Vjb25k"),
             Token.StringValue("dGhpcmQ="),
             Token.StringValue("Zm91cnRo"),
             Token.EndArray
-          )))
+          ),
+          tokens
+        ))
   }
 
   test("Byte strings are base64 URL encoded if no tag is present") {
@@ -79,17 +81,19 @@ object CborToJsonSpec extends SimpleIOSuite {
         CborItem.ByteString(hex"7468697264"),
         CborItem.ByteString(hex"666f75727468")
       ))
-      .through(fs2.data.cbor.json.decodeItems[IO])
+      .through(cbor.json.decodeItems[IO])
       .compile
       .toList
       .map(tokens =>
-        expect(
-          tokens == List(Token.StartArray,
-                         Token.StringValue("Zmlyc3Q"),
-                         Token.StringValue("c2Vjb25k"),
-                         Token.StringValue("dGhpcmQ"),
-                         Token.StringValue("Zm91cnRo"),
-                         Token.EndArray)))
+        expect.same(
+          List(Token.StartArray,
+               Token.StringValue("Zmlyc3Q"),
+               Token.StringValue("c2Vjb25k"),
+               Token.StringValue("dGhpcmQ"),
+               Token.StringValue("Zm91cnRo"),
+               Token.EndArray),
+          tokens
+        ))
   }
 
   test("Tags should be propagated to map elements") {
@@ -106,12 +110,12 @@ object CborToJsonSpec extends SimpleIOSuite {
         CborItem.TextString("fourth"),
         CborItem.ByteString(hex"666f75727468")
       ))
-      .through(fs2.data.cbor.json.decodeItems[IO])
+      .through(cbor.json.decodeItems[IO])
       .compile
       .toList
       .map(tokens =>
-        expect(
-          tokens == List(
+        expect.same(
+          List(
             Token.StartObject,
             Token.Key("first"),
             Token.StringValue("Zmlyc3Q="),
@@ -122,7 +126,9 @@ object CborToJsonSpec extends SimpleIOSuite {
             Token.Key("fourth"),
             Token.StringValue("Zm91cnRo"),
             Token.EndObject
-          )))
+          ),
+          tokens
+        ))
   }
 
   test("Tags should be propagated to map keys") {
@@ -139,12 +145,12 @@ object CborToJsonSpec extends SimpleIOSuite {
         CborItem.ByteString(hex"666f75727468"),
         CborItem.TextString("fourth")
       ))
-      .through(fs2.data.cbor.json.decodeItems[IO])
+      .through(cbor.json.decodeItems[IO])
       .compile
       .toList
       .map(tokens =>
-        expect(
-          tokens == List(
+        expect.same(
+          List(
             Token.StartObject,
             Token.Key("Zmlyc3Q="),
             Token.StringValue("first"),
@@ -155,7 +161,9 @@ object CborToJsonSpec extends SimpleIOSuite {
             Token.Key("Zm91cnRo"),
             Token.StringValue("fourth"),
             Token.EndObject
-          )))
+          ),
+          tokens
+        ))
   }
 
 }

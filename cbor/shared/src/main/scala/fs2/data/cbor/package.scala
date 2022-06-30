@@ -7,8 +7,8 @@ package object cbor {
   * representing the CBOR values in the input stream as defined in
   * [section 8 of RFC8949](https://www.rfc-editor.org/rfc/rfc8949.html#name-diagnostic-notation).
   */
-  def diagnostic[F[_]](s: Stream[F, low.CborItem])(implicit F: RaiseThrowable[F]): Stream[F, String] =
-    Diagnostic[F](s)
+  def diagnostic[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, low.CborItem, String] =
+    Diagnostic[F](_)
 
   /** A debugging `Pipe`, useful to use in conjunction with `observe`.
     * {{{
@@ -17,6 +17,6 @@ package object cbor {
     */
   def debugDiagnostic[F[_]](logger: String => Unit = println(_))(implicit
       F: RaiseThrowable[F]): Pipe[F, low.CborItem, Nothing] =
-    s => diagnostic(s).debug(logger = logger).drain
+    s => Diagnostic[F](s).debug(logger = logger).drain
 
 }

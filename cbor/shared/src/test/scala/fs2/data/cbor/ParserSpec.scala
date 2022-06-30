@@ -383,9 +383,9 @@ object ParserSpec extends SimpleIOSuite {
         Stream.chunk(Chunk.byteVector(input)).through(values[IO]).compile.toList.attempt.map { result =>
           expected match {
             case Left(expected) =>
-              expect(result == Right(expected), s"CBOR value parser should parse ${input.toHex} properly")
+              expect.same(Right(expected), result)
             case Right(f) =>
-              expect(result.map(f) == Right(true), s"CBOR value parser should parse ${input.toHex} properly")
+              expect.same(Right(true), result.map(f))
           }
         }
       }
@@ -404,8 +404,7 @@ object ParserSpec extends SimpleIOSuite {
            .toList
            .attempt,
          bytes.through(values[IO]).compile.toList.attempt).mapN { (low, high) =>
-          expect(low == Right(expectedLow), s"CBOR item parser should parse ${input.toHex} properly") and
-            expect(high == Right(expectedHigh), s"CBOR value parser should parse ${input.toHex} properly")
+          expect.same(Right(expectedLow), low) and expect.same(Right(expectedHigh), high)
         }
       }
       .compile
@@ -425,7 +424,7 @@ object ParserSpec extends SimpleIOSuite {
           .map(_.toByteVector)
           .attempt
           .map { roundtrip =>
-            expect(roundtrip == Right(input), s"CBOR parsing/serializing should be fix point for ${input.toHex}")
+            expect.same(Right(input), roundtrip)
           }
       }
       .compile
@@ -445,7 +444,7 @@ object ParserSpec extends SimpleIOSuite {
           .map(_.toByteVector)
           .attempt
           .map { roundtrip =>
-            expect(roundtrip == Right(input), s"CBOR parsing/serializing should be fix point for ${input.toHex}")
+            expect.same(Right(input), roundtrip)
           }
       }
       .compile
@@ -473,7 +472,7 @@ object ParserSpec extends SimpleIOSuite {
               .through(diagnostic[IO])
               .compile
               .foldMonoid
-              .map(s => expect(s == expected).or(expect(Some(s) == expectedAlt, s"failed test at index $idx")))
+              .map(s => expect.same(expected, s).or(expect.same(expectedAlt, Some(s))))
           }
           .compile
           .foldMonoid)
