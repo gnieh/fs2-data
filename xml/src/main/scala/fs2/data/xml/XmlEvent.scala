@@ -18,6 +18,9 @@ package fs2
 package data
 package xml
 
+import cats.Show
+import cats.syntax.all._
+
 sealed trait XmlEvent
 
 object XmlEvent {
@@ -53,5 +56,16 @@ object XmlEvent {
   case object EndDocument extends XmlEvent
 
   case class Comment(comment: String) extends XmlEvent
+
+  implicit val show: Show[XmlEvent] = Show.show {
+    case XmlString(s, false) => s
+    case XmlString(s, true)  => show"<[!CDATA[$s]]>"
+    case t: XmlTexty         => t.render
+    case StartTag(n, attrs, isEmpty) =>
+      show"<${n}${attrs.map { case Attr(n, v) => show"$n='${v.map(_.render).mkString_("")}'" }.mkString_("")}>"
+    case EndTag(n) =>
+      show"</$n>"
+    case _ => ""
+  }
 
 }

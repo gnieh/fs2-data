@@ -121,7 +121,8 @@ val root = (project in file("."))
                                                                              jsonInterpolators.js,
                                                                              text.js,
                                                                              xml.js,
-                                                                             scalaXml.js),
+                                                                             scalaXml.js,
+                                                                             finiteState.js),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     Nanoc / sourceDirectory := file("site"),
@@ -150,7 +151,9 @@ val root = (project in file("."))
     cbor.jvm,
     cbor.js,
     cborJson.jvm,
-    cborJson.js
+    cborJson.js,
+    finiteState.jvm,
+    finiteState.js
   )
 
 lazy val text = crossProject(JVMPlatform, JSPlatform)
@@ -310,7 +313,7 @@ lazy val xml = crossProject(JVMPlatform, JSPlatform)
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
-  .dependsOn(text)
+  .dependsOn(text, finiteState)
 
 lazy val scalaXml = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
@@ -344,6 +347,16 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform)
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+
+lazy val finiteState = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Full)
+  .in(file("finite-state"))
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "fs2-data-finite-state",
+    description := "Streaming finite state machines"
   )
 
 lazy val cborJson = crossProject(JVMPlatform, JSPlatform)
