@@ -9,7 +9,11 @@ import cats.effect.Concurrent
 import cats.effect.std.Queue
 import cats.syntax.all._
 
-class QueryPipe[F[_]: Concurrent](dfa: DFA[QName]) extends Pipe[F, XmlEvent, Stream[F, XmlEvent]] {
+class QueryPipe[F[_]: Concurrent](dfa: PDFA[LocationMatch, StartElement])
+    extends Pipe[F, XmlEvent, Stream[F, XmlEvent]] {
+
+  private def resolveAttr(attrs: List[Attr]): Map[QName, String] =
+    attrs.map { case Attr(n, v) => (n, v.widen[XmlEvent].mkString_("")) }.toMap
 
   private def go(chunk: Chunk[XmlEvent],
                  idx: Int,
@@ -26,7 +30,7 @@ class QueryPipe[F[_]: Concurrent](dfa: DFA[QName]) extends Pipe[F, XmlEvent, Str
     } else {
       chunk(idx) match {
         case evt @ XmlEvent.StartTag(name, attr, isEmpty) =>
-          dfa.step(q, name) match {
+          dfa.step(q, StartElement(name, resolveAttr(attr))) match {
             case Some(q) =>
               val updateQueues =
                 if (!resetting && dfa.finals.contains(q)) {

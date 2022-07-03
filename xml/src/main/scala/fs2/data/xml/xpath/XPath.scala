@@ -4,27 +4,81 @@ package xml
 package xpath
 
 import automaton.{DFA, NFA, Symbol}
+import automaton.{PDFA, PNFA, Pred}
+
+import Pred.syntax._
 
 case class XPath(locations: List[Location]) {
 
   def dfa: DFA[QName] = {
     val transitions =
       locations.zipWithIndex.foldLeft(Map.empty[Int, List[(Symbol[QName], Int)]]) {
-        case (acc, (Location(axis, name), idx)) =>
+        case (acc, (Location(axis, name, _), idx)) =>
           axis match {
-            case Axis.Child      => acc.updated(idx, List((Symbol.Sym(name), idx + 1)))
-            case Axis.Descendent => acc.updated(idx, List((Symbol.Sym(name), idx + 1), (Symbol.Any, idx)))
+            case Axis.Child => acc.updated(idx, List((name.map(Symbol.Sym(_)).getOrElse(Symbol.Any), idx + 1)))
+            case Axis.Descendent =>
+              acc.updated(idx, List((name.map(Symbol.Sym(_)).getOrElse(Symbol.Any), idx + 1), (Symbol.Any, idx)))
           }
       }
     new NFA(0, Set(transitions.size), transitions).determinize
   }
 
+  def pnfa: PNFA[LocationMatch, StartElement] = {
+    def makePredicate(p: Predicate): LocationMatch =
+      p match {
+        case Predicate.True             => LocationMatch.True
+        case Predicate.False            => LocationMatch.False
+        case Predicate.Exists(attr)     => LocationMatch.AttrExists(attr)
+        case Predicate.Eq(attr, value)  => LocationMatch.AttrEq(attr, value)
+        case Predicate.Neq(attr, value) => LocationMatch.AttrNeq(attr, value)
+        case Predicate.And(left, right) => makePredicate(left) && makePredicate(right)
+        case Predicate.Or(left, right)  => makePredicate(left) || makePredicate(right)
+        case Predicate.Not(inner)       => !makePredicate(inner)
+      }
+
+    def makeLocation(l: Location): LocationMatch =
+      l match {
+        case Location(_, n, p) =>
+          n.map(LocationMatch.Element(_)).getOrElse(LocationMatch.True: LocationMatch) && p
+            .map(makePredicate(_))
+            .getOrElse(LocationMatch.True)
+      }
+
+    val transitions =
+      locations.zipWithIndex.foldLeft(Map.empty[Int, List[(Option[LocationMatch], Int)]]) {
+        case (acc, (l @ Location(axis, _, _), idx)) =>
+          axis match {
+            case Axis.Child => acc.updated(idx, List((Some(makeLocation(l)), idx + 1)))
+            case Axis.Descendent =>
+              acc.updated(idx, List((Some(makeLocation(l)), idx + 1), (Some(LocationMatch.True), idx)))
+          }
+      }
+    new PNFA(0, Set(transitions.size), transitions)
+  }
+
+  def pdfa: PDFA[LocationMatch, StartElement] =
+    pnfa.determinize
+
 }
 
-case class Location(axis: Axis, name: QName)
+case class Location(axis: Axis, name: Option[QName], predicate: Option[Predicate])
 
 sealed trait Axis
 object Axis {
   case object Child extends Axis
   case object Descendent extends Axis
+}
+
+sealed trait Predicate
+object Predicate {
+  case object True extends Predicate
+  case object False extends Predicate
+  case class Exists(attr: QName) extends Predicate
+  case class Eq(attr: QName, value: String) extends Predicate
+  case class Neq(attr: QName, value: String) extends Predicate
+
+  case class And(left: Predicate, right: Predicate) extends Predicate
+  case class Or(left: Predicate, right: Predicate) extends Predicate
+  case class Not(inner: Predicate) extends Predicate
+
 }
