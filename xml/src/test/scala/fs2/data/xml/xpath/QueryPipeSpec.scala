@@ -3,17 +3,17 @@ package data
 package xml
 package xpath
 
+import literals._
+
 import weaver._
 
 import cats.effect.IO
-import cats.syntax.all._
 
 object QueryPipeSpec extends SimpleIOSuite {
 
   test("simple query") {
 
-    val query =
-      XPath(List(Location(Axis.Descendent, QName("a").some, None), Location(Axis.Child, QName("c").some, None)))
+    val query = xpath"//a/c"
 
     Stream
       .emit("""<a>
@@ -45,7 +45,7 @@ object QueryPipeSpec extends SimpleIOSuite {
   }
 
   test("any element") {
-    val query = XPath(List(Location(Axis.Descendent, QName("c").some, None), Location(Axis.Child, None, None)))
+    val query = xpath"//c/*"
 
     Stream
       .emit("""<a>
@@ -85,7 +85,7 @@ object QueryPipeSpec extends SimpleIOSuite {
 
   test("attribute query") {
 
-    val query = XPath(List(Location(Axis.Descendent, QName("a").some, Some(Predicate.Eq(QName("attr"), "value")))))
+    val query = xpath"""//a[@attr=="value"]"""
 
     Stream
       .emit("""<a>
@@ -133,7 +133,7 @@ object QueryPipeSpec extends SimpleIOSuite {
 
   test("attribute neq query") {
 
-    val query = XPath(List(Location(Axis.Descendent, QName("a").some, Some(Predicate.Neq(QName("attr"), "value")))))
+    val query = xpath"""//a[@attr != "value"]"""
 
     Stream
       .emit("""<a>without</a>

@@ -14,7 +14,7 @@ object LocationMatch {
   case object True extends LocationMatch
   case object False extends LocationMatch
 
-  case class Element(name: QName) extends LocationMatch
+  case class Element(name: Node) extends LocationMatch
 
   case class AttrExists(attr: QName) extends LocationMatch
   case class AttrEq(attr: QName, value: String) extends LocationMatch
@@ -30,7 +30,7 @@ object LocationMatch {
       p match {
         case True                 => true
         case False                => false
-        case Element(name)        => e.name === name
+        case Element(node)        => node.matches(e.name)
         case AttrExists(attr)     => e.attributes.contains(attr)
         case AttrEq(attr, value)  => e.attributes.get(attr).contains(value)
         case AttrNeq(attr, value) => e.attributes.get(attr).fold(false)(_ =!= value)

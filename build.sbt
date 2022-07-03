@@ -9,6 +9,7 @@ val shapeless2Version = "2.3.9"
 val shapeless3Version = "3.1.0"
 val scalaJavaTimeVersion = "2.4.0"
 val diffsonVersion = "4.1.1"
+val literallyVersion = "1.0.2"
 
 val commonSettings = List(
   scalaVersion := scala213,
@@ -110,19 +111,21 @@ val root = (project in file("."))
     name := "fs2-data",
     publishArtifact := false,
     publish / skip := true,
-    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(cbor.js,
-                                                                             cborJson.js,
-                                                                             csv.js,
-                                                                             csvGeneric.js,
-                                                                             json.js,
-                                                                             jsonCirce.js,
-                                                                             jsonDiffson.js,
-                                                                             jsonPlay.js,
-                                                                             jsonInterpolators.js,
-                                                                             text.js,
-                                                                             xml.js,
-                                                                             scalaXml.js,
-                                                                             finiteState.js),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(
+      cbor.js,
+      cborJson.js,
+      csv.js,
+      csvGeneric.js,
+      json.js,
+      jsonCirce.js,
+      jsonDiffson.js,
+      jsonPlay.js,
+      jsonInterpolators.js,
+      text.js,
+      xml.js,
+      scalaXml.js,
+      finiteState.js
+    ),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     Nanoc / sourceDirectory := file("site"),
@@ -292,7 +295,7 @@ lazy val jsonInterpolators = crossProject(JVMPlatform, JSPlatform)
     name := "fs2-data-json-interpolators",
     description := "Json interpolators support",
     libraryDependencies ++= List(
-      "org.typelevel" %%% "literally" % "1.0.2"
+      "org.typelevel" %%% "literally" % literallyVersion
     ) ++ PartialFunction
       .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
@@ -308,7 +311,14 @@ lazy val xml = crossProject(JVMPlatform, JSPlatform)
   .settings(publishSettings)
   .settings(
     name := "fs2-data-xml",
-    description := "Streaming XML manipulation library"
+    description := "Streaming XML manipulation library",
+    libraryDependencies ++= List(
+      "org.typelevel" %%% "literally" % literallyVersion
+    ) ++ PartialFunction
+      .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value
+      }
+      .toList
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))

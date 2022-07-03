@@ -3,25 +3,14 @@ package data
 package xml
 package xpath
 
-import automaton.{DFA, NFA, Symbol}
 import automaton.{PDFA, PNFA, Pred}
 
 import Pred.syntax._
 
-case class XPath(locations: List[Location]) {
+import cats.{Eq, Show}
+import cats.syntax.all._
 
-  def dfa: DFA[QName] = {
-    val transitions =
-      locations.zipWithIndex.foldLeft(Map.empty[Int, List[(Symbol[QName], Int)]]) {
-        case (acc, (Location(axis, name, _), idx)) =>
-          axis match {
-            case Axis.Child => acc.updated(idx, List((name.map(Symbol.Sym(_)).getOrElse(Symbol.Any), idx + 1)))
-            case Axis.Descendent =>
-              acc.updated(idx, List((name.map(Symbol.Sym(_)).getOrElse(Symbol.Any), idx + 1), (Symbol.Any, idx)))
-          }
-      }
-    new NFA(0, Set(transitions.size), transitions).determinize
-  }
+case class XPath(locations: List[Location]) {
 
   def pnfa: PNFA[LocationMatch, StartElement] = {
     def makePredicate(p: Predicate): LocationMatch =
@@ -39,9 +28,12 @@ case class XPath(locations: List[Location]) {
     def makeLocation(l: Location): LocationMatch =
       l match {
         case Location(_, n, p) =>
-          n.map(LocationMatch.Element(_)).getOrElse(LocationMatch.True: LocationMatch) && p
-            .map(makePredicate(_))
-            .getOrElse(LocationMatch.True)
+          val node: LocationMatch =
+            n match {
+              case Node(None, None) => LocationMatch.True
+              case _                => LocationMatch.Element(n)
+            }
+          node && p.map(makePredicate(_)).getOrElse(LocationMatch.True)
       }
 
     val transitions =
@@ -61,7 +53,29 @@ case class XPath(locations: List[Location]) {
 
 }
 
-case class Location(axis: Axis, name: Option[QName], predicate: Option[Predicate])
+case class Location(axis: Axis, node: Node, predicate: Option[Predicate])
+
+case class Node(prefix: Option[String], local: Option[String]) {
+
+  def matches(name: QName): Boolean =
+    this match {
+      case Node(None, None)        => true
+      case Node(None, Some(local)) => name.local === local
+      case Node(pfx, None)         => name.prefix === pfx
+      case Node(pfx, Some(local))  => name.prefix === pfx && name.local === local
+    }
+}
+object Node {
+  implicit val show: Show[Node] = Show.show {
+    case Node(None, None)             => "*"
+    case Node(None, Some(local))      => local
+    case Node(Some(pfx), None)        => s"$pfx:*"
+    case Node(Some(pfx), Some(local)) => s"$pfx:$local"
+  }
+
+  implicit val eq: Eq[Node] = Eq.fromUniversalEquals
+
+}
 
 sealed trait Axis
 object Axis {
