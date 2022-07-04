@@ -26,21 +26,9 @@ import cats.effect.Concurrent
 import cats.syntax.all._
 
 private[xpath] class XmlQueryPipe[F[_]: Concurrent](dfa: PDFA[LocationMatch, StartElement])
-    extends TreeQueryPipe[F, XmlEvent, XmlEvent.StartTag, XmlEvent.EndTag, LocationMatch, StartElement, Int](dfa) {
+    extends TreeQueryPipe[F, XmlEvent, XmlEvent.StartTag, LocationMatch, StartElement](dfa) {
 
-  override def noTokenMatchable(ctx: Int): Option[StartElement] = None
-
-  override def depth(ctx: Int): Int = ctx
-
-  override def initCtx: Int = 0
-
-  override def push(tok: XmlEvent.StartTag, ctx: Int): Int = ctx + 1
-
-  override def pop(tok: XmlEvent.EndTag, ctx: Int): Int = ctx - 1
-
-  override def update(ctx: Int): Int = ctx
-
-  override def makeMatchingElement(tok: XmlEvent.StartTag, ctx: Int): StartElement =
+  override def makeMatchingElement(tok: XmlEvent.StartTag): StartElement =
     StartElement(tok.name, resolveAttr(tok.attributes))
 
   override def isOpen(tok: XmlEvent): Option[XmlEvent.StartTag] =
@@ -49,10 +37,10 @@ private[xpath] class XmlQueryPipe[F[_]: Concurrent](dfa: PDFA[LocationMatch, Sta
       case _                                => none
     }
 
-  override def isClose(tok: XmlEvent): Option[XmlEvent.EndTag] =
+  override def isClose(tok: XmlEvent): Boolean =
     tok match {
-      case tok @ XmlEvent.EndTag(_) => tok.some
-      case _                        => none
+      case tok @ XmlEvent.EndTag(_) => true
+      case _                        => false
     }
 
   private def resolveAttr(attrs: List[Attr]): Map[QName, String] =

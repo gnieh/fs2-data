@@ -230,8 +230,18 @@ lazy val json = crossProject(JVMPlatform, JSPlatform)
   .in(file("json"))
   .settings(commonSettings)
   .settings(publishSettings)
-  .settings(name := "fs2-data-json", description := "Streaming JSON manipulation library")
-  .dependsOn(text)
+  .settings(
+    name := "fs2-data-json",
+    description := "Streaming JSON manipulation library",
+    libraryDependencies ++= List(
+      "org.typelevel" %%% "literally" % literallyVersion
+    ) ++ PartialFunction
+      .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value
+      }
+      .toList
+  )
+  .dependsOn(text, finiteState)
 
 lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)

@@ -33,6 +33,35 @@ object QueryPipeSpec extends SimpleIOSuite {
 
     Stream
       .emit("""<a>
+              |  <a>
+              |    <c />
+              |  </a>
+              |  <b>
+              |  </b>
+              |  <c>2</c>
+              |</a>""".stripMargin)
+      .covary[IO]
+      .through(events())
+      .through(filter.raw(query))
+      .parEvalMapUnbounded(_.compile.toList)
+      .compile
+      .toList
+      .map(tokens =>
+        expect.same(
+          List(
+            List(XmlEvent.StartTag(QName("c"), Nil, true), XmlEvent.EndTag(QName("c"))),
+            List(XmlEvent.StartTag(QName("c"), Nil, false), XmlEvent.XmlString("2", false), XmlEvent.EndTag(QName("c")))
+          ),
+          tokens
+        ))
+  }
+
+  test("simple query") {
+
+    val query = xpath"//a/c"
+
+    Stream
+      .emit("""<a>
               |  <b>
               |    <c>
               |      <a>

@@ -21,6 +21,7 @@ package automaton
 import cats.effect.Concurrent
 import cats.effect.std.Queue
 import cats.syntax.all._
+import cats.data.NonEmptyList
 
 /** A pipe that allows abstract implementation of recursive queries on tree like structures.
   *
@@ -30,40 +31,20 @@ import cats.syntax.all._
   *
   * It is appropriated to implement query languages such as XPath or JsonPath.
   */
-abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, C <: T, Matcher, Matchable, Ctx](
-    dfa: PDFA[Matcher, Matchable])
+abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher, Matchable](dfa: PDFA[Matcher, Matchable])
     extends Pipe[F, T, Stream[F, T]] {
 
-  /** Initializes a new context upon start. */
-  def initCtx: Ctx
-
-  /** Pushes a new depth in the context when encountering an open tag. */
-  def push(open: O, ctx: Ctx): Ctx
-
-  /** Pops one depth from the context when encountering a close tag. */
-  def pop(close: C, ctx: Ctx): Ctx
-
-  /** Updates the context upon starting a new element.
-    * An element is either:
-    *  - a leaf element
-    *  - a well balanced open/.../close sequence
-    */
-  def update(ctx: Ctx): Ctx
+  /** Whether to emit open and close tags on new match. */
+  val emitOpenAndClose: Boolean = true
 
   /** Creates the element to match given an opening token and the current context. */
-  def makeMatchingElement(open: O, ctx: Ctx): Matchable
-
-  /** Creates an element to match given the current context, without consuming any token. */
-  def noTokenMatchable(ctx: Ctx): Option[Matchable]
-
-  /** The current depth in the tree structure based on the context. */
-  def depth(ctx: Ctx): Int
+  def makeMatchingElement(open: O): Matchable
 
   /** Specializes the token type to the opening ones. */
   def isOpen(tok: T): Option[O]
 
   /** Specializes the token type to the closing ones. */
-  def isClose(tok: T): Option[C]
+  def isClose(tok: T): Boolean
 
   private object Open {
     def unapply(tok: T) = isOpen(tok)
@@ -76,77 +57,62 @@ abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, C <: T, Matcher, Match
   private def go(chunk: Chunk[T],
                  idx: Int,
                  rest: Stream[F, T],
-                 ctx: Ctx,
+                 depth: Int,
                  queues: List[(Int, Queue[F, Option[T]])],
                  resetting: Boolean,
-                 q: Int): Pull[F, Stream[F, T], Unit] =
+                 q: NonEmptyList[(Int, Boolean)]): Pull[F, Stream[F, T], Unit] =
     if (idx >= chunk.size) {
       rest.pull.uncons.flatMap {
-        case Some((hd, tl)) => go(hd, 0, tl, ctx, queues, resetting, q)
+        case Some((hd, tl)) => go(hd, 0, tl, depth, queues, resetting, q)
         case None           => Pull.done
       }
     } else {
       chunk(idx) match {
-        case Close(tok) =>
-          val d = depth(ctx)
-          val (top, nested) = queues.span(_._1 == d - 1)
-          Pull.eval(queues.traverse_(_._2.offer(tok.some))) >> Pull
-            .eval(top.traverse_(_._2.offer(none))) >> go(chunk,
-                                                         idx + 1,
-                                                         rest,
-                                                         pop(tok, ctx),
-                                                         nested,
-                                                         if (d == 1) false else resetting,
-                                                         if (d == 1) dfa.init else q)
-        case tok =>
-          // on non closing tokens, we might have a DFA transition to take before reading the next token
-          // the next token begins a new element (either a leaf or a sub-tree), some processors, might
-          // need this hook
-          tok match {
-            case Open(tok) =>
-              noTokenMatchable(ctx)
-                .fold(q.some)(dfa.step(q, _))
-                .flatMap(dfa.step(_, makeMatchingElement(tok, ctx))) match {
-                case Some(q) =>
-                  val updateQueues =
-                    if (!resetting && dfa.finals.contains(q)) {
-                      // this is a new match, spawn a new down stream
-                      Pull.eval(Queue.unbounded[F, Option[T]]).flatMap { queue =>
-                        Pull.output1(Stream.fromQueueNoneTerminated(queue, 1)).as((depth(ctx), queue) :: queues)
-                      }
-                    } else {
-                      Pull.pure(queues)
-                    }
-                  updateQueues
-                    .evalMap { queues =>
-                      queues.traverse_(_._2.offer(tok.some)).as(queues)
-                    }
-                    .flatMap(go(chunk, idx + 1, rest, push(tok, update(ctx)), _, resetting, q))
-                case None =>
-                  Pull.eval(queues.traverse_(_._2.offer(tok.some))) >> go(chunk,
-                                                                          idx + 1,
-                                                                          rest,
-                                                                          push(tok, update(ctx)),
-                                                                          queues,
-                                                                          true,
-                                                                          q = q)
-              }
-            case _ =>
-              val q1 =
-                noTokenMatchable(ctx).fold(q)(dfa.step(q, _).getOrElse(q))
-              Pull
-                .eval(queues.traverse_(_._2.offer(tok.some))) >> go(chunk,
-                                                                    idx + 1,
-                                                                    rest,
-                                                                    update(ctx),
-                                                                    queues,
-                                                                    resetting,
-                                                                    q1)
+        case tok @ Close() =>
+          val (top, nested) = queues.span(_._1 == depth - 1)
+          Pull.eval((if (emitOpenAndClose) queues else nested).traverse_(_._2.offer(tok.some))) >> Pull.eval(
+            top.traverse_(_._2.offer(none))) >> go(
+            chunk,
+            idx + 1,
+            rest,
+            depth - 1,
+            nested,
+            q.tail.headOption.fold(false)(_._2),
+            NonEmptyList.fromList(q.tail).getOrElse(NonEmptyList.one((dfa.init, false))))
+        case Open(tok) =>
+          dfa.step(q.head._1, makeMatchingElement(tok)) match {
+            case Some(q1) =>
+              val updateQueues =
+                if (!resetting && dfa.finals.contains(q1)) {
+                  // this is a new match, spawn a new down stream
+                  Pull.eval(Queue.unbounded[F, Option[T]]).flatMap { queue =>
+                    Pull.output1(Stream.fromQueueNoneTerminated(queue, 1)).as((depth, queue) :: queues)
+                  }
+                } else {
+                  Pull.pure(queues)
+                }
+              updateQueues
+                .evalMap(queues =>
+                  (if (emitOpenAndClose) queues else queues.dropWhile(_._1 == depth))
+                    .traverse_(_._2.offer(tok.some))
+                    .as(queues))
+                .flatMap(go(chunk, idx + 1, rest, depth + 1, _, resetting, (q1, resetting) :: q))
+            case None =>
+              Pull.eval(queues.traverse_(_._2.offer(tok.some))) >> go(chunk,
+                                                                      idx + 1,
+                                                                      rest,
+                                                                      depth + 1,
+                                                                      queues,
+                                                                      true,
+                                                                      (q.head._1, resetting) :: q)
           }
+        case tok =>
+          Pull
+            .eval(queues.traverse_(_._2.offer(tok.some))) >> go(chunk, idx + 1, rest, depth, queues, resetting, q)
       }
     }
 
   final def apply(s: Stream[F, T]): Stream[F, Stream[F, T]] =
-    go(Chunk.empty, 0, s, initCtx, Nil, false, dfa.init).stream
+    go(Chunk.empty, 0, s, 0, Nil, false, NonEmptyList.one((dfa.init, false))).stream
 
 }

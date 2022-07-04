@@ -62,13 +62,17 @@ object LocationMatch {
 
     override def and(p1: LocationMatch, p2: LocationMatch): LocationMatch =
       (p1, p2) match {
-        case (True, _)                                 => p2
-        case (_, True)                                 => p1
-        case (False, _)                                => False
-        case (_, False)                                => False
-        case (Element(n1), Element(n2)) if (n1 === n2) => p1
-        case (Element(n1), Element(n2)) if (n1 =!= n2) => False
-        case (_, _)                                    => And(p1, p2)
+        case (True, _)                                      => p2
+        case (_, True)                                      => p1
+        case (False, _)                                     => False
+        case (_, False)                                     => False
+        case (Element(n1), Element(n2)) if (n1 === n2)      => p1
+        case (Element(n1), Element(n2)) if (n1 =!= n2)      => False
+        case (Not(Element(n1)), Element(n2)) if (n1 === n2) => False
+        case (Not(Element(n1)), Element(n2)) if (n1 =!= n2) => p2
+        case (Element(n1), Not(Element(n2))) if (n1 === n2) => False
+        case (Element(n1), Not(Element(n2))) if (n1 =!= n2) => p1
+        case (_, _)                                         => And(p1, p2)
       }
 
     override def or(p1: LocationMatch, p2: LocationMatch): LocationMatch =

@@ -24,6 +24,7 @@ import automaton.{PDFA, PNFA, Pred}
 import Pred.syntax._
 
 import cats.effect.Concurrent
+import cats.syntax.all._
 
 package object xpath {
 
@@ -49,7 +50,7 @@ package object xpath {
       */
     def dom[T](path: XPath)(implicit F: Concurrent[F], builder: ElementBuilder.Aux[T]): Pipe[F, XmlEvent, T] =
       _.through(raw(path))
-        .parEvalMapUnordered(Int.MaxValue)(m => m.through(xml.dom.elements[F, T]).compile.toList)
+        .parEvalMapUnordered(Int.MaxValue)(m => m.through(xml.dom.elements).compile.toList)
         .flatMap(Stream.emits(_))
 
     /** Selects all matching elements in the input stream, and applies the [[fs2.Collector]] to it.
@@ -90,9 +91,9 @@ package object xpath {
       path.locations.zipWithIndex.foldLeft(Map.empty[Int, List[(Option[LocationMatch], Int)]]) {
         case (acc, (l @ Location(axis, _, _), idx)) =>
           axis match {
-            case Axis.Child => acc.updated(idx, List((Some(makeLocation(l)), idx + 1)))
+            case Axis.Child => acc.combine(Map((idx -> List((Some(makeLocation(l)), idx + 1)))))
             case Axis.Descendent =>
-              acc.updated(idx, List((Some(makeLocation(l)), idx + 1), (Some(LocationMatch.True), idx)))
+              acc.combine(Map(idx -> List((Some(makeLocation(l)), idx + 1), (Some(LocationMatch.True), idx))))
           }
       }
     new PNFA(0, Set(transitions.size), transitions).determinize
