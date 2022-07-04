@@ -28,7 +28,7 @@ object QueryPipeSpec extends SimpleIOSuite {
               |<root><a><c>text</c></a></root>""".stripMargin)
       .covary[IO]
       .through(events())
-      .through(new QueryPipe(query.pdfa))
+      .through(filter.raw(query))
       .parEvalMapUnbounded(_.compile.toList)
       .compile
       .toList
@@ -39,6 +39,41 @@ object QueryPipeSpec extends SimpleIOSuite {
             List(XmlEvent.StartTag(QName("c"), Nil, false),
                  XmlEvent.XmlString("text", false),
                  XmlEvent.EndTag(QName("c")))
+          ),
+          tokens
+        ))
+  }
+
+  test("simple query early") {
+
+    val query = xpath"//a"
+
+    Stream
+      .emit("""<a>
+              |  <a>
+              |    nested
+              |  </a>
+              |</a>""".stripMargin)
+      .covary[IO]
+      .through(events())
+      .through(filter.collect(query, List))
+      .compile
+      .toList
+      .map(tokens =>
+        expect.same(
+          List(
+            List(XmlEvent.StartTag(QName("a"), Nil, false),
+                 XmlEvent.XmlString("\n    nested\n  ", false),
+                 XmlEvent.EndTag(QName("a"))),
+            List(
+              XmlEvent.StartTag(QName("a"), Nil, false),
+              XmlEvent.XmlString("\n  ", false),
+              XmlEvent.StartTag(QName("a"), Nil, false),
+              XmlEvent.XmlString("\n    nested\n  ", false),
+              XmlEvent.EndTag(QName("a")),
+              XmlEvent.XmlString("\n", false),
+              XmlEvent.EndTag(QName("a"))
+            )
           ),
           tokens
         ))
@@ -60,7 +95,7 @@ object QueryPipeSpec extends SimpleIOSuite {
               |<root><a><c><a>text</a></c></a></root>""".stripMargin)
       .covary[IO]
       .through(events())
-      .through(new QueryPipe(query.pdfa))
+      .through(filter.raw(query))
       .parEvalMapUnbounded(_.compile.toList)
       .compile
       .toList
@@ -102,7 +137,7 @@ object QueryPipeSpec extends SimpleIOSuite {
               |<root><a><c>text</c></a></root>""".stripMargin)
       .covary[IO]
       .through(events())
-      .through(new QueryPipe(query.pdfa))
+      .through(filter.raw(query))
       .parEvalMapUnbounded(_.compile.toList)
       .compile
       .toList
@@ -141,7 +176,7 @@ object QueryPipeSpec extends SimpleIOSuite {
               |<a attr="other value">with other value</a>""".stripMargin)
       .covary[IO]
       .through(events())
-      .through(new QueryPipe(query.pdfa))
+      .through(filter.raw(query))
       .parEvalMapUnbounded(_.compile.toList)
       .compile
       .toList

@@ -3,6 +3,7 @@ package data
 package xml
 package xpath
 
+import internals._
 import automaton.{PDFA, PNFA, Pred}
 
 import Pred.syntax._
@@ -10,48 +11,7 @@ import Pred.syntax._
 import cats.{Eq, Show}
 import cats.syntax.all._
 
-case class XPath(locations: List[Location]) {
-
-  def pnfa: PNFA[LocationMatch, StartElement] = {
-    def makePredicate(p: Predicate): LocationMatch =
-      p match {
-        case Predicate.True             => LocationMatch.True
-        case Predicate.False            => LocationMatch.False
-        case Predicate.Exists(attr)     => LocationMatch.AttrExists(attr)
-        case Predicate.Eq(attr, value)  => LocationMatch.AttrEq(attr, value)
-        case Predicate.Neq(attr, value) => LocationMatch.AttrNeq(attr, value)
-        case Predicate.And(left, right) => makePredicate(left) && makePredicate(right)
-        case Predicate.Or(left, right)  => makePredicate(left) || makePredicate(right)
-        case Predicate.Not(inner)       => !makePredicate(inner)
-      }
-
-    def makeLocation(l: Location): LocationMatch =
-      l match {
-        case Location(_, n, p) =>
-          val node: LocationMatch =
-            n match {
-              case Node(None, None) => LocationMatch.True
-              case _                => LocationMatch.Element(n)
-            }
-          node && p.map(makePredicate(_)).getOrElse(LocationMatch.True)
-      }
-
-    val transitions =
-      locations.zipWithIndex.foldLeft(Map.empty[Int, List[(Option[LocationMatch], Int)]]) {
-        case (acc, (l @ Location(axis, _, _), idx)) =>
-          axis match {
-            case Axis.Child => acc.updated(idx, List((Some(makeLocation(l)), idx + 1)))
-            case Axis.Descendent =>
-              acc.updated(idx, List((Some(makeLocation(l)), idx + 1), (Some(LocationMatch.True), idx)))
-          }
-      }
-    new PNFA(0, Set(transitions.size), transitions)
-  }
-
-  def pdfa: PDFA[LocationMatch, StartElement] =
-    pnfa.determinize
-
-}
+case class XPath(locations: List[Location])
 
 case class Location(axis: Axis, node: Node, predicate: Option[Predicate])
 

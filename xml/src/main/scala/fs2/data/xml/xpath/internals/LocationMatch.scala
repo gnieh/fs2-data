@@ -2,6 +2,7 @@ package fs2
 package data
 package xml
 package xpath
+package internals
 
 import automaton._
 

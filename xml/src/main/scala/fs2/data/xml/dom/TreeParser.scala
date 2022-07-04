@@ -24,18 +24,16 @@ import scala.collection.mutable.ListBuffer
 
 class XmlTreeException(msg: String) extends Exception(msg)
 
-class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: DocumentBuilder[Node]) {
+class TreeParser[F[_], Node](implicit F: RaiseThrowable[F]) {
 
-  private def next(
-      chunk: Chunk[XmlEvent],
-      idx: Int,
-      rest: Stream[F, XmlEvent]): Pull[F, INothing, (XmlEvent, Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
+  private def next(chunk: Chunk[XmlEvent],
+                   idx: Int,
+                   rest: Stream[F, XmlEvent]): Pull[F, Nothing, (XmlEvent, Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
     peek(chunk, idx, rest).map { case (evt, chunk, idx, rest) => (evt, chunk, idx + 1, rest) }
 
-  private def peek(
-      chunk: Chunk[XmlEvent],
-      idx: Int,
-      rest: Stream[F, XmlEvent]): Pull[F, INothing, (XmlEvent, Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
+  private def peek(chunk: Chunk[XmlEvent],
+                   idx: Int,
+                   rest: Stream[F, XmlEvent]): Pull[F, Nothing, (XmlEvent, Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
     if (idx >= chunk.size) {
       rest.pull.uncons.flatMap {
         case Some((hd, tl)) => peek(hd, 0, tl)
@@ -48,20 +46,21 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: DocumentBui
   private def expect(evt: XmlEvent,
                      chunk: Chunk[XmlEvent],
                      idx: Int,
-                     rest: Stream[F, XmlEvent]): Pull[F, INothing, (Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
+                     rest: Stream[F, XmlEvent]): Pull[F, Nothing, (Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
     next(chunk, idx, rest).flatMap {
       case (`evt`, chunk, idx, rest) => Pull.pure((chunk, idx, rest))
       case (evt, _, _, _)            => Pull.raiseError(new XmlTreeException(s"unepexted event '$evt'"))
     }
 
-  private def prolog(chunk: Chunk[XmlEvent], idx: Int, rest: Stream[F, XmlEvent]): Pull[F,
-                                                                                        INothing,
-                                                                                        (Option[XmlEvent.XmlDecl],
-                                                                                         Option[XmlEvent.XmlDoctype],
-                                                                                         List[builder.Misc],
-                                                                                         Chunk[XmlEvent],
-                                                                                         Int,
-                                                                                         Stream[F, XmlEvent])] =
+  private def prolog(chunk: Chunk[XmlEvent], idx: Int, rest: Stream[F, XmlEvent])(implicit
+      builder: DocumentBuilder[Node]): Pull[F,
+                                            Nothing,
+                                            (Option[XmlEvent.XmlDecl],
+                                             Option[XmlEvent.XmlDoctype],
+                                             List[builder.Misc],
+                                             Chunk[XmlEvent],
+                                             Int,
+                                             Stream[F, XmlEvent])] =
     peek(chunk, idx, rest)
       .map {
         case (decl @ XmlEvent.XmlDecl(_, _, _), chunk, idx, rest) =>
@@ -88,10 +87,8 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: DocumentBui
         }
       }
 
-  private def element(
-      chunk: Chunk[XmlEvent],
-      idx: Int,
-      rest: Stream[F, XmlEvent]): Pull[F, INothing, (builder.Elem, Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
+  private def element(chunk: Chunk[XmlEvent], idx: Int, rest: Stream[F, XmlEvent])(implicit
+      builder: ElementBuilder): Pull[F, Nothing, (builder.Elem, Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
     next(chunk, idx, rest).flatMap {
       case (XmlEvent.StartTag(name, attrs, isEmpty), chunk, idx, rest) =>
         (chunk, idx, rest, new ListBuffer[builder.Content]).tailRecM { case (chunk, idx, rest, children) =>
@@ -118,10 +115,9 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: DocumentBui
         Pull.raiseError(new XmlTreeException(s"unexpected event '$evt'"))
     }
 
-  private def postlog(
-      chunk: Chunk[XmlEvent],
-      idx: Int,
-      rest: Stream[F, XmlEvent]): Pull[F, INothing, (List[builder.Misc], Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
+  private def postlog(chunk: Chunk[XmlEvent], idx: Int, rest: Stream[F, XmlEvent])(implicit
+      builder: DocumentBuilder[Node])
+      : Pull[F, Nothing, (List[builder.Misc], Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
     (chunk, idx, rest, new ListBuffer[builder.Misc]).tailRecM { case (chunk, idx, rest, misc) =>
       peek(chunk, idx, rest).flatMap {
         case (XmlEvent.Comment(comment), chunk, idx, rest) =>
@@ -133,9 +129,8 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: DocumentBui
       }
     }
 
-  private def document(chunk: Chunk[XmlEvent],
-                       idx: Int,
-                       rest: Stream[F, XmlEvent]): Pull[F, Node, (Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
+  private def document(chunk: Chunk[XmlEvent], idx: Int, rest: Stream[F, XmlEvent])(implicit
+      builder: DocumentBuilder[Node]): Pull[F, Node, (Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
     next(chunk, idx, rest).flatMap {
       case (XmlEvent.StartDocument, chunk, idx, rest) =>
         for {
@@ -155,7 +150,7 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: DocumentBui
       case (evt, _, _, _) => Pull.raiseError(new XmlTreeException(s"unexpected event '$evt'"))
     }
 
-  def pipe: Pipe[F, XmlEvent, Node] = {
+  def pipe(implicit builder: DocumentBuilder[Node]): Pipe[F, XmlEvent, Node] = {
     def go(chunk: Chunk[XmlEvent], idx: Int, rest: Stream[F, XmlEvent]): Pull[F, Node, Unit] =
       if (idx >= chunk.size) {
         rest.pull.uncons.flatMap {
@@ -164,6 +159,19 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F], builder: DocumentBui
         }
       } else {
         document(chunk, idx, rest).flatMap { case (chunk, idx, rest) => go(chunk, idx, rest) }
+      }
+    s => go(Chunk.empty, 0, s).stream
+  }
+
+  def elements(implicit builder: ElementBuilder.Aux[Node]): Pipe[F, XmlEvent, Node] = {
+    def go(chunk: Chunk[XmlEvent], idx: Int, rest: Stream[F, XmlEvent]): Pull[F, Node, Unit] =
+      if (idx >= chunk.size) {
+        rest.pull.uncons.flatMap {
+          case Some((hd, tl)) => go(hd, 0, tl)
+          case None           => Pull.done
+        }
+      } else {
+        element(chunk, idx, rest).flatMap { case (elem, chunk, idx, rest) => Pull.output1(elem) >> go(chunk, idx, rest) }
       }
     s => go(Chunk.empty, 0, s).stream
   }

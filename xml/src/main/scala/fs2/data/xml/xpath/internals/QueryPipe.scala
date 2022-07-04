@@ -2,6 +2,7 @@ package fs2
 package data
 package xml
 package xpath
+package internals
 
 import automaton._
 
@@ -9,7 +10,7 @@ import cats.effect.Concurrent
 import cats.effect.std.Queue
 import cats.syntax.all._
 
-class QueryPipe[F[_]: Concurrent](dfa: PDFA[LocationMatch, StartElement])
+private[xpath] class QueryPipe[F[_]: Concurrent](dfa: PDFA[LocationMatch, StartElement])
     extends Pipe[F, XmlEvent, Stream[F, XmlEvent]] {
 
   private def resolveAttr(attrs: List[Attr]): Map[QName, String] =
@@ -36,7 +37,7 @@ class QueryPipe[F[_]: Concurrent](dfa: PDFA[LocationMatch, StartElement])
                 if (!resetting && dfa.finals.contains(q)) {
                   // this is a new match, spawn a new down stream
                   Pull.eval(Queue.unbounded[F, Option[XmlEvent]]).flatMap { queue =>
-                    Pull.output1(Stream.fromQueueNoneTerminated(queue)).as((depth, queue) :: queues)
+                    Pull.output1(Stream.fromQueueNoneTerminated(queue, 1)).as((depth, queue) :: queues)
                   }
                 } else {
                   Pull.pure(queues)
