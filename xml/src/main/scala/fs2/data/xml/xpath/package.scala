@@ -42,7 +42,7 @@ package object xpath {
       * this can lead to memory problems.
       */
     def raw(path: XPath)(implicit F: Concurrent[F]): Pipe[F, XmlEvent, Stream[F, XmlEvent]] =
-      new QueryPipe(compileXPath(path))
+      new XmlQueryPipe(compileXPath(path))
 
     /** Selects all matching elements in the input stream, and builds an element DOM.
       * Built elements are emitted as soon as possible (i.e. when the closing tag is found).

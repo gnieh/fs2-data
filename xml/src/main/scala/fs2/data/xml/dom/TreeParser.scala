@@ -171,7 +171,9 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F]) {
           case None           => Pull.done
         }
       } else {
-        element(chunk, idx, rest).flatMap { case (elem, chunk, idx, rest) => Pull.output1(elem) >> go(chunk, idx, rest) }
+        element(chunk, idx, rest).flatMap { case (elem, chunk, idx, rest) =>
+          Pull.output1(elem) >> go(chunk, idx, rest)
+        }
       }
     s => go(Chunk.empty, 0, s).stream
   }
