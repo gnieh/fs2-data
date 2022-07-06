@@ -101,7 +101,7 @@ object QueryPipeSpec extends SimpleIOSuite {
               |</a>""".stripMargin)
       .covary[IO]
       .through(events())
-      .through(filter.collect(query, List))
+      .through(filter.collect(query, List, ordered = false))
       .compile
       .toList
       .map(tokens =>

@@ -46,20 +46,35 @@ package object xpath {
       new XmlQueryPipe(compileXPath(path))
 
     /** Selects all matching elements in the input stream, and builds an element DOM.
-      * Built elements are emitted as soon as possible (i.e. when the closing tag is found).
+      *
+      * If `ordered` is set to false (`true` by default), built elements are emitted as soon
+      * as possible (i.e. when the value is entirely built).
       */
-    def dom[T](path: XPath)(implicit F: Concurrent[F], builder: ElementBuilder.Aux[T]): Pipe[F, XmlEvent, T] =
-      _.through(raw(path))
-        .parEvalMapUnordered(Int.MaxValue)(m => m.through(xml.dom.elements).compile.toList)
-        .flatMap(Stream.emits(_))
+    def dom[T](path: XPath, ordered: Boolean = true)(implicit
+        F: Concurrent[F],
+        builder: ElementBuilder.Aux[T]): Pipe[F, XmlEvent, T] =
+      if (ordered)
+        _.through(raw(path))
+          .parEvalMapUnbounded(m => m.through(xml.dom.elements).compile.toList)
+          .flatMap(Stream.emits(_))
+      else
+        _.through(raw(path))
+          .parEvalMapUnordered(Int.MaxValue)(m => m.through(xml.dom.elements).compile.toList)
+          .flatMap(Stream.emits(_))
 
     /** Selects all matching elements in the input stream, and applies the [[fs2.Collector]] to it.
-      * Built elements are emitted as soon as possible (i.e. when the closing tag is found).
+      *
+      * If `ordered` is set to false (`true` by default), built elements are emitted as soon
+      * as possible (i.e. when the value is entirely built).
       */
-    def collect[T](path: XPath, collector: Collector.Aux[XmlEvent, T])(implicit
+    def collect[T](path: XPath, collector: Collector.Aux[XmlEvent, T], ordered: Boolean = true)(implicit
         F: Concurrent[F]): Pipe[F, XmlEvent, T] =
-      _.through(raw(path))
-        .parEvalMapUnordered(Int.MaxValue)(_.compile.to(collector))
+      if (ordered)
+        _.through(raw(path))
+          .parEvalMapUnbounded(_.compile.to(collector))
+      else
+        _.through(raw(path))
+          .parEvalMapUnordered(Int.MaxValue)(_.compile.to(collector))
 
   }
 

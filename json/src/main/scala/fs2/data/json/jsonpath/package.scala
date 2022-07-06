@@ -53,19 +53,35 @@ package object jsonpath {
       }
 
     /** Selects all matching elements in the input stream, and builds an AST.
-      * Built elements are emitted as soon as possible (i.e. when the value is entirely built).
+      *
+      * If `ordered` is set to `false` (`true` by default), built elements are emitted as soon
+      * as possible (i.e. when the value is entirely built).
       */
-    def values[T](path: JsonPath)(implicit F: Concurrent[F], builder: Builder[T]): Pipe[F, Token, T] =
-      _.through(raw(path))
-        .parEvalMapUnordered(Int.MaxValue)(_.through(json.ast.values).compile.toList)
-        .flatMap(Stream.emits(_))
+    def values[T](path: JsonPath, ordered: Boolean = true)(implicit
+        F: Concurrent[F],
+        builder: Builder[T]): Pipe[F, Token, T] =
+      if (ordered)
+        _.through(raw(path))
+          .parEvalMapUnbounded(_.through(json.ast.values).compile.toList)
+          .flatMap(Stream.emits(_))
+      else
+        _.through(raw(path))
+          .parEvalMapUnordered(Int.MaxValue)(_.through(json.ast.values).compile.toList)
+          .flatMap(Stream.emits(_))
 
     /** Selects all matching elements in the input stream, and applies the [[fs2.Collector]] to it.
-      * Built elements are emitted as soon as possible (i.e. when the value is entirely defined).
+      *
+      * If `ordered` is set to `false` (`true` by default), built elements are emitted as soon
+      * as possible (i.e. when the value is entirely built).
       */
-    def collect[T](path: JsonPath, collector: Collector.Aux[Token, T])(implicit F: Concurrent[F]): Pipe[F, Token, T] =
-      _.through(raw(path))
-        .parEvalMapUnordered(Int.MaxValue)(_.compile.to(collector))
+    def collect[T](path: JsonPath, collector: Collector.Aux[Token, T], ordered: Boolean = true)(implicit
+        F: Concurrent[F]): Pipe[F, Token, T] =
+      if (ordered)
+        _.through(raw(path))
+          .parEvalMapUnbounded(_.compile.to(collector))
+      else
+        _.through(raw(path))
+          .parEvalMapUnordered(Int.MaxValue)(_.compile.to(collector))
 
   }
 

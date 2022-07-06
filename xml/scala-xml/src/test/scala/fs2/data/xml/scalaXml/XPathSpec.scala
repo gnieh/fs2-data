@@ -25,7 +25,7 @@ object XPathSpec extends SimpleIOSuite {
               |</a>""".stripMargin)
       .covary[IO]
       .through(events())
-      .through(filter.dom(query))
+      .through(filter.dom(query, ordered = false))
       .compile
       .toList
       .map(nodes =>
