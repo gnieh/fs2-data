@@ -30,7 +30,7 @@ import scala.collection.compat._
 class PNFA[P, T](val init: Int, val finals: Set[Int], val transitions: Map[Int, List[(Option[P], Int)]])(implicit
     P: Pred[P, T]) {
 
-  def epsilonClosure(qs: List[Int]): Set[Int] = {
+  private def epsilonClosure(qs: List[Int]): Set[Int] = {
     @tailrec
     def loop(qs: List[Int], visited: Set[Int]): Set[Int] =
       qs match {
@@ -50,7 +50,7 @@ class PNFA[P, T](val init: Int, val finals: Set[Int], val transitions: Map[Int, 
     * and then combining them with conjunction.
     * Returns only predicate that are not obviously non satisfiable.
     */
-  def combineAll(predicates: List[(P, Set[Int])]): Stream[Pure, (P, Set[Int])] =
+  private def combineAll(predicates: List[(P, Set[Int])]): Stream[Pure, (P, Set[Int])] =
     Stream
       .range(1, predicates.size + 1)
       .flatMap(n =>
@@ -63,6 +63,10 @@ class PNFA[P, T](val init: Int, val finals: Set[Int], val transitions: Map[Int, 
       }
       .filter(_._1.isSatisfiable)
 
+  /** Returns the deterministic finite state automaton with predicate having the same meaning as this one.
+    * Determinization is based on the approach described in paper _Finite State Transducers with Predicates and Identities_
+    * by Gertjan van Noord and Dale Gerdemann.
+    */
   def determinize: PDFA[P, T] = {
 
     @tailrec

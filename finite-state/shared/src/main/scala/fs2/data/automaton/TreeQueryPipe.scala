@@ -69,6 +69,9 @@ abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher, Matchable](df
     } else {
       chunk(idx) match {
         case tok @ Close() =>
+          // upon reading a closing tag, close every sub stream that matches this depth
+          // return to the state corresponding to the previous depth, and reset to the
+          // previous resetting state
           val (top, nested) = queues.span(_._1 == depth - 1)
           Pull.eval((if (emitOpenAndClose) queues else nested).traverse_(_._2.offer(tok.some))) >> Pull.eval(
             top.traverse_(_._2.offer(none))) >> go(
@@ -80,8 +83,13 @@ abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher, Matchable](df
             q.tail.headOption.fold(false)(_._2),
             NonEmptyList.fromList(q.tail).getOrElse(NonEmptyList.one((dfa.init, false))))
         case Open(tok) =>
+          // on an opening token, check if we can transition from it in the current state
           dfa.step(q.head._1, makeMatchingElement(tok)) match {
             case Some(q1) =>
+              // there is a transition, which means this is a match
+              // however, if we are currently resetting (i.e. an ancestor was a mismatch)
+              // this is not a new match, and we just forward the tokens to the currently
+              // open down streams but we do not create a new one
               val updateQueues =
                 if (!resetting && dfa.finals.contains(q1)) {
                   // this is a new match, spawn a new down stream
@@ -91,6 +99,7 @@ abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher, Matchable](df
                 } else {
                   Pull.pure(queues)
                 }
+              // in the end, push the new state corresponding to this depth, together with the current resetting state
               updateQueues
                 .evalMap(queues =>
                   (if (emitOpenAndClose) queues else queues.dropWhile(_._1 == depth))
@@ -98,6 +107,8 @@ abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher, Matchable](df
                     .as(queues))
                 .flatMap(go(chunk, idx + 1, rest, depth + 1, _, resetting, (q1, resetting) :: q))
             case None =>
+              // the opening token is a mismatch, no transition exists for it
+              // enter in resetting mode for descendents
               Pull.eval(queues.traverse_(_._2.offer(tok.some))) >> go(chunk,
                                                                       idx + 1,
                                                                       rest,
@@ -107,6 +118,7 @@ abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher, Matchable](df
                                                                       (q.head._1, resetting) :: q)
           }
         case tok =>
+          // internal tokens are just forwarded to current match down streams
           Pull
             .eval(queues.traverse_(_._2.offer(tok.some))) >> go(chunk, idx + 1, rest, depth, queues, resetting, q)
       }
