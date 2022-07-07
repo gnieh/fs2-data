@@ -19,11 +19,6 @@ package data
 package xml
 package xpath
 
-import internals._
-import automaton.{PDFA, PNFA, Pred}
-
-import Pred.syntax._
-
 import cats.{Eq, Show}
 import cats.syntax.all._
 

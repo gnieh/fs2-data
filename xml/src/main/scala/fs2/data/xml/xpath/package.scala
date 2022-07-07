@@ -20,7 +20,7 @@ package xml
 
 import dom.ElementBuilder
 import xpath.internals._
-import automaton.{PDFA, PNFA, Pred}
+import pfsa.{PDFA, PNFA, Pred}
 import Pred.syntax._
 
 import cats.effect.Concurrent

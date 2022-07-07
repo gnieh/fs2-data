@@ -16,7 +16,7 @@
 
 package fs2
 package data
-package automaton
+package pfsa
 
 import cats.effect.Concurrent
 import cats.effect.std.Queue

@@ -20,7 +20,7 @@ package xml
 package xpath
 package internals
 
-import automaton._
+import pfsa._
 
 import cats.effect.Concurrent
 import cats.syntax.all._

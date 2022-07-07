@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package fs2.data.automaton
+package fs2.data.pfsa
 
 /** A typeclass for predicates, that can be combined together. */
 trait Pred[P, Elt] {

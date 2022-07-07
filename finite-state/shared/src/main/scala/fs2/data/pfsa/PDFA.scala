@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package fs2.data.automaton
+package fs2.data.pfsa
 
 import Pred.syntax._
 

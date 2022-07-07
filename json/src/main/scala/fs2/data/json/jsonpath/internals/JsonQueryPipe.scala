@@ -20,7 +20,7 @@ package json
 package jsonpath
 package internals
 
-import automaton._
+import pfsa._
 
 import cats.Show
 import cats.effect.Concurrent

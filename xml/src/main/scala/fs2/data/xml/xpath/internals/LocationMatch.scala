@@ -20,7 +20,7 @@ package xml
 package xpath
 package internals
 
-import automaton._
+import pfsa._
 
 import cats.syntax.all._
 import cats.data.NonEmptyChain

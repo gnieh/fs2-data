@@ -20,7 +20,7 @@ package json
 
 import ast.Builder
 import jsonpath.internals._
-import automaton.{PDFA, PNFA}
+import pfsa.{PDFA, PNFA}
 
 import cats.effect.Concurrent
 import cats.syntax.all._
