@@ -11,6 +11,8 @@ val scalaJavaTimeVersion = "2.4.0"
 val diffsonVersion = "4.1.1"
 val literallyVersion = "1.0.2"
 
+val copyrightYears = "2019-2022"
+
 val commonSettings = List(
   scalaVersion := scala213,
   crossScalaVersions := Seq(scala213, scala212, scala3),
@@ -36,7 +38,7 @@ val commonSettings = List(
     }
   },
   organization := "org.gnieh",
-  headerLicense := Some(HeaderLicense.ALv2("2019-2022", "Lucas Satabin")),
+  headerLicense := Some(HeaderLicense.ALv2(copyrightYears, "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
   versionScheme := Some("early-semver"),

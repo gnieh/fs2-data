@@ -21,6 +21,7 @@ import text._
 import xml.internals._
 
 import cats._
+import cats.syntax.all._
 
 package object xml {
 
@@ -103,5 +104,38 @@ package object xml {
 
   def isXmlWhitespace(c: Char): Boolean =
     c == ' ' || c == '\t' || c == '\r' || c == '\n'
+
+  /** XML event stream collectors. */
+  object collector {
+
+    /** Renders all events using the `Show` instance and build the result string. */
+    object show extends Collector[XmlEvent] {
+      type Out = String
+      def newBuilder: Collector.Builder[XmlEvent, Out] =
+        new Collector.Builder[XmlEvent, Out] {
+
+          private val builder = new StringBuilder
+
+          override def +=(c: Chunk[XmlEvent]): Unit =
+            c.foreach(builder ++= _.show)
+
+          override def result: Out =
+            builder.result()
+
+        }
+    }
+
+  }
+
+  implicit class XmlInterpolators(val sc: StringContext) extends AnyVal {
+
+    /** Creates a stream of XML token, dropping the comments. */
+    def xml(args: Any*): Stream[Fallible, XmlEvent] =
+      Stream.emit(sc.s(args: _*)).covary[Fallible].through(events(includeComments = false))
+
+    /** Creates a stream of XML token, keeping the comments. */
+    def rawxml(args: Any*): Stream[Fallible, XmlEvent] =
+      Stream.emit(sc.s(args: _*)).covary[Fallible].through(events(includeComments = true))
+  }
 
 }
