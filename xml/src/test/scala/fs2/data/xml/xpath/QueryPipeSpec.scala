@@ -240,4 +240,39 @@ object QueryPipeSpec extends SimpleIOSuite {
         ))
   }
 
+  test("path disjunction") {
+    val query = xpath"/a//c|//b"
+    xml"""<a>
+            <b>This is a b</b>
+            <b>
+              <c>This is a c in a b</c>
+            </b>
+          </a>"""
+      .lift[IO]
+      .through(filter.collect(query, List))
+      .compile
+      .toList
+      .map(tokens =>
+        expect.same(
+          List(
+            List(XmlEvent.StartTag(QName("b"), Nil, false),
+                 XmlEvent.XmlString("This is a b", false),
+                 XmlEvent.EndTag(QName("b"))),
+            List(
+              XmlEvent.StartTag(QName("b"), Nil, false),
+              XmlEvent.XmlString("\n              ", false),
+              XmlEvent.StartTag(QName("c"), Nil, false),
+              XmlEvent.XmlString("This is a c in a b", false),
+              XmlEvent.EndTag(QName("c")),
+              XmlEvent.XmlString("\n            ", false),
+              XmlEvent.EndTag(QName("b"))
+            ),
+            List(XmlEvent.StartTag(QName("c"), Nil, false),
+                 XmlEvent.XmlString("This is a c in a b", false),
+                 XmlEvent.EndTag(QName("c")))
+          ),
+          tokens
+        ))
+  }
+
 }

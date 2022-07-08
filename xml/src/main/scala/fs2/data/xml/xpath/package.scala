@@ -100,16 +100,21 @@ package object xpath {
           node && p.map(makePredicate(_)).getOrElse(LocationMatch.True)
       }
 
-    val transitions =
-      path.locations.zipWithIndex.foldLeft(Map.empty[Int, List[(Option[LocationMatch], Int)]]) {
-        case (acc, (l @ Location(axis, _, _), idx)) =>
-          axis match {
-            case Axis.Child => acc.combine(Map((idx -> List((Some(makeLocation(l)), idx + 1)))))
-            case Axis.Descendent =>
-              acc.combine(Map(idx -> List((Some(makeLocation(l)), idx + 1), (Some(LocationMatch.True), idx))))
-          }
+    val (transitions, fs) =
+      path.locations.foldLeft((Map.empty[Int, List[(Option[LocationMatch], Int)]], Set.empty[Int])) {
+        case ((trans, fs), ors) =>
+          val (q1, trans1) =
+            ors.foldLeft((0, trans)) { case ((q, trans), l @ Location(axis, _, _)) =>
+              axis match {
+                case Axis.Child => (q + 1, trans.combine(Map((q -> List((Some(makeLocation(l)), q + 1))))))
+                case Axis.Descendent =>
+                  (q + 1, trans.combine(Map(q -> List((Some(makeLocation(l)), q + 1), (Some(LocationMatch.True), q)))))
+              }
+            }
+          (trans1, fs + q1)
+
       }
-    new PNFA(0, Set(transitions.size), transitions).determinize
+    new PNFA(0, fs, transitions).determinize
   }
 
 }

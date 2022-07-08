@@ -21,8 +21,9 @@ package xpath
 
 import cats.{Eq, Show}
 import cats.syntax.all._
+import cats.data.NonEmptyList
 
-case class XPath(locations: List[Location])
+case class XPath(locations: NonEmptyList[List[Location]])
 
 case class Location(axis: Axis, node: Node, predicate: Option[Predicate])
 

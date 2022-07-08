@@ -23,6 +23,7 @@ import cats.MonadError
 import cats.syntax.all._
 import cats.data.StateT
 import scala.annotation.tailrec
+import cats.data.NonEmptyList
 
 case class XPathSyntaxException(expected: String, got: String, idx: Int)
     extends Exception(s"unexpected '$got' at index $idx, $expected was expected")
@@ -94,12 +95,12 @@ class XPathParser[F[_]](val input: String)(implicit F: MonadError[F, Throwable])
     }
 
   def parse(): F[XPath] =
-    tailRecM(List.empty[Location]) { acc =>
-      idx.flatMap(idx =>
-        if (idx >= input.size)
-          pure(XPath(acc.reverse).asRight[List[Location]])
-        else
-          location.map(loc => (loc :: acc).asLeft[XPath]))
+    tailRecM((List.empty[Location], List.empty[List[Location]])) { case (current, acc) =>
+      peek.flatMap {
+        case None => pure(XPath(NonEmptyList(current.reverse, acc)).asRight[(List[Location], List[List[Location]])])
+        case Some('|') => consume >> location.map(loc => (List(loc), current :: acc).asLeft[XPath])
+        case _         => location.map(loc => (loc :: current, acc).asLeft[XPath])
+      }
     }.runA(0)
 
   private val axis: Parser[Axis] =

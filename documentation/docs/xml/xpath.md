@@ -75,6 +75,7 @@ The supported XPath features are:
     - `p1 && p2` element attributes match both `p1` and `p2`
     - `p1 || p2` element attributes match either `p1` or `p2`
     - `!p` element attributes do not match `p`
+  - `xp1|xp2` matches the XPath expression `xp1` or `xp2`
 
 Operator precendence is the common one: `!` has precedence over `&&` which has precedence over `||`. This means that `!p1 && p2 || p3` is the same as `((!p1) && p2) || p3`.
 You can use parenteses to associate differently, for instance `!(p1 && p2) || p3`.
