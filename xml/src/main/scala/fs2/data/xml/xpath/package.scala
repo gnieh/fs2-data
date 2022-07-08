@@ -43,7 +43,15 @@ package object xpath {
       * this can lead to memory problems.
       */
     def raw(path: XPath)(implicit F: Concurrent[F]): Pipe[F, XmlEvent, Stream[F, XmlEvent]] =
-      new XmlQueryPipe(compileXPath(path))
+      new XmlQueryPipe(compileXPath(path)).raw(_)
+
+    /** Selects the first match only. First is meant as in: opening tag appears first in the input, no matter the depth.
+      * Tokens of the first match are emitted as they are read from the input.
+      *
+      * Other results are gently discarded.
+      */
+    def first(path: XPath)(implicit F: Concurrent[F]): Pipe[F, XmlEvent, XmlEvent] =
+      new XmlQueryPipe(compileXPath(path)).first(_)
 
     /** Selects all matching elements in the input stream, and builds an element DOM.
       *
@@ -53,14 +61,9 @@ package object xpath {
     def dom[T](path: XPath, ordered: Boolean = true)(implicit
         F: Concurrent[F],
         builder: ElementBuilder.Aux[T]): Pipe[F, XmlEvent, T] =
-      if (ordered)
-        _.through(raw(path))
-          .parEvalMapUnbounded(m => m.through(xml.dom.elements).compile.toList)
-          .flatMap(Stream.emits(_))
-      else
-        _.through(raw(path))
-          .parEvalMapUnordered(Int.MaxValue)(m => m.through(xml.dom.elements).compile.toList)
-          .flatMap(Stream.emits(_))
+      new XmlQueryPipe(compileXPath(path))
+        .aggregate(_, _.through(xml.dom.elements).compile.toList, ordered)
+        .flatMap(Stream.emits(_))
 
     /** Selects all matching elements in the input stream, and applies the [[fs2.Collector]] to it.
       *
@@ -69,12 +72,7 @@ package object xpath {
       */
     def collect[T](path: XPath, collector: Collector.Aux[XmlEvent, T], ordered: Boolean = true)(implicit
         F: Concurrent[F]): Pipe[F, XmlEvent, T] =
-      if (ordered)
-        _.through(raw(path))
-          .parEvalMapUnbounded(_.compile.to(collector))
-      else
-        _.through(raw(path))
-          .parEvalMapUnordered(Int.MaxValue)(_.compile.to(collector))
+      new XmlQueryPipe(compileXPath(path)).aggregate(_, _.compile.to(collector), ordered)
 
   }
 

@@ -114,4 +114,19 @@ object JsonPathSpec extends SimpleIOSuite {
 
   }
 
+  test("single match") {
+    val path = jsonpath"$$.a[4]"
+
+    jsonWithArray
+      .through(filter.first(path))
+      .compile
+      .toList
+      .map(
+        expect.same(
+          List(Token.StartObject, Token.Key("idx"), Token.NumberValue("4"), Token.EndObject),
+          _
+        ))
+
+  }
+
 }

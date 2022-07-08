@@ -42,15 +42,20 @@ package object jsonpath {
       * this can lead to memory problems.
       */
     def raw(path: JsonPath)(implicit F: Concurrent[F]): Pipe[F, Token, Stream[F, Token]] =
-      _.through(JsonTagger.pipe).through(new JsonQueryPipe(compileJsonPath(path))).map { m =>
-        m.map {
-          case TaggedJson.Raw(t)                 => Some(t)
-          case TaggedJson.StartArrayElement(_)   => None
-          case TaggedJson.EndArrayElement        => None
-          case TaggedJson.StartObjectValue(name) => Some(Token.Key(name))
-          case TaggedJson.EndObjectValue         => None
-        }.unNone
-      }
+      _.through(JsonTagger.pipe)
+        .through(new JsonQueryPipe(compileJsonPath(path)).raw(_))
+        .map(_.map(untag(_)).unNone)
+
+    /** Selects the first match in the input stream. The tokens of the first matching
+      * value are emitted as they are read.
+      *
+      * The other matches are gently discarded.
+      */
+    def first(path: JsonPath)(implicit F: Concurrent[F]): Pipe[F, Token, Token] =
+      _.through(JsonTagger.pipe)
+        .through(new JsonQueryPipe(compileJsonPath(path)).first(_))
+        .map(untag(_))
+        .unNone
 
     /** Selects all matching elements in the input stream, and builds an AST.
       *
@@ -60,14 +65,10 @@ package object jsonpath {
     def values[T](path: JsonPath, ordered: Boolean = true)(implicit
         F: Concurrent[F],
         builder: Builder[T]): Pipe[F, Token, T] =
-      if (ordered)
-        _.through(raw(path))
-          .parEvalMapUnbounded(_.through(json.ast.values).compile.toList)
-          .flatMap(Stream.emits(_))
-      else
-        _.through(raw(path))
-          .parEvalMapUnordered(Int.MaxValue)(_.through(json.ast.values).compile.toList)
-          .flatMap(Stream.emits(_))
+      _.through(JsonTagger.pipe)
+        .through(new JsonQueryPipe(compileJsonPath(path))
+          .aggregate(_, _.map(untag(_)).unNone.through(json.ast.values).compile.toList, ordered))
+        .flatMap(Stream.emits(_))
 
     /** Selects all matching elements in the input stream, and applies the [[fs2.Collector]] to it.
       *
@@ -76,14 +77,21 @@ package object jsonpath {
       */
     def collect[T](path: JsonPath, collector: Collector.Aux[Token, T], ordered: Boolean = true)(implicit
         F: Concurrent[F]): Pipe[F, Token, T] =
-      if (ordered)
-        _.through(raw(path))
-          .parEvalMapUnbounded(_.compile.to(collector))
-      else
-        _.through(raw(path))
-          .parEvalMapUnordered(Int.MaxValue)(_.compile.to(collector))
+      _.through(JsonTagger.pipe)
+        .through(
+          new JsonQueryPipe(compileJsonPath(path))
+            .aggregate(_, _.map(untag(_)).unNone.compile.to(collector), ordered))
 
   }
+
+  private def untag(tj: TaggedJson): Option[Token] =
+    tj match {
+      case TaggedJson.Raw(t)                 => Some(t)
+      case TaggedJson.StartArrayElement(_)   => None
+      case TaggedJson.EndArrayElement        => None
+      case TaggedJson.StartObjectValue(name) => Some(Token.Key(name))
+      case TaggedJson.EndObjectValue         => None
+    }
 
   private def compileJsonPath(path: JsonPath): PDFA[PathMatcher, TaggedJson] = {
 

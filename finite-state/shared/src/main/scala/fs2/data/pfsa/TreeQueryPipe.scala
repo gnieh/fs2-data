@@ -31,8 +31,7 @@ import cats.data.NonEmptyList
   *
   * It is appropriated to implement query languages such as XPath or JsonPath.
   */
-abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher, Matchable](dfa: PDFA[Matcher, Matchable])
-    extends Pipe[F, T, Stream[F, T]] {
+abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher, Matchable](dfa: PDFA[Matcher, Matchable]) {
 
   /** Whether to emit open and close tags on new match. */
   val emitOpenAndClose: Boolean = true
@@ -124,7 +123,24 @@ abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher, Matchable](df
       }
     }
 
-  final def apply(s: Stream[F, T]): Stream[F, Stream[F, T]] =
+  final def raw(s: Stream[F, T]): Stream[F, Stream[F, T]] =
     go(Chunk.empty, 0, s, 0, Nil, false, NonEmptyList.one((dfa.init, false))).stream
+
+  final def first(s: Stream[F, T]): Stream[F, T] =
+    raw(s).pull.uncons1
+      .flatMap {
+        case Some(headTail) => Pull.output1(headTail)
+        case None           => Pull.done
+      }
+      .stream
+      .flatMap { case (hd, tl) =>
+        hd.concurrently(tl.parJoinUnbounded.attempt.drain)
+      }
+
+  final def aggregate[U](s: Stream[F, T], f: Stream[F, T] => F[U], ordered: Boolean) =
+    if (ordered)
+      s.through(raw).parEvalMapUnbounded(f)
+    else
+      s.through(raw).parEvalMapUnordered(Int.MaxValue)(f)
 
 }
