@@ -56,7 +56,7 @@ val commonSettings = List(
     .flatten,
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
-    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0",
+    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.8.0",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "io.circe" %%% "circe-jawn" % circeVersion % "test",
     "io.circe" %%% "circe-generic" % circeVersion % "test",
