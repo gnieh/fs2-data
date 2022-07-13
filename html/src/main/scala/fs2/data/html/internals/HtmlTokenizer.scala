@@ -329,7 +329,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
             Pull.pure(
               Pulled[F, T.Context, V](T.advance(ctx),
                                       chunkAcc,
-                                      n :: opens,
+                                      opens,
                                       HtmlToken.OpenTag(n, Map.empty, false).some,
                                       data(_, _, _)))
           else
@@ -420,7 +420,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
             Pull.pure(
               Pulled[F, T.Context, V](T.advance(ctx),
                                       chunkAcc,
-                                      name :: opens,
+                                      opens,
                                       HtmlToken.OpenTag(name, attributes1, false).some,
                                       data(_, _, _)))
           else
@@ -461,7 +461,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
             Pull.pure(
               Pulled[F, T.Context, V](T.advance(ctx),
                                       chunkAcc,
-                                      name :: opens,
+                                      opens,
                                       HtmlToken.OpenTag(name, attributes1, false).some,
                                       data(_, _, _)))
           else
@@ -576,7 +576,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
             Pull.pure(
               Pulled[F, T.Context, V](T.advance(ctx),
                                       chunkAcc,
-                                      name :: opens,
+                                      opens,
                                       HtmlToken.OpenTag(name, attributes1, false).some,
                                       data(_, _, _)))
           else
@@ -613,7 +613,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
             Pull.pure(
               Pulled[F, T.Context, V](T.advance(ctx),
                                       chunkAcc,
-                                      name :: opens,
+                                      opens,
                                       HtmlToken.OpenTag(name, attributes, false).some,
                                       data(_, _, _)))
           else
@@ -1463,7 +1463,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
         case '\t' | '\r' | '\n' | ' ' =>
           val n = name.result()
           opens match {
-            case open :: opens if open == n =>
+            case open :: _ if open == n =>
               beforeAttributeName(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
               emitAll[V](
@@ -1473,7 +1473,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
         case '/' =>
           val n = name.result()
           opens match {
-            case open :: opens if open == n =>
+            case open :: _ if open == n =>
               selfClosingStartTag(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
               emitAll[V](
@@ -1483,7 +1483,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
         case '>' =>
           val n = name.result()
           opens match {
-            case open :: opens if open == n =>
+            case open :: _ if open == n =>
               Pull.pure(
                 Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.EndTag(n).some, data(_, _, _)))
             case _ =>
@@ -1532,7 +1532,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
         case '\t' | '\r' | '\n' | ' ' =>
           val n = name.result()
           opens match {
-            case open :: opens if open == n =>
+            case open :: _ if open == n =>
               beforeAttributeName(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
               emitAll[V](
@@ -1542,7 +1542,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
         case '/' =>
           val n = name.result()
           opens match {
-            case open :: opens if open == n =>
+            case open :: _ if open == n =>
               selfClosingStartTag(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
               emitAll[V](
@@ -1552,7 +1552,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
         case '>' =>
           val n = name.result()
           opens match {
-            case open :: opens if open == n =>
+            case open :: _ if open == n =>
               Pull.pure(
                 Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.EndTag(n).some, data(_, _, _)))
             case _ =>
@@ -1761,7 +1761,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
         case '\t' | '\r' | '\n' | ' ' =>
           val n = name.result()
           opens match {
-            case open :: opens if open == n =>
+            case open :: _ if open == n =>
               beforeAttributeName(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
               emitAll[V](
@@ -1771,7 +1771,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
         case '/' =>
           val n = name.result()
           opens match {
-            case open :: opens if open == n =>
+            case open :: _ if open == n =>
               selfClosingStartTag(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
               emitAll[V](
@@ -1781,7 +1781,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
         case '>' =>
           val n = name.result()
           opens match {
-            case open :: opens if open == n =>
+            case open :: _ if open == n =>
               Pull.pure(
                 Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.EndTag(n).some, data(_, _, _)))
             case _ =>
@@ -2015,7 +2015,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
         case '\t' | '\r' | '\n' | ' ' =>
           val n = name.result()
           opens match {
-            case open :: opens if open == n =>
+            case open :: _ if open == n =>
               beforeAttributeName(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
               emitAll[V](
@@ -2025,7 +2025,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
         case '/' =>
           val n = name.result()
           opens match {
-            case open :: opens if open == n =>
+            case open :: _ if open == n =>
               selfClosingStartTag(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
               emitAll[V](
@@ -2035,7 +2035,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
         case '>' =>
           val n = name.result()
           opens match {
-            case open :: opens if open == n =>
+            case open :: _ if open == n =>
               Pull.pure(
                 Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.EndTag(n).some, data(_, _, _)))
             case _ =>
@@ -2107,7 +2107,15 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T:
           .loop[F, HtmlToken, Pull[F, HtmlToken, Pulled[F, T.Context, HtmlToken]]] { pull =>
             pull.flatMap {
               case Pulled(ctx, chunkAcc, opens, Some(token), next) =>
-                Pull.pure(next(ctx, opens, chunkAcc += token).some)
+                val opens1 = (token, opens) match {
+                  case (HtmlToken.OpenTag(n, _, _), _) =>
+                    n :: opens
+                  case (HtmlToken.EndTag(n1), n2 :: opens) if n1 == n2 =>
+                    opens
+                  case _ =>
+                    opens
+                }
+                Pull.pure(next(ctx, opens1, chunkAcc += token).some)
               case Pulled(_, _, _, None, _) =>
                 Pull.pure(None)
             }
