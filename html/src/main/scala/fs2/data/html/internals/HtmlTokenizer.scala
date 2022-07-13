@@ -14,10 +14,35 @@ import cats.data.NonEmptyList
 
 private case class CurrentTag(open: Boolean, name: StringBuilder)
 
-private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: CharLikeChunks[F, T]) {
+case class Pulled[F[_], Ctx, V](ctx: Ctx,
+                                chunkAcc: ListBuffer[V],
+                                opens: List[String],
+                                token: Option[HtmlToken],
+                                next: (Ctx, List[String], ListBuffer[V]) => Pull[F, V, Pulled[F, Ctx, V]]) {
+  def pushOpen(name: String): Pulled[F, Ctx, V] =
+    copy(opens = name :: opens)
+}
 
-  def ensureNext[Res](ctx: T.Context, chunkAcc: ListBuffer[HtmlToken])(
-      kont: Option[(T.Context, ListBuffer[HtmlToken])] => Pull[F, HtmlToken, Res]): Pull[F, HtmlToken, Res] =
+private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], val T: CharLikeChunks[F, T]) {
+
+  def done[V](opens: List[String]): Pull[F, V, Pulled[F, T.Context, V]] =
+    Pull.pure(Pulled[F, T.Context, V](T.emptyContext, new ListBuffer, opens, none, (_, opens, _) => done[V](opens)))
+
+  def done[V](opens: List[String], emit: List[HtmlToken]): Pull[F, V, Pulled[F, T.Context, V]] =
+    emit.foldRight(done[V](_: List[String])) { (token, next) => opens =>
+      Pull.pure(
+        Pulled[F, T.Context, V](T.emptyContext, new ListBuffer, opens, token.some, (_, opens, _) => next(opens)))
+    }(opens)
+
+  def emitAll[V](emit: List[HtmlToken],
+                 next: (T.Context, List[String], ListBuffer[V]) => Pull[F, V, Pulled[F, T.Context, V]])
+      : (T.Context, List[String], ListBuffer[V]) => Pull[F, V, Pulled[F, T.Context, V]] =
+    emit.foldRight(next) { (token, next) => (ctx, opens, chunkAcc) =>
+      Pull.pure(Pulled[F, T.Context, V](ctx, chunkAcc, opens, token.some, next))
+    }
+
+  def ensureNext[V, Res](ctx: T.Context, chunkAcc: ListBuffer[V])(
+      kont: Option[(T.Context, ListBuffer[V])] => Pull[F, V, Res]): Pull[F, V, Res] =
     if (T.needsPull(ctx)) {
       Pull.output(Chunk.seq(chunkAcc.result())) >> T.pullNext(ctx).flatMap {
         case Some(ctx) =>
@@ -30,36 +55,34 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
       Pull.suspend(kont((ctx, chunkAcc).some))
     }
 
-  def ensureNextOrDone(ctx: T.Context, chunkAcc: ListBuffer[HtmlToken])(
-      kont: (T.Context, ListBuffer[HtmlToken]) => Pull[F, HtmlToken, Unit]): Pull[F, HtmlToken, Unit] =
+  def ensureNextOrDone[V](ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[V])(
+      kont: (T.Context, ListBuffer[V]) => Pull[F, V, Pulled[F, T.Context, V]]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) => kont(ctx, chunkAcc)
-      case None                  => Pull.done
+      case None                  => done(opens)
     }
 
-  private def readFromRadixTree(ctx: T.Context, chunkAcc: ListBuffer[HtmlToken], tree: RadixNode) =
+  private def readFromRadixTree[V](ctx: T.Context, chunkAcc: ListBuffer[V], tree: RadixNode) =
     Pull
-      .loopEither[F,
-                  HtmlToken,
-                  (T.Context, ListBuffer[HtmlToken], StringBuilder),
-                  (T.Context, ListBuffer[HtmlToken], String)] { case (ctx, chunkAcc, acc) =>
-        ensureNext(ctx, chunkAcc) {
-          case Some((ctx, chunkAcc)) =>
-            val current = acc.result()
-            val c = T.current(ctx)
-            if (tree.isPrefix(current + c))
-              Pull.pure((T.advance(ctx), chunkAcc, acc.addOne(c)).asLeft)
-            else
-              Pull.pure((ctx, chunkAcc, acc.result()).asRight)
-          case None =>
-            Pull.pure((T.emptyContext, new ListBuffer[HtmlToken], acc.result()).asRight)
-        }
+      .loopEither[F, V, (T.Context, ListBuffer[V], StringBuilder), (T.Context, ListBuffer[V], String)] {
+        case (ctx, chunkAcc, acc) =>
+          ensureNext(ctx, chunkAcc) {
+            case Some((ctx, chunkAcc)) =>
+              val current = acc.result()
+              val c = T.current(ctx)
+              if (tree.isPrefix(current + c))
+                Pull.pure((T.advance(ctx), chunkAcc, acc.addOne(c)).asLeft)
+              else
+                Pull.pure((ctx, chunkAcc, acc.result()).asRight)
+            case None =>
+              Pull.pure((T.emptyContext, new ListBuffer[V], acc.result()).asRight)
+          }
       }(ctx, chunkAcc, new StringBuilder)
 
-  def characterReference(ctx: T.Context,
-                         continue: (T.Context, ListBuffer[HtmlToken], String) => Pull[F, HtmlToken, Unit],
-                         chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def characterReference[V](ctx: T.Context,
+                            continue: (T.Context, ListBuffer[V], String) => Pull[F, V, Pulled[F, T.Context, V]],
+                            chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, Nil, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '#' =>
           numericCharacterReference(T.advance(ctx), new StringBuilder("&#"), continue, chunkAcc)
@@ -72,26 +95,24 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
       }
     }
 
-  def namedCharacterReference(ctx: T.Context,
-                              buffer: StringBuilder,
-                              continue: (T.Context, ListBuffer[HtmlToken], String) => Pull[F, HtmlToken, Unit],
-                              chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def namedCharacterReference[V](ctx: T.Context,
+                                 buffer: StringBuilder,
+                                 continue: (T.Context, ListBuffer[V], String) => Pull[F, V, Pulled[F, T.Context, V]],
+                                 chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     Pull
-      .loopEither[F,
-                  HtmlToken,
-                  (T.Context, ListBuffer[HtmlToken], StringBuilder),
-                  (T.Context, ListBuffer[HtmlToken], StringBuilder)] { case (ctx, chunkAcc, buffer) =>
-        ensureNext(ctx, chunkAcc) {
-          case Some((ctx, chunkAcc)) =>
-            val current = buffer.result()
-            val c = T.current(ctx)
-            if (Entities.isPrefix(current + c))
-              Pull.pure((T.advance(ctx), chunkAcc, buffer.addOne(c)).asLeft)
-            else
-              Pull.pure((ctx, chunkAcc, buffer).asRight)
-          case None =>
-            Pull.pure((T.emptyContext, new ListBuffer[HtmlToken], buffer).asRight)
-        }
+      .loopEither[F, V, (T.Context, ListBuffer[V], StringBuilder), (T.Context, ListBuffer[V], StringBuilder)] {
+        case (ctx, chunkAcc, buffer) =>
+          ensureNext(ctx, chunkAcc) {
+            case Some((ctx, chunkAcc)) =>
+              val current = buffer.result()
+              val c = T.current(ctx)
+              if (Entities.isPrefix(current + c))
+                Pull.pure((T.advance(ctx), chunkAcc, buffer.addOne(c)).asLeft)
+              else
+                Pull.pure((ctx, chunkAcc, buffer).asRight)
+            case None =>
+              Pull.pure((T.emptyContext, new ListBuffer[V], buffer).asRight)
+          }
       }((ctx, chunkAcc, buffer))
       .flatMap { case (ctx, chunkAcc, buffer) =>
         val name = buffer.result()
@@ -103,10 +124,10 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
         }
       }
 
-  def ambiguousAmpersandState(ctx: T.Context,
-                              buffer: StringBuilder,
-                              continue: (T.Context, ListBuffer[HtmlToken], String) => Pull[F, HtmlToken, Unit],
-                              chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def ambiguousAmpersandState[V](ctx: T.Context,
+                                 buffer: StringBuilder,
+                                 continue: (T.Context, ListBuffer[V], String) => Pull[F, V, Pulled[F, T.Context, V]],
+                                 chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
@@ -122,10 +143,10 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
         continue(ctx, chunkAcc, buffer.result())
     }
 
-  def numericCharacterReference(ctx: T.Context,
-                                buffer: StringBuilder,
-                                continue: (T.Context, ListBuffer[HtmlToken], String) => Pull[F, HtmlToken, Unit],
-                                chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def numericCharacterReference[V](ctx: T.Context,
+                                   buffer: StringBuilder,
+                                   continue: (T.Context, ListBuffer[V], String) => Pull[F, V, Pulled[F, T.Context, V]],
+                                   chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         val c = T.current(ctx)
@@ -139,12 +160,12 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
         decimalCharacterReferenceStart(T.emptyContext, buffer, 0, continue, new ListBuffer)
     }
 
-  def hexadecimalCharacterReferenceStart(
+  def hexadecimalCharacterReferenceStart[V](
       ctx: T.Context,
       buffer: StringBuilder,
       value: Int,
-      continue: (T.Context, ListBuffer[HtmlToken], String) => Pull[F, HtmlToken, Unit],
-      chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+      continue: (T.Context, ListBuffer[V], String) => Pull[F, V, Pulled[F, T.Context, V]],
+      chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         if (isAsciiHex(T.current(ctx)))
@@ -155,11 +176,12 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
         continue(T.emptyContext, new ListBuffer, buffer.result())
     }
 
-  def decimalCharacterReferenceStart(ctx: T.Context,
-                                     buffer: StringBuilder,
-                                     value: Int,
-                                     continue: (T.Context, ListBuffer[HtmlToken], String) => Pull[F, HtmlToken, Unit],
-                                     chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def decimalCharacterReferenceStart[V](
+      ctx: T.Context,
+      buffer: StringBuilder,
+      value: Int,
+      continue: (T.Context, ListBuffer[V], String) => Pull[F, V, Pulled[F, T.Context, V]],
+      chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         if (isAsciiDigit(T.current(ctx)))
@@ -170,10 +192,11 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
         continue(T.emptyContext, new ListBuffer, buffer.result())
     }
 
-  def hexadecimalCharacterReference(ctx: T.Context,
-                                    value: Int,
-                                    continue: (T.Context, ListBuffer[HtmlToken], String) => Pull[F, HtmlToken, Unit],
-                                    chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def hexadecimalCharacterReference[V](
+      ctx: T.Context,
+      value: Int,
+      continue: (T.Context, ListBuffer[V], String) => Pull[F, V, Pulled[F, T.Context, V]],
+      chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         val c = T.current(ctx)
@@ -191,10 +214,10 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
         numericCharacterReferenceEnd(T.emptyContext, value, continue, new ListBuffer)
     }
 
-  def decimalCharacterReference(ctx: T.Context,
-                                value: Int,
-                                continue: (T.Context, ListBuffer[HtmlToken], String) => Pull[F, HtmlToken, Unit],
-                                chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def decimalCharacterReference[V](ctx: T.Context,
+                                   value: Int,
+                                   continue: (T.Context, ListBuffer[V], String) => Pull[F, V, Pulled[F, T.Context, V]],
+                                   chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         val c = T.current(ctx)
@@ -212,10 +235,11 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
         numericCharacterReferenceEnd(T.emptyContext, value, continue, new ListBuffer)
     }
 
-  def numericCharacterReferenceEnd(ctx: T.Context,
-                                   value: Int,
-                                   continue: (T.Context, ListBuffer[HtmlToken], String) => Pull[F, HtmlToken, Unit],
-                                   chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def numericCharacterReferenceEnd[V](
+      ctx: T.Context,
+      value: Int,
+      continue: (T.Context, ListBuffer[V], String) => Pull[F, V, Pulled[F, T.Context, V]],
+      chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) { in =>
       val value1 =
         if (value == 0x00) 0xfffd
@@ -232,7 +256,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
       }
     }
 
-  def tagOpen(ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def tagOpen[V](ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
@@ -246,13 +270,13 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             if (isAsciiAlpha(c))
               tagName(ctx, true, new StringBuilder, opens, chunkAcc)
             else
-              data(ctx, opens, chunkAcc += HtmlToken.Character('<'))
+              Pull.pure(Pulled[F, T.Context, V](ctx, chunkAcc, opens, HtmlToken.Character('<').some, data(_, _, _)))
         }
       case None =>
-        Pull.output1(HtmlToken.Character('<'))
+        done(opens, List(HtmlToken.Character('<')))
     }
 
-  def endTagOpen(ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def endTagOpen[V](ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
@@ -265,17 +289,22 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
               bogusComment(ctx, new StringBuilder, opens, chunkAcc)
         }
       case None =>
-        Pull.output(Chunk(HtmlToken.Character('<'), HtmlToken.Character('/')))
+        done(opens, List(HtmlToken.Character('<'), HtmlToken.Character('/')))
     }
 
-  def bogusComment(ctx: T.Context,
-                   content: StringBuilder,
-                   opens: List[String],
-                   chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def bogusComment[V](ctx: T.Context,
+                      content: StringBuilder,
+                      opens: List[String],
+                      chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '>' =>
-          data(T.advance(ctx), opens, chunkAcc += HtmlToken.Comment(content.result()))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Comment(content.result()).some,
+                                    data(_, _, _)))
         case '\u0000' =>
           bogusComment(T.advance(ctx), content.addOne('\ufffd'), opens, chunkAcc)
         case c =>
@@ -283,12 +312,12 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
       }
     }
 
-  def tagName(ctx: T.Context,
-              open: Boolean,
-              name: StringBuilder,
-              opens: List[String],
-              chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def tagName[V](ctx: T.Context,
+                 open: Boolean,
+                 name: StringBuilder,
+                 opens: List[String],
+                 chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '\t' | '\r' | '\n' | ' ' =>
           beforeAttributeName(T.advance(ctx), open, name.result(), Map.empty, opens, chunkAcc)
@@ -297,9 +326,14 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
         case '>' =>
           val n = name.result()
           if (open)
-            data(T.advance(ctx), n :: opens, chunkAcc += HtmlToken.OpenTag(n, Map.empty))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      n :: opens,
+                                      HtmlToken.OpenTag(n, Map.empty, false).some,
+                                      data(_, _, _)))
           else
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.EndTag(n))
+            Pull.pure(Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.EndTag(n).some, data(_, _, _)))
         case '\u0000' =>
           tagName(T.advance(ctx), open, name.addOne('\ufffd'), opens, chunkAcc)
         case c =>
@@ -311,12 +345,12 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
       }
     }
 
-  def beforeAttributeName(ctx: T.Context,
-                          open: Boolean,
-                          name: String,
-                          attributes: Map[String, String],
-                          opens: List[String],
-                          chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def beforeAttributeName[V](ctx: T.Context,
+                             open: Boolean,
+                             name: String,
+                             attributes: Map[String, String],
+                             opens: List[String],
+                             chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
@@ -333,13 +367,13 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
         afterAttributeName(T.emptyContext, open, name, "", attributes, opens, new ListBuffer)
     }
 
-  def attributeName(ctx: T.Context,
-                    open: Boolean,
-                    name: String,
-                    attr: StringBuilder,
-                    attributes: Map[String, String],
-                    opens: List[String],
-                    chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def attributeName[V](ctx: T.Context,
+                       open: Boolean,
+                       name: String,
+                       attr: StringBuilder,
+                       attributes: Map[String, String],
+                       opens: List[String],
+                       chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
@@ -356,14 +390,14 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
         afterAttributeName(T.emptyContext, open, name, attr.result(), attributes, opens, new ListBuffer)
     }
 
-  def afterAttributeName(ctx: T.Context,
-                         open: Boolean,
-                         name: String,
-                         attr: String,
-                         attributes: Map[String, String],
-                         opens: List[String],
-                         chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def afterAttributeName[V](ctx: T.Context,
+                            open: Boolean,
+                            name: String,
+                            attr: String,
+                            attributes: Map[String, String],
+                            opens: List[String],
+                            chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '\t' | '\r' | '\n' | ' ' =>
           afterAttributeName(T.advance(ctx), open, name, attr, attributes, opens, chunkAcc)
@@ -383,9 +417,15 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             else
               attributes.updated(attr, "")
           if (open)
-            data(T.advance(ctx), name :: opens, chunkAcc += HtmlToken.OpenTag(name, attributes1))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      name :: opens,
+                                      HtmlToken.OpenTag(name, attributes1, false).some,
+                                      data(_, _, _)))
           else
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.EndTag(name))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.EndTag(name).some, data(_, _, _)))
         case _ =>
           val attributes1 =
             if (attr.isEmpty || attributes.contains(attr))
@@ -396,14 +436,14 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
       }
     }
 
-  def beforeAttributeValue(ctx: T.Context,
-                           open: Boolean,
-                           name: String,
-                           attr: String,
-                           attributes: Map[String, String],
-                           opens: List[String],
-                           chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def beforeAttributeValue[V](ctx: T.Context,
+                              open: Boolean,
+                              name: String,
+                              attr: String,
+                              attributes: Map[String, String],
+                              opens: List[String],
+                              chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '\t' | '\r' | '\n' | ' ' =>
           beforeAttributeValue(T.advance(ctx), open, name, attr, attributes, opens, chunkAcc)
@@ -418,23 +458,29 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             else
               attributes.updated(attr, "")
           if (open)
-            data(T.advance(ctx), name :: opens, chunkAcc += HtmlToken.OpenTag(name, attributes1))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      name :: opens,
+                                      HtmlToken.OpenTag(name, attributes1, false).some,
+                                      data(_, _, _)))
           else
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.EndTag(name))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.EndTag(name).some, data(_, _, _)))
         case _ =>
           attributeValueUnquoted(ctx, open, name, attr, new StringBuilder, attributes, opens, chunkAcc)
       }
     }
 
-  def attributeValueDoubleQuoted(ctx: T.Context,
-                                 open: Boolean,
-                                 name: String,
-                                 attr: String,
-                                 value: StringBuilder,
-                                 attributes: Map[String, String],
-                                 opens: List[String],
-                                 chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def attributeValueDoubleQuoted[V](ctx: T.Context,
+                                    open: Boolean,
+                                    name: String,
+                                    attr: String,
+                                    value: StringBuilder,
+                                    attributes: Map[String, String],
+                                    opens: List[String],
+                                    chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '"' =>
           val attributes1 =
@@ -444,7 +490,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
               attributes.updated(attr, value.result())
           afterAttributeValueQuoted(T.advance(ctx), open, name, attributes1, opens, chunkAcc)
         case '&' =>
-          def kont(ctx: T.Context, chunkAcc: ListBuffer[HtmlToken], toFlush: String) =
+          def kont[V](ctx: T.Context, chunkAcc: ListBuffer[V], toFlush: String) =
             attributeValueDoubleQuoted(ctx, open, name, attr, value.addAll(toFlush), attributes, opens, chunkAcc)
 
           characterReference(T.advance(ctx), kont, chunkAcc)
@@ -462,15 +508,15 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
       }
     }
 
-  def attributeValueSingleQuoted(ctx: T.Context,
-                                 open: Boolean,
-                                 name: String,
-                                 attr: String,
-                                 value: StringBuilder,
-                                 attributes: Map[String, String],
-                                 opens: List[String],
-                                 chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def attributeValueSingleQuoted[V](ctx: T.Context,
+                                    open: Boolean,
+                                    name: String,
+                                    attr: String,
+                                    value: StringBuilder,
+                                    attributes: Map[String, String],
+                                    opens: List[String],
+                                    chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '\'' =>
           val attributes1 =
@@ -480,7 +526,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
               attributes.updated(attr, value.result())
           afterAttributeValueQuoted(T.advance(ctx), open, name, attributes1, opens, chunkAcc)
         case '&' =>
-          def kont(ctx: T.Context, chunkAcc: ListBuffer[HtmlToken], toFlush: String) =
+          def kont[V](ctx: T.Context, chunkAcc: ListBuffer[V], toFlush: String) =
             attributeValueSingleQuoted(ctx, open, name, attr, value.addAll(toFlush), attributes, opens, chunkAcc)
 
           characterReference(T.advance(ctx), kont, chunkAcc)
@@ -498,15 +544,15 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
       }
     }
 
-  def attributeValueUnquoted(ctx: T.Context,
-                             open: Boolean,
-                             name: String,
-                             attr: String,
-                             value: StringBuilder,
-                             attributes: Map[String, String],
-                             opens: List[String],
-                             chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def attributeValueUnquoted[V](ctx: T.Context,
+                                open: Boolean,
+                                name: String,
+                                attr: String,
+                                value: StringBuilder,
+                                attributes: Map[String, String],
+                                opens: List[String],
+                                chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '\t' | '\r' | '\n' | ' ' =>
           val attributes1 =
@@ -516,7 +562,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
               attributes.updated(attr, value.result())
           beforeAttributeName(T.advance(ctx), open, name, attributes1, opens, chunkAcc)
         case '&' =>
-          def kont(ctx: T.Context, chunkAcc: ListBuffer[HtmlToken], toFlush: String) =
+          def kont[V](ctx: T.Context, chunkAcc: ListBuffer[V], toFlush: String) =
             attributeValueUnquoted(ctx, open, name, attr, value.addAll(toFlush), attributes, opens, chunkAcc)
 
           characterReference(T.advance(ctx), kont, chunkAcc)
@@ -527,9 +573,15 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             else
               attributes.updated(attr, value.result())
           if (open)
-            data(T.advance(ctx), name :: opens, chunkAcc += HtmlToken.OpenTag(name, attributes1))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      name :: opens,
+                                      HtmlToken.OpenTag(name, attributes1, false).some,
+                                      data(_, _, _)))
           else
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.EndTag(name))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.EndTag(name).some, data(_, _, _)))
         case '\u0000' =>
           attributeValueDoubleQuoted(T.advance(ctx),
                                      open,
@@ -544,13 +596,13 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
       }
     }
 
-  def afterAttributeValueQuoted(ctx: T.Context,
-                                open: Boolean,
-                                name: String,
-                                attributes: Map[String, String],
-                                opens: List[String],
-                                chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def afterAttributeValueQuoted[V](ctx: T.Context,
+                                   open: Boolean,
+                                   name: String,
+                                   attributes: Map[String, String],
+                                   opens: List[String],
+                                   chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '\t' | '\r' | '\n' | ' ' =>
           beforeAttributeName(T.advance(ctx), open, name, attributes, opens, chunkAcc)
@@ -558,35 +610,47 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
           selfClosingStartTag(T.advance(ctx), open, name, attributes, opens, chunkAcc)
         case '>' =>
           if (open)
-            data(T.advance(ctx), name :: opens, chunkAcc += HtmlToken.OpenTag(name, attributes))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      name :: opens,
+                                      HtmlToken.OpenTag(name, attributes, false).some,
+                                      data(_, _, _)))
           else
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.EndTag(name))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.EndTag(name).some, data(_, _, _)))
         case _ =>
           beforeAttributeName(ctx, open, name, attributes, opens, chunkAcc)
       }
     }
 
-  def selfClosingStartTag(ctx: T.Context,
-                          open: Boolean,
-                          name: String,
-                          attributes: Map[String, String],
-                          opens: List[String],
-                          chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def selfClosingStartTag[V](ctx: T.Context,
+                             open: Boolean,
+                             name: String,
+                             attributes: Map[String, String],
+                             opens: List[String],
+                             chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '>' =>
           if (open)
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.OpenTag(name, attributes, true))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.OpenTag(name, attributes, true).some,
+                                      data(_, _, _)))
           else
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.EndTag(name))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.EndTag(name).some, data(_, _, _)))
         case _ =>
           beforeAttributeName(ctx, open, name, attributes, opens, chunkAcc)
       }
     }
 
-  def markupDeclarationOpen(ctx: T.Context,
-                            opens: List[String],
-                            chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def markupDeclarationOpen[V](ctx: T.Context,
+                               opens: List[String],
+                               chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     readFromRadixTree(ctx, chunkAcc, markupDecls)
       .flatMap {
         case (ctx, chunkAcc, "--") =>
@@ -604,7 +668,7 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
           bogusComment(T.pushback(ctx, pushback), new StringBuilder, opens, chunkAcc)
       }
 
-  def doctype(ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def doctype[V](ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
@@ -616,19 +680,29 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             doctypeName(ctx, new StringBuilder, opens, chunkAcc)
         }
       case None =>
-        Pull.output1(HtmlToken.Doctype(true, "", none, none))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Doctype(true, "", none, none).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def beforeDoctypeName(ctx: T.Context,
-                        opens: List[String],
-                        chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def beforeDoctypeName[V](ctx: T.Context,
+                           opens: List[String],
+                           chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
           case '\t' | '\r' | '\n' | ' ' =>
             beforeDoctypeName(T.advance(ctx), opens, chunkAcc)
           case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Doctype(true, "", none, none))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Doctype(true, "", none, none).some,
+                                      data(_, _, _)))
           case '\u0000' =>
             doctypeName(T.advance(ctx), new StringBuilder("\ufffd"), opens, chunkAcc)
           case c =>
@@ -638,20 +712,30 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
               doctypeName(T.advance(ctx), new StringBuilder(s"$c"), opens, chunkAcc)
         }
       case None =>
-        Pull.output1(HtmlToken.Doctype(true, "", none, none))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Doctype(true, "", none, none).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def doctypeName(ctx: T.Context,
-                  name: StringBuilder,
-                  opens: List[String],
-                  chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def doctypeName[V](ctx: T.Context,
+                     name: StringBuilder,
+                     opens: List[String],
+                     chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
           case '\t' | '\r' | '\n' | ' ' =>
             afterDoctypeName(T.advance(ctx), name.result(), opens, chunkAcc)
           case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Doctype(false, name.result(), none, none))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Doctype(false, name.result(), none, none).some,
+                                      data(_, _, _)))
           case '\u0000' =>
             doctypeName(T.advance(ctx), new StringBuilder("\ufffd"), opens, chunkAcc)
           case c =>
@@ -661,20 +745,30 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
               doctypeName(T.advance(ctx), new StringBuilder(s"$c"), opens, chunkAcc)
         }
       case None =>
-        Pull.output1(HtmlToken.Doctype(true, name.result(), none, none))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Doctype(true, name.result(), none, none).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def afterDoctypeName(ctx: T.Context,
-                       name: String,
-                       opens: List[String],
-                       chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def afterDoctypeName[V](ctx: T.Context,
+                          name: String,
+                          opens: List[String],
+                          chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
           case '\t' | '\r' | '\n' | ' ' =>
             afterDoctypeName(T.advance(ctx), name, opens, chunkAcc)
           case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Doctype(false, name, none, none))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Doctype(false, name, none, none).some,
+                                      data(_, _, _)))
           case _ =>
             readFromRadixTree(ctx, chunkAcc, doctypeVisibility).flatMap { case (ctx, chunkAcc, vis) =>
               vis.toUpperCase() match {
@@ -685,20 +779,30 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             }
         }
       case None =>
-        Pull.output1(HtmlToken.Doctype(true, name, none, none))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Doctype(true, name, none, none).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def afterDoctypePublicKeyword(ctx: T.Context,
-                                name: String,
-                                opens: List[String],
-                                chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def afterDoctypePublicKeyword[V](ctx: T.Context,
+                                   name: String,
+                                   opens: List[String],
+                                   chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
           case '\t' | '\r' | '\n' | ' ' =>
             beforeDoctypePublicIdentifier(T.advance(ctx), name, opens, chunkAcc)
           case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Doctype(true, name, none, none))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Doctype(true, name, none, none).some,
+                                      data(_, _, _)))
           case '"' =>
             doctypePublicIdentifierDoubleQuoted(T.advance(ctx), name, new StringBuilder, opens, chunkAcc)
           case '\'' =>
@@ -707,20 +811,30 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             bogusDoctype(ctx, true, name, none, none, opens, chunkAcc)
         }
       case None =>
-        Pull.output1(HtmlToken.Doctype(true, name, none, none))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Doctype(true, name, none, none).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def beforeDoctypePublicIdentifier(ctx: T.Context,
-                                    name: String,
-                                    opens: List[String],
-                                    chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def beforeDoctypePublicIdentifier[V](ctx: T.Context,
+                                       name: String,
+                                       opens: List[String],
+                                       chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
           case '\t' | '\r' | '\n' | ' ' =>
             beforeDoctypePublicIdentifier(T.advance(ctx), name, opens, chunkAcc)
           case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Doctype(true, name, none, none))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Doctype(true, name, none, none).some,
+                                      data(_, _, _)))
           case '"' =>
             doctypePublicIdentifierDoubleQuoted(T.advance(ctx), name, new StringBuilder, opens, chunkAcc)
           case '\'' =>
@@ -729,14 +843,19 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             bogusDoctype(ctx, true, name, none, none, opens, chunkAcc)
         }
       case None =>
-        Pull.output1(HtmlToken.Doctype(true, name, none, none))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Doctype(true, name, none, none).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def doctypePublicIdentifierDoubleQuoted(ctx: T.Context,
-                                          name: String,
-                                          id: StringBuilder,
-                                          opens: List[String],
-                                          chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def doctypePublicIdentifierDoubleQuoted[V](ctx: T.Context,
+                                             name: String,
+                                             id: StringBuilder,
+                                             opens: List[String],
+                                             chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
@@ -744,19 +863,29 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
           case '\u0000' =>
             doctypePublicIdentifierDoubleQuoted(T.advance(ctx), name, id.addOne('\ufffd'), opens, chunkAcc)
           case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Doctype(true, name, id.result().some, none))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Doctype(true, name, id.result().some, none).some,
+                                      data(_, _, _)))
           case c =>
             doctypePublicIdentifierDoubleQuoted(T.advance(ctx), name, id.addOne(c), opens, chunkAcc)
         }
       case None =>
-        Pull.output1(HtmlToken.Doctype(true, name, id.result().some, none))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Doctype(true, name, id.result().some, none).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def doctypePublicIdentifierSingleQuoted(ctx: T.Context,
-                                          name: String,
-                                          id: StringBuilder,
-                                          opens: List[String],
-                                          chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def doctypePublicIdentifierSingleQuoted[V](ctx: T.Context,
+                                             name: String,
+                                             id: StringBuilder,
+                                             opens: List[String],
+                                             chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
@@ -764,71 +893,106 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
           case '\u0000' =>
             doctypePublicIdentifierSingleQuoted(T.advance(ctx), name, id.addOne('\ufffd'), opens, chunkAcc)
           case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Doctype(true, name, id.result().some, none))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Doctype(true, name, id.result().some, none).some,
+                                      data(_, _, _)))
           case c =>
             doctypePublicIdentifierSingleQuoted(T.advance(ctx), name, id.addOne(c), opens, chunkAcc)
         }
       case None =>
-        Pull.output1(HtmlToken.Doctype(true, name, id.result().some, none))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Doctype(true, name, id.result().some, none).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def afterDoctypePublicIdentifier(ctx: T.Context,
+  def afterDoctypePublicIdentifier[V](ctx: T.Context,
+                                      name: String,
+                                      id: String,
+                                      opens: List[String],
+                                      chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNext(ctx, chunkAcc) {
+      case Some((ctx, chunkAcc)) =>
+        (T.current(ctx): @switch) match {
+          case '\t' | '\r' | '\n' | ' ' =>
+            betweenDoctypePublicAndSystemIdentifiers(T.advance(ctx), name, id, opens, chunkAcc)
+          case '>' =>
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Doctype(false, name, id.some, none).some,
+                                      data(_, _, _)))
+          case '"' =>
+            doctypeSystemIdentifierDoubleQuoted(T.advance(ctx), name, id.some, new StringBuilder, opens, chunkAcc)
+          case '\'' =>
+            doctypeSystemIdentifierSingleQuoted(T.advance(ctx), name, id.some, new StringBuilder, opens, chunkAcc)
+          case _ =>
+            bogusDoctype(ctx, true, name, id.some, none, opens, chunkAcc)
+        }
+      case None =>
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Doctype(true, name, id.some, none).some,
+                                  (_, opens, _) => done(opens)))
+    }
+
+  def betweenDoctypePublicAndSystemIdentifiers[V](ctx: T.Context,
+                                                  name: String,
+                                                  id: String,
+                                                  opens: List[String],
+                                                  chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNext(ctx, chunkAcc) {
+      case Some((ctx, chunkAcc)) =>
+        (T.current(ctx): @switch) match {
+          case '\t' | '\r' | '\n' | ' ' =>
+            betweenDoctypePublicAndSystemIdentifiers(T.advance(ctx), name, id, opens, chunkAcc)
+          case '>' =>
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Doctype(false, name, id.some, none).some,
+                                      data(_, _, _)))
+          case '"' =>
+            doctypeSystemIdentifierDoubleQuoted(T.advance(ctx), name, id.some, new StringBuilder, opens, chunkAcc)
+          case '\'' =>
+            doctypeSystemIdentifierSingleQuoted(T.advance(ctx), name, id.some, new StringBuilder, opens, chunkAcc)
+          case _ =>
+            bogusDoctype(ctx, true, name, id.some, none, opens, chunkAcc)
+        }
+      case None =>
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Doctype(true, name, id.some, none).some,
+                                  (_, opens, _) => done(opens)))
+    }
+
+  def afterDoctypeSystemKeyword[V](ctx: T.Context,
                                    name: String,
-                                   id: String,
                                    opens: List[String],
-                                   chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNext(ctx, chunkAcc) {
-      case Some((ctx, chunkAcc)) =>
-        (T.current(ctx): @switch) match {
-          case '\t' | '\r' | '\n' | ' ' =>
-            betweenDoctypePublicAndSystemIdentifiers(T.advance(ctx), name, id, opens, chunkAcc)
-          case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Doctype(false, name, id.some, none))
-          case '"' =>
-            doctypeSystemIdentifierDoubleQuoted(T.advance(ctx), name, id.some, new StringBuilder, opens, chunkAcc)
-          case '\'' =>
-            doctypeSystemIdentifierSingleQuoted(T.advance(ctx), name, id.some, new StringBuilder, opens, chunkAcc)
-          case _ =>
-            bogusDoctype(ctx, true, name, id.some, none, opens, chunkAcc)
-        }
-      case None =>
-        Pull.output1(HtmlToken.Doctype(true, name, id.some, none))
-    }
-
-  def betweenDoctypePublicAndSystemIdentifiers(ctx: T.Context,
-                                               name: String,
-                                               id: String,
-                                               opens: List[String],
-                                               chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNext(ctx, chunkAcc) {
-      case Some((ctx, chunkAcc)) =>
-        (T.current(ctx): @switch) match {
-          case '\t' | '\r' | '\n' | ' ' =>
-            betweenDoctypePublicAndSystemIdentifiers(T.advance(ctx), name, id, opens, chunkAcc)
-          case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Doctype(false, name, id.some, none))
-          case '"' =>
-            doctypeSystemIdentifierDoubleQuoted(T.advance(ctx), name, id.some, new StringBuilder, opens, chunkAcc)
-          case '\'' =>
-            doctypeSystemIdentifierSingleQuoted(T.advance(ctx), name, id.some, new StringBuilder, opens, chunkAcc)
-          case _ =>
-            bogusDoctype(ctx, true, name, id.some, none, opens, chunkAcc)
-        }
-      case None =>
-        Pull.output1(HtmlToken.Doctype(true, name, id.some, none))
-    }
-
-  def afterDoctypeSystemKeyword(ctx: T.Context,
-                                name: String,
-                                opens: List[String],
-                                chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+                                   chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
           case '\t' | '\r' | '\n' | ' ' =>
             afterDoctypeSystemKeyword(T.advance(ctx), name, opens, chunkAcc)
           case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Doctype(false, name, none, none))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Doctype(false, name, none, none).some,
+                                      data(_, _, _)))
           case '"' =>
             doctypeSystemIdentifierDoubleQuoted(T.advance(ctx), name, none, new StringBuilder, opens, chunkAcc)
           case '\'' =>
@@ -837,15 +1001,20 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             bogusDoctype(ctx, true, name, none, none, opens, chunkAcc)
         }
       case None =>
-        Pull.output1(HtmlToken.Doctype(true, name, none, none))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Doctype(true, name, none, none).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def doctypeSystemIdentifierDoubleQuoted(ctx: T.Context,
-                                          name: String,
-                                          publicid: Option[String],
-                                          id: StringBuilder,
-                                          opens: List[String],
-                                          chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def doctypeSystemIdentifierDoubleQuoted[V](ctx: T.Context,
+                                             name: String,
+                                             publicid: Option[String],
+                                             id: StringBuilder,
+                                             opens: List[String],
+                                             chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
@@ -854,20 +1023,30 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
           case '\u0000' =>
             doctypeSystemIdentifierDoubleQuoted(T.advance(ctx), name, publicid, id.addOne('\ufffd'), opens, chunkAcc)
           case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Doctype(true, name, publicid, id.result().some))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Doctype(true, name, publicid, id.result().some).some,
+                                      data(_, _, _)))
           case c =>
             doctypeSystemIdentifierDoubleQuoted(T.advance(ctx), name, publicid, id.addOne(c), opens, chunkAcc)
         }
       case None =>
-        Pull.output1(HtmlToken.Doctype(true, name, publicid, id.result().some))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Doctype(true, name, publicid, id.result().some).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def doctypeSystemIdentifierSingleQuoted(ctx: T.Context,
-                                          name: String,
-                                          publicid: Option[String],
-                                          id: StringBuilder,
-                                          opens: List[String],
-                                          chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def doctypeSystemIdentifierSingleQuoted[V](ctx: T.Context,
+                                             name: String,
+                                             publicid: Option[String],
+                                             id: StringBuilder,
+                                             opens: List[String],
+                                             chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
@@ -876,120 +1055,183 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
           case '\u0000' =>
             doctypeSystemIdentifierSingleQuoted(T.advance(ctx), name, publicid, id.addOne('\ufffd'), opens, chunkAcc)
           case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Doctype(true, name, publicid, id.result().some))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Doctype(true, name, publicid, id.result().some).some,
+                                      data(_, _, _)))
           case c =>
             doctypeSystemIdentifierSingleQuoted(T.advance(ctx), name, publicid, id.addOne(c), opens, chunkAcc)
         }
       case None =>
-        Pull.output1(HtmlToken.Doctype(true, name, publicid, id.result().some))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Doctype(true, name, publicid, id.result().some).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def afterDoctypeSystemIdentifier(ctx: T.Context,
-                                   name: String,
-                                   publicid: Option[String],
-                                   systemid: String,
-                                   opens: List[String],
-                                   chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def afterDoctypeSystemIdentifier[V](ctx: T.Context,
+                                      name: String,
+                                      publicid: Option[String],
+                                      systemid: String,
+                                      opens: List[String],
+                                      chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
           case '\t' | '\r' | '\n' | ' ' =>
             afterDoctypeSystemIdentifier(T.advance(ctx), name, publicid, systemid, opens, chunkAcc)
           case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Doctype(false, name, publicid, systemid.some))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Doctype(false, name, publicid, systemid.some).some,
+                                      data(_, _, _)))
           case _ =>
             bogusDoctype(ctx, false, name, publicid, systemid.some, opens, chunkAcc)
         }
       case None =>
-        Pull.output1(HtmlToken.Doctype(true, name, publicid, systemid.some))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Doctype(true, name, publicid, systemid.some).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def bogusDoctype(ctx: T.Context,
-                   forceQuirks: Boolean,
-                   name: String,
-                   publicid: Option[String],
-                   systemid: Option[String],
-                   opens: List[String],
-                   chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def bogusDoctype[V](ctx: T.Context,
+                      forceQuirks: Boolean,
+                      name: String,
+                      publicid: Option[String],
+                      systemid: Option[String],
+                      opens: List[String],
+                      chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
           case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Doctype(forceQuirks, name, publicid, systemid))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Doctype(forceQuirks, name, publicid, systemid).some,
+                                      data(_, _, _)))
           case _ =>
             bogusDoctype(T.advance(ctx), forceQuirks, name, publicid, systemid, opens, chunkAcc)
         }
       case None =>
-        Pull.output1(HtmlToken.Doctype(forceQuirks, name, publicid, systemid))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Doctype(forceQuirks, name, publicid, systemid).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def cdataSection(ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def cdataSection[V](ctx: T.Context,
+                      opens: List[String],
+                      chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case ']' => cdataSectionBracket(T.advance(ctx), opens, chunkAcc)
-        case c   => cdataSection(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+        case c =>
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character(c).some,
+                                    cdataSection(_, _, _)))
       }
     }
 
-  def cdataSectionBracket(ctx: T.Context,
-                          opens: List[String],
-                          chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def cdataSectionBracket[V](ctx: T.Context,
+                             opens: List[String],
+                             chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
           case ']' => cdataSectionEnd(ctx, opens, chunkAcc)
-          case _   => cdataSection(ctx, opens, chunkAcc += HtmlToken.Character(']'))
+          case _ =>
+            Pull.pure(
+              Pulled[F, T.Context, V](ctx, chunkAcc, opens, HtmlToken.Character(']').some, cdataSection(_, _, _)))
         }
       case None =>
-        cdataSection(T.emptyContext, opens, new ListBuffer += HtmlToken.Character(']'))
+        Pull.pure(Pulled(T.emptyContext, new ListBuffer, opens, HtmlToken.Character(']').some, cdataSection(_, _, _)))
     }
 
-  def cdataSectionEnd(ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def cdataSectionEnd[V](ctx: T.Context,
+                         opens: List[String],
+                         chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
-          case ']' => cdataSectionEnd(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(']'))
+          case ']' =>
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Character(']').some,
+                                      cdataSectionEnd(_, _, _)))
           case '>' => data(T.advance(ctx), opens, chunkAcc)
-          case _   => cdataSection(ctx, opens, chunkAcc ++= List(HtmlToken.Character(']'), HtmlToken.Character(']')))
+          case _ =>
+            emitAll[V](List(HtmlToken.Character(']'), HtmlToken.Character(']')), cdataSection(_, _, _))(ctx,
+                                                                                                        opens,
+                                                                                                        chunkAcc)
         }
       case None =>
-        cdataSection(T.emptyContext, opens, new ListBuffer ++= List(HtmlToken.Character(']'), HtmlToken.Character(']')))
+        emitAll[V](List(HtmlToken.Character(']'), HtmlToken.Character(']')), cdataSection(_, _, _))(T.emptyContext,
+                                                                                                    opens,
+                                                                                                    new ListBuffer)
     }
 
-  def commentStart(ctx: T.Context,
-                   content: StringBuilder,
-                   opens: List[String],
-                   chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def commentStart[V](ctx: T.Context,
+                      content: StringBuilder,
+                      opens: List[String],
+                      chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '-' =>
           commentStartDash(T.advance(ctx), content, opens, chunkAcc)
         case '>' =>
-          data(T.advance(ctx), opens, chunkAcc += HtmlToken.Comment(content.result()))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Comment(content.result()).some,
+                                    data(_, _, _)))
         case _ =>
           comment(ctx, content, opens, chunkAcc)
       }
     }
 
-  def commentStartDash(ctx: T.Context,
-                       content: StringBuilder,
-                       opens: List[String],
-                       chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def commentStartDash[V](ctx: T.Context,
+                          content: StringBuilder,
+                          opens: List[String],
+                          chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '-' =>
           commentEnd(T.advance(ctx), content, opens, chunkAcc)
         case '>' =>
-          data(T.advance(ctx), opens, chunkAcc += HtmlToken.Comment(content.result()))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Comment(content.result()).some,
+                                    data(_, _, _)))
         case _ =>
           comment(ctx, content.addOne('-'), opens, chunkAcc)
       }
     }
 
-  def comment(ctx: T.Context,
-              content: StringBuilder,
-              opens: List[String],
-              chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def comment[V](ctx: T.Context,
+                 content: StringBuilder,
+                 opens: List[String],
+                 chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
@@ -1003,14 +1245,19 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             comment(T.advance(ctx), content.addOne(c), opens, chunkAcc)
         }
       case None =>
-        Pull.output1(HtmlToken.Comment(content.result()))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Comment(content.result()).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def commentLessThanSign(ctx: T.Context,
-                          content: StringBuilder,
-                          opens: List[String],
-                          chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def commentLessThanSign[V](ctx: T.Context,
+                             content: StringBuilder,
+                             opens: List[String],
+                             chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '!' =>
           commentLessThanSignBang(T.advance(ctx), content.addOne('!'), opens, chunkAcc)
@@ -1021,11 +1268,11 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
       }
     }
 
-  def commentLessThanSignBang(ctx: T.Context,
-                              content: StringBuilder,
-                              opens: List[String],
-                              chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def commentLessThanSignBang[V](ctx: T.Context,
+                                 content: StringBuilder,
+                                 opens: List[String],
+                                 chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '-' =>
           commentLessThanSignBangDash(T.advance(ctx), content, opens, chunkAcc)
@@ -1034,11 +1281,11 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
       }
     }
 
-  def commentLessThanSignBangDash(ctx: T.Context,
-                                  content: StringBuilder,
-                                  opens: List[String],
-                                  chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def commentLessThanSignBangDash[V](ctx: T.Context,
+                                     content: StringBuilder,
+                                     opens: List[String],
+                                     chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '-' =>
           commentLessThanSignBangDashDash(T.advance(ctx), content, opens, chunkAcc)
@@ -1047,10 +1294,10 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
       }
     }
 
-  def commentLessThanSignBangDashDash(ctx: T.Context,
-                                      content: StringBuilder,
-                                      opens: List[String],
-                                      chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def commentLessThanSignBangDashDash[V](ctx: T.Context,
+                                         content: StringBuilder,
+                                         opens: List[String],
+                                         chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
@@ -1063,10 +1310,10 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
         commentEnd(T.emptyContext, content, opens, new ListBuffer)
     }
 
-  def commentEndDash(ctx: T.Context,
-                     content: StringBuilder,
-                     opens: List[String],
-                     chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def commentEndDash[V](ctx: T.Context,
+                        content: StringBuilder,
+                        opens: List[String],
+                        chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
@@ -1076,18 +1323,28 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             comment(ctx, content.addOne('-'), opens, chunkAcc)
         }
       case None =>
-        Pull.output1(HtmlToken.Comment(content.result()))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Comment(content.result()).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def commentEnd(ctx: T.Context,
-                 content: StringBuilder,
-                 opens: List[String],
-                 chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def commentEnd[V](ctx: T.Context,
+                    content: StringBuilder,
+                    opens: List[String],
+                    chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
           case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Comment(content.result()))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Comment(content.result()).some,
+                                      data(_, _, _)))
           case '!' =>
             commentEndBang(T.advance(ctx), content, opens, chunkAcc)
           case '-' =>
@@ -1096,83 +1353,112 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             comment(ctx, content.addAll("--"), opens, chunkAcc)
         }
       case None =>
-        Pull.output1(HtmlToken.Comment(content.result()))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Comment(content.result()).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def commentEndBang(ctx: T.Context,
-                     content: StringBuilder,
-                     opens: List[String],
-                     chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
+  def commentEndBang[V](ctx: T.Context,
+                        content: StringBuilder,
+                        opens: List[String],
+                        chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
     ensureNext(ctx, chunkAcc) {
       case Some((ctx, chunkAcc)) =>
         (T.current(ctx): @switch) match {
           case '-' =>
             commentEndDash(ctx, content.addAll("--!"), opens, chunkAcc)
           case '>' =>
-            data(T.advance(ctx), opens, chunkAcc += HtmlToken.Comment(content.result()))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Comment(content.result()).some,
+                                      data(_, _, _)))
         }
       case None =>
-        Pull.output1(HtmlToken.Comment(content.result()))
+        Pull.pure(
+          Pulled[F, T.Context, V](T.emptyContext,
+                                  new ListBuffer,
+                                  opens,
+                                  HtmlToken.Comment(content.result()).some,
+                                  (_, opens, _) => done(opens)))
     }
 
-  def rcdataKont(opens: List[String])(ctx: T.Context, chunkAcc: ListBuffer[HtmlToken], toFlush: String) =
-    rcdata(ctx, opens, chunkAcc ++= toFlush.map(HtmlToken.Character(_)))
+  def rcdataKont[V](opens: List[String])(ctx: T.Context,
+                                         chunkAcc: ListBuffer[V],
+                                         toFlush: String): Pull[F, V, Pulled[F, T.Context, V]] =
+    emitAll(toFlush.map(HtmlToken.Character(_)).toList, rcdata[V](_, _, _))(ctx, opens, chunkAcc)
 
-  def rcdata(ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def rcdata[V](ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '&' =>
-          characterReference(T.advance(ctx), rcdataKont(opens), chunkAcc)
+          characterReference(T.advance(ctx), rcdataKont[V](opens), chunkAcc)
         case '<' => rcdataLessThanSign(T.advance(ctx), opens, chunkAcc)
         case '\u0000' =>
-          rcdata(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('\ufffd'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('\ufffd').some,
+                                    rcdata(_, _, _)))
         case c =>
-          rcdata(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.Character(c).some, rcdata(_, _, _)))
       }
     }
 
-  def rawText(ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def rawText[V](ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '&' => characterReference(T.advance(ctx), rcdataKont(opens), chunkAcc)
         case '<' => rawTextLessThanSign(T.advance(ctx), opens, chunkAcc)
         case '\u0000' =>
-          rcdata(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('\ufffd'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('\ufffd').some,
+                                    rcdata(_, _, _)))
         case c =>
-          rcdata(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.Character(c).some, rcdata(_, _, _)))
       }
     }
 
-  def rcdataLessThanSign(ctx: T.Context,
-                         opens: List[String],
-                         chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def rcdataLessThanSign[V](ctx: T.Context,
+                            opens: List[String],
+                            chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '/' =>
           rcdataEndTagOpen(T.advance(ctx), new StringBuilder, opens, chunkAcc)
         case c =>
-          rcdata(ctx, opens, chunkAcc += HtmlToken.Character('<'))
+          Pull.pure(Pulled[F, T.Context, V](ctx, chunkAcc, opens, HtmlToken.Character('<').some, rcdata(_, _, _)))
       }
     }
 
-  def rcdataEndTagOpen(ctx: T.Context,
-                       buffer: StringBuilder,
-                       opens: List[String],
-                       chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def rcdataEndTagOpen[V](ctx: T.Context,
+                          buffer: StringBuilder,
+                          opens: List[String],
+                          chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       val c = T.current(ctx)
       if (isAsciiAlpha(c)) {
         rcdataEndTagName(ctx, new StringBuilder, opens, chunkAcc)
       } else {
-        rcdata(ctx, opens, chunkAcc ++= List(HtmlToken.Character('<'), HtmlToken.Character('/')))
+        emitAll[V](List(HtmlToken.Character('<'), HtmlToken.Character('/')), rcdata(_, _, _))(ctx, opens, chunkAcc)
       }
     }
 
-  def rcdataEndTagName(ctx: T.Context,
-                       name: StringBuilder,
-                       opens: List[String],
-                       chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def rcdataEndTagName[V](ctx: T.Context,
+                          name: StringBuilder,
+                          opens: List[String],
+                          chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '\t' | '\r' | '\n' | ' ' =>
           val n = name.result()
@@ -1180,10 +1466,9 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             case open :: opens if open == n =>
               beforeAttributeName(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
-              rcdata(
-                ctx,
-                opens,
-                chunkAcc += HtmlToken.Character('<') += HtmlToken.Character('/') ++= name.map(HtmlToken.Character(_)))
+              emitAll[V](
+                HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                rcdata(_, _, _))(ctx, opens, chunkAcc)
           }
         case '/' =>
           val n = name.result()
@@ -1191,61 +1476,58 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             case open :: opens if open == n =>
               selfClosingStartTag(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
-              rcdata(
-                ctx,
-                opens,
-                chunkAcc += HtmlToken.Character('<') += HtmlToken.Character('/') ++= name.map(HtmlToken.Character(_)))
+              emitAll[V](
+                HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                rcdata(_, _, _))(ctx, opens, chunkAcc)
           }
         case '>' =>
           val n = name.result()
           opens match {
             case open :: opens if open == n =>
-              data(T.advance(ctx), opens, chunkAcc += HtmlToken.EndTag(n))
+              Pull.pure(
+                Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.EndTag(n).some, data(_, _, _)))
             case _ =>
-              rcdata(
-                ctx,
-                opens,
-                chunkAcc += HtmlToken.Character('<') += HtmlToken.Character('/') ++= name.map(HtmlToken.Character(_)))
+              emitAll[V](
+                HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                rcdata(_, _, _))(ctx, opens, chunkAcc)
           }
         case c =>
           if (isAsciiAlpha(c))
             rcdataEndTagName(T.advance(ctx), name.addOne(c.toLower), opens, chunkAcc)
           else
-            rcdata(
-              ctx,
-              opens,
-              chunkAcc += HtmlToken.Character('<') += HtmlToken.Character('/') ++= name.map(HtmlToken.Character(_)))
+            emitAll[V](HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                       rcdata(_, _, _))(ctx, opens, chunkAcc)
       }
     }
 
-  def rawTextLessThanSign(ctx: T.Context,
-                          opens: List[String],
-                          chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def rawTextLessThanSign[V](ctx: T.Context,
+                             opens: List[String],
+                             chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '/' =>
           rawTextEndTagOpen(T.advance(ctx), opens, chunkAcc)
         case c =>
-          rawText(ctx, opens, chunkAcc += HtmlToken.Character('<'))
+          Pull.pure(Pulled[F, T.Context, V](ctx, chunkAcc, opens, HtmlToken.Character('<').some, rawText(_, _, _)))
       }
     }
 
-  def rawTextEndTagOpen(ctx: T.Context,
-                        opens: List[String],
-                        chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def rawTextEndTagOpen[V](ctx: T.Context,
+                           opens: List[String],
+                           chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       val c = T.current(ctx)
       if (isAsciiAlpha(c))
         rawTextEndTagName(ctx, new StringBuilder, opens, chunkAcc)
       else
-        rawText(ctx, opens, chunkAcc ++= List(HtmlToken.Character('<'), HtmlToken.Character('/')))
+        emitAll[V](List(HtmlToken.Character('<'), HtmlToken.Character('/')), rawText(_, _, _))(ctx, opens, chunkAcc)
     }
 
-  def rawTextEndTagName(ctx: T.Context,
-                        name: StringBuilder,
-                        opens: List[String],
-                        chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def rawTextEndTagName[V](ctx: T.Context,
+                           name: StringBuilder,
+                           opens: List[String],
+                           chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '\t' | '\r' | '\n' | ' ' =>
           val n = name.result()
@@ -1253,10 +1535,9 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             case open :: opens if open == n =>
               beforeAttributeName(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
-              rawText(
-                ctx,
-                opens,
-                chunkAcc += HtmlToken.Character('<') += HtmlToken.Character('/') ++= name.map(HtmlToken.Character(_)))
+              emitAll[V](
+                HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                rawText(_, _, _))(ctx, opens, chunkAcc)
           }
         case '/' =>
           val n = name.result()
@@ -1264,64 +1545,62 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             case open :: opens if open == n =>
               selfClosingStartTag(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
-              rawText(
-                ctx,
-                opens,
-                chunkAcc += HtmlToken.Character('<') += HtmlToken.Character('/') ++= name.map(HtmlToken.Character(_)))
+              emitAll[V](
+                HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                rawText(_, _, _))(ctx, opens, chunkAcc)
           }
         case '>' =>
           val n = name.result()
           opens match {
             case open :: opens if open == n =>
-              data(T.advance(ctx), opens, chunkAcc += HtmlToken.EndTag(n))
+              Pull.pure(
+                Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.EndTag(n).some, data(_, _, _)))
             case _ =>
-              rawText(
-                ctx,
-                opens,
-                chunkAcc += HtmlToken.Character('<') += HtmlToken.Character('/') ++= name.map(HtmlToken.Character(_)))
+              emitAll[V](
+                HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                rawText(_, _, _))(ctx, opens, chunkAcc)
           }
         case c =>
           if (isAsciiAlpha(c))
             rawTextEndTagName(T.advance(ctx), name.addOne(c.toLower), opens, chunkAcc)
           else
-            rawText(
-              ctx,
-              opens,
-              chunkAcc += HtmlToken.Character('<') += HtmlToken.Character('/') ++= name.map(HtmlToken.Character(_)))
+            emitAll[V](HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                       rawText(_, _, _))(ctx, opens, chunkAcc)
       }
     }
 
-  def scriptDataLessThanSign(ctx: T.Context,
-                             opens: List[String],
-                             chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataLessThanSign[V](ctx: T.Context,
+                                opens: List[String],
+                                chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '/' =>
           scriptDataEndTagOpen(T.advance(ctx), opens, chunkAcc)
         case '!' =>
-          scriptDataEscapeStart(T.advance(ctx),
-                                opens,
-                                chunkAcc ++= List(HtmlToken.Character('<'), HtmlToken.Character('!')))
+          emitAll[V](List(HtmlToken.Character('<'), HtmlToken.Character('!')), scriptDataEscapeStart(_, _, _))(
+            T.advance(ctx),
+            opens,
+            chunkAcc)
         case c =>
-          scriptData(ctx, opens, chunkAcc += HtmlToken.Character('<'))
+          Pull.pure(Pulled[F, T.Context, V](ctx, chunkAcc, opens, HtmlToken.Character('<').some, scriptData(_, _, _)))
       }
     }
 
-  def scriptDataEndTagOpen(ctx: T.Context,
-                           opens: List[String],
-                           chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataEndTagOpen[V](ctx: T.Context,
+                              opens: List[String],
+                              chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       val c = T.current(ctx)
       if (isAsciiAlpha(c))
         scriptDataEndTagName(ctx, new StringBuilder, opens, chunkAcc)
       else
-        scriptData(ctx, opens, chunkAcc ++= List(HtmlToken.Character('<'), HtmlToken.Character('/')))
+        emitAll[V](List(HtmlToken.Character('<'), HtmlToken.Character('/')), scriptData(_, _, _))(ctx, opens, chunkAcc)
     }
 
-  def scriptDataEscapeStart(ctx: T.Context,
-                            opens: List[String],
-                            chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataEscapeStart[V](ctx: T.Context,
+                               opens: List[String],
+                               chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '-' =>
           scriptDataEscapeStartDash(T.advance(ctx), opens, chunkAcc)
@@ -1330,97 +1609,154 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
       }
     }
 
-  def scriptDataEscapeStartDash(ctx: T.Context,
-                                opens: List[String],
-                                chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataEscapeStartDash[V](ctx: T.Context,
+                                   opens: List[String],
+                                   chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '-' =>
-          scriptDataEscapeStartDash(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('-'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('-').some,
+                                    scriptDataEscapeStartDash(_, _, _)))
         case _ =>
           scriptData(ctx, opens, chunkAcc)
       }
     }
 
-  def scriptDataEscaped(ctx: T.Context,
-                        opens: List[String],
-                        chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataEscaped[V](ctx: T.Context,
+                           opens: List[String],
+                           chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '-' =>
-          scriptDataEscapedDash(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('-'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('-').some,
+                                    scriptDataEscapedDash(_, _, _)))
         case '<' =>
           scriptDataEscapedLessThanSign(T.advance(ctx), opens, chunkAcc)
         case '\u0000' =>
-          scriptDataEscaped(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('\ufffd'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('\ufffd').some,
+                                    scriptDataEscaped(_, _, _)))
         case c =>
-          scriptDataEscaped(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character(c).some,
+                                    scriptDataEscaped(_, _, _)))
       }
     }
 
-  def scriptDataEscapedDash(ctx: T.Context,
-                            opens: List[String],
-                            chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataEscapedDash[V](ctx: T.Context,
+                               opens: List[String],
+                               chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '-' =>
-          scriptDataEscapedDashDash(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('-'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('-').some,
+                                    scriptDataEscapedDashDash(_, _, _)))
         case '<' =>
           scriptDataEscapedLessThanSign(T.advance(ctx), opens, chunkAcc)
         case '\u0000' =>
-          scriptDataEscaped(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('\ufffd'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('\ufffd').some,
+                                    scriptDataEscaped(_, _, _)))
         case c =>
-          scriptDataEscaped(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character(c).some,
+                                    scriptDataEscaped(_, _, _)))
       }
     }
 
-  def scriptDataEscapedDashDash(ctx: T.Context,
-                                opens: List[String],
-                                chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataEscapedDashDash[V](ctx: T.Context,
+                                   opens: List[String],
+                                   chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '-' =>
-          scriptDataEscapedDashDash(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('-'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('-').some,
+                                    scriptDataEscapedDashDash(_, _, _)))
         case '<' =>
           scriptDataEscapedLessThanSign(T.advance(ctx), opens, chunkAcc)
         case '>' =>
-          scriptData(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('>'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('>').some,
+                                    scriptData(_, _, _)))
         case c =>
-          scriptDataEscaped(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character(c).some,
+                                    scriptDataEscaped(_, _, _)))
       }
     }
 
-  def scriptDataEscapedLessThanSign(ctx: T.Context,
-                                    opens: List[String],
-                                    chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataEscapedLessThanSign[V](ctx: T.Context,
+                                       opens: List[String],
+                                       chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '/' =>
           scriptDataEscapedEndTagOpen(T.advance(ctx), opens, chunkAcc)
         case c =>
           if (isAsciiAlpha(c))
-            scriptDataDoubleEscapeStart(ctx, new StringBuilder, opens, chunkAcc += HtmlToken.Character('<'))
+            Pull.pure(
+              Pulled[F, T.Context, V](ctx,
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Character('<').some,
+                                      scriptDataDoubleEscapeStart(_, new StringBuilder, _, _)))
           else
-            scriptDataEscaped(ctx, opens, chunkAcc += HtmlToken.Character('<'))
+            Pull.pure(
+              Pulled[F, T.Context, V](ctx, chunkAcc, opens, HtmlToken.Character('<').some, scriptDataEscaped(_, _, _)))
       }
     }
 
-  def scriptDataEscapedEndTagOpen(ctx: T.Context,
-                                  opens: List[String],
-                                  chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataEscapedEndTagOpen[V](ctx: T.Context,
+                                     opens: List[String],
+                                     chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       val c = T.current(ctx)
       if (isAsciiAlpha(c))
         scriptDataEscapedEndTagName(ctx, new StringBuilder, opens, chunkAcc)
       else
-        scriptDataEscaped(ctx, opens, chunkAcc += HtmlToken.Character('<'))
+        Pull.pure(
+          Pulled[F, T.Context, V](ctx, chunkAcc, opens, HtmlToken.Character('<').some, scriptDataEscaped(_, _, _)))
     }
 
-  def scriptDataEscapedEndTagName(ctx: T.Context,
-                                  name: StringBuilder,
-                                  opens: List[String],
-                                  chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataEscapedEndTagName[V](ctx: T.Context,
+                                     name: StringBuilder,
+                                     opens: List[String],
+                                     chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '\t' | '\r' | '\n' | ' ' =>
           val n = name.result()
@@ -1428,10 +1764,9 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             case open :: opens if open == n =>
               beforeAttributeName(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
-              scriptDataEscaped(ctx,
-                                opens,
-                                chunkAcc ++= List(HtmlToken.Character('<'), HtmlToken.Character('/')) ++= name.map(
-                                  HtmlToken.Character(_)))
+              emitAll[V](
+                HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                scriptDataEscaped(_, _, _))(ctx, opens, chunkAcc)
           }
         case '/' =>
           val n = name.result()
@@ -1439,149 +1774,243 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             case open :: opens if open == n =>
               selfClosingStartTag(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
-              scriptDataEscaped(ctx,
-                                opens,
-                                chunkAcc ++= List(HtmlToken.Character('<'), HtmlToken.Character('/')) ++= name.map(
-                                  HtmlToken.Character(_)))
+              emitAll[V](
+                HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                scriptDataEscaped(_, _, _))(ctx, opens, chunkAcc)
           }
         case '>' =>
           val n = name.result()
           opens match {
             case open :: opens if open == n =>
-              data(T.advance(ctx), opens, chunkAcc += HtmlToken.EndTag(n))
+              Pull.pure(
+                Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.EndTag(n).some, data(_, _, _)))
             case _ =>
-              scriptDataEscaped(ctx,
-                                opens,
-                                chunkAcc ++= List(HtmlToken.Character('<'), HtmlToken.Character('/')) ++= name.map(
-                                  HtmlToken.Character(_)))
+              emitAll[V](
+                HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                scriptDataEscaped(_, _, _))(ctx, opens, chunkAcc)
           }
         case c =>
           if (isAsciiAlpha(c))
             scriptDataEscapedEndTagName(T.advance(ctx), name.addOne(c.toLower), opens, chunkAcc)
           else
-            scriptDataEscaped(ctx,
-                              opens,
-                              chunkAcc ++= List(HtmlToken.Character('<'), HtmlToken.Character('/')) ++= name.map(
-                                HtmlToken.Character(_)))
+            emitAll[V](HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                       scriptDataEscaped(_, _, _))(ctx, opens, chunkAcc)
       }
     }
 
-  def scriptDataDoubleEscapeStart(ctx: T.Context,
-                                  buffer: StringBuilder,
-                                  opens: List[String],
-                                  chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataDoubleEscapeStart[V](ctx: T.Context,
+                                     buffer: StringBuilder,
+                                     opens: List[String],
+                                     chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       val c = T.current(ctx)
       (c: @switch) match {
         case '\t' | '\r' | '\n' | ' ' | '/' | '>' =>
           val b = buffer.result()
           (b: @switch) match {
             case "script" =>
-              scriptDataDoubleEscaped(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+              Pull.pure(
+                Pulled[F, T.Context, V](T.advance(ctx),
+                                        chunkAcc,
+                                        opens,
+                                        HtmlToken.Character(c).some,
+                                        scriptDataDoubleEscaped(_, _, _)))
             case _ =>
-              scriptDataEscaped(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+              Pull.pure(
+                Pulled[F, T.Context, V](T.advance(ctx),
+                                        chunkAcc,
+                                        opens,
+                                        HtmlToken.Character(c).some,
+                                        scriptDataEscaped(_, _, _)))
           }
         case c =>
           if (isAsciiAlpha(c))
-            scriptDataDoubleEscapeStart(T.advance(ctx),
-                                        buffer.addOne(c.toLower),
-                                        opens,
-                                        chunkAcc += HtmlToken.Character(c))
+            Pull.pure(
+              Pulled(T.advance(ctx),
+                     chunkAcc,
+                     opens,
+                     HtmlToken.Character(c).some,
+                     scriptDataDoubleEscapeStart(_, buffer.addOne(c.toLower), _, _)))
           else
             scriptDataEscaped(ctx, opens, chunkAcc)
       }
     }
 
-  def scriptDataDoubleEscaped(ctx: T.Context,
-                              opens: List[String],
-                              chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataDoubleEscaped[V](ctx: T.Context,
+                                 opens: List[String],
+                                 chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '-' =>
-          scriptDataDoubleEscapedDash(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('-'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('-').some,
+                                    scriptDataDoubleEscapedDash(_, _, _)))
         case '<' =>
-          scriptDataDoubleEscapedLessThanSign(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('<'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('<').some,
+                                    scriptDataDoubleEscapedLessThanSign(_, _, _)))
         case '\u0000' =>
-          scriptDataDoubleEscaped(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('\ufffd'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('\ufffd').some,
+                                    scriptDataDoubleEscaped(_, _, _)))
         case c =>
-          scriptDataDoubleEscaped(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character(c).some,
+                                    scriptDataDoubleEscaped(_, _, _)))
       }
     }
 
-  def scriptDataDoubleEscapedDash(ctx: T.Context,
-                                  opens: List[String],
-                                  chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataDoubleEscapedDash[V](ctx: T.Context,
+                                     opens: List[String],
+                                     chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '-' =>
-          scriptDataDoubleEscapedDashDash(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('-'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('-').some,
+                                    scriptDataDoubleEscapedDashDash(_, _, _)))
         case '<' =>
-          scriptDataDoubleEscapedLessThanSign(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('<'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('<').some,
+                                    scriptDataDoubleEscapedLessThanSign(_, _, _)))
         case '\u0000' =>
-          scriptDataDoubleEscaped(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('\ufffd'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('\ufffd').some,
+                                    scriptDataDoubleEscaped(_, _, _)))
         case c =>
-          scriptDataDoubleEscaped(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character(c).some,
+                                    scriptDataDoubleEscaped(_, _, _)))
       }
     }
 
-  def scriptDataDoubleEscapedLessThanSign(ctx: T.Context,
-                                          opens: List[String],
-                                          chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataDoubleEscapedLessThanSign[V](ctx: T.Context,
+                                             opens: List[String],
+                                             chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '/' =>
-          scriptDataDoubleEscapeEnd(T.advance(ctx), new StringBuilder, opens, chunkAcc += HtmlToken.Character('/'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('/').some,
+                                    scriptDataDoubleEscapeEnd(_, new StringBuilder, _, _)))
         case _ =>
           scriptDataDoubleEscaped(ctx, opens, chunkAcc)
       }
     }
 
-  def scriptDataDoubleEscapeEnd(ctx: T.Context,
-                                buffer: StringBuilder,
-                                opens: List[String],
-                                chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataDoubleEscapeEnd[V](ctx: T.Context,
+                                   buffer: StringBuilder,
+                                   opens: List[String],
+                                   chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       val c = T.current(ctx)
       (c: @switch) match {
         case '\t' | '\r' | '\n' | ' ' | '/' | '>' =>
           val b = buffer.result()
           (b: @switch) match {
             case "script" =>
-              scriptDataEscaped(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+              Pull.pure(
+                Pulled[F, T.Context, V](T.advance(ctx),
+                                        chunkAcc,
+                                        opens,
+                                        HtmlToken.Character(c).some,
+                                        scriptDataEscaped(_, _, _)))
             case _ =>
-              scriptDataDoubleEscaped(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+              Pull.pure(
+                Pulled[F, T.Context, V](T.advance(ctx),
+                                        chunkAcc,
+                                        opens,
+                                        HtmlToken.Character(c).some,
+                                        scriptDataDoubleEscaped(_, _, _)))
           }
         case _ =>
           if (isAsciiAlpha(c))
-            scriptDataDoubleEscapeEnd(T.advance(ctx), buffer.addOne(c), opens, chunkAcc += HtmlToken.Character(c))
+            Pull.pure(
+              Pulled[F, T.Context, V](T.advance(ctx),
+                                      chunkAcc,
+                                      opens,
+                                      HtmlToken.Character(c).some,
+                                      scriptDataDoubleEscapeEnd(_, buffer.addOne(c), _, _)))
           else
             scriptDataDoubleEscaped(ctx, opens, chunkAcc)
       }
     }
 
-  def scriptDataDoubleEscapedDashDash(ctx: T.Context,
-                                      opens: List[String],
-                                      chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataDoubleEscapedDashDash[V](ctx: T.Context,
+                                         opens: List[String],
+                                         chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '-' =>
-          scriptDataDoubleEscapedDashDash(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('-'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('-').some,
+                                    scriptDataDoubleEscapedDashDash(_, _, _)))
         case '<' =>
-          scriptDataDoubleEscapedLessThanSign(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('<'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('<').some,
+                                    scriptDataDoubleEscapedLessThanSign(_, _, _)))
         case '>' =>
-          scriptData(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('>'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('>').some,
+                                    scriptData(_, _, _)))
         case '\u0000' =>
-          scriptDataDoubleEscaped(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('\ufffd'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('\ufffd').some,
+                                    scriptDataDoubleEscaped(_, _, _)))
         case c =>
-          scriptDataDoubleEscaped(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character(c).some,
+                                    scriptDataDoubleEscaped(_, _, _)))
       }
     }
 
-  def scriptDataEndTagName(ctx: T.Context,
-                           name: StringBuilder,
-                           opens: List[String],
-                           chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptDataEndTagName[V](ctx: T.Context,
+                              name: StringBuilder,
+                              opens: List[String],
+                              chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '\t' | '\r' | '\n' | ' ' =>
           val n = name.result()
@@ -1589,10 +2018,9 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             case open :: opens if open == n =>
               beforeAttributeName(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
-              scriptData(ctx,
-                         opens,
-                         chunkAcc ++= List(HtmlToken.Character('<'), HtmlToken.Character('/')) ++= name.map(
-                           HtmlToken.Character(_)))
+              emitAll[V](
+                HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                scriptData(_, _, _))(ctx, opens, chunkAcc)
           }
         case '/' =>
           val n = name.result()
@@ -1600,86 +2028,107 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
             case open :: opens if open == n =>
               selfClosingStartTag(T.advance(ctx), false, n, Map.empty, opens, chunkAcc)
             case _ =>
-              scriptData(ctx,
-                         opens,
-                         chunkAcc ++= List(HtmlToken.Character('<'), HtmlToken.Character('/')) ++= name.map(
-                           HtmlToken.Character(_)))
+              emitAll[V](
+                HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                scriptData(_, _, _))(ctx, opens, chunkAcc)
           }
         case '>' =>
           val n = name.result()
           opens match {
             case open :: opens if open == n =>
-              data(T.advance(ctx), opens, chunkAcc += HtmlToken.EndTag(n))
+              Pull.pure(
+                Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.EndTag(n).some, data(_, _, _)))
             case _ =>
-              scriptData(ctx,
-                         opens,
-                         chunkAcc ++= List(HtmlToken.Character('<'), HtmlToken.Character('/')) ++= name.map(
-                           HtmlToken.Character(_)))
+              emitAll[V](
+                HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                scriptData(_, _, _))(ctx, opens, chunkAcc)
           }
         case c =>
-          scriptData(
-            ctx,
-            opens,
-            chunkAcc ++= List(HtmlToken.Character('<'), HtmlToken.Character('/')) ++= name.map(HtmlToken.Character(_)))
+          emitAll[V](HtmlToken.Character('<') :: HtmlToken.Character('/') :: name.map(HtmlToken.Character(_)).toList,
+                     scriptData(_, _, _))(ctx, opens, chunkAcc)
       }
     }
 
-  def scriptData(ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def scriptData[V](ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '<' =>
           scriptDataLessThanSign(T.advance(ctx), opens, chunkAcc)
         case '\u0000' =>
-          scriptData(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('\ufffd'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('\ufffd').some,
+                                    scriptData(_, _, _)))
         case c =>
-          scriptData(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.Character(c).some, scriptData(_, _, _)))
       }
     }
 
-  def plainText(ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def plainText[V](ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '\u0000' =>
-          plainText(T.advance(ctx), opens, chunkAcc += HtmlToken.Character('\ufffd'))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx),
+                                    chunkAcc,
+                                    opens,
+                                    HtmlToken.Character('\ufffd').some,
+                                    plainText(_, _, _)))
         case c =>
-          plainText(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+          Pull.pure(
+            Pulled[F, T.Context, V](T.advance(ctx), chunkAcc, opens, HtmlToken.Character(c).some, plainText(_, _, _)))
       }
     }
 
-  def data(ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[HtmlToken]): Pull[F, HtmlToken, Unit] =
-    ensureNextOrDone(ctx, chunkAcc) { (ctx, chunkAcc) =>
+  def data[V](ctx: T.Context, opens: List[String], chunkAcc: ListBuffer[V]): Pull[F, V, Pulled[F, T.Context, V]] =
+    ensureNextOrDone(ctx, opens, chunkAcc) { (ctx, chunkAcc) =>
       (T.current(ctx): @switch) match {
         case '&' =>
-          def kont(ctx: T.Context, chunkAcc: ListBuffer[HtmlToken], toFlush: String) =
-            data(ctx, opens, chunkAcc ++= toFlush.map(HtmlToken.Character(_)))
+          def kont[V](ctx: T.Context, chunkAcc: ListBuffer[V], toFlush: String) =
+            emitAll[V](toFlush.map(HtmlToken.Character(_)).toList, data(_, _, _))(ctx, opens, chunkAcc)
 
           characterReference(T.advance(ctx), kont, chunkAcc)
         case '<' => tagOpen(T.advance(ctx), opens, chunkAcc)
         case '\u0000' =>
           data(T.advance(ctx), opens, chunkAcc)
         case c =>
-          data(T.advance(ctx), opens, chunkAcc += HtmlToken.Character(c))
+          Pull.pure(Pulled(T.advance(ctx), chunkAcc, opens, HtmlToken.Character(c).some, data(_, _, _)))
       }
     }
 
   def pipe: Pipe[F, T, HtmlToken] = { s =>
-    Stream.suspend(Stream.emit(T.create(s))).flatMap(data(_, Nil, new ListBuffer).stream)
+    Stream
+      .suspend(Stream.emit(T.create(s)))
+      .flatMap(ctx =>
+        Pull
+          .loop[F, HtmlToken, Pull[F, HtmlToken, Pulled[F, T.Context, HtmlToken]]] { pull =>
+            pull.flatMap {
+              case Pulled(ctx, chunkAcc, opens, Some(token), next) =>
+                Pull.pure(next(ctx, opens, chunkAcc += token).some)
+              case Pulled(_, _, _, None, _) =>
+                Pull.pure(None)
+            }
+          }(data(ctx, Nil, new ListBuffer))
+          .stream)
   }
 
-  private def isAsciiUpperAlpha(c: Char) =
+  private def isAsciiUpperAlpha[V](c: Char) =
     'A' <= c && c <= 'Z'
 
-  private def isAsciiAlpha(c: Char) =
+  private def isAsciiAlpha[V](c: Char) =
     ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
 
   private val hexdigits = "0123456789abcdef"
 
-  private def isAsciiHex(c: Char) =
+  private def isAsciiHex[V](c: Char) =
     hexdigits.indexOf(c.toLower) >= 0
 
   private val digits = "0123456789"
 
-  private def isAsciiDigit(c: Char) =
+  private def isAsciiDigit[V](c: Char) =
     digits.indexOf(c.toLower) >= 0
 
   private val nonchars = Set(0xfffe, 0xffff, 0x1fffe, 0x1ffff, 0x2fffe, 0x2ffff, 0x3fffe, 0x3ffff, 0x4fffe, 0x4ffff,
@@ -1687,10 +2136,10 @@ private[html] class HtmlTokenizer[F[_], T](implicit F: RaiseThrowable[F], T: Cha
                              0xafffe, 0xaffff, 0xbfffe, 0xbffff, 0xcfffe, 0xcffff, 0xdfffe, 0xdffff, 0xefffe, 0xeffff,
                              0xffffe, 0xfffff, 0x10fffe, 0x10ffff)
 
-  private def isNonCharacter(i: Int) =
+  private def isNonCharacter[V](i: Int) =
     (0xfdd0 <= i && i <= 0xfdef) || nonchars.contains(i)
 
-  private def isControl(i: Int) =
+  private def isControl[V](i: Int) =
     (0x0000 <= i && i <= 0x001f) || (0x007f <= i && i <= 0x009f)
 
   private val wspace = Set(0x0009, 0x000a, 0x000c, 0x000d, 0x0020)
