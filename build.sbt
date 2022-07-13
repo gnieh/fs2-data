@@ -121,6 +121,7 @@ val root = (project in file("."))
                                                                              jsonInterpolators.js,
                                                                              text.js,
                                                                              xml.js,
+                                                                             html.js,
                                                                              scalaXml.js),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
@@ -145,6 +146,8 @@ val root = (project in file("."))
     jsonInterpolators.js,
     xml.jvm,
     xml.js,
+    html.jvm,
+    html.js,
     scalaXml.jvm,
     scalaXml.js,
     cbor.jvm,
@@ -326,6 +329,20 @@ lazy val scalaXml = crossProject(JVMPlatform, JSPlatform)
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
   .dependsOn(xml % "compile->compile;test->test")
+
+lazy val html = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("html"))
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "fs2-data-html",
+    description := "Streaming HTML manipulation library"
+  )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+  .dependsOn(text)
 
 lazy val cbor = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)

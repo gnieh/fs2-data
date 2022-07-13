@@ -18,6 +18,8 @@ package fs2
 package data
 package text
 
+import cats.syntax.all._
+
 import scala.annotation.implicitNotFound
 
 import java.nio.charset.Charset
@@ -42,7 +44,7 @@ trait CharLikeChunks[F[_], In] {
   def needsPull(ctx: Context): Boolean
 
   /** Pulls the next chunk from the context. Returns `None` if stream is exhausted. */
-  def pullNext(ctx: Context): Pull[F, INothing, Option[Context]]
+  def pullNext(ctx: Context): Pull[F, Nothing, Option[Context]]
 
   /** Advances one character in the context.
     * This method is called for stepping through characters,
@@ -67,6 +69,12 @@ trait CharLikeChunks[F[_], In] {
     */
   def current(ctx: Context): Char
 
+  def pushback(ctx: Context, chars: String): Context
+
+  /** Creates an empty context, representing an empty stream. */
+  def emptyContext: Context =
+    create(Stream.empty)
+
 }
 
 private class CharLikeCharChunks[F[_]] extends CharLikeChunks[F, Char] {
@@ -80,7 +88,7 @@ private class CharLikeCharChunks[F[_]] extends CharLikeChunks[F, Char] {
   def needsPull(ctx: CharContext): Boolean =
     ctx.idx >= ctx.chunk.size
 
-  def pullNext(ctx: CharContext): Pull[F, INothing, Option[CharContext]] =
+  def pullNext(ctx: CharContext): Pull[F, Nothing, Option[CharContext]] =
     ctx.rest.pull.uncons.map(_.map { case (hd, tl) =>
       ctx.chunk = hd
       ctx.idx = 0
@@ -96,6 +104,12 @@ private class CharLikeCharChunks[F[_]] extends CharLikeChunks[F, Char] {
   def current(ctx: CharContext): Char =
     ctx.chunk(ctx.idx)
 
+  def pushback(ctx: Context, chars: String): CharContext = {
+    ctx.chunk = Chunk.seq(chars) ++ ctx.chunk.drop(ctx.idx)
+    ctx.idx = 0
+    ctx
+  }
+
 }
 
 private class CharLikeStringChunks[F[_]] extends CharLikeChunks[F, String] {
@@ -109,7 +123,7 @@ private class CharLikeStringChunks[F[_]] extends CharLikeChunks[F, String] {
   def needsPull(ctx: StringContext): Boolean =
     ctx.sidx >= ctx.string.size
 
-  def pullNext(ctx: StringContext): Pull[F, INothing, Option[StringContext]] =
+  def pullNext(ctx: StringContext): Pull[F, Nothing, Option[StringContext]] =
     ctx.rest.pull.uncons1.map(_.map { case (hd, tl) =>
       ctx.string = hd
       ctx.sidx = 0
@@ -124,6 +138,12 @@ private class CharLikeStringChunks[F[_]] extends CharLikeChunks[F, String] {
 
   def current(ctx: StringContext): Char =
     ctx.string(ctx.sidx)
+
+  def pushback(ctx: Context, chars: String): Context = {
+    ctx.string = chars + ctx.string.drop(ctx.sidx)
+    ctx.sidx = 0
+    ctx
+  }
 
 }
 
@@ -140,7 +160,7 @@ private class CharLikeSingleByteChunks[F[_]](charset: Charset) extends CharLikeC
   def needsPull(ctx: Context): Boolean =
     ctx.idx >= ctx.chunk.size
 
-  def pullNext(ctx: Context): Pull[F, INothing, Option[Context]] =
+  def pullNext(ctx: Context): Pull[F, Nothing, Option[Context]] =
     ctx.rest.pull.uncons.map(_.map { case (hd, tl) =>
       // This code is pure. The constructor replaces malformed input
       // with the charset default replacement string, so this never throws
@@ -157,6 +177,12 @@ private class CharLikeSingleByteChunks[F[_]](charset: Charset) extends CharLikeC
 
   def current(ctx: Context): Char =
     ctx.chunk(ctx.idx)
+
+  def pushback(ctx: Context, chars: String): Context = {
+    ctx.chunk = chars + ctx.chunk.drop(ctx.idx)
+    ctx.idx = 0
+    ctx
+  }
 
 }
 

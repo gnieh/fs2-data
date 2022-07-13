@@ -30,9 +30,10 @@ package object text {
         override type Context = stringsCharLike.Context
         override def create(s: Stream[F, Byte]): Context = stringsCharLike.create(s.through(fs2.text.utf8.decode))
         override def needsPull(ctx: Context): Boolean = stringsCharLike.needsPull(ctx)
-        override def pullNext(ctx: Context): Pull[F, INothing, Option[Context]] = stringsCharLike.pullNext(ctx)
+        override def pullNext(ctx: Context): Pull[F, Nothing, Option[Context]] = stringsCharLike.pullNext(ctx)
         override def advance(ctx: Context): Context = stringsCharLike.advance(ctx)
         override def current(ctx: Context): Char = stringsCharLike.current(ctx)
+        override def pushback(ctx: Context, chars: String): Context = stringsCharLike.pushback(ctx, chars)
       }
     }
 
