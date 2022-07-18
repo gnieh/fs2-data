@@ -75,22 +75,31 @@ private[xml] object EventParser {
         // #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]
         c == 0x9 || c == 0xa || c == 0xd || (0x20 <= c && c <= 0xd7ff) || (0xe000 <= c && c <= 0xfffd) || (0x10000 <= c && c <= 0x10ffff)
 
-    def isNCNameStart(c: Char): Boolean = {
-      import java.lang.Character._
-      getType(c).toByte match {
-        case LOWERCASE_LETTER | UPPERCASE_LETTER | OTHER_LETTER | TITLECASE_LETTER | LETTER_NUMBER => true
-        case _                                                                                     => c == '_'
-      }
-    }
+    val ncNameStart = CharRanges.fromRanges(
+      ('A', 'Z'),
+      ('_', '_'),
+      ('a', 'z'),
+      ('\u00C0', '\u00D6'),
+      ('\u00D8', '\u00F6'),
+      ('\u00F8', '\u02FF'),
+      ('\u0370', '\u037D'),
+      ('\u037F', '\u1FFF'),
+      ('\u200C', '\u200D'),
+      ('\u2070', '\u218F'),
+      ('\u2C00', '\u2FEF'),
+      ('\u3001', '\uD7FF'),
+      ('\uF900', '\uFDCF'),
+      ('\uFDF0', '\uFFFD')
+    )
 
-    def isNCNameChar(c: Char): Boolean = {
-      import java.lang.Character._
-      // The constants represent groups Mc, Me, Mn, Lm, and Nd.
-      isNCNameStart(c) || (getType(c).toByte match {
-        case COMBINING_SPACING_MARK | ENCLOSING_MARK | NON_SPACING_MARK | MODIFIER_LETTER | DECIMAL_DIGIT_NUMBER => true
-        case _ => ".-·".contains(c)
-      })
-    }
+    val ncNameChar = ncNameStart.union(CharRanges
+      .fromRanges(('-', '-'), ('.', '.'), ('0', '9'), ('\u00b7', '\u00b7'), ('\u0300', '\u036f'), ('\u203f', '\u2040')))
+
+    def isNCNameStart(c: Char): Boolean =
+      ncNameStart.contains(c)
+
+    def isNCNameChar(c: Char): Boolean =
+      ncNameChar.contains(c)
 
     def isXmlWhitespace(c: Char): Boolean =
       c == ' ' || c == '\t' || c == '\r' || c == '\n'
