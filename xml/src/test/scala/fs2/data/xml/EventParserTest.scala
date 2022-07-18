@@ -249,6 +249,16 @@ object EventParserTest extends SimpleIOSuite {
       .as(expect(true))
   }
 
+  test("unicode codepoints") {
+    Stream
+      .emits("""<Ẵ줐샃뗧饜孫 悊頃ふ퉞="ꨍ邭䋒↏᲎ừ" 듸괎:ʿक턻뽜="촏"/>""")
+      .through(events[IO, Char]())
+      .attempt
+      .compile
+      .toList
+      .map(expectWellFormed(_))
+  }
+
   val testFileDir = Path("xml/src/test/resources/xmlconf")
   test("Standard test suite should pass") {
     (Files[IO].walk(testFileDir.resolve("xmltest/valid")).filter(_.extName == ".xml") ++
