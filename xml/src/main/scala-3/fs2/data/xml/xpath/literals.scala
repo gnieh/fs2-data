@@ -18,11 +18,14 @@ package data
 package xml
 package xpath
 
-import cats.implicits._
+import cats.syntax.all.*
+import cats.data.NonEmptyList
 
 import org.typelevel.literally.Literally
 
 import scala.language.experimental.macros
+
+import scala.quoted.*
 
 package object literals {
 
@@ -30,13 +33,61 @@ package object literals {
     inline def xpath(inline args: Any*): XPath = ${ XPathInterpolator('ctx, 'args) }
   }
 
+  given [T](using ToExpr[T], Type[T]): ToExpr[NonEmptyList[T]] with {
+    def apply(nel: NonEmptyList[T])(using Quotes) = nel match {
+      case NonEmptyList(t, Nil)  => '{ NonEmptyList.one(${ Expr(t) }) }
+      case NonEmptyList(t, tail) => '{ NonEmptyList(${ Expr(t) }, ${ Expr(tail) }) }
+    }
+  }
+
+  given ToExpr[Node] with {
+    def apply(n: Node)(using Quotes) =
+      '{ Node(${ Expr(n.prefix) }, ${ Expr(n.local) }) }
+  }
+
+  given ToExpr[Axis] with {
+    def apply(a: Axis)(using Quotes) =
+      a match {
+        case Axis.Child      => '{ Axis.Child }
+        case Axis.Descendent => '{ Axis.Descendent }
+      }
+  }
+
+  given ToExpr[QName] with {
+    def apply(n: QName)(using Quotes) =
+      '{ QName(${ Expr(n.prefix) }, ${ Expr(n.local) }) }
+  }
+
+  given ToExpr[Predicate] with {
+    def apply(p: Predicate)(using Quotes) =
+      p match {
+        case Predicate.True       => '{ Predicate.True }
+        case Predicate.False      => '{ Predicate.False }
+        case Predicate.Exists(a)  => '{ Predicate.Exists(${ Expr(a) }) }
+        case Predicate.Eq(a, v)   => '{ Predicate.Eq(${ Expr(a) }, ${ Expr(v) }) }
+        case Predicate.Neq(a, v)  => '{ Predicate.Neq(${ Expr(a) }, ${ Expr(v) }) }
+        case Predicate.And(l, r)  => '{ Predicate.And(${ Expr(l) }, ${ Expr(r) }) }
+        case Predicate.Or(l, r)   => '{ Predicate.Or(${ Expr(l) }, ${ Expr(r) }) }
+        case Predicate.Not(inner) => '{ Predicate.Not(${ Expr(inner) }) }
+      }
+  }
+
+  given ToExpr[Location] with {
+    def apply(l: Location)(using Quotes) =
+      '{ Location(${ Expr(l.axis) }, ${ Expr(l.node) }, ${ Expr(l.predicate) }) }
+  }
+
+  given ToExpr[XPath] with {
+    def apply(p: XPath)(using Quotes) =
+      '{ XPath(${ Expr(p.locations) }) }
+  }
   object XPathInterpolator extends Literally[XPath] {
 
     def validate(string: String)(using Quotes) = {
-      XPathParser.either(string) match {
-        case Left(t)  => Left(t.getMessage)
-        case Right(v) => Right('{ XPathParser.either(${ Expr(string) }).toOption.get })
-      }
+      XPathParser
+        .either(string)
+        .leftMap(_.getMessage)
+        .map(Expr(_))
     }
 
   }

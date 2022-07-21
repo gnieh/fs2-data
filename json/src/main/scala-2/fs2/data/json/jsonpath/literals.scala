@@ -21,7 +21,12 @@ package jsonpath
 
 import org.typelevel.literally.Literally
 
+import cats.syntax.all._
+import cats.data.NonEmptyList
+
 import scala.language.experimental.macros
+import scala.reflect.macros.blackbox.Context
+import scala.annotation.unused
 
 object literals {
 
@@ -29,14 +34,49 @@ object literals {
     def jsonpath(args: Any*): JsonPath = macro JsonPathInterpolator.make
   }
 
+  trait LiftableImpls {
+    val c: Context
+    import c.universe._
+
+    implicit def nel[T](implicit @unused T: Liftable[T]): Liftable[NonEmptyList[T]] = Liftable[NonEmptyList[T]] {
+      case NonEmptyList(t, Nil)  => q"_root_.cats.data.NonEmptyList.one($t)"
+      case NonEmptyList(t, tail) => q"_root_.cats.data.NonEmptyList($t, $tail)"
+    }
+
+    implicit lazy val predicateLiftable: Liftable[Predicate] = Liftable[Predicate] {
+      case Predicate.Index(i)            => q"_root_.fs2.data.json.jsonpath.Predicate.Index($i)"
+      case Predicate.Range(lower, upper) => q"_root_.fs2.data.json.jsonpath.Predicate.Range($lower, $upper)"
+      case Predicate.Wildcard            => q"_root_.fs2.data.json.jsonpath.Predicate.Wildcard"
+    }
+
+    implicit lazy val propertyLiftable: Liftable[Property] = Liftable[Property] {
+      case Property.Name(n)  => q"_root_.fs2.data.json.jsonpath.Property.Name($n)"
+      case Property.Wildcard => q"_root_.fs2.data.json.jsonpath.Property.Wildcard"
+    }
+
+    implicit lazy val locationLiftable: Liftable[Location] = Liftable[Location] {
+      case Location.Child(child)     => q"_root_.fs2.data.json.jsonpath.Location.Child($child)"
+      case Location.Descendent(desc) => q"_root_.fs2.data.json.jsonpath.Location.Descendent($desc)"
+      case Location.Pred(p)          => q"_root_.fs2.data.json.jsonpath.Location.Pred($p)"
+    }
+
+    implicit lazy val jsonPathLiftable: Liftable[JsonPath] = Liftable[JsonPath] { case JsonPath(locations) =>
+      q"_root_.fs2.data.json.jsonpath.JsonPath($locations)"
+    }
+  }
+
   object JsonPathInterpolator extends Literally[JsonPath] {
 
-    def validate(c: Context)(string: String): Either[String, c.Expr[JsonPath]] = {
-      import c.universe._
-      JsonPathParser.either(string) match {
-        case Left(t)  => Left(t.getMessage)
-        case Right(v) => Right(c.Expr(q"_root_.fs2.data.json.jsonpath.JsonPathParser.either($string).toOption.get"))
+    def validate(ctx: Context)(string: String): Either[String, ctx.Expr[JsonPath]] = {
+      import ctx.universe._
+      val liftables = new LiftableImpls {
+        val c: ctx.type = ctx
       }
+      import liftables._
+      JsonPathParser
+        .either(string)
+        .leftMap(_.getMessage)
+        .map(p => c.Expr(q"$p"))
     }
 
     def make(c: Context)(args: c.Expr[Any]*): c.Expr[JsonPath] = apply(c)(args: _*)

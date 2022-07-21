@@ -18,7 +18,10 @@ package data
 package json
 package jsonpath
 
-import cats.implicits._
+import cats.syntax.all.*
+import cats.data.NonEmptyList
+
+import scala.quoted.*
 
 import org.typelevel.literally.Literally
 
@@ -30,13 +33,51 @@ package object literals {
     inline def jsonpath(inline args: Any*): JsonPath = ${ JsonPathInterpolator('ctx, 'args) }
   }
 
+  given [T](using ToExpr[T], Type[T]): ToExpr[NonEmptyList[T]] with {
+    def apply(nel: NonEmptyList[T])(using Quotes) = nel match {
+      case NonEmptyList(t, Nil)  => '{ NonEmptyList.one(${ Expr(t) }) }
+      case NonEmptyList(t, tail) => '{ NonEmptyList(${ Expr(t) }, ${ Expr(tail) }) }
+    }
+  }
+
+  given ToExpr[Predicate] with {
+    def apply(p: Predicate)(using Quotes) =
+      p match {
+        case Predicate.Index(i)    => '{ Predicate.Index(${ Expr(i) }) }
+        case Predicate.Range(l, u) => '{ Predicate.Range(${ Expr(l) }, ${ Expr(u) }) }
+        case Predicate.Wildcard    => '{ Predicate.Wildcard }
+      }
+  }
+
+  given ToExpr[Property] with {
+    def apply(p: Property)(using Quotes) =
+      p match {
+        case Property.Name(n)  => '{ Property.Name(${ Expr(n) }) }
+        case Property.Wildcard => '{ Property.Wildcard }
+      }
+  }
+
+  given ToExpr[Location] with {
+    def apply(l: Location)(using Quotes) =
+      l match {
+        case Location.Child(c)      => '{ Location.Child(${ Expr(c) }) }
+        case Location.Descendent(d) => '{ Location.Descendent(${ Expr(d) }) }
+        case Location.Pred(p)       => '{ Location.Pred(${ Expr(p) }) }
+      }
+  }
+
+  given ToExpr[JsonPath] with {
+    def apply(p: JsonPath)(using Quotes) =
+      '{ JsonPath(${ Expr(p.locations) }) }
+  }
+
   object JsonPathInterpolator extends Literally[JsonPath] {
 
     def validate(string: String)(using Quotes) = {
-      JsonPathParser.either(string) match {
-        case Left(t)  => Left(t.getMessage)
-        case Right(v) => Right('{ JsonPathParser.either(${ Expr(string) }).toOption.get })
-      }
+      JsonPathParser
+        .either(string)
+        .leftMap(_.getMessage)
+        .map(Expr(_))
     }
 
   }
