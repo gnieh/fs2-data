@@ -19,21 +19,24 @@ package data
 package xml
 package dom
 
-trait DocumentBuilder[Document] extends ElementBuilder {
+trait ElementBuilder {
 
-  def makeDocument(version: Option[String],
-                   encoding: Option[String],
-                   standalone: Option[Boolean],
-                   doctype: Option[XmlEvent.XmlDoctype],
-                   prolog: List[Misc],
-                   root: Elem,
-                   postlog: List[Misc]): Document
+  type Content
+  type Misc <: Content
+  type Elem <: Content
+
+  def makeComment(content: String): Option[Misc]
+
+  def makeText(texty: XmlEvent.XmlTexty): Content
+
+  def makeElement(name: QName, attributes: List[Attr], isEmpty: Boolean, children: List[Content]): Elem
+
+  def makePI(target: String, content: String): Misc
 
 }
 
-object DocumentBuilder {
-  type Aux[D, C, E <: C] = DocumentBuilder[D] {
-    type Content = C
-    type Elem = E
-  }
+object ElementBuilder {
+
+  type Aux[E] = ElementBuilder { type Elem = E }
+
 }

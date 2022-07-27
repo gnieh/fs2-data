@@ -40,6 +40,7 @@ package object json {
     * an array, and values selected by object selector are wrapped into an object with original
     * key maintained.
     */
+  @deprecated(message = "Use `fs2.data.json.jsonpath.filter` instead", since = "fs2-data 1.5.0")
   def filter[F[_]](selector: Selector, wrap: Boolean = false)(implicit F: RaiseThrowable[F]): Pipe[F, Token, Token] =
     TokenSelector.pipe[F](selector, wrap)
 
@@ -197,6 +198,15 @@ package object json {
   implicit class JsonSelectorStringOps(val s: String) extends AnyVal {
     def parseSelector[F[_]](implicit F: MonadError[F, Throwable]): F[Selector] =
       new SelectorParser[F](s).parse()
+  }
+
+  object literals {
+
+    implicit class JsonInterpolator(val sc: StringContext) extends AnyVal {
+      def json(args: Any*): Stream[Fallible, Token] =
+        Stream.emit(sc.s(args: _*)).covary[Fallible].through(tokens)
+    }
+
   }
 
 }

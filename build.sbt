@@ -9,6 +9,9 @@ val shapeless2Version = "2.3.9"
 val shapeless3Version = "3.1.0"
 val scalaJavaTimeVersion = "2.4.0"
 val diffsonVersion = "4.1.1"
+val literallyVersion = "1.0.2"
+
+val copyrightYears = "2019-2022"
 
 val commonSettings = List(
   scalaVersion := scala213,
@@ -35,7 +38,7 @@ val commonSettings = List(
     }
   },
   organization := "org.gnieh",
-  headerLicense := Some(HeaderLicense.ALv2("2019-2022", "Lucas Satabin")),
+  headerLicense := Some(HeaderLicense.ALv2(copyrightYears, "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
   versionScheme := Some("early-semver"),
@@ -110,18 +113,21 @@ val root = (project in file("."))
     name := "fs2-data",
     publishArtifact := false,
     publish / skip := true,
-    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(cbor.js,
-                                                                             cborJson.js,
-                                                                             csv.js,
-                                                                             csvGeneric.js,
-                                                                             json.js,
-                                                                             jsonCirce.js,
-                                                                             jsonDiffson.js,
-                                                                             jsonPlay.js,
-                                                                             jsonInterpolators.js,
-                                                                             text.js,
-                                                                             xml.js,
-                                                                             scalaXml.js),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(
+      cbor.js,
+      cborJson.js,
+      csv.js,
+      csvGeneric.js,
+      json.js,
+      jsonCirce.js,
+      jsonDiffson.js,
+      jsonPlay.js,
+      jsonInterpolators.js,
+      text.js,
+      xml.js,
+      scalaXml.js,
+      finiteState.js
+    ),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     Nanoc / sourceDirectory := file("site"),
@@ -150,7 +156,9 @@ val root = (project in file("."))
     cbor.jvm,
     cbor.js,
     cborJson.jvm,
-    cborJson.js
+    cborJson.js,
+    finiteState.jvm,
+    finiteState.js
   )
 
 lazy val text = crossProject(JVMPlatform, JSPlatform)
@@ -224,8 +232,18 @@ lazy val json = crossProject(JVMPlatform, JSPlatform)
   .in(file("json"))
   .settings(commonSettings)
   .settings(publishSettings)
-  .settings(name := "fs2-data-json", description := "Streaming JSON manipulation library")
-  .dependsOn(text)
+  .settings(
+    name := "fs2-data-json",
+    description := "Streaming JSON manipulation library",
+    libraryDependencies ++= List(
+      "org.typelevel" %%% "literally" % literallyVersion
+    ) ++ PartialFunction
+      .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value
+      }
+      .toList
+  )
+  .dependsOn(text, finiteState)
 
 lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
@@ -289,7 +307,7 @@ lazy val jsonInterpolators = crossProject(JVMPlatform, JSPlatform)
     name := "fs2-data-json-interpolators",
     description := "Json interpolators support",
     libraryDependencies ++= List(
-      "org.typelevel" %%% "literally" % "1.0.2"
+      "org.typelevel" %%% "literally" % literallyVersion
     ) ++ PartialFunction
       .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
@@ -305,12 +323,19 @@ lazy val xml = crossProject(JVMPlatform, JSPlatform)
   .settings(publishSettings)
   .settings(
     name := "fs2-data-xml",
-    description := "Streaming XML manipulation library"
+    description := "Streaming XML manipulation library",
+    libraryDependencies ++= List(
+      "org.typelevel" %%% "literally" % literallyVersion
+    ) ++ PartialFunction
+      .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value
+      }
+      .toList
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
-  .dependsOn(text)
+  .dependsOn(text, finiteState)
 
 lazy val scalaXml = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
@@ -344,6 +369,16 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform)
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+
+lazy val finiteState = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Full)
+  .in(file("finite-state"))
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "fs2-data-finite-state",
+    description := "Streaming finite state machines"
   )
 
 lazy val cborJson = crossProject(JVMPlatform, JSPlatform)

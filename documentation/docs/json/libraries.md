@@ -15,23 +15,21 @@ Examples on this page use the following input:
 ```scala mdoc
 import fs2.{Fallible, Stream}
 import fs2.data.json._
-import fs2.data.json.selector._
+import fs2.data.json.literals._
+import fs2.data.json.jsonpath._
+import fs2.data.json.jsonpath.literals._
 
-val input = """{
-              |  "field1": 0,
-              |  "field2": "test",
-              |  "field3": [1, 2, 3]
-              |}
-              |{
-              |  "field1": 2,
-              |  "field3": []
-              |}""".stripMargin
+val stream = json"""{
+  "field1": 0,
+  "field2": "test",
+  "field3": [1, 2, 3]
+  }
+  {
+  "field1": 2,
+  "field3": []
+}"""
 
-val stream = Stream.emit(input).through(tokens[Fallible, String])
-
-val sel = root.field("field3").iterate.compile
-
-val filtered = stream.through(filter(sel))
+val sel = jsonpath"$$.field3[*]"
 ```
 
 ### Circe
@@ -47,22 +45,25 @@ import io.circe._
 
 val asts = stream.through(ast.values[Fallible, Json])
 asts.compile.toList
-
-val transformed = stream.through(ast.transform[Fallible, Json](sel, json => Json.obj("test" -> json)))
-transformed.compile.to(collector.pretty())
 ```
 
-If you want to only keep `field1` if it is greater than `1`, you can use the `transformOpt` pipe for this.
+You can use `filter.values` to selects only the values matching the JSONPath and deserialize them using the builder.
 
 ```scala mdoc:nest
 import fs2.data.json.circe._
+
 import io.circe._
+
+import cats.effect._
 import cats.implicits._
+import cats.effect.unsafe.implicits.global
 
-val f1 = root.field("field1").compile
-
-val transformed = stream.through(ast.transformOpt[Fallible, Json](f1, json => json.as[Int].toOption.filter(_ > 1).as(json)))
-transformed.compile.to(collector.pretty())
+stream
+  .lift[IO]
+  .through(jsonpath.filter.values(sel))
+  .compile
+  .toList
+  .unsafeRunSync()
 ```
 
 The circe integration also provides `Deserializer` and `Serializer` based on the circe `Decoder`s and `Encoder`s.
@@ -83,6 +84,7 @@ case class Wrapped(test: Int)
  We could write the previous wrapping transformation using these case classes.
 
 ```scala mdoc:nest
+import fs2.data.json.selector._
 import fs2.data.json.circe._
 import io.circe._
 
@@ -91,6 +93,8 @@ values.compile.toList
 
 def wrap(data: Data): WrappedData =
   WrappedData(data.field1, data.field2, data.field3.map(Wrapped(_)))
+
+val sel = root.field("field3").iterate.compile
 
 val transformed = stream.through(codec.transform(sel, wrap))
 transformed.compile.to(collector.pretty())
