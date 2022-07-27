@@ -25,7 +25,7 @@ import pfsa._
 import cats.effect.Concurrent
 import cats.syntax.all._
 
-private[xpath] class XmlQueryPipe[F[_]: Concurrent](dfa: PDFA[LocationMatch, StartElement])
+private[data] class XmlQueryPipe[F[_]: Concurrent](dfa: PDFA[LocationMatch, StartElement])
     extends TreeQueryPipe[F, XmlEvent, XmlEvent.StartTag, LocationMatch, StartElement](dfa) {
 
   override def makeMatchingElement(tok: XmlEvent.StartTag): StartElement =

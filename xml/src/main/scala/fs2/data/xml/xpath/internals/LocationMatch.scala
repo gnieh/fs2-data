@@ -24,7 +24,6 @@ import pfsa._
 
 import cats.syntax.all._
 import cats.data.NonEmptyChain
-import cats.Show
 
 sealed trait LocationMatch
 object LocationMatch {
@@ -97,17 +96,6 @@ object LocationMatch {
 
   }
 
-  implicit val LocationMatchShow: Show[LocationMatch] = Show.show {
-    case True          => "true"
-    case False         => "false"
-    case Element(n)    => show"[$n]"
-    case AttrExists(a) => show"@$a"
-    case AttrEq(a, v)  => show"""@$a="$v""""
-    case AttrNeq(a, v) => show"""@$a!="$v""""
-    case And(l, r)     => show"($l) && ($r)"
-    case Or(l, r)      => show"($l) || ($r)"
-    case Not(i)        => show"!($i)"
-  }
 }
 
 case class StartElement(name: QName, attributes: Map[QName, String])

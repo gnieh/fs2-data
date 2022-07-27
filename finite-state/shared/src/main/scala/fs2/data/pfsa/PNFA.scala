@@ -20,15 +20,14 @@ package pfsa
 
 import Pred.syntax._
 
-import cats.Show
 import cats.syntax.all._
 
 import scala.annotation.tailrec
-
+import scala.collection.mutable.ArrayBuilder
 import scala.collection.compat._
 
-class PNFA[P, T](val init: Int, val finals: Set[Int], val transitions: Map[Int, List[(Option[P], Int)]])(implicit
-    P: Pred[P, T]) {
+private[data] class PNFA[P, T](val init: Int, val finals: Set[Int], val transitions: Map[Int, List[(Option[P], Int)]])(
+    implicit P: Pred[P, T]) {
 
   private def epsilonClosure(qs: List[Int]): Set[Int] = {
     @tailrec
@@ -73,12 +72,12 @@ class PNFA[P, T](val init: Int, val finals: Set[Int], val transitions: Map[Int, 
     def loop(toProcess: List[(Set[Int])],
              newStates: Map[Set[Int], Int],
              newFinals: Set[Set[Int]],
-             newTransitions: Map[Int, List[(P, Set[Int])]]): PDFA[P, T] =
+             newTransitions: ArrayBuilder[List[(P, Set[Int])]]): PDFA[P, T] =
       toProcess match {
         case Nil =>
           new PDFA[P, T](0,
                          newFinals.map(newStates(_)),
-                         newTransitions.view.mapValues(_.map { case (p, q) => (p, newStates(q)) }).toMap)
+                         newTransitions.result().map(_.map { case (p, q) => (p, newStates(q)) }))
         case q :: qs =>
           if (newStates.contains(q)) {
             loop(qs, newStates, newFinals, newTransitions)
@@ -91,46 +90,17 @@ class PNFA[P, T](val init: Int, val finals: Set[Int], val transitions: Map[Int, 
                 (p, q)
               })
               .groupMap(_._1)(_._2)
-              .view
-              .mapValues(epsilonClosure(_))
+              .fmap(epsilonClosure(_))
               .toList
             val ts1 =
               combineAll(ts).compile.toList
-            val newTransistions1 = if (ts1.nonEmpty) newTransitions.updated(newQ, ts1) else newTransitions
+            val newTransistions1 = if (ts1.nonEmpty) newTransitions += ts1 else newTransitions
             val newFinals1 = if (finals.exists(q.contains(_))) newFinals + q else newFinals
             loop(qs ++ ts1.map(_._2), newStates1, newFinals1, newTransistions1)
           }
       }
 
-    loop(List(epsilonClosure(List(init))), Map.empty, Set.empty, Map.empty)
-  }
-
-}
-
-object PNFA {
-
-  implicit def show[P: Show, T]: Show[PNFA[P, T]] = new Show[PNFA[P, T]] {
-
-    implicit val transShow: Show[(Option[P], Int)] = Show.show { case (p, q) =>
-      val pred = p.map(_.show).getOrElse("ε")
-      show"q$q: $pred"
-    }
-
-    def showTransitions(t: PNFA[P, T], q: Int): String =
-      t.transitions
-        .get(q)
-        .map { ts =>
-          show"q$q --> ${ts.mkString_(show"\n  q$q --> ")}"
-        }
-        .getOrElse("")
-
-    override def show(t: PNFA[P, T]): String =
-      show"""stateDiagram-v2
-            |  direction LR
-            |  [*] --> q${t.init}
-            |  ${t.finals.toList.map(q => show"q$q --> [*]").mkString_("\n  ")}
-            |  ${t.transitions.keySet.toList.map(showTransitions(t, _)).mkString_("\n  ")}""".stripMargin
-
+    loop(List(epsilonClosure(List(init))), Map.empty, Set.empty, Array.newBuilder)
   }
 
 }

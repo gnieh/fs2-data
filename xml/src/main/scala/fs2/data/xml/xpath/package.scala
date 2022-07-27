@@ -76,7 +76,7 @@ package object xpath {
 
   }
 
-  private def compileXPath(path: XPath): PDFA[LocationMatch, StartElement] = {
+  private[data] def compileXPath(path: XPath): PDFA[LocationMatch, StartElement] = {
     def makePredicate(p: Predicate): LocationMatch =
       p match {
         case Predicate.True             => LocationMatch.True

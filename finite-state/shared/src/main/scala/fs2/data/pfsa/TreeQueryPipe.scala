@@ -31,7 +31,8 @@ import cats.data.NonEmptyList
   *
   * It is appropriated to implement query languages such as XPath or JsonPath.
   */
-abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher, Matchable](dfa: PDFA[Matcher, Matchable]) {
+private[data] abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher, Matchable](
+    dfa: PDFA[Matcher, Matchable]) {
 
   /** Whether to emit open and close tags on new match. */
   val emitOpenAndClose: Boolean = true

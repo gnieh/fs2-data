@@ -22,7 +22,6 @@ package internals
 
 import pfsa._
 
-import cats.Show
 import cats.effect.Concurrent
 import cats.syntax.all._
 
@@ -44,20 +43,6 @@ private[jsonpath] object PathMatcher {
   case class And(left: PathMatcher, right: PathMatcher) extends PathMatcher
   case class Or(left: PathMatcher, right: PathMatcher) extends PathMatcher
   case class Not(inner: PathMatcher) extends PathMatcher
-
-  implicit val show: Show[PathMatcher] = Show.show {
-    case True                     => "<true>"
-    case False                    => "<false>"
-    case AnyKey                   => "*"
-    case Key(n)                   => s".$n"
-    case Range(0, Int.MaxValue)   => "[-]"
-    case Range(idx, Int.MaxValue) => s"[$idx-]"
-    case Range(0, idx)            => s"[-$idx]"
-    case Range(idx1, idx2)        => if (idx1 == idx2) s"[$idx1]" else s"[$idx1-$idx2]"
-    case And(l, r)                => show"($l) && ($r)"
-    case Or(l, r)                 => show"($l) || ($r)"
-    case Not(i)                   => show"!($i)"
-  }
 
   implicit val PathMatcherPred: Pred[PathMatcher, TaggedJson] =
     new Pred[PathMatcher, TaggedJson] {
@@ -107,7 +92,7 @@ private[jsonpath] object PathMatcher {
           case (True, _)                 => True
           case (_, True)                 => True
           case (False, _)                => p2
-          case (_, False)                => p2
+          case (_, False)                => p1
           case (Key(_) | AnyKey, AnyKey) => AnyKey
           case (AnyKey, Key(_) | AnyKey) => AnyKey
           case (_, _)                    => Or(p1, p2)

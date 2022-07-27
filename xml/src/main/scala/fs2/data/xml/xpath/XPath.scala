@@ -19,7 +19,7 @@ package data
 package xml
 package xpath
 
-import cats.{Eq, Show}
+import cats.Eq
 import cats.syntax.all._
 import cats.data.NonEmptyList
 
@@ -38,15 +38,7 @@ case class Node(prefix: Option[String], local: Option[String]) {
     }
 }
 object Node {
-  implicit val show: Show[Node] = Show.show {
-    case Node(None, None)             => "*"
-    case Node(None, Some(local))      => local
-    case Node(Some(pfx), None)        => s"$pfx:*"
-    case Node(Some(pfx), Some(local)) => s"$pfx:$local"
-  }
-
   implicit val eq: Eq[Node] = Eq.fromUniversalEquals
-
 }
 
 sealed trait Axis
