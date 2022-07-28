@@ -26,7 +26,7 @@ import scala.xml._
 
 package object scalaXml {
 
-  implicit object ScalaXmlBuilder extends DocumentBuilder[Document] {
+  implicit val ScalaXmlBuilder: DocumentBuilder.Aux[Document, Node, Elem] = new DocumentBuilder[Document] {
 
     type Content = Node
     type Elem = scala.xml.Elem

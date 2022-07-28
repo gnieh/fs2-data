@@ -18,6 +18,8 @@ package fs2
 package data
 package xml
 
+import cats.{Eq, Show}
+
 case class QName(prefix: Option[String], local: String) {
 
   def render: String = prefix match {
@@ -28,6 +30,10 @@ case class QName(prefix: Option[String], local: String) {
 }
 
 object QName {
+
+  implicit val show: Show[QName] = _.render
+
+  implicit val eq: Eq[QName] = Eq.fromUniversalEquals
 
   def apply(n: String): QName =
     QName(None, n)

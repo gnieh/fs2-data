@@ -25,6 +25,13 @@ package object dom {
   def documents[F[_], Node](implicit F: RaiseThrowable[F], builder: DocumentBuilder[Node]): Pipe[F, XmlEvent, Node] =
     new TreeParser[F, Node].pipe
 
+  /** Transforms a stream of XML events into a stream of XML elements trees.
+    *
+    * This pipe will fail if the top-level events do not describe XML elements.
+    */
+  def elements[F[_], Elt](implicit F: RaiseThrowable[F], builder: ElementBuilder.Aux[Elt]): Pipe[F, XmlEvent, Elt] =
+    new TreeParser[F, Elt].elements
+
   /** Transforms a stream of XML nodes into a stream of XML events.
     */
   def eventify[F[_], Node](implicit eventifier: DocumentEventifier[Node]): Pipe[F, Node, XmlEvent] =

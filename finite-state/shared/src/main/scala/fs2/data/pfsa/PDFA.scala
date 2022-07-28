@@ -14,26 +14,17 @@
  * limitations under the License.
  */
 
-package fs2
-package data
-package xml
-package dom
+package fs2.data.pfsa
 
-trait DocumentBuilder[Document] extends ElementBuilder {
+import Pred.syntax._
 
-  def makeDocument(version: Option[String],
-                   encoding: Option[String],
-                   standalone: Option[Boolean],
-                   doctype: Option[XmlEvent.XmlDoctype],
-                   prolog: List[Misc],
-                   root: Elem,
-                   postlog: List[Misc]): Document
+private[data] class PDFA[P, T](val init: Int, val finals: Set[Int], val transitions: Array[List[(P, Int)]])(implicit
+    P: Pred[P, T]) {
 
-}
+  def step(q: Int, t: T): Option[Int] =
+    if (q >= transitions.length)
+      None
+    else
+      transitions(q).collectFirst { case (p, q) if p.satisfies(t) => q }
 
-object DocumentBuilder {
-  type Aux[D, C, E <: C] = DocumentBuilder[D] {
-    type Content = C
-    type Elem = E
-  }
 }

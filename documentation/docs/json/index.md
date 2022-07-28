@@ -112,35 +112,6 @@ root.index(1).!
 root.index(1).?.?
 ```
 
-#### Using JSON selectors
-
-Using the selector defined above, we can filter the stream of tokens, to only emit selected tokens downstream. This can be used to drastically reduce the amount of emitted data, to only the parts that are of interest for you.
-
-```scala mdoc
-val filtered = stream.through(filter(selector))
-filtered.compile.toList
-```
-
-By default, selected values are emitted in the stream as they are matched, resulting in a stream with several JSON values.
-If this is not desired, you can wrap the elements into arrays and objects, from the root by calling `filter` with `wrap` set to `true`.
-
-```scala mdoc
-val filteredWrapped = stream.through(filter(selector, wrap = true))
-filteredWrapped.compile.toList
-```
-
-If the selector selects elements in an array, then the resulting values are wrapped in an array.
-On the other hand, if it selects elements in an object, then emitted values are returned wrapped in an object, associated with the last selected keys.
-
-If you want to ensure that selected object keys are present in the JSON value, you can use the `!` operator described above. For instance if you want to select `field2` and fail the stream as soon as an object does not contain it, you can do:
-
-```scala mdoc
-val mandatorySelector = ".field2!".parseSelector[Either[Throwable, *]].toTry.get
-stream.through(filter(mandatorySelector)).compile.toList
-```
-
-The `filter` preserves the chunk structure, so that the stream fails as soon as an error is encountered in the chunk, but first emitting previously selected values in the same chunk.
-
 ### AST builder and tokenizer
 
 To handle Json ASTs, you can use the types and pipes available in the `fs2.data.json.ast` package.
