@@ -124,6 +124,8 @@ val root = (project in file("."))
       jsonPlay.js,
       jsonInterpolators.js,
       text.js,
+      utils.js,
+      regex.js,
       xml.js,
       scalaXml.js,
       finiteState.js
@@ -137,6 +139,10 @@ val root = (project in file("."))
   .aggregate(
     text.jvm,
     text.js,
+    utils.jvm,
+    utils.js,
+    regex.jvm,
+    regex.js,
     csv.jvm,
     csv.js,
     csvGeneric.jvm,
@@ -161,6 +167,27 @@ val root = (project in file("."))
     finiteState.js
   )
 
+lazy val utils = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("utils"))
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "fs2-data-utils",
+    description := "Various utilities used to implement other features"
+  )
+
+lazy val regex = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("regex"))
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .settings(
+    name := "fs2-data-regex",
+    description := "Streaming regular expression support"
+  )
+  .dependsOn(utils, finiteState)
+
 lazy val text = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
   .in(file("text"))
@@ -184,7 +211,7 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform)
     ),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
-  .dependsOn(text)
+  .dependsOn(text, utils)
 
 lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -243,7 +270,7 @@ lazy val json = crossProject(JVMPlatform, JSPlatform)
       }
       .toList
   )
-  .dependsOn(text, finiteState)
+  .dependsOn(text, utils, finiteState)
 
 lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
@@ -335,7 +362,7 @@ lazy val xml = crossProject(JVMPlatform, JSPlatform)
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
-  .dependsOn(text, finiteState)
+  .dependsOn(text, utils, finiteState)
 
 lazy val scalaXml = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
@@ -380,6 +407,7 @@ lazy val finiteState = crossProject(JVMPlatform, JSPlatform)
     name := "fs2-data-finite-state",
     description := "Streaming finite state machines"
   )
+  .dependsOn(utils)
 
 lazy val cborJson = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
