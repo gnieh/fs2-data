@@ -59,15 +59,15 @@ val commonSettings = List(
     .flatten,
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
-    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.8.0",
+    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.8.1",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "io.circe" %%% "circe-jawn" % circeVersion % "test",
     "io.circe" %%% "circe-generic" % circeVersion % "test",
     "co.fs2" %%% "fs2-io" % fs2Version % "test",
-    "com.disneystreaming" %%% "weaver-cats" % "0.7.13" % "test",
-    "com.disneystreaming" %%% "weaver-cats-core" % "0.7.13" % "test",
-    "com.disneystreaming" %%% "weaver-core" % "0.7.13" % "test",
-    "com.disneystreaming" %%% "weaver-framework" % "0.7.13" % "test",
+    "com.disneystreaming" %%% "weaver-cats" % "0.7.14" % "test",
+    "com.disneystreaming" %%% "weaver-cats-core" % "0.7.14" % "test",
+    "com.disneystreaming" %%% "weaver-core" % "0.7.14" % "test",
+    "com.disneystreaming" %%% "weaver-framework" % "0.7.14" % "test",
     "com.eed3si9n.expecty" %%% "expecty" % "0.15.4" % "test",
     "org.portable-scala" %%% "portable-scala-reflect" % "1.1.2" cross CrossVersion.for3Use2_13
   ) ++ PartialFunction
