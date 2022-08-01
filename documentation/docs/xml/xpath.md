@@ -3,7 +3,7 @@ title: XPath
 description: XPath support
 index: 2
 type: textual
-module: json
+module: xml
 ---
 
 Module: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-xml_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-xml_2.13)
@@ -77,8 +77,8 @@ The supported XPath features are:
     - `!p` element attributes do not match `p`
   - `xp1|xp2` matches the XPath expression `xp1` or `xp2`
 
-Operator precendence is the common one: `!` has precedence over `&&` which has precedence over `||`. This means that `!p1 && p2 || p3` is the same as `((!p1) && p2) || p3`.
-You can use parenteses to associate differently, for instance `!(p1 && p2) || p3`.
+Operator precedence is the common one: `!` has precedence over `&&` which has precedence over `||`. This means that `!p1 && p2 || p3` is the same as `((!p1) && p2) || p3`.
+You can use parentheses to associate differently, for instance `!(p1 && p2) || p3`.
 
 #### Using XPath
 
@@ -87,7 +87,7 @@ The filtering pipes are located in the `fs2.data.xml.xpath.filter` namespace.
 
 Since XPath includes a recursive descent operator, there can be nested matches for your path.
 The `filter.raw` emits a stream of all matches.
-Each match is represented as a nested stream of JSON tokens which must be consumed.
+Each match is represented as a nested stream of XML events which must be consumed.
 
 ```scala mdoc
 import cats.Show
@@ -117,12 +117,12 @@ stream
   .unsafeRunSync()
 ```
 
-If you want to have results emitted as early as possible instead of in order, you can set the `ordered` parameter to `false`.
+If you want to have results emitted as early as possible instead of in order, you can set the `deterministic` parameter to `false`.
 
 ```scala mdoc
 stream
   .lift[IO]
-  .through(filter.collect(path, collector.show, ordered = false))
+  .through(filter.collect(path, collector.show, deterministic = false))
   .compile
   .toList
   .unsafeRunSync()

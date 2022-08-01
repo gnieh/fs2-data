@@ -55,24 +55,28 @@ package object xpath {
 
     /** Selects all matching elements in the input stream, and builds an element DOM.
       *
-      * If `ordered` is set to false (`true` by default), built elements are emitted as soon
+      * If `deterministic` is set to `true` (default value), elements are emitted in the order they
+      * appeat in the input stream, i.e. first opening tag first.
+      * If `deterministic` is set to false, built elements are emitted as soon
       * as possible (i.e. when the value is entirely built).
       */
-    def dom[T](path: XPath, ordered: Boolean = true)(implicit
+    def dom[T](path: XPath, deterministic: Boolean = true)(implicit
         F: Concurrent[F],
         builder: ElementBuilder.Aux[T]): Pipe[F, XmlEvent, T] =
       new XmlQueryPipe(compileXPath(path))
-        .aggregate(_, _.through(xml.dom.elements).compile.toList, ordered)
+        .aggregate(_, _.through(xml.dom.elements).compile.toList, deterministic)
         .flatMap(Stream.emits(_))
 
     /** Selects all matching elements in the input stream, and applies the [[fs2.Collector]] to it.
       *
-      * If `ordered` is set to false (`true` by default), built elements are emitted as soon
+      * If `deterministic` is set to `true` (default value), elements are emitted in the order they
+      * appeat in the input stream, i.e. first opening tag first.
+      * If `deterministic` is set to false, built elements are emitted as soon
       * as possible (i.e. when the value is entirely built).
       */
-    def collect[T](path: XPath, collector: Collector.Aux[XmlEvent, T], ordered: Boolean = true)(implicit
+    def collect[T](path: XPath, collector: Collector.Aux[XmlEvent, T], deterministic: Boolean = true)(implicit
         F: Concurrent[F]): Pipe[F, XmlEvent, T] =
-      new XmlQueryPipe(compileXPath(path)).aggregate(_, _.compile.to(collector), ordered)
+      new XmlQueryPipe(compileXPath(path)).aggregate(_, _.compile.to(collector), deterministic)
 
   }
 

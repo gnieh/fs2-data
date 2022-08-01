@@ -138,8 +138,8 @@ private[data] abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher,
         hd.concurrently(tl.parJoinUnbounded.attempt.drain)
       }
 
-  final def aggregate[U](s: Stream[F, T], f: Stream[F, T] => F[U], ordered: Boolean) =
-    if (ordered)
+  final def aggregate[U](s: Stream[F, T], f: Stream[F, T] => F[U], deterministic: Boolean) =
+    if (deterministic)
       s.through(raw).parEvalMapUnbounded(f)
     else
       s.through(raw).parEvalMapUnordered(Int.MaxValue)(f)

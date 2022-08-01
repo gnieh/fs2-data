@@ -130,12 +130,12 @@ json
   .unsafeRunSync()
 ```
 
-If you want to have results emitted as early as possible instead of in order, you can set the `ordered` parameter to `false`.
+If you want to have results emitted as early as possible instead of in order, you can set the `deterministic` parameter to `false`.
 
 ```scala mdoc
 json
   .lift[IO]
-  .through(filter.collect(recursive, List, ordered = false))
+  .through(filter.collect(recursive, List, deterministic = false))
   .compile
   .toList
   .unsafeRunSync()

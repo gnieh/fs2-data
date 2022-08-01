@@ -59,28 +59,32 @@ package object jsonpath {
 
     /** Selects all matching elements in the input stream, and builds an AST.
       *
-      * If `ordered` is set to `false` (`true` by default), built elements are emitted as soon
+      * If `deterministic` is set to `true` (default value), elements are emitted in the order they
+      * appeat in the input stream, i.e. first opening tag first.
+      * If `deterministic` is set to `false`, built elements are emitted as soon
       * as possible (i.e. when the value is entirely built).
       */
-    def values[T](path: JsonPath, ordered: Boolean = true)(implicit
+    def values[T](path: JsonPath, deterministic: Boolean = true)(implicit
         F: Concurrent[F],
         builder: Builder[T]): Pipe[F, Token, T] =
       _.through(JsonTagger.pipe)
         .through(new JsonQueryPipe(compileJsonPath(path))
-          .aggregate(_, _.map(untag(_)).unNone.through(json.ast.values).compile.toList, ordered))
+          .aggregate(_, _.map(untag(_)).unNone.through(json.ast.values).compile.toList, deterministic))
         .flatMap(Stream.emits(_))
 
     /** Selects all matching elements in the input stream, and applies the [[fs2.Collector]] to it.
       *
-      * If `ordered` is set to `false` (`true` by default), built elements are emitted as soon
+      * If `deterministic` is set to `true` (default value), elements are emitted in the order they
+      * appeat in the input stream, i.e. first opening tag first.
+      * If `deterministic` is set to `false`, built elements are emitted as soon
       * as possible (i.e. when the value is entirely built).
       */
-    def collect[T](path: JsonPath, collector: Collector.Aux[Token, T], ordered: Boolean = true)(implicit
+    def collect[T](path: JsonPath, collector: Collector.Aux[Token, T], deterministic: Boolean = true)(implicit
         F: Concurrent[F]): Pipe[F, Token, T] =
       _.through(JsonTagger.pipe)
         .through(
           new JsonQueryPipe(compileJsonPath(path))
-            .aggregate(_, _.map(untag(_)).unNone.compile.to(collector), ordered))
+            .aggregate(_, _.map(untag(_)).unNone.compile.to(collector), deterministic))
 
   }
 
