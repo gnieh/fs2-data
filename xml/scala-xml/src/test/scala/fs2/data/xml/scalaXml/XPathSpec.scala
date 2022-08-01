@@ -25,11 +25,12 @@ object XPathSpec extends SimpleIOSuite {
               |</a>""".stripMargin)
       .covary[IO]
       .through(events())
-      .through(filter.dom(query, ordered = false))
+      .through(filter.dom(query, deterministic = false))
       .compile
       .toList
       .map(nodes =>
-        expect.same(List(nested, Elem(null, "a", Null, TopScope, false, Text("\n  "), nested, Text("\n"))), nodes))
+        expect.same(Set(nested, Elem(null, "a", Null, TopScope, false, Text("\n  "), nested, Text("\n"))),
+                    nodes.toSet[scala.xml.Node]))
 
   }
 

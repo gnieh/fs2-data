@@ -65,7 +65,7 @@ The advantage of the interpolator is that potential syntax errors are checked at
 
 The supported JSONPath features are:
   - `.*` selects all the object children.
-  - `..*` selects all the object children.
+  - `..*` selects all the object descendants.
   - `.id` or `["id"]` selects the object child with key `id`.
   - `..id` the recursive descent operator
   - `[idx1:idx2]` selects only elements between `idx1` (inclusive) and `idx2` (inclusive) in arrays. It fails if the value it is applied to is not an array.

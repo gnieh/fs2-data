@@ -137,7 +137,7 @@ class JsonPathParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
   private val location: Parser[Location] =
     axis.flatMap {
       case 1 => property.map(Location.Child(_))
-      case 2 => property.map(Location.Descendent(_))
+      case 2 => property.map(Location.Descendant(_))
       case 3 => predicate.map(_.fold(Location.Pred(_), Location.Child(_)))
     }
 

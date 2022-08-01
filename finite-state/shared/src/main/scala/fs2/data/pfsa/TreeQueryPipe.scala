@@ -108,7 +108,7 @@ private[data] abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher,
                 .flatMap(go(chunk, idx + 1, rest, depth + 1, _, resetting, (q1, resetting) :: q))
             case None =>
               // the opening token is a mismatch, no transition exists for it
-              // enter in resetting mode for descendents
+              // enter in resetting mode for descendants
               Pull.eval(queues.traverse_(_._2.offer(tok.some))) >> go(chunk,
                                                                       idx + 1,
                                                                       rest,

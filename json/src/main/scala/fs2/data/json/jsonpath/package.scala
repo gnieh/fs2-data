@@ -112,7 +112,7 @@ package object jsonpath {
         case Nil => (q, acc)
         case Location.Child(name) :: locations =>
           loop(locations, q + 1, acc.combine(Map(q -> List(makeKey(name).some -> (q + 1)))))
-        case Location.Descendent(name) :: locations =>
+        case Location.Descendant(name) :: locations =>
           loop(locations,
                q + 1,
                acc.combine(Map(q -> List(PathMatcher.AnyKey.some -> q, makeKey(name).some -> (q + 1)))))

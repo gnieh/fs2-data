@@ -65,9 +65,9 @@ The supported XPath features are:
   - `/` the child axis
     - `/a` selects all `a` children
     - `/*` selects all children elements
-  - `//` The descendent axis
-    - `//a` selects all `a` descendents
-    - `//*` selects all descendent elements
+  - `//` The descendant axis
+    - `//a` selects all `a` descendants
+    - `//*` selects all descendant elements
   - `[<attribute selection expression>]` attribute predicate selection
     - `@attr` attribute `attr` exists
     - `@attr == "value"` attribute `attr` equals `value`

@@ -56,7 +56,7 @@ object literals {
 
     implicit lazy val locationLiftable: Liftable[Location] = Liftable[Location] {
       case Location.Child(child)     => q"_root_.fs2.data.json.jsonpath.Location.Child($child)"
-      case Location.Descendent(desc) => q"_root_.fs2.data.json.jsonpath.Location.Descendent($desc)"
+      case Location.Descendant(desc) => q"_root_.fs2.data.json.jsonpath.Location.Descendant($desc)"
       case Location.Pred(p)          => q"_root_.fs2.data.json.jsonpath.Location.Pred($p)"
     }
 

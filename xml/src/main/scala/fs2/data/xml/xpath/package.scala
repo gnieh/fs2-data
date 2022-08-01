@@ -111,7 +111,7 @@ package object xpath {
             ors.foldLeft((0, trans)) { case ((q, trans), l @ Location(axis, _, _)) =>
               axis match {
                 case Axis.Child => (q + 1, trans.combine(Map((q -> List((Some(makeLocation(l)), q + 1))))))
-                case Axis.Descendent =>
+                case Axis.Descendant =>
                   (q + 1, trans.combine(Map(q -> List((Some(makeLocation(l)), q + 1), (Some(LocationMatch.True), q)))))
               }
             }
