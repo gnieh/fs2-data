@@ -108,7 +108,7 @@ private[data] abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher,
                 .flatMap(go(chunk, idx + 1, rest, depth + 1, _, resetting, (q1, resetting) :: q))
             case None =>
               // the opening token is a mismatch, no transition exists for it
-              // enter in resetting mode for descendents
+              // enter in resetting mode for descendants
               Pull.eval(queues.traverse_(_._2.offer(tok.some))) >> go(chunk,
                                                                       idx + 1,
                                                                       rest,
@@ -138,8 +138,8 @@ private[data] abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher,
         hd.concurrently(tl.parJoinUnbounded.attempt.drain)
       }
 
-  final def aggregate[U](s: Stream[F, T], f: Stream[F, T] => F[U], ordered: Boolean) =
-    if (ordered)
+  final def aggregate[U](s: Stream[F, T], f: Stream[F, T] => F[U], deterministic: Boolean) =
+    if (deterministic)
       s.through(raw).parEvalMapUnbounded(f)
     else
       s.through(raw).parEvalMapUnordered(Int.MaxValue)(f)

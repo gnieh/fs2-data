@@ -49,7 +49,7 @@ package object literals {
     def apply(a: Axis)(using Quotes) =
       a match {
         case Axis.Child      => '{ Axis.Child }
-        case Axis.Descendent => '{ Axis.Descendent }
+        case Axis.Descendant => '{ Axis.Descendant }
       }
   }
 
