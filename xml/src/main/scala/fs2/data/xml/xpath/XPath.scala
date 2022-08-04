@@ -44,7 +44,7 @@ object Node {
 sealed trait Axis
 object Axis {
   case object Child extends Axis
-  case object Descendent extends Axis
+  case object Descendant extends Axis
 }
 
 sealed trait Predicate

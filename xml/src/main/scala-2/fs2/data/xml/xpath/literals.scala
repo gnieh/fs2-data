@@ -65,8 +65,8 @@ object literals {
     implicit lazy val axisLiftable: Liftable[Axis] = Liftable[Axis] {
       case Axis.Child =>
         q"_root_.fs2.data.xml.xpath.Axis.Child"
-      case Axis.Descendent =>
-        q"_root_.fs2.data.xml.xpath.Axis.Descendent"
+      case Axis.Descendant =>
+        q"_root_.fs2.data.xml.xpath.Axis.Descendant"
     }
 
     implicit lazy val locationLiftable: Liftable[Location] = Liftable[Location] { l =>

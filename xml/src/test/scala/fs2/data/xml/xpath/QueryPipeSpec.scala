@@ -101,12 +101,12 @@ object QueryPipeSpec extends SimpleIOSuite {
               |</a>""".stripMargin)
       .covary[IO]
       .through(events())
-      .through(filter.collect(query, List, ordered = false))
+      .through(filter.collect(query, List, deterministic = false))
       .compile
       .toList
       .map(tokens =>
         expect.same(
-          List(
+          Set(
             List(XmlEvent.StartTag(QName("a"), Nil, false),
                  XmlEvent.XmlString("\n    nested\n  ", false),
                  XmlEvent.EndTag(QName("a"))),
@@ -120,7 +120,7 @@ object QueryPipeSpec extends SimpleIOSuite {
               XmlEvent.EndTag(QName("a"))
             )
           ),
-          tokens
+          tokens.toSet
         ))
   }
 

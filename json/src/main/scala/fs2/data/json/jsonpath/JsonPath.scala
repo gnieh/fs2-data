@@ -22,7 +22,7 @@ case class JsonPath(locations: NonEmptyList[Location])
 sealed trait Location
 object Location {
   case class Child(child: Property) extends Location
-  case class Descendent(child: Property) extends Location
+  case class Descendant(child: Property) extends Location
   case class Pred(predicate: Predicate) extends Location
 }
 

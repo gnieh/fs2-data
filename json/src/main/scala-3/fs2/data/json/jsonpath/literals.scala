@@ -61,7 +61,7 @@ package object literals {
     def apply(l: Location)(using Quotes) =
       l match {
         case Location.Child(c)      => '{ Location.Child(${ Expr(c) }) }
-        case Location.Descendent(d) => '{ Location.Descendent(${ Expr(d) }) }
+        case Location.Descendant(d) => '{ Location.Descendant(${ Expr(d) }) }
         case Location.Pred(p)       => '{ Location.Pred(${ Expr(p) }) }
       }
   }

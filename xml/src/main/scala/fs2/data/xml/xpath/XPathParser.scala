@@ -107,7 +107,7 @@ class XPathParser[F[_]](val input: String)(implicit F: MonadError[F, Throwable])
     next("axis").flatMap {
       case '/' =>
         peek.flatMap {
-          case Some('/') => consume.as(Axis.Descendent: Axis)
+          case Some('/') => consume.as(Axis.Descendant: Axis)
           case _         => pure(Axis.Child: Axis)
         }
       case c =>
