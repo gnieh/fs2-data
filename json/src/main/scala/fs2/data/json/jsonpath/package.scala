@@ -38,12 +38,19 @@ package object jsonpath {
       * The match streams are emitted in the same order they are encountered in the input stream, i.e.
       * in the order of the opening tags matching the query.
       *
+      * The `maxMatch` parameter controls how many matches are to be emitted at most.
+      * Further matches won't be emitted if any.
+      *
+      * The `maxNest` parameter controls the maximum level of match nesting to be emitted.
+      * E.g., if you want to emit only the top most matches, set it to `0`.
+      *
       * '''Warning''': make sure you actually consume all the emitted streams otherwise
       * this can lead to memory problems.
       */
-    def raw(path: JsonPath)(implicit F: Concurrent[F]): Pipe[F, Token, Stream[F, Token]] =
+    def raw(path: JsonPath, maxMatch: Int = Int.MaxValue, maxNest: Int = Int.MaxValue)(implicit
+        F: Concurrent[F]): Pipe[F, Token, Stream[F, Token]] =
       _.through(JsonTagger.pipe)
-        .through(new JsonQueryPipe(compileJsonPath(path)).raw(_))
+        .through(new JsonQueryPipe(compileJsonPath(path)).raw(maxMatch, maxNest)(_))
         .map(_.map(untag(_)).unNone)
 
     /** Selects the first match in the input stream. The tokens of the first matching
@@ -63,13 +70,26 @@ package object jsonpath {
       * appeat in the input stream, i.e. first opening tag first.
       * If `deterministic` is set to `false`, built elements are emitted as soon
       * as possible (i.e. when the value is entirely built).
+      *
+      * The `maxMatch` parameter controls how many matches are to be emitted at most.
+      * Further matches won't be emitted if any.
+      *
+      * The `maxNest` parameter controls the maximum level of match nesting to be emitted.
+      * E.g., if you want to emit only the top most matches, set it to `0`.
+      *
       */
-    def values[T](path: JsonPath, deterministic: Boolean = true)(implicit
-        F: Concurrent[F],
-        builder: Builder[T]): Pipe[F, Token, T] =
+    def values[T](path: JsonPath,
+                  deterministic: Boolean = true,
+                  maxMatch: Int = Int.MaxValue,
+                  maxNest: Int = Int.MaxValue)(implicit F: Concurrent[F], builder: Builder[T]): Pipe[F, Token, T] =
       _.through(JsonTagger.pipe)
-        .through(new JsonQueryPipe(compileJsonPath(path))
-          .aggregate(_, _.map(untag(_)).unNone.through(json.ast.values).compile.toList, deterministic))
+        .through(
+          new JsonQueryPipe(compileJsonPath(path))
+            .aggregate(_,
+                       _.map(untag(_)).unNone.through(json.ast.values).compile.toList,
+                       deterministic,
+                       maxMatch,
+                       maxNest))
         .flatMap(Stream.emits(_))
 
     /** Selects all matching elements in the input stream, and applies the [[fs2.Collector]] to it.
@@ -78,13 +98,23 @@ package object jsonpath {
       * appeat in the input stream, i.e. first opening tag first.
       * If `deterministic` is set to `false`, built elements are emitted as soon
       * as possible (i.e. when the value is entirely built).
+      *
+      * The `maxMatch` parameter controls how many matches are to be emitted at most.
+      * Further matches won't be emitted if any.
+      *
+      * The `maxNest` parameter controls the maximum level of match nesting to be emitted.
+      * E.g., if you want to emit only the top most matches, set it to `0`.
+      *
       */
-    def collect[T](path: JsonPath, collector: Collector.Aux[Token, T], deterministic: Boolean = true)(implicit
-        F: Concurrent[F]): Pipe[F, Token, T] =
+    def collect[T](path: JsonPath,
+                   collector: Collector.Aux[Token, T],
+                   deterministic: Boolean = true,
+                   maxMatch: Int = Int.MaxValue,
+                   maxNest: Int = Int.MaxValue)(implicit F: Concurrent[F]): Pipe[F, Token, T] =
       _.through(JsonTagger.pipe)
         .through(
           new JsonQueryPipe(compileJsonPath(path))
-            .aggregate(_, _.map(untag(_)).unNone.compile.to(collector), deterministic))
+            .aggregate(_, _.map(untag(_)).unNone.compile.to(collector), deterministic, maxMatch, maxNest))
 
   }
 

@@ -57,13 +57,15 @@ private[data] abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher,
   private def go(chunk: Chunk[T],
                  idx: Int,
                  rest: Stream[F, T],
+                 maxMatch: Int,
+                 maxNest: Int,
                  depth: Int,
                  queues: List[(Int, Queue[F, Option[T]])],
                  resetting: Boolean,
                  q: NonEmptyList[(Int, Boolean)]): Pull[F, Stream[F, T], Unit] =
     if (idx >= chunk.size) {
       rest.pull.uncons.flatMap {
-        case Some((hd, tl)) => go(hd, 0, tl, depth, queues, resetting, q)
+        case Some((hd, tl)) => go(hd, 0, tl, maxMatch, maxNest, depth, queues, resetting, q)
         case None           => Pull.done
       }
     } else {
@@ -72,16 +74,19 @@ private[data] abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher,
           // upon reading a closing tag, close every sub stream that matches this depth
           // return to the state corresponding to the previous depth, and reset to the
           // previous resetting state
-          val (top, nested) = queues.span(_._1 == depth - 1)
-          Pull.eval((if (emitOpenAndClose) queues else nested).traverse_(_._2.offer(tok.some))) >> Pull.eval(
-            top.traverse_(_._2.offer(none))) >> go(
+          val (currentDepth, ancestors) = queues.span(_._1 == depth - 1)
+          Pull.eval((if (emitOpenAndClose) queues else ancestors).traverse_(_._2.offer(tok.some))) >> Pull.eval(
+            currentDepth.traverse_(_._2.offer(none))) >> go(
             chunk,
             idx + 1,
             rest,
+            maxMatch,
+            maxNest + currentDepth.size,
             depth - 1,
-            nested,
+            ancestors,
             q.tail.headOption.fold(false)(_._2),
-            NonEmptyList.fromList(q.tail).getOrElse(NonEmptyList.one((dfa.init, false))))
+            NonEmptyList.fromList(q.tail).getOrElse(NonEmptyList.one((dfa.init, false)))
+          )
         case Open(tok) =>
           // on an opening token, check if we can transition from it in the current state
           dfa.step(q.head._1, makeMatchingElement(tok)) match {
@@ -91,57 +96,56 @@ private[data] abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher,
               // this is not a new match, and we just forward the tokens to the currently
               // open down streams but we do not create a new one
               val updateQueues =
-                if (!resetting && dfa.finals.contains(q1)) {
+                if (!resetting && maxMatch > 0 && maxNest >= 0 && dfa.finals.contains(q1)) {
                   // this is a new match, spawn a new down stream
                   Pull.eval(Queue.unbounded[F, Option[T]]).flatMap { queue =>
-                    Pull.output1(Stream.fromQueueNoneTerminated(queue, 1)).as((depth, queue) :: queues)
+                    Pull
+                      .output1(Stream.fromQueueNoneTerminated(queue, 1))
+                      .as(((depth, queue) :: queues, maxMatch - 1, maxNest - 1))
                   }
                 } else {
-                  Pull.pure(queues)
+                  Pull.pure((queues, maxMatch, maxNest))
                 }
               // in the end, push the new state corresponding to this depth, together with the current resetting state
               updateQueues
-                .evalMap(queues =>
+                .evalMap { case (queues, maxMatch, maxNest) =>
                   (if (emitOpenAndClose) queues else queues.dropWhile(_._1 == depth))
                     .traverse_(_._2.offer(tok.some))
-                    .as(queues))
-                .flatMap(go(chunk, idx + 1, rest, depth + 1, _, resetting, (q1, resetting) :: q))
+                    .as((queues, maxMatch, maxNest))
+                }
+                .flatMap { case (queues, maxMatch, maxNest) =>
+                  go(chunk, idx + 1, rest, maxMatch, maxNest, depth + 1, queues, resetting, (q1, resetting) :: q)
+                }
             case None =>
               // the opening token is a mismatch, no transition exists for it
               // enter in resetting mode for descendants
-              Pull.eval(queues.traverse_(_._2.offer(tok.some))) >> go(chunk,
-                                                                      idx + 1,
-                                                                      rest,
-                                                                      depth + 1,
-                                                                      queues,
-                                                                      true,
-                                                                      (q.head._1, resetting) :: q)
+              Pull.eval(queues.traverse_(_._2.offer(tok.some))) >>
+                go(chunk, idx + 1, rest, maxMatch, maxNest, depth + 1, queues, true, (q.head._1, resetting) :: q)
           }
         case tok =>
           // internal tokens are just forwarded to current match down streams
-          Pull
-            .eval(queues.traverse_(_._2.offer(tok.some))) >> go(chunk, idx + 1, rest, depth, queues, resetting, q)
+          Pull.eval(queues.traverse_(_._2.offer(tok.some))) >>
+            go(chunk, idx + 1, rest, maxMatch, maxNest, depth, queues, resetting, q)
       }
     }
 
-  final def raw(s: Stream[F, T]): Stream[F, Stream[F, T]] =
-    go(Chunk.empty, 0, s, 0, Nil, false, NonEmptyList.one((dfa.init, false))).stream
+  final def raw(maxMatch: Int, maxNest: Int)(s: Stream[F, T]): Stream[F, Stream[F, T]] =
+    go(Chunk.empty, 0, s, maxMatch, maxNest, 0, Nil, false, NonEmptyList.one((dfa.init, false))).stream
 
   final def first(s: Stream[F, T]): Stream[F, T] =
-    raw(s).pull.uncons1
-      .flatMap {
-        case Some(headTail) => Pull.output1(headTail)
-        case None           => Pull.done
-      }
-      .stream
-      .flatMap { case (hd, tl) =>
-        hd.concurrently(tl.parJoinUnbounded.attempt.drain)
-      }
+    raw(1, 0)(s).parJoinUnbounded
 
-  final def aggregate[U](s: Stream[F, T], f: Stream[F, T] => F[U], deterministic: Boolean) =
+  final def topmost(s: Stream[F, T]): Stream[F, T] =
+    raw(Int.MaxValue, 0)(s).parJoinUnbounded
+
+  final def aggregate[U](s: Stream[F, T],
+                         f: Stream[F, T] => F[U],
+                         deterministic: Boolean,
+                         maxMatch: Int,
+                         maxNest: Int) =
     if (deterministic)
-      s.through(raw).parEvalMapUnbounded(f)
+      s.through(raw(maxMatch, maxNest)).parEvalMapUnbounded(f)
     else
-      s.through(raw).parEvalMapUnordered(Int.MaxValue)(f)
+      s.through(raw(maxMatch, maxNest)).parEvalMapUnordered(Int.MaxValue)(f)
 
 }
