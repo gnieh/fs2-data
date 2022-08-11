@@ -129,4 +129,84 @@ object JsonPathSpec extends SimpleIOSuite {
 
   }
 
+  val jsonToRestrict =
+    json"""{
+             "a": {
+               "a": {
+                 "c": true
+               },
+               "b": 1,
+               "c": 2
+             }
+           }
+           {
+             "root": {
+               "a": true
+             }
+           }"""
+      .lift[IO]
+
+  test("topmost matches only") {
+    val path = jsonpath"$$..a"
+
+    jsonToRestrict
+      .through(filter.collect(path, List, maxNest = 0))
+      .compile
+      .toList
+      .map(expect.same(
+        List(
+          List(
+            Token.StartObject,
+            Token.Key("a"),
+            Token.StartObject,
+            Token.Key("c"),
+            Token.TrueValue,
+            Token.EndObject,
+            Token.Key("b"),
+            Token.NumberValue("1"),
+            Token.Key("c"),
+            Token.NumberValue("2"),
+            Token.EndObject
+          ),
+          List(Token.TrueValue)
+        ),
+        _
+      ))
+
+  }
+
+  test("first 2 matches only") {
+    val path = jsonpath"$$..a"
+
+    jsonToRestrict
+      .through(filter.collect(path, List, maxMatch = 2))
+      .compile
+      .toList
+      .map(expect.same(
+        List(
+          List(
+            Token.StartObject,
+            Token.Key("a"),
+            Token.StartObject,
+            Token.Key("c"),
+            Token.TrueValue,
+            Token.EndObject,
+            Token.Key("b"),
+            Token.NumberValue("1"),
+            Token.Key("c"),
+            Token.NumberValue("2"),
+            Token.EndObject
+          ),
+          List(
+            Token.StartObject,
+            Token.Key("c"),
+            Token.TrueValue,
+            Token.EndObject
+          )
+        ),
+        _
+      ))
+
+  }
+
 }
