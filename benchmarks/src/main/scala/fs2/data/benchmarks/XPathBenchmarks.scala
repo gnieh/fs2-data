@@ -43,7 +43,7 @@ class XPathBenchmarks {
   @Benchmark
   def raw(): Unit = {
     xmlStream
-      .through(pipe.raw)
+      .through(pipe.raw(Int.MaxValue, Int.MaxValue))
       .parEvalMapUnbounded(_.compile.drain)
       .compile
       .drain

@@ -126,7 +126,8 @@ val root = (project in file("."))
       text.js,
       xml.js,
       scalaXml.js,
-      finiteState.js
+      finiteState.js,
+      benchmarks.jvm,
     ),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
