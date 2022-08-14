@@ -1,7 +1,7 @@
 val scala212 = "2.12.16"
 val scala213 = "2.13.8"
 val scala3 = "3.1.3"
-val fs2Version = "3.2.11"
+val fs2Version = "3.2.12"
 val circeVersion = "0.14.2"
 val circeExtrasVersion = "0.14.1"
 val playVersion = "2.9.2"
@@ -64,10 +64,10 @@ val commonSettings = List(
     "io.circe" %%% "circe-jawn" % circeVersion % "test",
     "io.circe" %%% "circe-generic" % circeVersion % "test",
     "co.fs2" %%% "fs2-io" % fs2Version % "test",
-    "com.disneystreaming" %%% "weaver-cats" % "0.7.14" % "test",
-    "com.disneystreaming" %%% "weaver-cats-core" % "0.7.14" % "test",
-    "com.disneystreaming" %%% "weaver-core" % "0.7.14" % "test",
-    "com.disneystreaming" %%% "weaver-framework" % "0.7.14" % "test",
+    "com.disneystreaming" %%% "weaver-cats" % "0.7.15" % "test",
+    "com.disneystreaming" %%% "weaver-cats-core" % "0.7.15" % "test",
+    "com.disneystreaming" %%% "weaver-core" % "0.7.15" % "test",
+    "com.disneystreaming" %%% "weaver-framework" % "0.7.15" % "test",
     "com.eed3si9n.expecty" %%% "expecty" % "0.15.4" % "test",
     "org.portable-scala" %%% "portable-scala-reflect" % "1.1.2" cross CrossVersion.for3Use2_13
   ) ++ PartialFunction
@@ -126,7 +126,8 @@ val root = (project in file("."))
       text.js,
       xml.js,
       scalaXml.js,
-      finiteState.js
+      finiteState.js,
+      benchmarks.jvm,
     ),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
