@@ -1,0 +1,226 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>fs2-data - CBOR/JSON</title>
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <link rel="stylesheet" href="/css/syntax.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
+    <style>body{font-family: overpass, sans-serif; }</style>
+
+    <meta name="generator" content="Nanoc 4.12.7">
+  </head>
+  <body>
+    <header>
+        <nav class="nav-extended red darken-2">
+          <a href="#!" class="brand-logo right">fs2-data</a>
+          <a href="#" data-target="collapsed" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+          <div class="nav-wrapper">
+            <ul id="nav-mobile" class="left hide-on-med-and-down">
+              <li><a href="/">Home</a></li>
+              <li><a href="/documentation/">Documentation</a></li>
+              <li><a href="/api/">Scaladoc</a></li>
+              <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+            </ul>
+          </div>
+          
+          
+          <div class="nav-content">
+            <ul class="tabs tabs-transparent">
+              
+              
+              <li class="tab active"><a href="/documentation/cbor-json/">CBOR/JSON</a></li>
+              
+              
+            </ul>
+          </div>
+          
+        </nav>
+
+    </header>
+
+    <ul class="sidenav" id="collapsed">
+      <li><a href="/">Home</a></li>
+      <li><a href="/documentation/">Documentation</a></li>
+      <li><a href="/api/">Scaladoc</a></li>
+      <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+    </ul>
+
+    
+    <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
+      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/main/documentation/docs/cbor-json/index.md" target="_blank">
+        <i class="large material-icons">mode_edit</i>
+      </a>
+    </div>
+    
+
+    <main>
+      <div class="container">
+        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-cbor-json_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-cbor-json_2.13.svg" alt="Maven Central" /></a></p>
+
+<p>The <code>fs2-data-cbor-json</code> module provides pipes to convert streams between CBOR and JSON representations in both directions.</p>
+
+<p>This page covers the following topics:</p>
+<ul id="markdown-toc">
+  <li><a href="#cbor-to-json" id="markdown-toc-cbor-to-json">CBOR to JSON</a></li>
+  <li><a href="#json-to-cbor" id="markdown-toc-json-to-cbor">JSON to CBOR</a></li>
+</ul>
+
+<h3 id="cbor-to-json">CBOR to JSON</h3>
+
+<p>The library implements decoding of CBOR item streams into JSON token streams.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2._</span>
+<span class="k">import</span> <span class="nn">fs2.data.cbor</span>
+<span class="k">import</span> <span class="nn">fs2.data.cbor.low.CborItem</span>
+
+<span class="k">import</span> <span class="nn">scodec.bits._</span>
+
+<span class="nc">Stream</span>
+  <span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span>
+    <span class="nv">CborItem</span><span class="o">.</span><span class="py">PositiveInt</span><span class="o">(</span><span class="n">hex</span><span class="s">"cafebabe"</span><span class="o">),</span>
+    <span class="nv">CborItem</span><span class="o">.</span><span class="py">StartArray</span><span class="o">(</span><span class="mi">3</span><span class="o">),</span>
+    <span class="nv">CborItem</span><span class="o">.</span><span class="py">TextString</span><span class="o">(</span><span class="s">"Some string"</span><span class="o">),</span>
+    <span class="nv">CborItem</span><span class="o">.</span><span class="py">TextString</span><span class="o">(</span><span class="s">"Some other string"</span><span class="o">),</span>
+    <span class="nv">CborItem</span><span class="o">.</span><span class="py">False</span>
+  <span class="o">))</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">cbor</span><span class="o">.</span><span class="py">json</span><span class="o">.</span><span class="py">decodeItems</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">])</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res0: Either[Throwable, List[data.json.Token]] = Right(</span>
+<span class="c1">//   value = List(</span>
+<span class="c1">//     NumberValue(value = "3405691582"),</span>
+<span class="c1">//     StartArray,</span>
+<span class="c1">//     StringValue(value = "Some string"),</span>
+<span class="c1">//     StringValue(value = "Some other string"),</span>
+<span class="c1">//     FalseValue,</span>
+<span class="c1">//     EndArray</span>
+<span class="c1">//   )</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>CBOR is more expressive than JSON and allows to express more kind of data, so not all CBOR item streams can be successfully converted, or some information loss might occur.</p>
+
+<p>In particular restrictions are:</p>
+<ul>
+  <li>maps with non string (text or byte) keys are not supported</li>
+  <li>unknown tags are simply ignored</li>
+</ul>
+
+<p>To convert to JSON, some tags are understood by the pipe, namely:</p>
+<ul>
+  <li>decoding of byte strings (potentially nested into arrays and maps) into base64 or base16 encoded JSON string (tags 21, 22, and 23)</li>
+  <li>decoding of byte strings (potentially nested into arrays and maps) into numbers (tags 2, 3, and 5)</li>
+</ul>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.cbor.Tags</span>
+
+<span class="nc">Stream</span>
+  <span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span>
+    <span class="nv">CborItem</span><span class="o">.</span><span class="py">Tag</span><span class="o">(</span><span class="nv">Tags</span><span class="o">.</span><span class="py">ExpectedBase64Encoding</span><span class="o">),</span>
+    <span class="nv">CborItem</span><span class="o">.</span><span class="py">StartArray</span><span class="o">(</span><span class="mi">2</span><span class="o">),</span>
+    <span class="nv">CborItem</span><span class="o">.</span><span class="py">ByteString</span><span class="o">(</span><span class="n">hex</span><span class="s">"cafebabe"</span><span class="o">),</span>
+    <span class="nv">CborItem</span><span class="o">.</span><span class="py">ByteString</span><span class="o">(</span><span class="n">hex</span><span class="s">"ff"</span><span class="o">),</span>
+    <span class="nv">CborItem</span><span class="o">.</span><span class="py">Tag</span><span class="o">(</span><span class="nv">Tags</span><span class="o">.</span><span class="py">PositiveBigNum</span><span class="o">),</span>
+    <span class="nv">CborItem</span><span class="o">.</span><span class="py">ByteString</span><span class="o">(</span><span class="n">hex</span><span class="s">"1234567890abcdef"</span><span class="o">)</span>
+  <span class="o">))</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">cbor</span><span class="o">.</span><span class="py">json</span><span class="o">.</span><span class="py">decodeItems</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">])</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res1: Either[Throwable, List[data.json.Token]] = Right(</span>
+<span class="c1">//   value = List(</span>
+<span class="c1">//     StartArray,</span>
+<span class="c1">//     StringValue(value = "yv66vg=="),</span>
+<span class="c1">//     StringValue(value = "/w=="),</span>
+<span class="c1">//     EndArray,</span>
+<span class="c1">//     NumberValue(value = "1311768467294899695")</span>
+<span class="c1">//   )</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<h3 id="json-to-cbor">JSON to CBOR</h3>
+
+<p>Conversely, you can convert a stream of JSON tokens into a stream CBOR items. The pipe tries to encode the elements using the smallest CBOR type that can hold the value. However, some simplications are made:</p>
+<ul>
+  <li>all JSON collections (arrays and objects) generate their indefinite length CBOR counterparts</li>
+  <li>half-precision floats are never generated</li>
+</ul>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json</span>
+<span class="k">import</span> <span class="nn">fs2.data.json.Token</span>
+
+<span class="nc">Stream</span>
+  <span class="o">.</span><span class="py">emits</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span>
+    <span class="nv">Token</span><span class="o">.</span><span class="py">StartArray</span><span class="o">,</span>
+    <span class="nv">Token</span><span class="o">.</span><span class="py">StringValue</span><span class="o">(</span><span class="s">"a string"</span><span class="o">),</span>
+    <span class="nv">Token</span><span class="o">.</span><span class="py">NumberValue</span><span class="o">(</span><span class="s">"1.34"</span><span class="o">),</span>
+    <span class="nv">Token</span><span class="o">.</span><span class="py">StartObject</span><span class="o">,</span>
+    <span class="nv">Token</span><span class="o">.</span><span class="py">Key</span><span class="o">(</span><span class="s">"a"</span><span class="o">),</span>
+    <span class="nv">Token</span><span class="o">.</span><span class="py">TrueValue</span><span class="o">,</span>
+    <span class="nv">Token</span><span class="o">.</span><span class="py">Key</span><span class="o">(</span><span class="s">"b"</span><span class="o">),</span>
+    <span class="nv">Token</span><span class="o">.</span><span class="py">NullValue</span><span class="o">,</span>
+    <span class="nv">Token</span><span class="o">.</span><span class="py">EndObject</span><span class="o">,</span>
+    <span class="nv">Token</span><span class="o">.</span><span class="py">EndArray</span>
+  <span class="o">))</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">json</span><span class="o">.</span><span class="py">cbor</span><span class="o">.</span><span class="py">encodeItems</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res2: cats.package.Id[List[CborItem]] = List(</span>
+<span class="c1">//   StartIndefiniteArray,</span>
+<span class="c1">//   TextString(string = "a string"),</span>
+<span class="c1">//   Tag(tag = 4L),</span>
+<span class="c1">//   StartArray(size = 2L),</span>
+<span class="c1">//   NegativeInt(</span>
+<span class="c1">//     bytes = Chunk(</span>
+<span class="c1">//       bytes = View(</span>
+<span class="c1">//         at = scodec.bits.ByteVector$AtArray@60ed20f4,</span>
+<span class="c1">//         offset = 0L,</span>
+<span class="c1">//         size = 1L</span>
+<span class="c1">//       )</span>
+<span class="c1">//     )</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   PositiveInt(</span>
+<span class="c1">//     bytes = Chunk(</span>
+<span class="c1">//       bytes = View(</span>
+<span class="c1">//         at = scodec.bits.ByteVector$AtArray@3e0fa287,</span>
+<span class="c1">//         offset = 0L,</span>
+<span class="c1">//         size = 2L</span>
+<span class="c1">//       )</span>
+<span class="c1">//     )</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   StartIndefiniteMap,</span>
+<span class="c1">//   TextString(string = "a"),</span>
+<span class="c1">//   True,</span>
+<span class="c1">//   TextString(string = "b"),</span>
+<span class="c1">//   Null,</span>
+<span class="c1">//   Break,</span>
+<span class="c1">//   Break</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+      </div>
+    </main>
+
+    <footer class="page-footer red lighten-2">
+      <div class="footer-copyright red darken-2">
+        <div class="container">
+          Copyright © 2019-2022 <a class="grey-text text-lighten-4" href="https://twitter.com/lucassatabin">@lucassatabin</a>
+          <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" class="grey-text text-lighten-4 right" /></a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+    <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.sidenav');
+      var instances = M.Sidenav.init(elems, {});
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.tooltipped');
+      var instances = M.Tooltip.init(elems, {});
+    });
+    </script>
+  </body>
+</html>

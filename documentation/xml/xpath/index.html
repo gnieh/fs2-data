@@ -1,0 +1,287 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>fs2-data - XPath</title>
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <link rel="stylesheet" href="/css/syntax.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
+    <style>body{font-family: overpass, sans-serif; }</style>
+
+    <meta name="generator" content="Nanoc 4.12.7">
+  </head>
+  <body>
+    <header>
+        <nav class="nav-extended red darken-2">
+          <a href="#!" class="brand-logo right">fs2-data</a>
+          <a href="#" data-target="collapsed" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+          <div class="nav-wrapper">
+            <ul id="nav-mobile" class="left hide-on-med-and-down">
+              <li><a href="/">Home</a></li>
+              <li><a href="/documentation/">Documentation</a></li>
+              <li><a href="/api/">Scaladoc</a></li>
+              <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+            </ul>
+          </div>
+          
+          
+          <div class="nav-content">
+            <ul class="tabs tabs-transparent">
+              
+              
+              <li class="tab"><a href="/documentation/xml/">XML</a></li>
+              
+              
+              
+              <li class="tab"><a href="/documentation/xml/libraries/">XML Libraries</a></li>
+              
+              
+              
+              <li class="tab active"><a href="/documentation/xml/xpath/">XPath</a></li>
+              
+              
+            </ul>
+          </div>
+          
+        </nav>
+
+    </header>
+
+    <ul class="sidenav" id="collapsed">
+      <li><a href="/">Home</a></li>
+      <li><a href="/documentation/">Documentation</a></li>
+      <li><a href="/api/">Scaladoc</a></li>
+      <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+    </ul>
+
+    
+    <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
+      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/main/documentation/docs/xml/xpath.md" target="_blank">
+        <i class="large material-icons">mode_edit</i>
+      </a>
+    </div>
+    
+
+    <main>
+      <div class="container">
+        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-xml_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-xml_2.13.svg" alt="Maven Central" /></a></p>
+
+<p>The <code>fs2-data-xml</code> module provides a streaming implementation of XPath.</p>
+
+<p>This page covers the following topics:</p>
+<ul id="markdown-toc">
+  <li><a href="#xpath" id="markdown-toc-xpath">XPath</a>    <ul>
+      <li><a href="#parsing-a-string-using-the-xpath-parser" id="markdown-toc-parsing-a-string-using-the-xpath-parser">Parsing a string using the XPath parser</a></li>
+      <li><a href="#using-xpath" id="markdown-toc-using-xpath">Using XPath</a></li>
+    </ul>
+  </li>
+</ul>
+
+<p>Let’s use the following XML input as an example.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.implicits._</span>
+
+<span class="k">import</span> <span class="nn">fs2._</span>
+<span class="k">import</span> <span class="nn">fs2.data.xml._</span>
+
+<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="n">xml</span><span class="s">"""
+&lt;root&gt;
+  &lt;a attr="value"&gt;
+    &lt;b&gt;text&lt;/b&gt;
+    &lt;a&gt;
+      &lt;c&gt;&lt;![CDATA[some other text]]&gt;&lt;/c&gt;
+    &lt;/a&gt;
+  &lt;/a&gt;
+&lt;/root&gt;
+"""</span>
+<span class="c1">// stream: Stream[Fallible, XmlEvent] = Stream(..)</span>
+</code></pre></div></div>
+
+<h3 id="xpath">XPath</h3>
+
+<p>A subset of <a href="https://www.w3.org/TR/xpath/">XPath</a> can be used to select a subset of a XML event stream. There are several ways to create selectors:</p>
+<ul>
+  <li>build the selector using the constructors, which can be quite verbose and cumbersome;</li>
+  <li>parse a string with the XPath parser;</li>
+  <li>use the <code>xpath</code> interpolator.</li>
+</ul>
+
+<h4 id="parsing-a-string-using-the-xpath-parser">Parsing a string using the XPath parser</h4>
+
+<p>For instance, to select and enumerate <code>a</code> elements, you can create this selector. Only the events describing the <code>a</code> elements will be emitted as a result.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.xml.xpath._</span>
+
+<span class="k">val</span> <span class="nv">selector</span> <span class="k">=</span> <span class="nv">XPathParser</span><span class="o">.</span><span class="py">either</span><span class="o">(</span><span class="s">"//a"</span><span class="o">)</span>
+<span class="c1">// selector: Either[Throwable, XPath] = Right(</span>
+<span class="c1">//   value = XPath(</span>
+<span class="c1">//     locations = NonEmptyList(</span>
+<span class="c1">//       head = List(</span>
+<span class="c1">//         Location(</span>
+<span class="c1">//           axis = Descendant,</span>
+<span class="c1">//           node = Node(prefix = None, local = Some(value = "a")),</span>
+<span class="c1">//           predicate = None</span>
+<span class="c1">//         )</span>
+<span class="c1">//       ),</span>
+<span class="c1">//       tail = List()</span>
+<span class="c1">//     )</span>
+<span class="c1">//   )</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>The XPath parser wraps the result in anything that has an <a href="https://typelevel.org/cats/api/cats/MonadError.html"><code>MonadError</code> with error type <code>Throwable</code></a> to catch potential parsing errors. If you prefer not to have this wrapping, you can use the <code>xpath</code> interpolator.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.xml.xpath.literals._</span>
+
+<span class="k">val</span> <span class="nv">path</span> <span class="k">=</span> <span class="n">xpath</span><span class="s">"//a"</span>
+<span class="c1">// path: XPath = XPath(</span>
+<span class="c1">//   locations = NonEmptyList(</span>
+<span class="c1">//     head = List(</span>
+<span class="c1">//       Location(</span>
+<span class="c1">//         axis = Descendant,</span>
+<span class="c1">//         node = Node(prefix = None, local = Some(value = "a")),</span>
+<span class="c1">//         predicate = None</span>
+<span class="c1">//       )</span>
+<span class="c1">//     ),</span>
+<span class="c1">//     tail = List()</span>
+<span class="c1">//   )</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>The advantage of the interpolator is that potential syntax errors are checked at compilation time.</p>
+
+<p>The supported XPath features are:</p>
+<ul>
+  <li><code>/</code> the child axis
+    <ul>
+      <li><code>/a</code> selects all <code>a</code> children</li>
+      <li><code>/*</code> selects all children elements</li>
+    </ul>
+  </li>
+  <li><code>//</code> The descendant axis
+    <ul>
+      <li><code>//a</code> selects all <code>a</code> descendants</li>
+      <li><code>//*</code> selects all descendant elements</li>
+    </ul>
+  </li>
+  <li><code>[&lt;attribute selection expression&gt;]</code> attribute predicate selection
+    <ul>
+      <li><code>@attr</code> attribute <code>attr</code> exists</li>
+      <li><code>@attr == "value"</code> attribute <code>attr</code> equals <code>value</code></li>
+      <li><code>@attr != "value"</code> attribute <code>attr</code> does not equal <code>value</code></li>
+      <li><code>p1 &amp;&amp; p2</code> element attributes match both <code>p1</code> and <code>p2</code></li>
+      <li><code>p1 || p2</code> element attributes match either <code>p1</code> or <code>p2</code></li>
+      <li><code>!p</code> element attributes do not match <code>p</code></li>
+    </ul>
+  </li>
+  <li><code>xp1|xp2</code> matches the XPath expression <code>xp1</code> or <code>xp2</code></li>
+</ul>
+
+<p>Operator precedence is the common one: <code>!</code> has precedence over <code>&amp;&amp;</code> which has precedence over <code>||</code>. This means that <code>!p1 &amp;&amp; p2 || p3</code> is the same as <code>((!p1) &amp;&amp; p2) || p3</code>.<br />
+You can use parentheses to associate differently, for instance <code>!(p1 &amp;&amp; p2) || p3</code>.</p>
+
+<h4 id="using-xpath">Using XPath</h4>
+
+<p>Using the path defined above, we can filter the stream of events, to only emit selected tokens downstream. This can be used to drastically reduce the amount of emitted data, to only the parts that are of interest for you.<br />
+The filtering pipes are located in the <code>fs2.data.xml.xpath.filter</code> namespace.</p>
+
+<p>Since XPath includes a recursive descent operator, there can be nested matches for your path.<br />
+The <code>filter.raw</code> emits a stream of all matches.<br />
+Each match is represented as a nested stream of XML events which must be consumed.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.Show</span>
+<span class="k">import</span> <span class="nn">cats.effect._</span>
+<span class="k">import</span> <span class="nn">cats.effect.unsafe.implicits.global</span>
+
+<span class="n">stream</span>
+  <span class="o">.</span><span class="py">lift</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">filter</span><span class="o">.</span><span class="py">raw</span><span class="o">(</span><span class="n">path</span><span class="o">))</span>
+  <span class="o">.</span><span class="py">parEvalMapUnbounded</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nc">Show</span><span class="o">[</span><span class="kt">XmlEvent</span><span class="o">].</span><span class="py">show</span><span class="o">(</span><span class="k">_</span><span class="o">)).</span><span class="py">compile</span><span class="o">.</span><span class="py">foldMonoid</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">toList</span>
+  <span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res0: List[String] = List(</span>
+<span class="c1">//   """&lt;a attr='value'&gt;</span>
+<span class="c1">//     &lt;b &gt;text&lt;/b&gt;</span>
+<span class="c1">//     &lt;a &gt;</span>
+<span class="c1">//       &lt;c &gt;&lt;![CDATA[some other text]]&gt;&lt;/c&gt;</span>
+<span class="c1">//     &lt;/a&gt;</span>
+<span class="c1">//   &lt;/a&gt;""",</span>
+<span class="c1">//   """&lt;a &gt;</span>
+<span class="c1">//       &lt;c &gt;&lt;![CDATA[some other text]]&gt;&lt;/c&gt;</span>
+<span class="c1">//     &lt;/a&gt;"""</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>The matching streams are returned in the order their matching element is encountered in the input.<br />
+This means that for nested matches, the first stream returned is the ancestor element.</p>
+
+<p>The library offers <code>filter.collect</code> to collect each match for any collector.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">stream</span>
+  <span class="o">.</span><span class="py">lift</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">filter</span><span class="o">.</span><span class="py">collect</span><span class="o">(</span><span class="n">path</span><span class="o">,</span> <span class="nv">collector</span><span class="o">.</span><span class="py">show</span><span class="o">))</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">toList</span>
+  <span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res1: List[collector.show.Out] = List(</span>
+<span class="c1">//   """&lt;a attr='value'&gt;</span>
+<span class="c1">//     &lt;b &gt;text&lt;/b&gt;</span>
+<span class="c1">//     &lt;a &gt;</span>
+<span class="c1">//       &lt;c &gt;&lt;![CDATA[some other text]]&gt;&lt;/c&gt;</span>
+<span class="c1">//     &lt;/a&gt;</span>
+<span class="c1">//   &lt;/a&gt;""",</span>
+<span class="c1">//   """&lt;a &gt;</span>
+<span class="c1">//       &lt;c &gt;&lt;![CDATA[some other text]]&gt;&lt;/c&gt;</span>
+<span class="c1">//     &lt;/a&gt;"""</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>If you want to have results emitted as early as possible instead of in order, you can set the <code>deterministic</code> parameter to <code>false</code>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">stream</span>
+  <span class="o">.</span><span class="py">lift</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">filter</span><span class="o">.</span><span class="py">collect</span><span class="o">(</span><span class="n">path</span><span class="o">,</span> <span class="nv">collector</span><span class="o">.</span><span class="py">show</span><span class="o">,</span> <span class="n">deterministic</span> <span class="k">=</span> <span class="kc">false</span><span class="o">))</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">toList</span>
+  <span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res2: List[collector.show.Out] = List(</span>
+<span class="c1">//   """&lt;a &gt;</span>
+<span class="c1">//       &lt;c &gt;&lt;![CDATA[some other text]]&gt;&lt;/c&gt;</span>
+<span class="c1">//     &lt;/a&gt;""",</span>
+<span class="c1">//   """&lt;a attr='value'&gt;</span>
+<span class="c1">//     &lt;b &gt;text&lt;/b&gt;</span>
+<span class="c1">//     &lt;a &gt;</span>
+<span class="c1">//       &lt;c &gt;&lt;![CDATA[some other text]]&gt;&lt;/c&gt;</span>
+<span class="c1">//     &lt;/a&gt;</span>
+<span class="c1">//   &lt;/a&gt;"""</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+
+      </div>
+    </main>
+
+    <footer class="page-footer red lighten-2">
+      <div class="footer-copyright red darken-2">
+        <div class="container">
+          Copyright © 2019-2022 <a class="grey-text text-lighten-4" href="https://twitter.com/lucassatabin">@lucassatabin</a>
+          <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" class="grey-text text-lighten-4 right" /></a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+    <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.sidenav');
+      var instances = M.Sidenav.init(elems, {});
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.tooltipped');
+      var instances = M.Tooltip.init(elems, {});
+    });
+    </script>
+  </body>
+</html>

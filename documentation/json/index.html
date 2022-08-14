@@ -38,11 +38,15 @@
               
               
               
-              <li class="tab"><a href="/documentation/json/interpolators/">Interpolators</a></li>
+              <li class="tab"><a href="/documentation/json/jsonpath/">JSONPath</a></li>
               
               
               
               <li class="tab"><a href="/documentation/json/patches/">JSON Patch</a></li>
+              
+              
+              
+              <li class="tab"><a href="/documentation/json/interpolators/">Interpolators</a></li>
               
               
             </ul>
@@ -79,7 +83,6 @@
   <li><a href="#selectors" id="markdown-toc-selectors">Selectors</a>    <ul>
       <li><a href="#parsing-a-string-using-the-selector-syntax" id="markdown-toc-parsing-a-string-using-the-selector-syntax">Parsing a string using the selector syntax</a></li>
       <li><a href="#using-the-selector-dsl" id="markdown-toc-using-the-selector-dsl">Using the selector DSL</a></li>
-      <li><a href="#using-json-selectors" id="markdown-toc-using-json-selectors">Using JSON selectors</a></li>
     </ul>
   </li>
   <li><a href="#ast-builder-and-tokenizer" id="markdown-toc-ast-builder-and-tokenizer">AST builder and tokenizer</a></li>
@@ -258,66 +261,6 @@ The selector above can be written like this with the DSL:</p>
 <span class="c1">// ^^^^^</span>
 </code></pre></div></div>
 
-<h4 id="using-json-selectors">Using JSON selectors</h4>
-
-<p>Using the selector defined above, we can filter the stream of tokens, to only emit selected tokens downstream. This can be used to drastically reduce the amount of emitted data, to only the parts that are of interest for you.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">filtered</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">selector</span><span class="o">))</span>
-<span class="c1">// filtered: Stream[[x]Fallible[x], Token] = Stream(..)</span>
-<span class="nv">filtered</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res3: Either[Throwable, List[Token]] = Right(</span>
-<span class="c1">//   value = List(</span>
-<span class="c1">//     NumberValue(value = "1"),</span>
-<span class="c1">//     NumberValue(value = "2"),</span>
-<span class="c1">//     NumberValue(value = "3")</span>
-<span class="c1">//   )</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>By default, selected values are emitted in the stream as they are matched, resulting in a stream with several JSON values.<br />
-If this is not desired, you can wrap the elements into arrays and objects, from the root by calling <code>filter</code> with <code>wrap</code> set to <code>true</code>.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">filteredWrapped</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">selector</span><span class="o">,</span> <span class="n">wrap</span> <span class="k">=</span> <span class="kc">true</span><span class="o">))</span>
-<span class="c1">// filteredWrapped: Stream[[x]Fallible[x], Token] = Stream(..)</span>
-<span class="nv">filteredWrapped</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res4: Either[Throwable, List[Token]] = Right(</span>
-<span class="c1">//   value = List(</span>
-<span class="c1">//     StartObject,</span>
-<span class="c1">//     Key(value = "field3"),</span>
-<span class="c1">//     StartArray,</span>
-<span class="c1">//     NumberValue(value = "1"),</span>
-<span class="c1">//     NumberValue(value = "2"),</span>
-<span class="c1">//     NumberValue(value = "3"),</span>
-<span class="c1">//     EndArray,</span>
-<span class="c1">//     EndObject,</span>
-<span class="c1">//     StartObject,</span>
-<span class="c1">//     Key(value = "field3"),</span>
-<span class="c1">//     StartArray,</span>
-<span class="c1">//     EndArray,</span>
-<span class="c1">//     EndObject</span>
-<span class="c1">//   )</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>If the selector selects elements in an array, then the resulting values are wrapped in an array.<br />
-On the other hand, if it selects elements in an object, then emitted values are returned wrapped in an object, associated with the last selected keys.</p>
-
-<p>If you want to ensure that selected object keys are present in the JSON value, you can use the <code>!</code> operator described above. For instance if you want to select <code>field2</code> and fail the stream as soon as an object does not contain it, you can do:</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">mandatorySelector</span> <span class="k">=</span> <span class="s">".field2!"</span><span class="o">.</span><span class="py">parseSelector</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Throwable</span>, <span class="kt">*</span><span class="o">]].</span><span class="py">toTry</span><span class="o">.</span><span class="py">get</span>
-<span class="c1">// mandatorySelector: Selector = NameSelector(</span>
-<span class="c1">//   pred = Single(name = "field2"),</span>
-<span class="c1">//   strict = true,</span>
-<span class="c1">//   mandatory = true</span>
-<span class="c1">// )</span>
-<span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">filter</span><span class="o">(</span><span class="n">mandatorySelector</span><span class="o">)).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res5: Either[Throwable, List[Token]] = Left(</span>
-<span class="c1">//   value = fs2.data.json.JsonMissingFieldException: missing mandatory fields: field2</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>The <code>filter</code> preserves the chunk structure, so that the stream fails as soon as an error is encountered in the chunk, but first emitting previously selected values in the same chunk.</p>
-
 <h3 id="ast-builder-and-tokenizer">AST builder and tokenizer</h3>
 
 <p>To handle Json ASTs, you can use the types and pipes available in the <code>fs2.data.json.ast</code> package.</p>
@@ -398,13 +341,13 @@ On the other hand, if it selects elements in an object, then emitted values are 
 <p>If you are interested in the String rendering as a value, the library also provides <a href="https://oss.sonatype.org/service/local/repositories/releases/archive/co/fs2/fs2-core_2.13/2.3.0/fs2-core_2.13-2.3.0-javadoc.jar/!/fs2/Collector.html"><code>Collector</code>s</a>:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">compact</span><span class="o">)</span>
-<span class="c1">// res11: Either[Throwable, collector.compact.Out] = Right(</span>
+<span class="c1">// res8: Either[Throwable, collector.compact.Out] = Right(</span>
 <span class="c1">//   value = "{\"field1\":0,\"field2\":\"test\",\"field3\":[1,2,3]}{\"field1\":2,\"field3\":[]}"</span>
 <span class="c1">// )</span>
 
 <span class="c1">// default indentation is 2 spaces</span>
 <span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">())</span>
-<span class="c1">// res12: Either[Throwable, String] = Right(</span>
+<span class="c1">// res9: Either[Throwable, String] = Right(</span>
 <span class="c1">//   value = """{</span>
 <span class="c1">//   "field1": 0,</span>
 <span class="c1">//   "field2": "test",</span>
@@ -421,7 +364,7 @@ On the other hand, if it selects elements in an object, then emitted values are 
 <span class="c1">// )</span>
 <span class="c1">// if you are more into tabs (or any other indentation size) you can change the indentation string</span>
 <span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">(</span><span class="s">"\t"</span><span class="o">))</span>
-<span class="c1">// res13: Either[Throwable, String] = Right(</span>
+<span class="c1">// res10: Either[Throwable, String] = Right(</span>
 <span class="c1">//   value = """{</span>
 <span class="c1">// 	"field1": 0,</span>
 <span class="c1">// 	"field2": "test",</span>
@@ -481,7 +424,7 @@ On the other hand, if it selects elements in an object, then emitted values are 
 <p>You can use the renderers described above to generate the rendered chunks to send to the client.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">wrappedTokens</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">render</span><span class="o">.</span><span class="py">compact</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res14: cats.package.Id[List[String]] = List(</span>
+<span class="c1">// res11: cats.package.Id[List[String]] = List(</span>
 <span class="c1">//   "{",</span>
 <span class="c1">//   "\"events\":",</span>
 <span class="c1">//   "[",</span>
@@ -504,7 +447,7 @@ On the other hand, if it selects elements in an object, then emitted values are 
   <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">render</span><span class="o">.</span><span class="py">compact</span><span class="o">)</span>
   <span class="o">.</span><span class="py">compile</span>
   <span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res15: cats.package.Id[List[String]] = List(</span>
+<span class="c1">// res12: cats.package.Id[List[String]] = List(</span>
 <span class="c1">//   "{",</span>
 <span class="c1">//   "\"size\":4",</span>
 <span class="c1">//   ",\"events\":",</span>
@@ -527,7 +470,7 @@ On the other hand, if it selects elements in an object, then emitted values are 
     <footer class="page-footer red lighten-2">
       <div class="footer-copyright red darken-2">
         <div class="container">
-          Copyright © 2020 <a class="grey-text text-lighten-4" href="https://twitter.com/lucassatabin">@lucassatabin</a>
+          Copyright © 2019-2022 <a class="grey-text text-lighten-4" href="https://twitter.com/lucassatabin">@lucassatabin</a>
           <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" class="grey-text text-lighten-4 right" /></a>
         </div>
       </div>

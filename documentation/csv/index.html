@@ -115,9 +115,9 @@
 <span class="k">val</span> <span class="nv">textStream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emit</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">covary</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">]</span>
 <span class="c1">// textStream: Stream[Fallible, String] = Stream(..)</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">myRowDecoder</span><span class="k">:</span> <span class="kt">CsvRowDecoder</span><span class="o">[</span><span class="kt">MyRow</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="n">deriveCsvRowDecoder</span>
-<span class="c1">// myRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@38acd917</span>
+<span class="c1">// myRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@6ddc69af</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">myRowEncoder</span><span class="k">:</span> <span class="kt">CsvRowEncoder</span><span class="o">[</span><span class="kt">MyRow</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="n">deriveCsvRowEncoder</span>
-<span class="c1">// myRowEncoder: CsvRowEncoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowEncoder$$anonfun$productWriter$2@4f8b26bf</span>
+<span class="c1">// myRowEncoder: CsvRowEncoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowEncoder$$anonfun$productWriter$2@2f7440e3</span>
 <span class="k">val</span> <span class="nv">decodedStream</span> <span class="k">=</span> <span class="nv">textStream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decodeUsingHeaders</span><span class="o">[</span><span class="kt">MyRow</span><span class="o">]())</span>
 <span class="c1">// decodedStream: Stream[[x]Fallible[x], MyRow] = Stream(..)</span>
 <span class="k">val</span> <span class="nv">caseClasses</span> <span class="k">=</span> <span class="nv">decodedStream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
@@ -396,12 +396,12 @@
 <p>For <code>CellEncoder</code>, it is even easier to define your own as encoding can’t fail, so basically it’s just a function <code>A =&gt; String</code>. The easiest ways to roll your own are using Scala’s single abstract method sugar:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Wrapper</span><span class="o">(</span><span class="n">content</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">wrapperCellEncoder</span><span class="k">:</span> <span class="kt">CellEncoder</span><span class="o">[</span><span class="kt">Wrapper</span><span class="o">]</span> <span class="k">=</span> <span class="o">(</span><span class="n">w</span><span class="k">:</span> <span class="kt">Wrapper</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nv">w</span><span class="o">.</span><span class="py">content</span>
-<span class="c1">// wrapperCellEncoder: CellEncoder[Wrapper] = repl.MdocSession$App$$anonfun$7@36cb0ee3</span>
+<span class="c1">// wrapperCellEncoder: CellEncoder[Wrapper] = repl.MdocSession$MdocApp$$anonfun$7@2a9e2d94</span>
 </code></pre></div></div>
 
 <p>or using <code>contramap</code> on an existing encoder:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="nv">wrapperCellEncoder2</span><span class="k">:</span> <span class="kt">CellEncoder</span><span class="o">[</span><span class="kt">Wrapper</span><span class="o">]</span> <span class="k">=</span> <span class="nc">CellEncoder</span><span class="o">[</span><span class="kt">String</span><span class="o">].</span><span class="py">contramap</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">content</span><span class="o">)</span>
-<span class="c1">// wrapperCellEncoder2: CellEncoder[Wrapper] = fs2.data.csv.CellEncoder$$anonfun$contramap$2@54d0eeb4</span>
+<span class="c1">// wrapperCellEncoder2: CellEncoder[Wrapper] = fs2.data.csv.CellEncoder$$anonfun$contramap$2@7350e93b</span>
 </code></pre></div></div>
 
 <h4 id="rowdecoder--rowencoder"><code>RowDecoder</code> &amp; <code>RowEncoder</code></h4>
@@ -493,7 +493,7 @@
     <footer class="page-footer red lighten-2">
       <div class="footer-copyright red darken-2">
         <div class="container">
-          Copyright © 2020 <a class="grey-text text-lighten-4" href="https://twitter.com/lucassatabin">@lucassatabin</a>
+          Copyright © 2019-2022 <a class="grey-text text-lighten-4" href="https://twitter.com/lucassatabin">@lucassatabin</a>
           <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" class="grey-text text-lighten-4 right" /></a>
         </div>
       </div>
