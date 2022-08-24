@@ -21,6 +21,7 @@ package mft
 import esp.{ESP, Rhs => ERhs, Rules => ERules}
 
 import cats.syntax.all._
+import fs2.data.esp.Depth
 
 sealed trait Forest {
   def fold[T](children: => T)(siblings: => T): T =
@@ -34,11 +35,11 @@ object Forest {
   case object Siblings extends Forest
 }
 
-sealed trait Pattern[+Tag, +In]
-object Pattern {
-  case class Node[Tag](tag: Tag) extends Pattern[Tag, Nothing]
-  case class Value[In](v: In) extends Pattern[Nothing, In]
-  case object Epsilon extends Pattern[Nothing, Nothing]
+sealed trait EventSelector[+Tag, +In]
+object EventSelector {
+  case class Node[Tag](tag: Tag) extends EventSelector[Tag, Nothing]
+  case class Value[In](v: In) extends EventSelector[Nothing, In]
+  case object Epsilon extends EventSelector[Nothing, Nothing]
 }
 
 sealed trait Rhs[+Tag, +Out]
@@ -51,7 +52,7 @@ object Rhs {
   case class Concat[Tag, Out](fst: Rhs[Tag, Out], snd: Rhs[Tag, Out]) extends Rhs[Tag, Out]
 }
 
-case class Rules[Tag, In, Out](params: List[Int], tree: List[(Pattern[Tag, In], Rhs[Tag, Out])])
+case class Rules[Tag, In, Out](params: List[Int], tree: List[(EventSelector[Tag, In], Rhs[Tag, Out])])
 
 trait Conversion[Tag, In, Out] {
   def makeOpenIn(t: Tag): In
@@ -66,11 +67,13 @@ trait TaggedTree[In] {
 
 class MFT[Tag, In, Out](init: Int, rules: Map[Int, Rules[Tag, In, Out]]) {
 
-  def esp[F[_]: RaiseThrowable](implicit In: TaggedTree[In], Tag: Conversion[Tag, In, Out]): ESP[F, In, Out] = {
+  def esp[F[_]: RaiseThrowable](implicit
+      In: TaggedTree[In],
+      Tag: Conversion[Tag, In, Out]): ESP[F, Option[(Int, In)] => ERhs[Out], In, Out] = {
 
     def translateRhs(rhs: Rhs[Tag, Out]): ERhs[Out] =
       rhs match {
-        case Rhs.Call(q, f, params) => ERhs.Call(q, f.fold(0)(1), params.map(translateRhs(_)))
+        case Rhs.Call(q, f, params) => ERhs.Call(q, Depth.Value(f.fold(0)(1)), params.map(translateRhs(_)))
         case Rhs.Param(i)           => ERhs.Param(i)
         case Rhs.Epsilon            => ERhs.Epsilon
         case Rhs.Node(tag, inner)   => ERhs.Tree(Tag.makeOpenOut(tag), translateRhs(inner), Tag.makeCloseOut(tag))
@@ -81,22 +84,23 @@ class MFT[Tag, In, Out](init: Int, rules: Map[Int, Rules[Tag, In, Out]]) {
     val erules =
       rules.map { case (q, Rules(params, tree)) =>
         val (qrules, dflt) = tree.foldLeft((Map.empty[Option[(Int, In)], ERhs[Out]], ERhs.epsilon[Out])) {
-          case ((acc, dflt), (Pattern.Node(tag), rhs)) =>
+          case ((acc, dflt), (EventSelector.Node(tag), rhs)) =>
             (acc.updated((0, Tag.makeOpenIn(tag)).some, translateRhs(rhs)), dflt)
-          case ((acc, dflt), (Pattern.Value(in), rhs)) =>
+          case ((acc, dflt), (EventSelector.Value(in), rhs)) =>
             (acc.updated((0, in).some, translateRhs(rhs)), dflt)
-          case ((acc, _), (Pattern.Epsilon, rhs)) =>
+          case ((acc, _), (EventSelector.Epsilon, rhs)) =>
             val erhs = translateRhs(rhs)
-            (acc.updated(none, erhs), erhs)
+            (acc, erhs)
         }
         (q,
-         ERules(
+         ERules[Option[(Int, In)] => ERhs[Out]](
            params,
            qrules.withDefault({
-             case Some((d, in)) if d > 0 && In.isOpen(in)  => ERhs.Call(q, d + 1, params.map(ERhs.Param(_)))
-             case Some((d, in)) if d > 0 && In.isClose(in) => ERhs.Call(q, d - 1, params.map(ERhs.Param(_)))
+             case Some((d, in)) if d > 0 && In.isOpen(in)  => ERhs.Call(q, Depth.Increment, params.map(ERhs.Param(_)))
+             case Some((d, in)) if d > 0 && In.isClose(in) => ERhs.Call(q, Depth.Decrement, params.map(ERhs.Param(_)))
              case Some((0, in)) if In.isClose(in)          => dflt
-             case Some((d, _))                             => ERhs.Call(q, d, params.map(ERhs.Param(_)))
+             case Some((d, _))                             => ERhs.Call(q, Depth.Value(d), params.map(ERhs.Param(_)))
+             case None                                     => dflt
            })
          ))
       }.toMap

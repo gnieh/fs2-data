@@ -21,10 +21,11 @@ package esp
 import cats.syntax.all._
 import scala.collection.mutable.ListBuffer
 import scala.annotation.tailrec
+import fs2.data.matching.Table
 
 sealed trait Rhs[+Out]
 object Rhs {
-  case class Call[Out](q: Int, depth: Int, params: List[Rhs[Out]]) extends Rhs[Out]
+  case class Call[Out](q: Int, depth: Depth, params: List[Rhs[Out]]) extends Rhs[Out]
   case class Param[Out](n: Int) extends Rhs[Out]
   case object Epsilon extends Rhs[Nothing]
   case class Tree[Out](open: Out, inner: Rhs[Out], close: Out) extends Rhs[Out]
@@ -34,7 +35,21 @@ object Rhs {
   def epsilon[Out]: Rhs[Out] = Epsilon
 }
 
-case class Rules[In, Out](params: List[Int], qrules: Option[(Int, In)] => Rhs[Out])
+case class Rules[T](params: List[Int], qrules: T)
+
+sealed trait Depth {
+  def apply(d: Int): Int =
+    this match {
+      case Depth.Value(d)  => d
+      case Depth.Increment => d + 1
+      case Depth.Decrement => d - 1
+    }
+}
+object Depth {
+  case class Value(d: Int) extends Depth
+  case object Increment extends Depth
+  case object Decrement extends Depth
+}
 
 sealed trait Expr[+Out]
 object Expr {
@@ -56,7 +71,9 @@ object Expr {
     }
 }
 
-class ESP[F[_], In, Out](init: Int, val rules: Map[Int, Rules[In, Out]])(implicit F: RaiseThrowable[F]) {
+class ESP[F[_], T, In, Out](init: Int, val rules: Map[Int, Rules[T]])(implicit
+    F: RaiseThrowable[F],
+    T: Table.Aux[T, Option[(Int, In)], Rhs[Out]]) {
 
   def step(env: Map[Int, Expr[Out]], e: Expr[Out], in: Option[In]): Pull[F, Nothing, Expr[Out]] =
     e match {
@@ -74,7 +91,9 @@ class ESP[F[_], In, Out](init: Int, val rules: Map[Int, Rules[In, Out]])(implici
                   }
                 }
                 .flatMap { env =>
-                  eval(env, qrules(in.map(d -> _)))
+                  T.get(qrules)(in.map(d -> _))
+                    .liftTo[Pull[F, Nothing, *]](new ESPException(s"no transition found in state $q for input $in"))
+                    .flatMap(eval(env, d, _))
                 }
             } else {
               Pull.raiseError(new ESPException(
@@ -93,20 +112,20 @@ class ESP[F[_], In, Out](init: Int, val rules: Map[Int, Rules[In, Out]])(implici
         (step(env, e1, in), step(env, e2, in)).mapN(Expr.concat(_, _))
     }
 
-  def eval(env: Map[Int, Expr[Out]], rhs: Rhs[Out]): Pull[F, Nothing, Expr[Out]] =
+  def eval(env: Map[Int, Expr[Out]], depth: Int, rhs: Rhs[Out]): Pull[F, Nothing, Expr[Out]] =
     rhs match {
       case Rhs.Call(q, d, params) =>
-        params.traverse(eval(env, _)).map(Expr.Call(q, d, _))
+        params.traverse(eval(env, depth, _)).map(Expr.Call(q, d(depth), _))
       case Rhs.Param(i) =>
         env.get(i).liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown parameter $i"))
       case Rhs.Epsilon =>
         Pull.pure(Expr.Epsilon)
       case Rhs.Tree(open, inner, close) =>
-        eval(env, inner).map(inner => Expr.Open(open, Expr.concat(inner, Expr.Close(close, Expr.Epsilon))))
+        eval(env, depth, inner).map(inner => Expr.Open(open, Expr.concat(inner, Expr.Close(close, Expr.Epsilon))))
       case Rhs.Leaf(v) =>
         Pull.pure(Expr.Leaf(v, Expr.Epsilon))
       case Rhs.Concat(rhs1, rhs2) =>
-        (eval(env, rhs1), eval(env, rhs2)).mapN(Expr.concat(_, _))
+        (eval(env, depth, rhs1), eval(env, depth, rhs2)).mapN(Expr.concat(_, _))
     }
 
   private def squeeze(e: Expr[Out]): (Expr[Out], List[Out]) =

@@ -68,37 +68,37 @@ object ESPSpec extends SimpleIOSuite {
         Main -> Rules(
           Nil,
           List(
-            Pattern.Node("rev") -> Rhs.Concat(Rhs.Node("rev", Rhs.Call(Rev, Forest.Children, List(Rhs.Epsilon))),
+            EventSelector.Node("rev") -> Rhs.Concat(Rhs.Node("rev", Rhs.Call(Rev, Forest.Children, List(Rhs.Epsilon))),
                                               Rhs.Call(Main, Forest.Siblings, Nil)),
-            Pattern.Node("a") -> Rhs.Concat(Rhs.Node("a", Rhs.Call(Main, Forest.Children, Nil)),
+            EventSelector.Node("a") -> Rhs.Concat(Rhs.Node("a", Rhs.Call(Main, Forest.Children, Nil)),
                                             Rhs.Call(Main, Forest.Siblings, Nil)),
-            Pattern.Node("b") -> Rhs.Concat(Rhs.Node("b", Rhs.Call(Main, Forest.Children, Nil)),
+            EventSelector.Node("b") -> Rhs.Concat(Rhs.Node("b", Rhs.Call(Main, Forest.Children, Nil)),
                                             Rhs.Call(Main, Forest.Siblings, Nil)),
-            Pattern.Node("c") -> Rhs.Concat(Rhs.Node("c", Rhs.Call(Main, Forest.Children, Nil)),
+            EventSelector.Node("c") -> Rhs.Concat(Rhs.Node("c", Rhs.Call(Main, Forest.Children, Nil)),
                                             Rhs.Call(Main, Forest.Siblings, Nil)),
-            Pattern.Value(Event.Text("text")) -> Rhs.Concat(Rhs.Leaf(Event.Text("text")),
+            EventSelector.Value(Event.Text("text")) -> Rhs.Concat(Rhs.Leaf(Event.Text("text")),
                                                             Rhs.Call(Main, Forest.Children, Nil)),
-            Pattern.Epsilon -> Rhs.Epsilon
+            EventSelector.Epsilon -> Rhs.Epsilon
           )
         ),
         Rev -> Rules(
           List(0),
           List(
-            Pattern.Node("a") -> Rhs.Call(
+            EventSelector.Node("a") -> Rhs.Call(
               Rev,
               Forest.Siblings,
               List(Rhs.Concat(Rhs.Node("a", Rhs.Call(Rev, Forest.Children, List(Rhs.Epsilon))), Rhs.Param(0)))),
-            Pattern.Node("b") -> Rhs.Call(
+            EventSelector.Node("b") -> Rhs.Call(
               Rev,
               Forest.Siblings,
               List(Rhs.Concat(Rhs.Node("b", Rhs.Call(Rev, Forest.Children, List(Rhs.Epsilon))), Rhs.Param(0)))),
-            Pattern.Node("c") -> Rhs.Call(
+            EventSelector.Node("c") -> Rhs.Call(
               Rev,
               Forest.Siblings,
               List(Rhs.Concat(Rhs.Node("c", Rhs.Call(Rev, Forest.Children, List(Rhs.Epsilon))), Rhs.Param(0)))),
-            Pattern.Value(Event.Text("text")) -> Rhs
+            EventSelector.Value(Event.Text("text")) -> Rhs
               .Call(Rev, Forest.Children, List(Rhs.Concat(Rhs.Leaf(Event.Text("text")), Rhs.Param(0)))),
-            Pattern.Epsilon -> Rhs.Param(0)
+            EventSelector.Epsilon -> Rhs.Param(0)
           )
         )
       )
