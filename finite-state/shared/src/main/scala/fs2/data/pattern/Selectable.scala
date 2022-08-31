@@ -21,6 +21,15 @@ package fs2.data.pattern
   */
 trait Selectable[Expr, Tag] {
   def tree(e: Expr): ConstructorTree[Tag]
+
+  def select(e: Expr, sel: Selector[Tag]): Option[Tag] =
+    tree(e).select(sel).map(_.tag)
+
+}
+
+object Selectable {
+  def apply[Expr, Tag](implicit ev: Selectable[Expr, Tag]): Selectable[Expr, Tag] =
+    ev
 }
 
 case class ConstructorTree[Tag](tag: Tag, args: List[ConstructorTree[Tag]]) {

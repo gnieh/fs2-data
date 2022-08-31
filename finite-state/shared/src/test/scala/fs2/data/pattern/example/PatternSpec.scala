@@ -113,10 +113,10 @@ object PatternSpec extends SimpleIOSuite {
         DecisionTree.Switch[Tag, String](
           Selector.Root,
           Map(
-            Tag.IntTag(0) -> DecisionTree.Leaf[Tag, String](Nil, "Zero or One"),
-            Tag.IntTag(1) -> DecisionTree.Leaf[Tag, String](Nil, "Zero or One")
+            Tag.IntTag(0) -> DecisionTree.Leaf[Tag, String](Map(), "Zero or One"),
+            Tag.IntTag(1) -> DecisionTree.Leaf[Tag, String](Map(), "Zero or One")
           ),
-          Some(DecisionTree.Leaf[Tag, String](List((None, Selector.Root)), "something else"))
+          Some(DecisionTree.Leaf[Tag, String](Map(), "something else"))
         ),
         _
       ))

@@ -32,7 +32,7 @@ package object pattern {
 
   }
 
-  type Binding[Expr] = (Option[String], Expr)
+  type Binding[Expr] = (String, Expr)
 
   private[pattern] def headConstructors[Tag](skels: List[Skeleton[Tag]]): List[Skeleton.Constructor[Tag]] = {
     @tailrec

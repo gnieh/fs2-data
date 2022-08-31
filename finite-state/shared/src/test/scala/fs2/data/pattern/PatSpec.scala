@@ -26,39 +26,20 @@ import cats.effect._
 import cats.Show
 import cats.syntax.all._
 
-sealed trait MiniXML
-object MiniXML {
-  case class Open(name: String) extends MiniXML
-  case class Close(name: String) extends MiniXML
-  case class Text(txt: String) extends MiniXML
-
-  implicit object MiniXMLSelectable extends Selectable[MiniXML, Tag[Text]] {
-
-    override def tree(e: MiniXML): ConstructorTree[Tag[Text]] =
-      e match {
-        case Open(name)  => ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(name), Nil)))
-        case Close(name) => ConstructorTree(Tag.Close, List(ConstructorTree(Tag.Name(name), Nil)))
-        case Text(t)     => ConstructorTree(Tag.Value(Text(t)), Nil)
-      }
-
-  }
-
-}
-
 object PatSpec extends IOSuite {
 
-  type Res = DecisionTree[Tag[MiniXML.Text], Int]
+  type Res = DecisionTree[Tag[String], Int]
 
-  val compiler = new Compiler[IO, Tag[MiniXML.Text], Pattern[MiniXML.Text], Int](Pattern.heuristic)
+  val compiler = new Compiler[IO, Tag[String], Pattern[String], Int](Pattern.heuristic)
 
   override def sharedResource: Resource[IO, Res] =
     Resource.eval {
-      val dsl = new PatternDsl[Tag[MiniXML.Text], MiniXML.Text]
+      val dsl = new PatternDsl[String]
       import dsl._
-      val cases = List[(Pattern[MiniXML.Text], Int)](
-        state(0, 0)(value(MiniXML.Text("one"))) -> 1,
-        state(0, 1)(value(MiniXML.Text("two"))) -> 2,
-        state(0, 0)(value(MiniXML.Text("two")) | value(MiniXML.Text("three"))) -> 42,
+      val cases = List[(Pattern[String], Int)](
+        state(0, 0)(value(v = "one")) -> 1,
+        state(0, 1)(value(v = "two")) -> 2,
+        state(0, 0)(value(v = "two") | value(v = "three")) -> 42,
         state(0, 1)(__) -> 20000,
         __ -> -1
       )

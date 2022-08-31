@@ -45,13 +45,13 @@ class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: Sync[
             skel match {
               case Skeleton.Constructor(_, _) =>
                 F.raiseError(new PatternException("A wildcard row cannot contain a constructor skeleton"))
-              case Skeleton.Wildcard(id) => List(id -> occ).pure
-              case Skeleton.As(p, id)    => bindingsIn(occ, p).map((id.some -> occ) :: _)
+              case Skeleton.Wildcard(id) => id.map(_ -> occ).toList.pure
+              case Skeleton.As(p, id)    => bindingsIn(occ, p).map((id -> occ) :: _)
             }
           occurrences
             .zip(pats)
             .flatTraverse { case (occ, skel) => bindingsIn(occ, skel) }
-            .map(bds => DecisionTree.Leaf(bds ++ bindings, out))
+            .map(bds => DecisionTree.Leaf((bds ++ bindings).toMap, out))
         } else {
           // some patterns in the row are not wildcards
           // use the heuristic to reorder the columns according
@@ -172,9 +172,12 @@ class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: Sync[
                 else
                   none.pure[F]
               case Skeleton.Wildcard(id) =>
-                Row(pat, (id -> expr) :: bindings, const.args.map(_ => Skeleton.Wildcard(none)) ++ ps, out).some.pure[F]
+                Row(pat,
+                    id.fold(bindings)(_ -> expr :: bindings),
+                    const.args.map(_ => Skeleton.Wildcard(none)) ++ ps,
+                    out).some.pure[F]
               case Skeleton.As(p, id) =>
-                go(Row(pat, (id.some -> expr) :: bindings, (p :: ps), out))
+                go(Row(pat, (id -> expr) :: bindings, (p :: ps), out))
             }
           case Row(_, _, Nil, _) => F.raiseError(new PatternException("Unexpected empty row"))
         }
@@ -189,11 +192,11 @@ class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: Sync[
         def go(row: Row[Tag, Pat, Out]): F[Option[Row[Tag, Pat, Out]]] =
           row match {
             case Row(pat, bindings, Skeleton.Wildcard(id) :: ps, out) =>
-              Row(pat, (id -> expr) :: bindings, ps, out).some.pure[F]
+              Row(pat, id.fold(bindings)(_ -> expr :: bindings), ps, out).some.pure[F]
             case Row(pat, bindings, Skeleton.Constructor(_, _) :: ps, out) =>
               none.pure[F]
             case Row(pat, bindings, Skeleton.As(p, id) :: ps, out) =>
-              go(Row(pat, bindings, p :: ps, out)).map(_.map(_.bind(id.some -> expr)))
+              go(Row(pat, bindings, p :: ps, out)).map(_.map(_.bind(id -> expr)))
             case Row(_, _, Nil, _) =>
               F.raiseError(new PatternException("Unexpected empty row"))
           }

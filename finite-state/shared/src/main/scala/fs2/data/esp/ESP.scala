@@ -18,69 +18,26 @@ package fs2
 package data
 package esp
 
+import pattern._
+
 import cats.syntax.all._
+
 import scala.collection.mutable.ListBuffer
 import scala.annotation.tailrec
-import fs2.data.matching.Table
-
-sealed trait Rhs[+Out]
-object Rhs {
-  case class Call[Out](q: Int, depth: Depth, params: List[Rhs[Out]]) extends Rhs[Out]
-  case class Param[Out](n: Int) extends Rhs[Out]
-  case object Epsilon extends Rhs[Nothing]
-  case class Tree[Out](open: Out, inner: Rhs[Out], close: Out) extends Rhs[Out]
-  case class Leaf[Out](value: Out) extends Rhs[Out]
-  case class Concat[Out](fst: Rhs[Out], snd: Rhs[Out]) extends Rhs[Out]
-
-  def epsilon[Out]: Rhs[Out] = Epsilon
-
-}
-
-sealed trait Depth {
-  def apply(d: Int): Int =
-    this match {
-      case Depth.Value(d)  => d
-      case Depth.Copy      => d
-      case Depth.Increment => d + 1
-      case Depth.Decrement => d - 1
-    }
-}
-object Depth {
-  case class Value(d: Int) extends Depth
-  case object Copy extends Depth
-  case object Increment extends Depth
-  case object Decrement extends Depth
-}
-
-sealed trait Expr[+Out]
-object Expr {
-  case class Call[Out](q: Int, depth: Int, params: List[Expr[Out]]) extends Expr[Out]
-  case object Epsilon extends Expr[Nothing]
-  case class Open[Out](open: Out, next: Expr[Out]) extends Expr[Out]
-  case class Close[Out](close: Out, next: Expr[Out]) extends Expr[Out]
-  case class Leaf[Out](value: Out, next: Expr[Out]) extends Expr[Out]
-  case class Concat[Out](fst: Expr[Out], snd: Expr[Out]) extends Expr[Out]
-
-  def concat[Out](e1: Expr[Out], e2: Expr[Out]): Expr[Out] =
-    (e1, e2) match {
-      case (Epsilon, _)           => e2
-      case (_, Epsilon)           => e1
-      case (Open(o, Epsilon), _)  => Open(o, e2)
-      case (Close(c, Epsilon), _) => Close(c, e2)
-      case (Leaf(v, Epsilon), _)  => Leaf(v, e2)
-      case (_, _)                 => Concat(e1, e2)
-    }
-}
 
 /** An Event Stream Processor is a generalization of the one defined in _Streamlining Functional XML Processing_.
   * It encodes its recognized patterns into a [[fs2.data.matching.DecisionTree Decision Tree]], including the state and depth. This flexibility allows for easily implementing
   * catch all rules, no matter what the state or depth is.
   */
-private[data] class ESP[F[_], T, In, Out](init: Int, val params: Map[Int, List[Int]], val rules: T)(implicit
-    F: RaiseThrowable[F],
-    T: Table[T, Input[In], Rhs[Out]]) {
+private[data] class ESP[F[_], InTag, OutTag](init: Int,
+                                             val params: Map[Int, List[Int]],
+                                             val rules: DecisionTree[Tag[InTag], Rhs[OutTag]])(implicit
+    F: RaiseThrowable[F]) {
 
-  def step(env: Map[Int, Expr[Out]], e: Expr[Out], in: Option[In]): Pull[F, Nothing, Expr[Out]] =
+  def step[In, Out](env: Map[Int, Expr[Out]], e: Expr[Out], in: Option[In])(implicit
+      In: Selectable[In, Tag[InTag]],
+      Out: Conversion[OutTag, Out],
+      TT: Tag2Tag[InTag, OutTag]): Pull[F, Nothing, Expr[Out]] =
     e match {
       case Expr.Call(q, d, args) =>
         params.get(q).liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown state $q")).flatMap { params =>
@@ -93,10 +50,11 @@ private[data] class ESP[F[_], T, In, Out](init: Int, val params: Map[Int, List[I
                 }
               }
               .flatMap { env =>
-                T.get(rules)(Input(q, d, in))
+                rules
+                  .get(Input(q, d, in))
                   .liftTo[Pull[F, Nothing, *]](
                     new ESPException(s"no rule found for state $q at depth $d for input $in"))
-                  .flatMap(eval(env, d, _))
+                  .flatMap { case (captures, out) => eval(env, d, in, captures, out) }
               }
           } else {
             Pull.raiseError(new ESPException(
@@ -115,23 +73,68 @@ private[data] class ESP[F[_], T, In, Out](init: Int, val params: Map[Int, List[I
         (step(env, e1, in), step(env, e2, in)).mapN(Expr.concat(_, _))
     }
 
-  def eval(env: Map[Int, Expr[Out]], depth: Int, rhs: Rhs[Out]): Pull[F, Nothing, Expr[Out]] =
-    rhs match {
-      case Rhs.Call(q, d, params) =>
-        params.traverse(eval(env, depth, _)).map(Expr.Call(q, d(depth), _))
-      case Rhs.Param(i) =>
-        env.get(i).liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown parameter $i"))
-      case Rhs.Epsilon =>
-        Pull.pure(Expr.Epsilon)
-      case Rhs.Tree(open, inner, close) =>
-        eval(env, depth, inner).map(inner => Expr.Open(open, Expr.concat(inner, Expr.Close(close, Expr.Epsilon))))
-      case Rhs.Leaf(v) =>
-        Pull.pure(Expr.Leaf(v, Expr.Epsilon))
-      case Rhs.Concat(rhs1, rhs2) =>
-        (eval(env, depth, rhs1), eval(env, depth, rhs2)).mapN(Expr.concat(_, _))
+  private def selectInTag[In](in: In, sel: Selector[Tag[InTag]])(implicit
+      In: Selectable[Input[In], Tag[InTag]]): Option[InTag] =
+    In.select(Input(0, 0, in.some), sel).collect {
+      case Tag.Name(t)  => t
+      case Tag.Value(t) => t
     }
 
-  private def squeeze(e: Expr[Out]): (Expr[Out], List[Out]) =
+  def eval[In, Out](env: Map[Int, Expr[Out]],
+                    depth: Int,
+                    in: Option[In],
+                    captures: Map[String, Selector[Tag[InTag]]],
+                    rhs: Rhs[OutTag])(implicit
+      In: Selectable[In, Tag[InTag]],
+      Out: Conversion[OutTag, Out],
+      TT: Tag2Tag[InTag, OutTag]): Pull[F, Nothing, Expr[Out]] =
+    rhs match {
+      case Rhs.Call(q, d, params) =>
+        params
+          .traverse(eval(env, depth, in, captures, _))
+          .map(Expr.Call(q, d(depth), _))
+      case Rhs.Param(i) =>
+        env
+          .get(i)
+          .liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown parameter $i"))
+      case Rhs.Epsilon =>
+        Pull.pure(Expr.Epsilon)
+      case Rhs.Tree(tag, inner) =>
+        eval(env, depth, in, captures, inner)
+          .map(inner => Expr.Open(Out.makeOpen(tag), Expr.concat(inner, Expr.Close(Out.makeClose(tag), Expr.Epsilon))))
+      case Rhs.CapturedTree(name, inner) =>
+        eval(env, depth, in, captures, inner).flatMap { inner =>
+          captures
+            .get(name)
+            .liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown captured input $name"))
+            .flatMap { selector =>
+              in.flatMap(selectInTag(_, selector))
+                .liftTo[Pull[F, Nothing, *]](new ESPException("cannot caputre eos"))
+                .map { v =>
+                  val tag = TT.convert(v)
+                  Expr.Open(Out.makeOpen(tag), Expr.concat(inner, Expr.Close(Out.makeClose(tag), Expr.Epsilon)))
+                }
+            }
+        }
+      case Rhs.Leaf(v) =>
+        Pull.pure(Expr.Leaf(Out.makeLeaf(v), Expr.Epsilon))
+      case Rhs.CapturedLeaf(name) =>
+        captures
+          .get(name)
+          .liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown captured input $name"))
+          .flatMap { selector =>
+            in.flatMap(selectInTag(_, selector))
+              .liftTo[Pull[F, Nothing, *]](new ESPException("cannot caputre eos"))
+              .map { v =>
+                val tag = TT.convert(v)
+                Expr.Leaf(Out.makeLeaf(tag), Expr.Epsilon)
+              }
+          }
+      case Rhs.Concat(rhs1, rhs2) =>
+        (eval(env, depth, in, captures, rhs1), eval(env, depth, in, captures, rhs2)).mapN(Expr.concat(_, _))
+    }
+
+  private def squeeze[Out](e: Expr[Out]): (Expr[Out], List[Out]) =
     e match {
       case Expr.Call(_, _, _) => (e, Nil)
       case Expr.Epsilon       => (Expr.Epsilon, Nil)
@@ -152,7 +155,7 @@ private[data] class ESP[F[_], T, In, Out](init: Int, val params: Map[Int, List[I
         (Expr.concat(e11, e2), s1)
     }
 
-  def squeezeAll(e: Expr[Out]): (Expr[Out], List[Out]) = {
+  def squeezeAll[Out](e: Expr[Out]): (Expr[Out], List[Out]) = {
     @tailrec
     def loop(e: Expr[Out], acc: ListBuffer[Out]): (Expr[Out], List[Out]) =
       e match {
@@ -164,12 +167,15 @@ private[data] class ESP[F[_], T, In, Out](init: Int, val params: Map[Int, List[I
     loop(e, new ListBuffer)
   }
 
-  def transform(chunk: Chunk[In],
-                idx: Int,
-                rest: Stream[F, In],
-                env: Map[Int, Expr[Out]],
-                e: Expr[Out],
-                chunkAcc: ListBuffer[Out]): Pull[F, Out, Unit] =
+  def transform[In, Out](chunk: Chunk[In],
+                         idx: Int,
+                         rest: Stream[F, In],
+                         env: Map[Int, Expr[Out]],
+                         e: Expr[Out],
+                         chunkAcc: ListBuffer[Out])(implicit
+      In: Selectable[In, Tag[InTag]],
+      Out: Conversion[OutTag, Out],
+      TT: Tag2Tag[InTag, OutTag]): Pull[F, Out, Unit] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.result())) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) =>
@@ -189,7 +195,10 @@ private[data] class ESP[F[_], T, In, Out](init: Int, val params: Map[Int, List[I
       }
     }
 
-  def pipe: Pipe[F, In, Out] =
+  def pipe[In, Out](implicit
+      In: Selectable[In, Tag[InTag]],
+      Out: Conversion[OutTag, Out],
+      TT: Tag2Tag[InTag, OutTag]): Pipe[F, In, Out] =
     transform(Chunk.empty, 0, _, Map.empty, Expr.Call(init, 0, Nil), new ListBuffer).stream
 
 }

@@ -19,20 +19,20 @@ package esp
 
 import pattern._
 
-case class Input[Evt](state: Int, depth: Int, evt: Option[Evt])
+case class Input[In](state: Int, depth: Int, evt: Option[In])
 
 object Input {
 
-  implicit def InputSelectable[Evt, T](implicit Evt: Selectable[Evt, Tag[T]]): Selectable[Input[Evt], Tag[T]] =
-    new Selectable[Input[Evt], Tag[T]] {
+  implicit def InputSelectable[In, InTag](implicit In: Selectable[In, Tag[InTag]]): Selectable[Input[In], Tag[InTag]] =
+    new Selectable[Input[In], Tag[InTag]] {
 
-      override def tree(e: Input[Evt]): ConstructorTree[Tag[T]] =
+      override def tree(e: Input[In]): ConstructorTree[Tag[InTag]] =
         ConstructorTree(
           Tag.Input,
           List(
             ConstructorTree.noArgConstructor(Tag.State(e.state)),
             ConstructorTree.noArgConstructor(Tag.Depth(e.depth)),
-            e.evt.fold[ConstructorTree[Tag[T]]](ConstructorTree.noArgConstructor(Tag.End))(Evt.tree(_))
+            e.evt.fold[ConstructorTree[Tag[InTag]]](ConstructorTree.noArgConstructor(Tag.End))(In.tree(_))
           )
         )
 
