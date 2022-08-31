@@ -5,7 +5,7 @@ package fs2.data.pattern
   *
   * Skeletons represent `or` patterns, and are matched left to right.
   */
-trait Pattern[Pat, Tag] {
+trait IsPattern[Pat, Tag] {
 
   def decompose(pat: Pat): List[Skeleton[Tag]]
 

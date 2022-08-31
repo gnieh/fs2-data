@@ -8,14 +8,15 @@ class PatternException(msg: String) extends Exception(msg)
 class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: Sync[F]) {
 
   /** Compiles a pattern into a decision tree. */
-  def compile(cases: List[(Pat, Out)])(implicit Tag: IsTag[Tag], Pat: Pattern[Pat, Tag]): F[DecisionTree[Tag, Out]] = {
+  def compile(
+      cases: List[(Pat, Out)])(implicit Tag: IsTag[Tag], Pat: IsPattern[Pat, Tag]): F[DecisionTree[Tag, Out]] = {
     val matrix = cases.flatMap { case (pat, out) =>
       Pat.decompose(pat).map(skel => Row[Tag, Pat, Out](pat, Nil, List(skel), out))
     }
-    compileMatrix(heuristic, List(Select.NoSel), matrix)
+    compileMatrix(heuristic, List(Selector.Root), matrix)
   }
 
-  private def compileMatrix(heuristic: Heuristic[Tag], occurrences: List[Select[Tag]], matrix: Matrix[Tag, Pat, Out])(
+  private def compileMatrix(heuristic: Heuristic[Tag], occurrences: List[Selector[Tag]], matrix: Matrix[Tag, Pat, Out])(
       implicit Tag: IsTag[Tag]): F[DecisionTree[Tag, Out]] =
     matrix match {
       case Nil => F.pure(DecisionTree.Fail())
@@ -24,7 +25,7 @@ class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: Sync[
           // all the patterns in the row are wildcards on the top row
           // this means this always succeeds, and the other rows are
           // redundant
-          def bindingsIn(occ: Select[Tag], skel: Skeleton[Tag]): F[List[Binding[Select[Tag]]]] =
+          def bindingsIn(occ: Selector[Tag], skel: Skeleton[Tag]): F[List[Binding[Selector[Tag]]]] =
             skel match {
               case Skeleton.Constructor(_, _) =>
                 F.raiseError(new PatternException("A wildcard row cannot contain a constructor skeleton"))
@@ -51,7 +52,7 @@ class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: Sync[
                       matchFirstColumn(headOcc, shuffledMatrix).flatMap { case (specializedMatrices, defaultMatrix) =>
                         def swapFailureCont(l: List[List[Skeleton[Tag]]]) =
                           l.map(swapBack(maxScoreIndex, _))
-                        def makeBranch(subOccs: List[Select[Tag]], subp: SubProblem) =
+                        def makeBranch(subOccs: List[Selector[Tag]], subp: SubProblem) =
                           compileMatrix(heuristic, subOccs ++ shuffledOccs.tail, subp.subMatrix)
                         def branches =
                           specializedMatrices.toList
@@ -102,22 +103,23 @@ class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: Sync[
 
   private case class SubProblem(subMatrix: Matrix[Tag, Pat, Out])
 
-  private def matchFirstColumn(expr: Select[Tag], matrix: Matrix[Tag, Pat, Out])(implicit
-      Tag: IsTag[Tag]): F[(Map[Tag, (List[Select[Tag]], SubProblem)], Option[SubProblem])] =
+  private def matchFirstColumn(expr: Selector[Tag], matrix: Matrix[Tag, Pat, Out])(implicit
+      Tag: IsTag[Tag]): F[(Map[Tag, (List[Selector[Tag]], SubProblem)], Option[SubProblem])] =
     matrix match {
       case Row(_, _, skel :: _, _) :: _ =>
-        def go(cons: Skeleton.Constructor[Tag],
-               matrices: Map[Tag, (List[Select[Tag]], SubProblem)]): F[Map[Tag, (List[Select[Tag]], SubProblem)]] = {
+        def go(
+            cons: Skeleton.Constructor[Tag],
+            matrices: Map[Tag, (List[Selector[Tag]], SubProblem)]): F[Map[Tag, (List[Selector[Tag]], SubProblem)]] = {
           specialize(expr, cons, matrix).map { smat =>
             val soccs = select(cons, expr)
             matrices.updated(cons.tag, (soccs, SubProblem(smat)))
           }
         }
-        val specializedMatrices: F[Map[Tag, (List[Select[Tag]], SubProblem)]] =
+        val specializedMatrices: F[Map[Tag, (List[Selector[Tag]], SubProblem)]] =
           matrix.verticalView.columns.headOption
             .liftTo[F](new PatternException("the pattern matrix cannot be empty"))
             .map(_.patterns)
-            .flatMap(headConstructors(_).foldRightDefer(F.pure(Map.empty[Tag, (List[Select[Tag]], SubProblem)])) {
+            .flatMap(headConstructors(_).foldRightDefer(F.pure(Map.empty[Tag, (List[Selector[Tag]], SubProblem)])) {
               (cons, acc) => acc.flatMap(go(cons, _))
             })
         specializedMatrices.flatMap { specializedMatrices =>
@@ -136,10 +138,10 @@ class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: Sync[
         F.pure((Map.empty, none))
     }
 
-  private def select(const: Skeleton.Constructor[Tag], expr: Select[Tag]): List[Select[Tag]] =
-    const.args.zipWithIndex.map { case (_, idx) => Select.Sel(expr, const.tag, idx) }
+  private def select(const: Skeleton.Constructor[Tag], expr: Selector[Tag]): List[Selector[Tag]] =
+    const.args.zipWithIndex.map { case (_, idx) => Selector.Sel(expr, const.tag, idx) }
 
-  private def specialize(expr: Select[Tag], const: Skeleton.Constructor[Tag], matrix: Matrix[Tag, Pat, Out])(implicit
+  private def specialize(expr: Selector[Tag], const: Skeleton.Constructor[Tag], matrix: Matrix[Tag, Pat, Out])(implicit
       Tag: IsTag[Tag]): F[Matrix[Tag, Pat, Out]] = matrix match {
     case Row(_, _, Nil, _) :: _ =>
       F.pure(matrix)
@@ -164,7 +166,7 @@ class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: Sync[
       matrix.toList.traverse(go(_)).map(_.flatten)
   }
 
-  private def defaultMatrix(expr: Select[Tag], matrix: Matrix[Tag, Pat, Out]): F[Matrix[Tag, Pat, Out]] =
+  private def defaultMatrix(expr: Selector[Tag], matrix: Matrix[Tag, Pat, Out]): F[Matrix[Tag, Pat, Out]] =
     matrix match {
       case Row(_, _, Nil, _) :: _ => matrix.pure[F]
       case _ =>

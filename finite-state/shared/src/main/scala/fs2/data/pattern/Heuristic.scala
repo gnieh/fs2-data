@@ -36,13 +36,16 @@ sealed trait Heuristic[Tag] {
 
 }
 object Heuristic {
-  private case class Score[Tag](f: (List[List[Skeleton[Tag]]], Int, List[Skeleton[Tag]]) => Int)
-      extends Heuristic[Tag]
+  private case class Score[Tag](f: (List[List[Skeleton[Tag]]], Int, List[Skeleton[Tag]]) => Int) extends Heuristic[Tag]
   private case class Combine[Tag, Out](h1: Heuristic[Tag], h2: Heuristic[Tag]) extends Heuristic[Tag]
 
   /** Leaves the columns in the same order. */
   def none[Tag]: Heuristic[Tag] =
     Score((_, idx, _) => -idx)
+
+  /** Lifts a score function into a heuristic. */
+  def lift[Tag](f: (List[List[Skeleton[Tag]]], Int, List[Skeleton[Tag]]) => Int): Heuristic[Tag] =
+    Score(f)
 
   /** Favours columns whose top apttern is a generalized constructor pattern. */
   def firstRow[Tag]: Heuristic[Tag] = {

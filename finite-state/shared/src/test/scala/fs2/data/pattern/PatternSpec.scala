@@ -1,6 +1,7 @@
 package fs2
 package data
 package pattern
+package example
 
 import cats.effect._
 import cats.syntax.all._
@@ -19,19 +20,19 @@ object Typ {
   case class TList(elt: Typ) extends Typ
 }
 
-sealed trait Pat
-object Pat {
-  case class VarPat(tpe: Typ, name: String) extends Pat
-  case class IntPat(v: Int) extends Pat
-  case class NilPat(tpe: Typ) extends Pat
-  case class ConsPat(tpe: Typ, head: Pat, tail: Pat) extends Pat
-  case class OrPat(left: Pat, right: Pat) extends Pat
-  case class AsPat(inner: Pat, name: String) extends Pat
-  case class WildPat(tpe: Typ) extends Pat
+sealed trait Pattern
+object Pattern {
+  case class VarPat(tpe: Typ, name: String) extends Pattern
+  case class IntPat(v: Int) extends Pattern
+  case class NilPat(tpe: Typ) extends Pattern
+  case class ConsPat(tpe: Typ, head: Pattern, tail: Pattern) extends Pattern
+  case class OrPat(left: Pattern, right: Pattern) extends Pattern
+  case class AsPat(inner: Pattern, name: String) extends Pattern
+  case class WildPat(tpe: Typ) extends Pattern
 
-  implicit object PatIsPattern extends Pattern[Pat, Tag] {
+  implicit object PatIsPattern extends IsPattern[Pattern, Tag] {
 
-    override def decompose(pat: Pat): List[Skeleton[Tag]] =
+    override def decompose(pat: Pattern): List[Skeleton[Tag]] =
       pat match {
         case VarPat(tpe, name) =>
           List(Skeleton.Wildcard(name.some))
@@ -64,19 +65,20 @@ object Tag {
 
   implicit object TagIsTag extends IsTag[Tag] {
 
-    def isOpen = true
+    def isOpen(tag: Tag) =
+      tag match {
+        case NilTag(_) | ConstTag(_) => false
+        case _                       => true
+      }
 
     override def eqv(x: Tag, y: Tag): Boolean =
       x == y
 
     override def range(tag: Tag): Iterator[Tag] =
-      Iterator.empty
-
-    override def subtags(tag: Tag): List[Iterator[Tag]] =
       tag match {
-        case NilTag(_)     => Nil
-        case ConstTag(elt) => List(elt.range, Typ.TList(elt).range)
-        case IntTag(_)     => Nil
+        case NilTag(tpe)   => Iterator(NilTag(tpe), ConstTag(tpe))
+        case ConstTag(tpe) => Iterator(NilTag(tpe), ConstTag(tpe))
+        case _             => Iterator.empty
       }
 
   }
@@ -86,18 +88,19 @@ object PatternSpec extends SimpleIOSuite {
 
   test("int pattern") {
     val cases =
-      List(Pat.OrPat(Pat.IntPat(0), Pat.IntPat(1)) -> "Zero or One", Pat.WildPat(Typ.TInt) -> "something else")
+      List(Pattern.OrPat(Pattern.IntPat(0), Pattern.IntPat(1)) -> "Zero or One",
+           Pattern.WildPat(Typ.TInt) -> "something else")
 
-    new Compiler[IO, Tag, Pat, String](Heuristic.firstRow)
+    new Compiler[IO, Tag, Pattern, String](Heuristic.firstRow)
       .compile(cases)
       .map(expect.same(
         DecisionTree.Switch[Tag, String](
-          Select.NoSel,
+          Selector.Root,
           Map(
             Tag.IntTag(0) -> DecisionTree.Leaf[Tag, String](Nil, "Zero or One"),
             Tag.IntTag(1) -> DecisionTree.Leaf[Tag, String](Nil, "Zero or One")
           ),
-          Some(DecisionTree.Leaf[Tag, String](List((None, Select.NoSel)), "something else"))
+          Some(DecisionTree.Leaf[Tag, String](List((None, Selector.Root)), "something else"))
         ),
         _
       ))

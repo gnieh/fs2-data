@@ -33,20 +33,21 @@ object Rhs {
   case class Concat[Out](fst: Rhs[Out], snd: Rhs[Out]) extends Rhs[Out]
 
   def epsilon[Out]: Rhs[Out] = Epsilon
-}
 
-case class Rules[T](params: List[Int], qrules: T)
+}
 
 sealed trait Depth {
   def apply(d: Int): Int =
     this match {
       case Depth.Value(d)  => d
+      case Depth.Copy      => d
       case Depth.Increment => d + 1
       case Depth.Decrement => d - 1
     }
 }
 object Depth {
   case class Value(d: Int) extends Depth
+  case object Copy extends Depth
   case object Increment extends Depth
   case object Decrement extends Depth
 }
@@ -71,35 +72,37 @@ object Expr {
     }
 }
 
-class ESP[F[_], T, In, Out](init: Int, val rules: Map[Int, Rules[T]])(implicit
+/** An Event Stream Processor is a generalization of the one defined in _Streamlining Functional XML Processing_.
+  * It encodes its recognized patterns into a [[fs2.data.matching.DecisionTree Decision Tree]], including the state and depth. This flexibility allows for easily implementing
+  * catch all rules, no matter what the state or depth is.
+  */
+private[data] class ESP[F[_], T, In, Out](init: Int, val params: Map[Int, List[Int]], val rules: T)(implicit
     F: RaiseThrowable[F],
-    T: Table.Aux[T, Option[(Int, In)], Rhs[Out]]) {
+    T: Table[T, Input[In], Rhs[Out]]) {
 
   def step(env: Map[Int, Expr[Out]], e: Expr[Out], in: Option[In]): Pull[F, Nothing, Expr[Out]] =
     e match {
       case Expr.Call(q, d, args) =>
-        rules
-          .get(q)
-          .liftTo[Pull[F, Nothing, *]](new ESPException(s"no rule found for state $q"))
-          .flatMap { case Rules(params, qrules) =>
-            if (params.size === args.size) {
-              args
-                .zip(params)
-                .foldLeftM(env) { case (env, (arg, param)) =>
-                  step(env, arg, in).map { rhs =>
-                    env.updated(param, rhs)
-                  }
+        params.get(q).liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown state $q")).flatMap { params =>
+          if (params.size === args.size) {
+            args
+              .zip(params)
+              .foldLeftM(env) { case (env, (arg, param)) =>
+                step(env, arg, in).map { rhs =>
+                  env.updated(param, rhs)
                 }
-                .flatMap { env =>
-                  T.get(qrules)(in.map(d -> _))
-                    .liftTo[Pull[F, Nothing, *]](new ESPException(s"no transition found in state $q for input $in"))
-                    .flatMap(eval(env, d, _))
-                }
-            } else {
-              Pull.raiseError(new ESPException(
-                s"wrong number of argument given in state $q reading input $in (expected ${params.size} but got ${args.size})"))
-            }
+              }
+              .flatMap { env =>
+                T.get(rules)(Input(q, d, in))
+                  .liftTo[Pull[F, Nothing, *]](
+                    new ESPException(s"no rule found for state $q at depth $d for input $in"))
+                  .flatMap(eval(env, d, _))
+              }
+          } else {
+            Pull.raiseError(new ESPException(
+              s"wrong number of argument given in state $q reading input $in (expected ${params.size} but got ${args.size})"))
           }
+        }
       case Expr.Epsilon =>
         Pull.pure(Expr.Epsilon)
       case Expr.Open(o, next) =>

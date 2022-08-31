@@ -18,10 +18,12 @@ package fs2
 package data
 package mft
 
-import esp.{ESP, Rhs => ERhs, Rules => ERules}
+import esp.{Depth, ESP, Rhs => ERhs, Pattern, Tag => ETag}
+import pattern._
 
+import cats.effect._
 import cats.syntax.all._
-import fs2.data.esp.Depth
+import fs2.data.esp.PatternDsl
 
 sealed trait Forest {
   def fold[T](children: => T)(siblings: => T): T =
@@ -54,22 +56,31 @@ object Rhs {
 
 case class Rules[Tag, In, Out](params: List[Int], tree: List[(EventSelector[Tag, In], Rhs[Tag, Out])])
 
-trait Conversion[Tag, In, Out] {
-  def makeOpenIn(t: Tag): In
+trait Conversion[Tag, Out] {
+  def makeName(t: Tag): String
   def makeOpenOut(t: Tag): Out
   def makeCloseOut(t: Tag): Out
 }
 
-trait TaggedTree[In] {
-  def isOpen(in: In): Boolean
-  def isClose(in: In): Boolean
-}
+/** A Macro Forest Transducer, as described in _Streamlining Functional XML Processing_.
+  * To each state is associated a collection of rules, matching a forest and
+  * generating a new one.
+  *
+  * An MFT is an intermediate structure towards a compiled [[fs2.data.esp.ESP Events Stream Processor]]
+  */
+private[data] class MFT[Tag, In, Out](init: Int, rules: Map[Int, Rules[Tag, In, Out]]) {
 
-class MFT[Tag, In, Out](init: Int, rules: Map[Int, Rules[Tag, In, Out]]) {
+  /** Compiles this MFT into an ESP.
+    * The generated ESP contains one decision tree encoding all the patterns
+    * of this MFT.
+    */
+  def esp[F[_]](implicit
+      F: Sync[F],
+      Tag: Conversion[Tag, Out],
+      Sel: Selectable[In, ETag[In]]): F[ESP[F, DecisionTree[ETag[In], ERhs[Out]], In, Out]] = {
 
-  def esp[F[_]: RaiseThrowable](implicit
-      In: TaggedTree[In],
-      Tag: Conversion[Tag, In, Out]): ESP[F, Option[(Int, In)] => ERhs[Out], In, Out] = {
+    val dsl = new PatternDsl[Tag, In]
+    import dsl._
 
     def translateRhs(rhs: Rhs[Tag, Out]): ERhs[Out] =
       rhs match {
@@ -81,30 +92,27 @@ class MFT[Tag, In, Out](init: Int, rules: Map[Int, Rules[Tag, In, Out]]) {
         case Rhs.Concat(rhs1, rhs2) => ERhs.Concat(translateRhs(rhs1), translateRhs(rhs2))
       }
 
-    val erules =
-      rules.map { case (q, Rules(params, tree)) =>
-        val (qrules, dflt) = tree.foldLeft((Map.empty[Option[(Int, In)], ERhs[Out]], ERhs.epsilon[Out])) {
-          case ((acc, dflt), (EventSelector.Node(tag), rhs)) =>
-            (acc.updated((0, Tag.makeOpenIn(tag)).some, translateRhs(rhs)), dflt)
-          case ((acc, dflt), (EventSelector.Value(in), rhs)) =>
-            (acc.updated((0, in).some, translateRhs(rhs)), dflt)
-          case ((acc, _), (EventSelector.Epsilon, rhs)) =>
-            val erhs = translateRhs(rhs)
-            (acc, erhs)
-        }
-        (q,
-         ERules[Option[(Int, In)] => ERhs[Out]](
-           params,
-           qrules.withDefault({
-             case Some((d, in)) if d > 0 && In.isOpen(in)  => ERhs.Call(q, Depth.Increment, params.map(ERhs.Param(_)))
-             case Some((d, in)) if d > 0 && In.isClose(in) => ERhs.Call(q, Depth.Decrement, params.map(ERhs.Param(_)))
-             case Some((0, in)) if In.isClose(in)          => dflt
-             case Some((d, _))                             => ERhs.Call(q, Depth.Value(d), params.map(ERhs.Param(_)))
-             case None                                     => dflt
-           })
-         ))
-      }.toMap
-    new ESP(init, erules)
+    val cases = rules.toList.flatMap { case (q, Rules(params, tree)) =>
+      tree.flatMap {
+        case (EventSelector.Node(tag), rhs) =>
+          List(
+            state(q, 0)(open(tag)) -> translateRhs(rhs)
+          )
+        case (EventSelector.Value(in), rhs) =>
+          List(state(q, 0)(value(in)) -> translateRhs(rhs))
+        case (EventSelector.Epsilon, rhs) =>
+          val dflt = translateRhs(rhs)
+          List(state(q, 0)(close) -> dflt, state(q)(eos) -> dflt)
+      } ++ List(
+        state(q)(open) -> ERhs.Call(q, Depth.Increment, params.map(ERhs.Param(_))),
+        state(q)(close) -> ERhs.Call(q, Depth.Decrement, params.map(ERhs.Param(_))),
+        state(q)(__) -> ERhs.Call(q, Depth.Copy, params.map(ERhs.Param(_)))
+      )
+    }
+
+    val compiler = new pattern.Compiler[F, ETag[In], Pattern[In], ERhs[Out]](Pattern.heuristic)
+
+    compiler.compile(cases).map(new ESP(init, rules.view.mapValues(_.params).toMap, _))
   }
 
 }

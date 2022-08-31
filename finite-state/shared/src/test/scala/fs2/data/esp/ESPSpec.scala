@@ -18,9 +18,14 @@ package fs2
 package data
 package mft
 
+import pattern.{DecisionTree, Selectable}
+import esp.{ESP, Tag, Rhs => ERhs}
+
 import weaver._
 import cats.effect.IO
 import cats._
+import cats.effect.Resource
+import fs2.data.pattern.ConstructorTree
 
 sealed trait Event
 object Event {
@@ -30,9 +35,9 @@ object Event {
 
   implicit val eq: Eq[Event] = Eq.fromUniversalEquals
 
-  implicit object conv extends Conversion[String, Event, Event] {
+  implicit object conv extends Conversion[String, Event] {
 
-    override def makeOpenIn(t: String): Event = Open(t)
+    override def makeName(t: String): String = t
 
     override def makeOpenOut(t: String): Event = Open(t)
 
@@ -40,23 +45,20 @@ object Event {
 
   }
 
-  implicit object tree extends TaggedTree[Event] {
+  implicit object selectable extends Selectable[Event, Tag[Event]] {
 
-    override def isOpen(in: Event): Boolean = in match {
-      case Open(_) => true
-      case _       => false
-    }
-
-    override def isClose(in: Event): Boolean = in match {
-      case Close(_) => true
-      case _        => false
-    }
+    override def tree(e: Event): ConstructorTree[Tag[Event]] =
+      e match {
+        case Open(name)  => ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(name), Nil)))
+        case Close(name) => ConstructorTree(Tag.Close, List(ConstructorTree(Tag.Name(name), Nil)))
+        case Text(t)     => ConstructorTree(Tag.Value(Text(t)), Nil)
+      }
 
   }
 
 }
 
-object ESPSpec extends SimpleIOSuite {
+object ESPSpec extends IOSuite {
 
   val Main = 0
   val Rev = 1
@@ -69,15 +71,15 @@ object ESPSpec extends SimpleIOSuite {
           Nil,
           List(
             EventSelector.Node("rev") -> Rhs.Concat(Rhs.Node("rev", Rhs.Call(Rev, Forest.Children, List(Rhs.Epsilon))),
-                                              Rhs.Call(Main, Forest.Siblings, Nil)),
+                                                    Rhs.Call(Main, Forest.Siblings, Nil)),
             EventSelector.Node("a") -> Rhs.Concat(Rhs.Node("a", Rhs.Call(Main, Forest.Children, Nil)),
-                                            Rhs.Call(Main, Forest.Siblings, Nil)),
+                                                  Rhs.Call(Main, Forest.Siblings, Nil)),
             EventSelector.Node("b") -> Rhs.Concat(Rhs.Node("b", Rhs.Call(Main, Forest.Children, Nil)),
-                                            Rhs.Call(Main, Forest.Siblings, Nil)),
+                                                  Rhs.Call(Main, Forest.Siblings, Nil)),
             EventSelector.Node("c") -> Rhs.Concat(Rhs.Node("c", Rhs.Call(Main, Forest.Children, Nil)),
-                                            Rhs.Call(Main, Forest.Siblings, Nil)),
+                                                  Rhs.Call(Main, Forest.Siblings, Nil)),
             EventSelector.Value(Event.Text("text")) -> Rhs.Concat(Rhs.Leaf(Event.Text("text")),
-                                                            Rhs.Call(Main, Forest.Children, Nil)),
+                                                                  Rhs.Call(Main, Forest.Children, Nil)),
             EventSelector.Epsilon -> Rhs.Epsilon
           )
         ),
@@ -104,9 +106,11 @@ object ESPSpec extends SimpleIOSuite {
       )
     )
 
-  val esp = mft.esp[IO]
+  type Res = ESP[IO, DecisionTree[Tag[Event], ERhs[Event]], Event, Event]
 
-  test("reverse tree") {
+  override def sharedResource: Resource[IO, Res] = Resource.eval(mft.esp.flatTap(esp => IO.println(esp.rules)))
+
+  test("reverse tree") { esp =>
     Stream
       .emits(
         List[Event](

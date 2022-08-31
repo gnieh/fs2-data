@@ -47,6 +47,8 @@ val commonSettings = List(
                          "-unchecked",
                          "-Ypatmat-exhaust-depth",
                          "off",
+                         "-Vimplicits",
+                         "-Vtype-diffs",
                          "-Ywarn-unused:imports,privates"),
   scalacOptions ++= PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
@@ -127,7 +129,7 @@ val root = (project in file("."))
       xml.js,
       scalaXml.js,
       finiteState.js,
-      benchmarks.jvm,
+      benchmarks.jvm
     ),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),

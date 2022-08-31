@@ -13,11 +13,11 @@ final case class VMatrix[Tag, Pat, Out](columns: List[Col[Tag]],
 }
 
 final case class Row[Tag, Pat, Out](origin: Pat,
-                                    bindings: List[Binding[Select[Tag]]],
+                                    bindings: List[Binding[Selector[Tag]]],
                                     patterns: List[Skeleton[Tag]],
                                     output: Out) {
 
-  def bind(binding: Binding[Select[Tag]]): Row[Tag, Pat, Out] =
+  def bind(binding: Binding[Selector[Tag]]): Row[Tag, Pat, Out] =
     copy(bindings = binding :: bindings)
 
   def isWidcard: Boolean =
