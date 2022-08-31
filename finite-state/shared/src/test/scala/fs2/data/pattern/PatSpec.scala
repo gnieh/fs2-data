@@ -53,14 +53,14 @@ object PatSpec extends IOSuite {
 
   override def sharedResource: Resource[IO, Res] =
     Resource.eval {
+      val dsl = new PatternDsl[Tag[MiniXML.Text], MiniXML.Text]
+      import dsl._
       val cases = List[(Pattern[MiniXML.Text], Int)](
-        Pattern.State(Some(0), Some(0), Pattern.Leaf(MiniXML.Text("one"))) -> 1,
-        Pattern.State(Some(0), Some(1), Pattern.Leaf(MiniXML.Text("two"))) -> 2,
-        Pattern.State(Some(0),
-                      Some(0),
-                      Pattern.Or(Pattern.Leaf(MiniXML.Text("two")), Pattern.Leaf(MiniXML.Text("three")))) -> 42,
-        Pattern.State(Some(0), Some(1), Pattern.Wildcard) -> 20000,
-        Pattern.Wildcard -> -1
+        state(0, 0)(value(MiniXML.Text("one"))) -> 1,
+        state(0, 1)(value(MiniXML.Text("two"))) -> 2,
+        state(0, 0)(value(MiniXML.Text("two")) | value(MiniXML.Text("three"))) -> 42,
+        state(0, 1)(__) -> 20000,
+        __ -> -1
       )
 
       compiler.compile(cases)

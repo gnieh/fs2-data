@@ -108,7 +108,7 @@ object ESPSpec extends IOSuite {
 
   type Res = ESP[IO, DecisionTree[Tag[Event], ERhs[Event]], Event, Event]
 
-  override def sharedResource: Resource[IO, Res] = Resource.eval(mft.esp.flatTap(esp => IO.println(esp.rules)))
+  override def sharedResource: Resource[IO, Res] = Resource.eval(mft.esp)
 
   test("reverse tree") { esp =>
     Stream
