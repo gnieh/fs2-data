@@ -28,7 +28,7 @@ import scala.collection.compat._
 sealed trait Forest {
   def fold[T](children: => T)(siblings: => T): T =
     this match {
-      case Forest.First => children
+      case Forest.First  => children
       case Forest.Second => siblings
     }
 }
