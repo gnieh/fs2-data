@@ -10,7 +10,7 @@ sealed trait Rhs[+OutTag]
 object Rhs {
 
   /** Calls a new rule at a given depth with the given parameters. */
-  case class Call[Tag](q: Int, depth: Depth2, params: List[Rhs[Tag]]) extends Rhs[Tag]
+  case class Call[Tag](q: Int, depth: Depth, params: List[Rhs[Tag]]) extends Rhs[Tag]
 
   /** Reads the rule parameter. */
   case class Param(n: Int) extends Rhs[Nothing]
@@ -37,18 +37,18 @@ object Rhs {
 
 }
 
-sealed trait Depth2 {
+sealed trait Depth {
   def apply(d: Int): Int =
     this match {
-      case Depth2.Value(d)  => d
-      case Depth2.Copy      => d
-      case Depth2.Increment => d + 1
-      case Depth2.Decrement => d - 1
+      case Depth.Value(d)  => d
+      case Depth.Copy      => d
+      case Depth.Increment => d + 1
+      case Depth.Decrement => d - 1
     }
 }
-object Depth2 {
-  case class Value(d: Int) extends Depth2
-  case object Copy extends Depth2
-  case object Increment extends Depth2
-  case object Decrement extends Depth2
+object Depth {
+  case class Value(d: Int) extends Depth
+  case object Copy extends Depth
+  case object Increment extends Depth
+  case object Decrement extends Depth
 }

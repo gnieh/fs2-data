@@ -174,7 +174,7 @@ class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: Sync[
               case Skeleton.Wildcard(id) =>
                 Row(pat,
                     id.fold(bindings)(_ -> expr :: bindings),
-                    const.args.map(_ => Skeleton.Wildcard(none)) ++ ps,
+                    const.args.map(_ => Skeleton.Wildcard[Tag](none)) ++ ps,
                     out).some.pure[F]
               case Skeleton.As(p, id) =>
                 go(Row(pat, (id -> expr) :: bindings, (p :: ps), out))

@@ -36,13 +36,12 @@ object ESPSpec extends IOSuite {
       Map(
         Main -> Rules(
           Nil,
-          List(
-            EventSelector.Node("rev") -> Rhs.Concat(Rhs.Node("rev", Rhs.Call(Rev, Forest.Children, List(Rhs.Epsilon))),
-                                                    Rhs.Call(Main, Forest.Siblings, Nil)),
-            EventSelector.AnyNode -> Rhs.Concat(Rhs.CopyNode(Rhs.Call(Main, Forest.Children, Nil)),
-                                                Rhs.Call(Main, Forest.Siblings, Nil)),
-            EventSelector.AnyValue -> Rhs.Concat(Rhs.CopyLeaf, Rhs.Call(Main, Forest.Children, Nil)),
-            EventSelector.Epsilon -> Rhs.Epsilon
+          List[(EventSelector[String], Rhs[String])](
+            EventSelector.Node("rev") -> Rhs.Concat(Rhs.Node("rev", Rhs.Call(Rev, Forest.First, List(Rhs.Epsilon))),
+                                                    Rhs.Call(Main, Forest.Second, Nil)),
+            EventSelector.AnyNode -> Rhs.Concat(Rhs.CopyNode(Rhs.Call(Main, Forest.First, Nil)),
+                                                Rhs.Call(Main, Forest.Second, Nil)),
+            EventSelector.AnyLeaf -> Rhs.Concat(Rhs.CopyLeaf, Rhs.Call(Main, Forest.First, Nil))
           )
         ),
         Rev -> Rules(
@@ -50,18 +49,18 @@ object ESPSpec extends IOSuite {
           List(
             EventSelector.Node("a") -> Rhs.Call(
               Rev,
-              Forest.Siblings,
-              List(Rhs.Concat(Rhs.Node("a", Rhs.Call(Rev, Forest.Children, List(Rhs.Epsilon))), Rhs.Param(0)))),
+              Forest.Second,
+              List(Rhs.Concat(Rhs.Node("a", Rhs.Call(Rev, Forest.First, List(Rhs.Epsilon))), Rhs.Param(0)))),
             EventSelector.Node("b") -> Rhs.Call(
               Rev,
-              Forest.Siblings,
-              List(Rhs.Concat(Rhs.Node("b", Rhs.Call(Rev, Forest.Children, List(Rhs.Epsilon))), Rhs.Param(0)))),
+              Forest.Second,
+              List(Rhs.Concat(Rhs.Node("b", Rhs.Call(Rev, Forest.First, List(Rhs.Epsilon))), Rhs.Param(0)))),
             EventSelector.Node("c") -> Rhs.Call(
               Rev,
-              Forest.Siblings,
-              List(Rhs.Concat(Rhs.Node("c", Rhs.Call(Rev, Forest.Children, List(Rhs.Epsilon))), Rhs.Param(0)))),
-            EventSelector.Value("text") -> Rhs
-              .Call(Rev, Forest.Children, List(Rhs.Concat(Rhs.Leaf("text"), Rhs.Param(0)))),
+              Forest.Second,
+              List(Rhs.Concat(Rhs.Node("c", Rhs.Call(Rev, Forest.First, List(Rhs.Epsilon))), Rhs.Param(0)))),
+            EventSelector.Leaf("text") -> Rhs
+              .Call(Rev, Forest.First, List(Rhs.Concat(Rhs.Leaf("text"), Rhs.Param(0)))),
             EventSelector.Epsilon -> Rhs.Param(0)
           )
         )

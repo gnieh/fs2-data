@@ -28,7 +28,7 @@ package object pattern {
 
     def verticalView: VMatrix[Tag, Pat, Out] =
       VMatrix(m.map(_.patterns).transpose.map(Col(_)),
-              m.map({ case Row(pat, bindings, _, out) => patterns => Row(pat, bindings, patterns, out) }))
+              m.map({ case Row(pat, bindings, _, out) => Row[Tag, Pat, Out](pat, bindings, _, out) }))
 
   }
 

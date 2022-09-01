@@ -47,13 +47,13 @@ val commonSettings = List(
                          "-unchecked",
                          "-Ypatmat-exhaust-depth",
                          "off",
-                         "-Vimplicits",
-                         "-Vtype-diffs",
                          "-Ywarn-unused:imports,privates"),
   scalacOptions ++= PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
       case Some((2, n)) if n < 13 =>
         List("-Ypartial-unification", "-language:higherKinds")
+      case Some((2, 13)) =>
+        List("-Vimplicits", "-Vtype-diffs")
       case Some((3, _)) =>
         List("-Ykind-projector", "-source:future-migration", "-no-indent")
     }

@@ -52,23 +52,23 @@ object Pattern {
             List(Skeleton.noArgConstructor(Tag.End))
           case Input(Some(q), Some(d), inner) =>
             decompose(inner).map { inner =>
-              Skeleton.Constructor(
+              Skeleton.Constructor[Tag[T]](
                 Tag.Input,
                 List(Skeleton.noArgConstructor(Tag.State(q)), Skeleton.noArgConstructor(Tag.Depth(d)), inner))
             }
           case Input(Some(q), None, inner) =>
             decompose(inner).map { inner =>
-              Skeleton.Constructor(Tag.Input,
+              Skeleton.Constructor[Tag[T]](Tag.Input,
                                    List(Skeleton.noArgConstructor(Tag.State(q)), Skeleton.Wildcard(none), inner))
             }
           case Input(None, Some(d), inner) =>
             decompose(inner).map { inner =>
-              Skeleton.Constructor(Tag.Input,
+              Skeleton.Constructor[Tag[T]](Tag.Input,
                                    List(Skeleton.Wildcard(none), Skeleton.noArgConstructor(Tag.Depth(d)), inner))
             }
           case Input(None, None, inner) =>
             decompose(inner).map { inner =>
-              Skeleton.Constructor(Tag.Input, List(Skeleton.Wildcard(none), Skeleton.Wildcard(none), inner))
+              Skeleton.Constructor[Tag[T]](Tag.Input, List(Skeleton.Wildcard(none), Skeleton.Wildcard(none), inner))
             }
           case Open(None, as) =>
             List(Skeleton.Constructor(Tag.Open, List(Skeleton.Wildcard(as))))
@@ -77,13 +77,13 @@ object Pattern {
           case Open(Some(tag), None) =>
             List(Skeleton.Constructor(Tag.Open, List(Skeleton.noArgConstructor(Tag.Name(tag)))))
           case Close(None, as) =>
-            List(Skeleton.Constructor(Tag.Close, List(Skeleton.Wildcard(as))))
+            List(Skeleton.Constructor[Tag[T]](Tag.Close, List(Skeleton.Wildcard(as))))
           case Close(Some(tag), Some(as)) =>
             List(Skeleton.As(Skeleton.Constructor(Tag.Close, List(Skeleton.noArgConstructor(Tag.Name(tag)))), as))
           case Close(Some(tag), None) =>
             List(Skeleton.Constructor(Tag.Close, List(Skeleton.noArgConstructor(Tag.Name(tag)))))
           case Leaf(None, as) =>
-            List(Skeleton.Constructor(Tag.Leaf, List(Skeleton.Wildcard(as))))
+            List(Skeleton.Constructor[Tag[T]](Tag.Leaf, List(Skeleton.Wildcard(as))))
           case Leaf(Some(v), Some(as)) =>
             List(Skeleton.As(Skeleton.Constructor(Tag.Leaf, List(Skeleton.noArgConstructor(Tag.Value(v)))), as))
           case Leaf(Some(v), None) =>
