@@ -31,7 +31,11 @@ class MFTBuilder[Guard, InTag, OutTag] private[mft] {
       new RuleBuilder(this, pat)
 
     def apply(f: Forest, args: Rhs[OutTag]*): Rhs[OutTag] =
-      Rhs.Call(q, f, args.toList)
+      apply(f, args.toList)
+
+    def apply(f: Forest, args: List[Rhs[OutTag]]): Rhs[OutTag] =
+      Rhs.Call(q, f, args)
+
   }
 
   sealed trait PatternBuilder

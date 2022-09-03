@@ -41,7 +41,11 @@ object EventSelector {
 
 sealed trait Rhs[+OutTag] {
   def ~[OutTag1 >: OutTag](that: Rhs[OutTag1]): Rhs[OutTag1] =
-    Rhs.Concat(this, that)
+    (this, that) match {
+      case (Rhs.Epsilon, _) => that
+      case (_, Rhs.Epsilon) => this
+      case (_, _)           => Rhs.Concat(this, that)
+    }
 }
 object Rhs {
   case class Call[OutTag](q: Int, x: Forest, parameters: List[Rhs[OutTag]]) extends Rhs[OutTag]

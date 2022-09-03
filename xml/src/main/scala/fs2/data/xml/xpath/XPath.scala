@@ -19,7 +19,7 @@ package data
 package xml
 package xpath
 
-import cats.Eq
+import cats.{Eq, Show}
 import cats.syntax.all._
 import cats.data.NonEmptyList
 
@@ -58,5 +58,34 @@ object Predicate {
   case class And(left: Predicate, right: Predicate) extends Predicate
   case class Or(left: Predicate, right: Predicate) extends Predicate
   case class Not(inner: Predicate) extends Predicate
+
+  implicit val show: Show[Predicate] = Show.show {
+    case True        => "true"
+    case False       => "false"
+    case Exists(a)   => s"@${a.render}"
+    case Eq(a, v)    => s"""@${a.render}="$v""""
+    case Neq(a, v)   => s"""@${a.render}!="$v""""
+    case And(p1, p2) => show"${render(1, p1)} && ${render(1, p2)}"
+    case Or(p1, p2)  => show"${render(2, p1)} || ${render(2, p2)}"
+    case Not(p)      => show"!${render(0, p)}"
+  }
+
+  private def render(lvl: Int, p: Predicate): String =
+    p match {
+      case And(p1, p2) =>
+        if (lvl < 1)
+          s"(${render(1, p1)} && ${render(1, p2)})"
+        else
+          s"${render(1, p1)} && ${render(1, p2)}"
+      case Or(p1, p2) =>
+        if (lvl < 2)
+          s"(${render(2, p1)} || ${render(2, p2)})"
+        else
+          s"${render(2, p1)} || ${render(2, p2)}"
+      case Not(p) =>
+        s"!${render(0, p)}"
+      case _ =>
+        p.show
+    }
 
 }
