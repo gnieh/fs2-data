@@ -34,33 +34,38 @@ private[data] class ESP[F[_], InTag, OutTag](init: Int,
                                              val rules: DecisionTree[Tag[InTag], Rhs[OutTag]])(implicit
     F: RaiseThrowable[F]) {
 
+  def call[In, Out](env: Map[Int, Expr[Out]], q: Int, d: Int, args: List[Expr[Out]], in: Option[In])(implicit
+      In: Selectable[In, Tag[InTag]],
+      Out: Conversion[OutTag, Out],
+      TT: Tag2Tag[InTag, OutTag]) =
+    params.get(q).liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown state $q")).flatMap { params =>
+      if (params.size === args.size) {
+        args
+          .zip(params)
+          .foldLeftM(env) { case (env, (arg, param)) =>
+            step(env, arg, in).map { rhs =>
+              env.updated(param, rhs)
+            }
+          }
+          .flatMap { env =>
+            rules
+              .get(Input(q, d, in))
+              .liftTo[Pull[F, Nothing, *]](new ESPException(s"no rule found for state $q at depth $d for input $in"))
+              .flatMap { case (captures, out) => eval(env, d, in, captures, out) }
+          }
+      } else {
+        Pull.raiseError(new ESPException(
+          s"wrong number of argument given in state $q reading input $in (expected ${params.size} but got ${args.size})"))
+      }
+    }
+
   def step[In, Out](env: Map[Int, Expr[Out]], e: Expr[Out], in: Option[In])(implicit
       In: Selectable[In, Tag[InTag]],
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag]): Pull[F, Nothing, Expr[Out]] =
     e match {
       case Expr.Call(q, d, args) =>
-        params.get(q).liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown state $q")).flatMap { params =>
-          if (params.size === args.size) {
-            args
-              .zip(params)
-              .foldLeftM(env) { case (env, (arg, param)) =>
-                step(env, arg, in).map { rhs =>
-                  env.updated(param, rhs)
-                }
-              }
-              .flatMap { env =>
-                rules
-                  .get(Input(q, d, in))
-                  .liftTo[Pull[F, Nothing, *]](
-                    new ESPException(s"no rule found for state $q at depth $d for input $in"))
-                  .flatMap { case (captures, out) => eval(env, d, in, captures, out) }
-              }
-          } else {
-            Pull.raiseError(new ESPException(
-              s"wrong number of argument given in state $q reading input $in (expected ${params.size} but got ${args.size})"))
-          }
-        }
+        call(env, q, d, args, in)
       case Expr.Epsilon =>
         Pull.pure(Expr.Epsilon)
       case Expr.Open(o, next) =>
@@ -93,6 +98,10 @@ private[data] class ESP[F[_], InTag, OutTag](init: Int,
         params
           .traverse(eval(env, depth, in, captures, _))
           .map(Expr.Call(q, d(depth), _))
+      case Rhs.SelfCall(q, params) =>
+        params
+          .traverse(eval(env, depth, in, captures, _))
+          .flatMap(params => call(env, q, 0, params, in))
       case Rhs.Param(i) =>
         env
           .get(i)

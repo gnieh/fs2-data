@@ -47,20 +47,12 @@ object ESPSpec extends IOSuite {
         Rev -> Rules(
           List(0),
           List(
-            EventSelector.Node("a") -> Rhs.Call(
+            EventSelector.AnyNode -> Rhs.Call(
               Rev,
               Forest.Second,
-              List(Rhs.Concat(Rhs.Node("a", Rhs.Call(Rev, Forest.First, List(Rhs.Epsilon))), Rhs.Param(0)))),
-            EventSelector.Node("b") -> Rhs.Call(
-              Rev,
-              Forest.Second,
-              List(Rhs.Concat(Rhs.Node("b", Rhs.Call(Rev, Forest.First, List(Rhs.Epsilon))), Rhs.Param(0)))),
-            EventSelector.Node("c") -> Rhs.Call(
-              Rev,
-              Forest.Second,
-              List(Rhs.Concat(Rhs.Node("c", Rhs.Call(Rev, Forest.First, List(Rhs.Epsilon))), Rhs.Param(0)))),
-            EventSelector.Leaf("text") -> Rhs
-              .Call(Rev, Forest.First, List(Rhs.Concat(Rhs.Leaf("text"), Rhs.Param(0)))),
+              List(Rhs.Concat(Rhs.CopyNode(Rhs.Call(Rev, Forest.First, List(Rhs.Epsilon))), Rhs.Param(0)))),
+            EventSelector.AnyLeaf -> Rhs
+              .Call(Rev, Forest.First, List(Rhs.Concat(Rhs.CopyLeaf, Rhs.Param(0)))),
             EventSelector.Epsilon -> Rhs.Param(0)
           )
         )
