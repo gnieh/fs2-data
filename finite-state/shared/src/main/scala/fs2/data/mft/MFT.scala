@@ -20,7 +20,7 @@ package mft
 
 import esp.{Depth, ESP, Rhs => ERhs, Pattern, PatternDsl, Tag => ETag}
 
-import cats.effect._
+import cats.{Defer, MonadError}
 import cats.syntax.all._
 
 import scala.collection.compat._
@@ -41,7 +41,10 @@ object EventSelector {
   case object Epsilon extends EventSelector[Nothing]
 }
 
-sealed trait Rhs[+OutTag]
+sealed trait Rhs[+OutTag] {
+  def ~[OutTag1 >: OutTag](that: Rhs[OutTag1]): Rhs[OutTag1] =
+    Rhs.Concat(this, that)
+}
 object Rhs {
   case class Call[OutTag](q: Int, x: Forest, parameters: List[Rhs[OutTag]]) extends Rhs[OutTag]
   case object Epsilon extends Rhs[Nothing]
@@ -65,7 +68,7 @@ private[data] class MFT[InTag, OutTag](init: Int, rules: Map[Int, Rules[InTag, O
     * The generated ESP contains one decision tree encoding all the patterns
     * of this MFT.
     */
-  def esp[F[_]](implicit F: Sync[F]): F[ESP[F, InTag, OutTag]] = {
+  def esp[F[_]](implicit F: MonadError[F, Throwable], defer: Defer[F]): F[ESP[F, InTag, OutTag]] = {
 
     val dsl = new PatternDsl[InTag]
     import dsl._

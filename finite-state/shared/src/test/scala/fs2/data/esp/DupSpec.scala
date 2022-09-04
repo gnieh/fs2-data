@@ -31,43 +31,22 @@ object DupSpec extends IOSuite {
 
   override def sharedResource: Resource[IO, Res] = Resource.eval {
 
-    val mft =
-      new MFT[String, String](
-        0,
-        Map(
-          0 -> Rules(
-            Nil,
-            List(
-              EventSelector.AnyNode -> Rhs.Call(1, Forest.Self, List(Rhs.Epsilon)),
-              EventSelector.AnyLeaf -> Rhs.Call(1, Forest.Self, List(Rhs.Epsilon)),
-              EventSelector.Epsilon -> Rhs.Epsilon
-            )
-          ),
-          // duplicating
-          1 -> Rules(
-            List(0),
-            List(
-              EventSelector.AnyNode -> Rhs.Concat(
-                Rhs.CopyNode(Rhs.Call(2, Forest.First, Nil)),
-                Rhs.Call(1, Forest.Second, List(Rhs.Call(2, Forest.Self, Nil)))
-              ),
-              EventSelector.AnyLeaf -> Rhs.Concat(Rhs.CopyLeaf,
-                                                  Rhs.Call(1, Forest.First, List(Rhs.Call(2, Forest.Self, Nil)))),
-              EventSelector.Epsilon -> Rhs.Param(0)
-            )
-          ),
-          // copying
-          2 -> Rules(
-            Nil,
-            List(
-              EventSelector.AnyNode -> Rhs.Concat(Rhs.CopyNode(Rhs.Call(2, Forest.First, Nil)),
-                                                  Rhs.Call(2, Forest.Second, Nil)),
-              EventSelector.AnyLeaf -> Rhs.Concat(Rhs.CopyLeaf, Rhs.Call(2, Forest.First, Nil)),
-              EventSelector.Epsilon -> Rhs.Epsilon
-            )
-          )
-        )
-      )
+    val mft = dsl[String, String] { implicit builder =>
+      val init = state(0, initial = true)
+      val dup = state(1)
+      val cop = state(0)
+
+      init(any) -> dup(x0, eps)
+
+      dup(anyNode) -> copy(cop(x1)) ~ dup(x2, y(0) ~ copy(cop(x1)))
+      dup(anyLeaf) -> copy ~ dup(x1, y(0) ~ copy)
+      dup(epsilon) -> y(0)
+
+      cop(anyNode) -> copy(cop(x1)) ~ cop(x2)
+      cop(anyLeaf) -> copy ~ cop(x1)
+      cop(epsilon) -> eps
+
+    }
 
     mft.esp
   }

@@ -31,29 +31,16 @@ object CopySpec extends IOSuite {
 
   override def sharedResource: Resource[IO, Res] = Resource.eval {
 
-    val mft =
-      new MFT[String, String](
-        0,
-        Map(
-          0 -> Rules(
-            Nil,
-            List(
-              EventSelector.AnyNode -> Rhs.Call(1, Forest.Self, Nil),
-              EventSelector.AnyLeaf -> Rhs.Call(1, Forest.Self, Nil),
-              EventSelector.Epsilon -> Rhs.Call(1, Forest.Self, Nil)
-            )
-          ),
-          1 -> Rules(
-            Nil,
-            List(
-              EventSelector.AnyNode -> Rhs.Concat(Rhs.CopyNode(Rhs.Call(1, Forest.First, Nil)),
-                                                  Rhs.Call(1, Forest.Second, Nil)),
-              EventSelector.AnyLeaf -> Rhs.Concat(Rhs.CopyLeaf, Rhs.Call(1, Forest.First, Nil)),
-              EventSelector.Epsilon -> Rhs.Epsilon
-            )
-          )
-        )
-      )
+    val mft = dsl[String, String] { implicit builder =>
+      val main = state(args = 0, initial = true)
+      val cop = state(args = 0)
+
+      main(any) -> cop(x0)
+
+      cop(anyNode) -> copy(cop(x1)) ~ cop(x2)
+      cop(anyLeaf) -> copy ~ cop(x1)
+      cop(epsilon) -> eps
+    }
 
     mft.esp
   }

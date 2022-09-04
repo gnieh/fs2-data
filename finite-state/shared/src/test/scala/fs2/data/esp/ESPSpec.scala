@@ -30,34 +30,18 @@ object ESPSpec extends IOSuite {
   val Main = 0
   val Rev = 1
 
-  val mft: MFT[String, String] =
-    new MFT(
-      Main,
-      Map(
-        Main -> Rules(
-          Nil,
-          List[(EventSelector[String], Rhs[String])](
-            EventSelector.Node("rev") -> Rhs.Concat(Rhs.Node("rev", Rhs.Call(Rev, Forest.First, List(Rhs.Epsilon))),
-                                                    Rhs.Call(Main, Forest.Second, Nil)),
-            EventSelector.AnyNode -> Rhs.Concat(Rhs.CopyNode(Rhs.Call(Main, Forest.First, Nil)),
-                                                Rhs.Call(Main, Forest.Second, Nil)),
-            EventSelector.AnyLeaf -> Rhs.Concat(Rhs.CopyLeaf, Rhs.Call(Main, Forest.First, Nil))
-          )
-        ),
-        Rev -> Rules(
-          List(0),
-          List(
-            EventSelector.AnyNode -> Rhs.Call(
-              Rev,
-              Forest.Second,
-              List(Rhs.Concat(Rhs.CopyNode(Rhs.Call(Rev, Forest.First, List(Rhs.Epsilon))), Rhs.Param(0)))),
-            EventSelector.AnyLeaf -> Rhs
-              .Call(Rev, Forest.First, List(Rhs.Concat(Rhs.CopyLeaf, Rhs.Param(0)))),
-            EventSelector.Epsilon -> Rhs.Param(0)
-          )
-        )
-      )
-    )
+  val mft: MFT[String, String] = dsl { implicit builder =>
+    val main = state(args = 0, initial = true)
+    val rev = state(args = 1)
+
+    main(node("rev")) -> node("rev", rev(x1, eps)) ~ main(x2)
+    main(anyNode) -> copy(main(x1)) ~ main(x2)
+    main(anyLeaf) -> copy ~ main(x1)
+
+    rev(anyNode) -> rev(x2, copy(rev(x1, eps)) ~ y(0))
+    rev(anyLeaf) -> rev(x1, copy ~ y(0))
+    rev(epsilon) -> y(0)
+  }
 
   type Res = ESP[IO, String, String]
 
