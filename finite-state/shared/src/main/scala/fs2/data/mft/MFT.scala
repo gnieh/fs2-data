@@ -20,19 +20,14 @@ package mft
 
 import esp.{Depth, ESP, Rhs => ERhs, Pattern, PatternDsl, Tag => ETag}
 
-import cats.effect._
+import cats.{Defer, MonadError}
 import cats.syntax.all._
 
 import scala.collection.compat._
 
-sealed trait Forest {
-  def fold[T](children: => T)(siblings: => T): T =
-    this match {
-      case Forest.First  => children
-      case Forest.Second => siblings
-    }
-}
+sealed trait Forest
 object Forest {
+  case object Self extends Forest
   case object First extends Forest
   case object Second extends Forest
 }
@@ -46,7 +41,10 @@ object EventSelector {
   case object Epsilon extends EventSelector[Nothing]
 }
 
-sealed trait Rhs[+OutTag]
+sealed trait Rhs[+OutTag] {
+  def ~[OutTag1 >: OutTag](that: Rhs[OutTag1]): Rhs[OutTag1] =
+    Rhs.Concat(this, that)
+}
 object Rhs {
   case class Call[OutTag](q: Int, x: Forest, parameters: List[Rhs[OutTag]]) extends Rhs[OutTag]
   case object Epsilon extends Rhs[Nothing]
@@ -70,21 +68,23 @@ private[data] class MFT[InTag, OutTag](init: Int, rules: Map[Int, Rules[InTag, O
     * The generated ESP contains one decision tree encoding all the patterns
     * of this MFT.
     */
-  def esp[F[_]](implicit F: Sync[F]): F[ESP[F, InTag, OutTag]] = {
+  def esp[F[_]](implicit F: MonadError[F, Throwable], defer: Defer[F]): F[ESP[F, InTag, OutTag]] = {
 
     val dsl = new PatternDsl[InTag]
     import dsl._
 
     def translateRhs(rhs: Rhs[OutTag]): ERhs[OutTag] =
       rhs match {
-        case Rhs.Call(q, f, params) => ERhs.Call(q, Depth.Value(f.fold(0)(1)), params.map(translateRhs(_)))
-        case Rhs.Param(i)           => ERhs.Param(i)
-        case Rhs.Epsilon            => ERhs.Epsilon
-        case Rhs.Node(tag, inner)   => ERhs.Tree(tag, translateRhs(inner))
-        case Rhs.CopyNode(inner)    => ERhs.CapturedTree("in", translateRhs(inner))
-        case Rhs.Leaf(v)            => ERhs.Leaf(v)
-        case Rhs.CopyLeaf           => ERhs.CapturedLeaf("in")
-        case Rhs.Concat(rhs1, rhs2) => ERhs.Concat(translateRhs(rhs1), translateRhs(rhs2))
+        case Rhs.Call(q, Forest.Self, params)   => ERhs.SelfCall(q, params.map(translateRhs(_)))
+        case Rhs.Call(q, Forest.First, params)  => ERhs.Call(q, Depth.Value(0), params.map(translateRhs(_)))
+        case Rhs.Call(q, Forest.Second, params) => ERhs.Call(q, Depth.Value(1), params.map(translateRhs(_)))
+        case Rhs.Param(i)                       => ERhs.Param(i)
+        case Rhs.Epsilon                        => ERhs.Epsilon
+        case Rhs.Node(tag, inner)               => ERhs.Tree(tag, translateRhs(inner))
+        case Rhs.CopyNode(inner)                => ERhs.CapturedTree("in", translateRhs(inner))
+        case Rhs.Leaf(v)                        => ERhs.Leaf(v)
+        case Rhs.CopyLeaf                       => ERhs.CapturedLeaf("in")
+        case Rhs.Concat(rhs1, rhs2)             => ERhs.Concat(translateRhs(rhs1), translateRhs(rhs2))
       }
 
     val cases = rules.toList.flatMap { case (q, Rules(params, tree)) =>

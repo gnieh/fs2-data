@@ -16,12 +16,12 @@
 
 package fs2.data.pattern
 
-import cats.effect.Sync
+import cats.{Defer, MonadError}
 import cats.syntax.all._
 
 class PatternException(msg: String) extends Exception(msg)
 
-class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: Sync[F]) {
+class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: MonadError[F, Throwable], defer: Defer[F]) {
 
   /** Compiles a pattern into a decision tree. */
   def compile(

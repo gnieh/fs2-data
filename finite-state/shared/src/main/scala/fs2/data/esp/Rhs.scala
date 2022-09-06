@@ -28,6 +28,9 @@ object Rhs {
   /** Calls a new rule at a given depth with the given parameters. */
   case class Call[Tag](q: Int, depth: Depth, params: List[Rhs[Tag]]) extends Rhs[Tag]
 
+  /** Calls a new rule at a given depth with the given parameters on the current input. */
+  case class SelfCall[Tag](q: Int, params: List[Rhs[Tag]]) extends Rhs[Tag]
+
   /** Reads the rule parameter. */
   case class Param(n: Int) extends Rhs[Nothing]
 
