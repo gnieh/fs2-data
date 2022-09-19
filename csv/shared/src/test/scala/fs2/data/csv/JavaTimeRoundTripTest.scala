@@ -32,7 +32,8 @@ object JavaTimeRoundTripTest extends SimpleIOSuite {
   }
 
   pureTest("it should round trip java time classes with default fmts") {
-    val expectedZonedDateTime: ZonedDateTime = ZonedDateTime.of(2021, 3, 8, 13, 4, 29, 6, ZoneId.of("America/New_York"))
+    println(ZoneId.getAvailableZoneIds.toArray.mkString("Array(", ", ", ")"))
+    val expectedZonedDateTime: ZonedDateTime = ZonedDateTime.of(2021, 3, 8, 13, 4, 29, 6, ZoneId.systemDefault())
     val expectedInstant: Instant = expectedZonedDateTime.toInstant
     val expectedPeriod: Period = Period.ofDays(10)
     val expectedLocalDate: LocalDate = expectedZonedDateTime.toLocalDate
@@ -65,8 +66,8 @@ object JavaTimeRoundTripTest extends SimpleIOSuite {
 
   pureTest("it should round trip with overridden formats") {
     val expectedZonedDateTime: ZonedDateTime =
-      ZonedDateTime.of(LocalDateTime.of(2021, 3, 8, 13, 4, 29), ZoneId.of("America/New_York"))
-    val expectedString: String = "3/8/2021 13:04:29-0500"
+      ZonedDateTime.of(LocalDateTime.of(2021, 3, 8, 13, 4, 29), ZoneOffset.UTC)
+    val expectedString: String = "3/8/2021 13:04:29+0000"
     val encoded: String = enc(expectedZonedDateTime)
     val decoded: DecoderResult[ZonedDateTime] = dec(encoded)
     expect(encoded == expectedString) and
