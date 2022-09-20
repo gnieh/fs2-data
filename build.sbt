@@ -1,5 +1,5 @@
 val scala212 = "2.12.17"
-val scala213 = "2.13.9"
+val scala213 = "2.13.8"
 val scala3 = "3.2.0"
 val fs2Version = "3.3.0"
 val circeVersion = "0.14.3"
@@ -109,8 +109,7 @@ val publishSettings = List(
   )
 )
 
-val root = crossProject(JVMPlatform, JSPlatform, NativePlatform)
-  .in(file("."))
+val root = (project in file("."))
   .settings(commonSettings)
   .enablePlugins(ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin, GhpagesPlugin)
   .settings(
@@ -152,18 +151,44 @@ val root = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     ghpagesNoJekyll := true
   )
   .aggregate(
-    text,
-    csv,
-    csvGeneric,
-    json,
-    jsonCirce,
-    jsonDiffson,
-    jsonInterpolators,
-    xml,
-    scalaXml,
-    cbor,
-    cborJson,
-    finiteState
+    text.jvm,
+    text.js,
+    text.native,
+    csv.jvm,
+    csv.js,
+    csv.native,
+    csvGeneric.jvm,
+    csvGeneric.js,
+    csvGeneric.native,
+    json.jvm,
+    json.js,
+    json.native,
+    jsonCirce.jvm,
+    jsonCirce.js,
+    jsonCirce.native,
+    jsonDiffson.jvm,
+    jsonDiffson.js,
+    jsonDiffson.native,
+    jsonInterpolators.jvm,
+    jsonInterpolators.js,
+    jsonInterpolators.native,
+    jsonPlay.jvm,
+    jsonPlay.js,
+    xml.jvm,
+    xml.js,
+    xml.native,
+    scalaXml.jvm,
+    scalaXml.js,
+    scalaXml.native,
+    cbor.jvm,
+    cbor.js,
+    cbor.native,
+    cborJson.jvm,
+    cborJson.js,
+    cborJson.native,
+    finiteState.jvm,
+    finiteState.js,
+    finiteState.native
   )
 
 lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
