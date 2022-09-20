@@ -32,7 +32,6 @@ object JavaTimeRoundTripTest extends SimpleIOSuite {
   }
 
   pureTest("it should round trip java time classes with default fmts") {
-    println(ZoneId.getAvailableZoneIds.toArray.mkString("Array(", ", ", ")"))
     val expectedZonedDateTime: ZonedDateTime = ZonedDateTime.of(2021, 3, 8, 13, 4, 29, 6, ZoneId.systemDefault())
     val expectedInstant: Instant = expectedZonedDateTime.toInstant
     val expectedPeriod: Period = Period.ofDays(10)

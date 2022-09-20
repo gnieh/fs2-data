@@ -1,6 +1,6 @@
 val scala212 = "2.12.16"
 val scala213 = "2.13.8"
-val scala3 = "3.1.3"
+val scala3 = "3.2.0"
 val fs2Version = "3.3.0"
 val circeVersion = "0.14.3"
 val circeExtrasVersion = "0.14.1"
@@ -8,7 +8,7 @@ val playVersion = "2.9.2"
 val shapeless2Version = "2.3.9"
 val shapeless3Version = "3.2.0"
 val scalaJavaTimeVersion = "2.4.0"
-val diffsonVersion = "4.1.1"
+val diffsonVersion = "4.2.0"
 val literallyVersion = "1.1.0"
 val weaverVersion = "0.8.0"
 
@@ -109,7 +109,8 @@ val publishSettings = List(
   )
 )
 
-val root = (project in file("."))
+val root = crossProject(JVMPlatform, JSPlatform, NativePlatform)
+  .in(file("."))
   .settings(commonSettings)
   .enablePlugins(ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin, GhpagesPlugin)
   .settings(
@@ -118,18 +119,31 @@ val root = (project in file("."))
     publish / skip := true,
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(
       cbor.js,
+      cbor.native,
       cborJson.js,
+      cborJson.native,
       csv.js,
+      csv.native,
       csvGeneric.js,
+      csvGeneric.native,
       json.js,
+      json.native,
       jsonCirce.js,
+      jsonCirce.native,
       jsonDiffson.js,
+      jsonDiffson.native,
       jsonPlay.js,
       jsonInterpolators.js,
+      jsonInterpolators.native,
       text.js,
+      text.native,
       xml.js,
+      xml.native,
       scalaXml.js,
-      finiteState.js
+      scalaXml.native,
+      finiteState.js,
+      finiteState.native,
+      benchmarks.jvm
     ),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
@@ -138,39 +152,18 @@ val root = (project in file("."))
     ghpagesNoJekyll := true
   )
   .aggregate(
-    text.jvm,
-    text.js,
-    text.native,
-    csv.jvm,
-    csv.js,
-    csv.native,
-    csvGeneric.jvm,
-    csvGeneric.js,
-    csvGeneric.native,
-    json.jvm,
-    json.js,
-    json.native,
-    jsonCirce.jvm,
-    jsonCirce.js,
-    jsonDiffson.jvm,
-    jsonDiffson.js,
-    jsonInterpolators.jvm,
-    jsonInterpolators.js,
-    jsonInterpolators.native,
-    xml.jvm,
-    xml.js,
-    xml.native,
-    scalaXml.jvm,
-    scalaXml.js,
-    scalaXml.native,
-    cbor.jvm,
-    cbor.js,
-    cbor.native,
-    cborJson.jvm,
-    cborJson.js,
-    finiteState.jvm,
-    finiteState.js,
-    finiteState.native
+    text,
+    csv,
+    csvGeneric,
+    json,
+    jsonCirce,
+    jsonDiffson,
+    jsonInterpolators,
+    xml,
+    scalaXml,
+    cbor,
+    cborJson,
+    finiteState
   )
 
 lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -257,7 +250,7 @@ lazy val json = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   )
   .dependsOn(text, finiteState)
 
-lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
+lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("json/circe"))
   .settings(commonSettings)
@@ -296,7 +289,7 @@ lazy val jsonPlay = crossProject(JVMPlatform, JSPlatform)
   )
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
 
-lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform)
+lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("json/diffson"))
   .settings(commonSettings)
@@ -393,7 +386,7 @@ lazy val finiteState = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     description := "Streaming finite state machines"
   )
 
-lazy val cborJson = crossProject(JVMPlatform, JSPlatform)
+lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("cbor-json"))
   .settings(commonSettings)
