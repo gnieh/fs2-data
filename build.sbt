@@ -1,10 +1,10 @@
-val scala212 = "2.12.16"
-val scala213 = "2.13.8"
+val scala212 = "2.12.17"
+val scala213 = "2.13.9"
 val scala3 = "3.2.0"
 val fs2Version = "3.3.0"
 val circeVersion = "0.14.3"
-val circeExtrasVersion = "0.14.1"
-val playVersion = "2.9.2"
+val circeExtrasVersion = "0.14.2"
+val playVersion = "2.9.3"
 val shapeless2Version = "2.3.9"
 val shapeless3Version = "3.2.0"
 val scalaJavaTimeVersion = "2.4.0"
@@ -410,7 +410,7 @@ lazy val documentation = project
     mdocIn := file("documentation/docs"),
     mdocOut := file("site/content/documentation"),
     libraryDependencies ++= List(
-      "com.beachape" %% "enumeratum" % "1.5.15",
+      "com.beachape" %% "enumeratum" % "1.7.0",
       "org.gnieh" %% "diffson-circe" % diffsonVersion,
       "io.circe" %% "circe-generic-extras" % circeExtrasVersion,
       "co.fs2" %% "fs2-io" % fs2Version
