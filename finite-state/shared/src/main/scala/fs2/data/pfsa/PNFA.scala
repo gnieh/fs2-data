@@ -25,6 +25,8 @@ import cats.syntax.all._
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuilder
 
+import scala.collection.compat._
+
 private[data] class PNFA[P, T](val init: Int, val finals: Set[Int], val transitions: Map[Int, List[(Option[P], Int)]])(
     implicit P: Pred[P, T]) {
 
