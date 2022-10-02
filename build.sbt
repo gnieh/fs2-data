@@ -95,12 +95,16 @@ val publishSettings = List(
     Developer(id = "satabin",
               name = "Lucas Satabin",
               email = "lucas.satabin@gnieh.org",
-              url = url("https://github.com/satabin"))
+              url = url("https://github.com/satabin")),
+    Developer(id = "ybasket",
+              name = "Yannick Heiber",
+              email = "ybasket42+fs2-data@googlemail.com",
+              url = url("https://github.com/ybasket"))
   ),
   pomExtra := (
     <ciManagement>
-      <system>travis</system>
-      <url>https://travis-ci.org/#!/satabin/fs2-data</url>
+      <system>GitHub Actions</system>
+      <url>https://github.com/satabin/fs2-data/actions</url>
     </ciManagement>
     <issueManagement>
       <system>github</system>
