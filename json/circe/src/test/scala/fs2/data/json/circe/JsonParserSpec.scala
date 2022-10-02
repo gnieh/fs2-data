@@ -20,6 +20,11 @@ package circe
 import io.circe._
 
 object CirceJsonParserSpec extends JsonParserTest[Json] {
+  // use the jawn parser to guarantee identical cross-platform semantics
   def parse(content: String): Either[Throwable, Json] =
-    jawn.parse(content) // use the jawn parser to guarantee identical cross-platform semantics
+    try {
+      jawn.parse(content)
+    } catch { // on Scala.js, jawn may throw fatal exceptions on inputs with implementation-specific behaviour
+      case t: Throwable => Left(t)
+    }
 }
