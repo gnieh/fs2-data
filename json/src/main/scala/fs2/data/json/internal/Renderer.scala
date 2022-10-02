@@ -34,11 +34,6 @@ private[json] class Renderer(pretty: Boolean, resetOnChunk: Boolean, indent: Str
 
   private var comma = false
 
-  private def separator(comma: Boolean): Unit = {
-    if (comma)
-      builder.append(',')
-  }
-
   private def indentation(newline: Boolean, level: Int): Unit =
     if (newline) {
       builder.append('\n')
