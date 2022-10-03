@@ -4,11 +4,11 @@ val scala3 = "3.2.0"
 val fs2Version = "3.3.0"
 val circeVersion = "0.14.3"
 val circeExtrasVersion = "0.14.2"
-val playVersion = "2.9.3"
+val playVersion = "2.10.0-RC6"
 val shapeless2Version = "2.3.9"
 val shapeless3Version = "3.2.0"
 val scalaJavaTimeVersion = "2.4.0"
-val diffsonVersion = "4.2.0"
+val diffsonVersion = "4.3.0"
 val literallyVersion = "1.1.0"
 val weaverVersion = "0.8.0"
 
@@ -303,14 +303,13 @@ lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
 
 lazy val jsonPlay = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Full)
+  .crossType(CrossType.Pure)
   .in(file("json/play"))
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
     name := "fs2-data-json-play",
     description := "Streaming JSON library with support for Play! JSON ASTs",
-    crossScalaVersions := Seq(scala212, scala213),
     libraryDependencies ++= List(
       "com.typesafe.play" %%% "play-json" % playVersion,
       "org.gnieh" %%% "diffson-play-json" % diffsonVersion % "test"
