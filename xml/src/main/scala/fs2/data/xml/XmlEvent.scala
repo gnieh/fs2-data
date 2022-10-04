@@ -36,9 +36,8 @@ object XmlEvent {
   case class StartTag(name: QName, attributes: List[Attr], isEmpty: Boolean) extends XmlEvent {
     def render(collapseEmpty: Boolean): String = {
       val end = if (collapseEmpty && isEmpty) "/>" else ">"
-      show"""<$name${attributes.foldMap[String] { case Attr(n, v) =>
-          show""" $n="${v.foldMap[String](_.render)}""""
-        }}$end"""
+      val attrs = attributes.foldMap[String] { case Attr(n, v) => show""" $n="${v.foldMap[String](_.render)}"""" }
+      show"""<$name$attrs$end"""
     }
   }
 
