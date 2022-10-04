@@ -33,7 +33,12 @@ object XmlEvent {
 
   case class XmlDecl(version: String, encoding: Option[String], standalone: Option[Boolean]) extends XmlEvent
 
-  case class StartTag(name: QName, attributes: List[Attr], isEmpty: Boolean) extends XmlEvent
+  case class StartTag(name: QName, attributes: List[Attr], isEmpty: Boolean) extends XmlEvent {
+    def render(collapseEmpty: Boolean): String = {
+      val end = if (collapseEmpty && isEmpty) "/>" else ">"
+      show"<$name${attributes.foldMap { case Attr(n, v) => show" $n=\"${v.foldMap(_.render)}\"" }}$end"
+    }
+  }
 
   case class XmlCharRef(value: Int) extends XmlTexty {
     def render = f"&#x$value%04x;"
@@ -44,7 +49,7 @@ object XmlEvent {
   }
 
   case class XmlString(s: String, isCDATA: Boolean) extends XmlTexty {
-    def render = s
+    def render = if (isCDATA) show"<![CDATA[$s]]>" else s
   }
 
   case class XmlPI(target: String, content: String) extends XmlEvent
@@ -58,15 +63,12 @@ object XmlEvent {
   case class Comment(comment: String) extends XmlEvent
 
   implicit val show: Show[XmlEvent] = Show.show {
-    case XmlString(s, false) => s
-    case XmlString(s, true)  => show"<![CDATA[$s]]>"
-    case t: XmlTexty         => t.render
-    case StartTag(n, attrs, isEmpty) =>
-      show"<${n} ${attrs.map { case Attr(n, v) => show"$n='${v.map(_.render).mkString_("")}'" }.mkString_("")}>"
+    case t: XmlTexty      => t.render
+    case s: StartTag      => s.render(false)
     case EndTag(n)        => show"</$n>"
     case Comment(content) => s"<!--$content-->"
     case XmlDecl(version, encoding, standalone) =>
-      s"""<?xml version="$version"${encoding.map(e => s""" encoding="$e"""").getOrElse("")}${standalone.map {
+      s"""<?xml version="$version"${encoding.foldMap(e => s""" encoding="$e"""")}${standalone.foldMap {
           case true  => s""" standalone="yes""""
           case false => s""" standalone="no""""
         }}?>"""
