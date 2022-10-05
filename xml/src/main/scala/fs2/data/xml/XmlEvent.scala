@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Lucas Satabin
+ * Copyright 2019-2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
 package fs2
 package data
 package xml
+
+import cats.Show
+import cats.syntax.all._
 
 sealed trait XmlEvent
 
@@ -51,5 +54,24 @@ object XmlEvent {
   case class EndTag(name: QName) extends XmlEvent
 
   case object EndDocument extends XmlEvent
+
+  case class Comment(comment: String) extends XmlEvent
+
+  implicit val show: Show[XmlEvent] = Show.show {
+    case XmlString(s, false) => s
+    case XmlString(s, true)  => show"<![CDATA[$s]]>"
+    case t: XmlTexty         => t.render
+    case StartTag(n, attrs, isEmpty) =>
+      show"<${n} ${attrs.map { case Attr(n, v) => show"$n='${v.map(_.render).mkString_("")}'" }.mkString_("")}>"
+    case EndTag(n)        => show"</$n>"
+    case Comment(content) => s"<!--$content-->"
+    case XmlDecl(version, encoding, standalone) =>
+      s"""<?xml version="$version"${encoding.map(e => s""" encoding="$e"""").getOrElse("")}${standalone.map {
+          case true  => s""" standalone="yes""""
+          case false => s""" standalone="no""""
+        }}?>"""
+    case XmlPI(target, content) => s"<?$target $content?>"
+    case _                      => ""
+  }
 
 }

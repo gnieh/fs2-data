@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Lucas Satabin
+ * Copyright 2019-2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,8 +41,8 @@ private object MarkupToken {
     def render: String = s"<!$name"
   }
 
-  case object CommentToken extends MarkupToken {
-    def render: String = "<!-- ... -->"
+  case class CommentToken(content: Option[String]) extends MarkupToken {
+    def render: String = s"<!-- ${content.getOrElse("...")} -->"
   }
 
   case object CDataToken extends MarkupToken {

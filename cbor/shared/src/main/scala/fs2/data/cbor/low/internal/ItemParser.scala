@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Lucas Satabin
+ * Copyright 2019-2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -312,10 +312,7 @@ private[low] object ItemParser {
         Pull.pure((chunk, idx, rest, CborItem.Undefined :: chunkAcc))
       case 24 =>
         requireOneByte(chunk, idx, rest, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, byte) =>
-          if (byte >= 0 && byte < 32)
-            Pull.raiseError(new CborParsingException(s"invalid simple value additional byte $byte"))
-          else
-            Pull.pure((chunk, idx, rest, CborItem.SimpleValue(byte.toByte) :: chunkAcc))
+          Pull.pure((chunk, idx, rest, CborItem.SimpleValue(byte.toByte) :: chunkAcc))
         }
       case 25 =>
         requireBytes(chunk, idx, rest, 2, Chunk.Queue.empty[Byte], chunkAcc).map {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Lucas Satabin
+ * Copyright 2019-2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,23 @@ package data
 import java.nio.charset.{Charset, StandardCharsets}
 
 package object text {
+
+  /** Import this if your byte stream is encoded in UTF-8 */
+  object utf8 {
+
+    implicit def byteStreamCharLike[F[_]]: CharLikeChunks[F, Byte] = {
+      val stringsCharLike = CharLikeChunks.stringStreamCharLike[F]
+      new CharLikeChunks[F, Byte] {
+        override type Context = stringsCharLike.Context
+        override def create(s: Stream[F, Byte]): Context = stringsCharLike.create(s.through(fs2.text.utf8.decode))
+        override def needsPull(ctx: Context): Boolean = stringsCharLike.needsPull(ctx)
+        override def pullNext(ctx: Context): Pull[F, INothing, Option[Context]] = stringsCharLike.pullNext(ctx)
+        override def advance(ctx: Context): Context = stringsCharLike.advance(ctx)
+        override def current(ctx: Context): Char = stringsCharLike.current(ctx)
+      }
+    }
+
+  }
 
   /** Import this if your byte stream is encoded in ISO-8859-1 (aka latin1) */
   object latin1 {

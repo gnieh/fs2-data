@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Lucas Satabin
+ * Copyright 2019-2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,11 @@ private[json] class Renderer(pretty: Boolean, resetOnChunk: Boolean, indent: Str
   private var newline = false
 
   private var comma = false
+
+  private def separator(comma: Boolean): Unit = {
+    if (comma)
+      builder.append(',')
+  }
 
   private def indentation(newline: Boolean, level: Int): Unit =
     if (newline) {

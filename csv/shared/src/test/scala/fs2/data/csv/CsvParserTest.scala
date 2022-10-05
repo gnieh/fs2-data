@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Lucas Satabin
+ * Copyright 2019-2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package fs2.data.csv
 import io.circe.parser.parse
 import fs2._
 import fs2.io.file.{Files, Flags, Path}
+import fs2.data.text.utf8._
 import cats.effect._
 import cats.syntax.all._
 import weaver._
@@ -51,7 +52,6 @@ object CsvParserTest extends SimpleIOSuite {
       .evalMap { case (path, expected) =>
         Files[IO]
           .readAll(path, 1024, Flags.Read)
-          .through(fs2.text.utf8.decode)
           .through(decodeUsingHeaders[CsvRow[String]]())
           .compile
           .toList

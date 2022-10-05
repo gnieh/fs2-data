@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Lucas Satabin
+ * Copyright 2019-2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,12 @@ object XmlExceptionSpec extends SimpleIOSuite {
 
     val input = """<a><b>c</a>"""
 
-    val stream = Stream.emit(input).through(events[Fallible, String]).attempt
+    val stream = Stream.emit(input).through(events[Fallible, String]()).attempt
 
     expect(stream.compile.toList match {
       case Right(
-            List(Right(XmlEvent.StartTag(QName(None, "a"), Nil, false)),
+            List(Right(XmlEvent.StartDocument),
+                 Right(XmlEvent.StartTag(QName(None, "a"), Nil, false)),
                  Right(XmlEvent.StartTag(QName(None, "b"), Nil, false)),
                  Right(XmlEvent.XmlString("c", false)),
                  Left(_: XmlException))) =>

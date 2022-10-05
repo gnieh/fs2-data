@@ -4,11 +4,12 @@ on:
     branches:
       - main
       - 0.x
+      - series/*
     tags:
       - "v*"
 jobs:
   publish:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.3.4
         with:

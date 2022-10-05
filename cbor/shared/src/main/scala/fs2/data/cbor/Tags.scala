@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Lucas Satabin
+ * Copyright 2019-2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,8 @@ object Tags {
   final val RegularExpression: Long = 35L
   final val MimeMessage: Long = 36L
 
+  @deprecated(message = "Use Tags.SelfDescribedCbor instead", since = "fs2-data 1.5.0")
   final val SelfDescribeCbor: Long = 55799L
+  final val SelfDescribedCbor: Long = 55799L
 
 }

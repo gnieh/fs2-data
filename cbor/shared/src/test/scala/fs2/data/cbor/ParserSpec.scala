@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Lucas Satabin
+ * Copyright 2019-2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,10 @@ import cats.syntax.all._
 import cats.effect._
 
 import weaver._
+import fs2.io.file.Files
+import fs2.io.file.Path
+
+import _root_.io.circe._
 
 object ParserSpec extends SimpleIOSuite {
 
@@ -62,7 +66,7 @@ object ParserSpec extends SimpleIOSuite {
     List(CborValue.Float32(0.00006103515625F)).asLeft -> hex"f90400",
     List(CborValue.Float32(-4.0F)).asLeft -> hex"f9c400",
     List(CborValue.Float64(-4.1)).asLeft -> hex"fbc010666666666666",
-    List(CborValue.Float32(Float.NegativeInfinity)).asLeft -> hex"f97c00",
+    List(CborValue.Float32(Float.PositiveInfinity)).asLeft -> hex"f97c00",
     valuesMatcher({ case List(CborValue.Float32(v)) => v.isNaN }) -> hex"f97e00",
     List(CborValue.Float32(Float.PositiveInfinity)).asLeft -> hex"fa7f800000",
     valuesMatcher({ case List(CborValue.Float32(v)) => v.isNaN }) -> hex"fa7fc00000",
@@ -379,9 +383,9 @@ object ParserSpec extends SimpleIOSuite {
         Stream.chunk(Chunk.byteVector(input)).through(values[IO]).compile.toList.attempt.map { result =>
           expected match {
             case Left(expected) =>
-              expect(result == Right(expected), s"CBOR value parser should parse ${input.toHex} properly")
+              expect.same(Right(expected), result)
             case Right(f) =>
-              expect(result.map(f) == Right(true), s"CBOR value parser should parse ${input.toHex} properly")
+              expect.same(Right(true), result.map(f))
           }
         }
       }
@@ -394,10 +398,13 @@ object ParserSpec extends SimpleIOSuite {
       .emits(streamingTestCases)
       .evalMap { case (expectedLow, expectedHigh, input) =>
         val bytes = Stream.chunk(Chunk.byteVector(input))
-        (bytes.through(items[IO]).compile.toList.attempt, bytes.through(values[IO]).compile.toList.attempt).mapN {
-          (low, high) =>
-            expect(low == Right(expectedLow), s"CBOR item parser should parse ${input.toHex} properly") and
-              expect(high == Right(expectedHigh), s"CBOR value parser should parse ${input.toHex} properly")
+        (bytes
+           .through(items[IO])
+           .compile
+           .toList
+           .attempt,
+         bytes.through(values[IO]).compile.toList.attempt).mapN { (low, high) =>
+          expect.same(Right(expectedLow), low) and expect.same(Right(expectedHigh), high)
         }
       }
       .compile
@@ -417,7 +424,7 @@ object ParserSpec extends SimpleIOSuite {
           .map(_.toByteVector)
           .attempt
           .map { roundtrip =>
-            expect(roundtrip == Right(input), s"CBOR parsing/serializing should be fix point for ${input.toHex}")
+            expect.same(Right(input), roundtrip)
           }
       }
       .compile
@@ -437,11 +444,38 @@ object ParserSpec extends SimpleIOSuite {
           .map(_.toByteVector)
           .attempt
           .map { roundtrip =>
-            expect(roundtrip == Right(input), s"CBOR parsing/serializing should be fix point for ${input.toHex}")
+            expect.same(Right(input), roundtrip)
           }
       }
       .compile
       .foldMonoid
+  }
+
+  test("Diagnostic should print values properly") {
+    Files[IO]
+      .readAll(Path("cbor/shared/src/test/resources/appendix_a.json"))
+      .through(fs2.text.utf8.decode)
+      .compile
+      .foldMonoid
+      .map(jawn.parse(_).flatMap(_.as[List[AppendixTestCase]]))
+      .rethrow
+      .map(_.zipWithIndex.collect { case (AppendixTestCase(cbor, _, _, _, Some(diag1), diag2), idx) =>
+        (idx, cbor, diag1, diag2)
+      })
+      .flatMap(
+        Stream
+          .emits(_)
+          .evalMap { case (idx, cbor, expected, expectedAlt) =>
+            Stream
+              .chunk(Chunk.byteVector(cbor))
+              .through(items[IO])
+              .through(diagnostic[IO])
+              .compile
+              .foldMonoid
+              .map(s => expect.same(expected, s).or(expect.same(expectedAlt, Some(s))))
+          }
+          .compile
+          .foldMonoid)
   }
 
 }

@@ -4,12 +4,13 @@ on:
   release:
     types:
       - published
+  workflow_dispatch:
 
 jobs:
   publish:
     env:
       GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.1.0
       - uses: olafurpg/setup-scala@v10
@@ -18,9 +19,9 @@ jobs:
         run: |
           gem install nanoc kramdown-parser-gfm rouge
       - name: "Compile documentation"
-        run: "sbt ++2.13.6 documentation/mdoc"
+        run: "sbt ++2.13.8 documentation/mdoc"
       - name: "Build site"
-        run: "sbt ++2.13.6 makeSite"
+        run: "sbt ++2.13.8 makeSite"
       - name: "Publish site"
         uses: peaceiris/actions-gh-pages@v3
         with:

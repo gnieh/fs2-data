@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Lucas Satabin
+ * Copyright 2019-2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ object SelectorInterpolator extends Literally[Selector] {
   def validate(c: Context)(string: String): Either[String, c.Expr[Selector]] = {
     import c.universe._
     SelectorParser.either(string) match {
-      case Left(JsonSelectorException(msg, _)) => Left(msg)
-      case Left(t)                             => Left(t.getMessage)
-      case Right(_) => Right(c.Expr(q"_root_.fs2.data.json.SelectorParser.either($string).toOption.get"))
+      case Left(JsonSelectorException(msg, idx)) => Left(msg)
+      case Left(t)                               => Left(t.getMessage)
+      case Right(v) => Right(c.Expr(q"_root_.fs2.data.json.SelectorParser.either($string).toOption.get"))
     }
   }
 

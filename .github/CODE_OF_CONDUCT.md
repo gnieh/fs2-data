@@ -8,4 +8,5 @@ Everyone is expected to follow the [Scala Code of Conduct](https://www.scala-lan
 
 Any questions, concerns, or moderation requests please contact a member of the project.
 
-- Lucas Satabin [GitHub](https://github.com/satabin) [Gitter](https://gitter.im/satabin)
+- Lucas Satabin [GitHub](https://github.com/satabin) [lucas#1664 on Discord](https://discord.gg/7qNAFsYkTn)
+- Yannick Heiber [GitHub](https://github.com/ybasket) [ybasket#9283 on Discord](https://discord.gg/7qNAFsYkTn)

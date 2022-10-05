@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Lucas Satabin
+ * Copyright 2019-2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,22 +34,24 @@ private[csv] object CsvRowParser {
       F: RaiseThrowable[F],
       Header: ParseableHeader[Header]
   ): Pipe[F, Row, Either[Throwable, CsvRow[Header]]] =
-    _.pull.uncons1.flatMap {
-      case Some((firstRow, tail)) =>
-        Header(firstRow.values) match {
-          case Left(error) => Pull.output1(Left(error))
-          case Right(headers) if headers.length =!= firstRow.values.length =>
-            val error = new HeaderError(
-              s"Got ${headers.length} headers, but ${firstRow.values.length} columns. Both numbers must match!",
-              firstRow.line)
-            Pull.output1(Left(error))
-          case Right(headers) =>
-            tail
-              .map(CsvRow.liftRow(headers))
-              .pull
-              .echo
-        }
-      case None => Pull.done
-    }.stream
+    _.pull.uncons1
+      .flatMap {
+        case Some((firstRow, tail)) =>
+          Header(firstRow.values) match {
+            case Left(error) => Pull.output1(Left(error))
+            case Right(headers) if headers.length =!= firstRow.values.length =>
+              val error = new HeaderError(
+                s"Got ${headers.length} headers, but ${firstRow.values.length} columns. Both numbers must match!",
+                firstRow.line)
+              Pull.output1(Left(error))
+            case Right(headers) =>
+              tail
+                .map(CsvRow.liftRow(headers))
+                .pull
+                .echo
+          }
+        case None => Pull.done
+      }
+      .stream
 
 }
