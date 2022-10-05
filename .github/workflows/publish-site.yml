@@ -19,9 +19,9 @@ jobs:
         run: |
           gem install nanoc kramdown-parser-gfm rouge
       - name: "Compile documentation"
-        run: "sbt ++2.13.8 documentation/mdoc"
+        run: "sbt ++2.13.8 'set ThisBuild / tlFatalWarningsInCi := false' documentation/mdoc"
       - name: "Build site"
-        run: "sbt ++2.13.8 makeSite"
+        run: "sbt ++2.13.8 'set ThisBuild / tlFatalWarningsInCi := false' makeSite"
       #- name: "Publish site"
       #  uses: peaceiris/actions-gh-pages@v3
       #  with:
