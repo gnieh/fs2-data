@@ -70,7 +70,7 @@ abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends Sim
                                                                   else success)
                 }
               case Expectation.Invalid =>
-                IO.pure(expect(actual.isLeft == true))
+                IO.pure(expect(actual.isLeft))
             })
       }
       .compile
