@@ -28,8 +28,9 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.12.15, 2.13.8, 3.1.1]
+        scala: [2.12.16, 2.13.8, 3.1.3]
         java: [temurin@8]
+        project: [rootJS, rootJVM]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
@@ -66,36 +67,40 @@ jobs:
           key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
 
       - name: Check that workflows are up to date
-        run: sbt '++${{ matrix.scala }}' 'project /' githubWorkflowCheck
+        run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' 'project /' githubWorkflowCheck
 
       - name: Check headers and formatting
         if: matrix.java == 'temurin@8'
-        run: sbt '++${{ matrix.scala }}' headerCheckAll scalafmtCheckAll 'project /' scalafmtSbtCheck
+        run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' headerCheckAll scalafmtCheckAll 'project /' scalafmtSbtCheck
+
+      - name: scalaJSLink
+        if: matrix.project == 'rootJS'
+        run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' Test/scalaJSLinkerResult
 
       - name: Test
-        run: sbt '++${{ matrix.scala }}' test
+        run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' test
 
       - name: Check binary compatibility
         if: matrix.java == 'temurin@8'
-        run: sbt '++${{ matrix.scala }}' mimaReportBinaryIssues
+        run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' mimaReportBinaryIssues
 
       - name: Generate API documentation
         if: matrix.java == 'temurin@8'
-        run: sbt '++${{ matrix.scala }}' doc
+        run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' doc
 
       - name: Make target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
-        run: mkdir -p json/play/jvm/target benchmarks/target target documentation/target cbor/js/target text/js/target json/play/js/target json/.jvm/target csv/jvm/target xml/.jvm/target xml/.js/target cbor/jvm/target json/circe/.jvm/target csv/js/target csv/generic/jvm/target text/jvm/target json/diffson/.js/target json/interpolators/.jvm/target json/.js/target json/interpolators/.js/target csv/generic/js/target json/circe/.js/target json/diffson/.jvm/target project/target
+        run: mkdir -p json/play/jvm/target target .js/target documentation/target cbor/js/target finite-state/js/target text/js/target benchmarks/.jvm/target json/play/js/target json/.jvm/target csv/jvm/target xml/.jvm/target xml/.js/target finite-state/jvm/target cbor-json/js/target cbor/jvm/target json/circe/.jvm/target .jvm/target csv/js/target csv/generic/jvm/target .native/target text/jvm/target json/diffson/.js/target cbor-json/jvm/target json/interpolators/.jvm/target json/.js/target json/interpolators/.js/target csv/generic/js/target json/circe/.js/target json/diffson/.jvm/target xml/scala-xml/.js/target xml/scala-xml/.jvm/target project/target
 
       - name: Compress target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
-        run: tar cf targets.tar json/play/jvm/target benchmarks/target target documentation/target cbor/js/target text/js/target json/play/js/target json/.jvm/target csv/jvm/target xml/.jvm/target xml/.js/target cbor/jvm/target json/circe/.jvm/target csv/js/target csv/generic/jvm/target text/jvm/target json/diffson/.js/target json/interpolators/.jvm/target json/.js/target json/interpolators/.js/target csv/generic/js/target json/circe/.js/target json/diffson/.jvm/target project/target
+        run: tar cf targets.tar json/play/jvm/target target .js/target documentation/target cbor/js/target finite-state/js/target text/js/target benchmarks/.jvm/target json/play/js/target json/.jvm/target csv/jvm/target xml/.jvm/target xml/.js/target finite-state/jvm/target cbor-json/js/target cbor/jvm/target json/circe/.jvm/target .jvm/target csv/js/target csv/generic/jvm/target .native/target text/jvm/target json/diffson/.js/target cbor-json/jvm/target json/interpolators/.jvm/target json/.js/target json/interpolators/.js/target csv/generic/js/target json/circe/.js/target json/diffson/.jvm/target xml/scala-xml/.js/target xml/scala-xml/.jvm/target project/target
 
       - name: Upload target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
         uses: actions/upload-artifact@v2
         with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-${{ matrix.scala }}
+          name: target-${{ matrix.os }}-${{ matrix.java }}-${{ matrix.scala }}-${{ matrix.project }}
           path: targets.tar
 
   publish:
@@ -142,32 +147,62 @@ jobs:
             ~/Library/Caches/Coursier/v1
           key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
 
-      - name: Download target directories (2.12.15)
+      - name: Download target directories (2.12.16, rootJS)
         uses: actions/download-artifact@v2
         with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-2.12.15
+          name: target-${{ matrix.os }}-${{ matrix.java }}-2.12.16-rootJS
 
-      - name: Inflate target directories (2.12.15)
+      - name: Inflate target directories (2.12.16, rootJS)
         run: |
           tar xf targets.tar
           rm targets.tar
 
-      - name: Download target directories (2.13.8)
+      - name: Download target directories (2.12.16, rootJVM)
         uses: actions/download-artifact@v2
         with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-2.13.8
+          name: target-${{ matrix.os }}-${{ matrix.java }}-2.12.16-rootJVM
 
-      - name: Inflate target directories (2.13.8)
+      - name: Inflate target directories (2.12.16, rootJVM)
         run: |
           tar xf targets.tar
           rm targets.tar
 
-      - name: Download target directories (3.1.1)
+      - name: Download target directories (2.13.8, rootJS)
         uses: actions/download-artifact@v2
         with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-3.1.1
+          name: target-${{ matrix.os }}-${{ matrix.java }}-2.13.8-rootJS
 
-      - name: Inflate target directories (3.1.1)
+      - name: Inflate target directories (2.13.8, rootJS)
+        run: |
+          tar xf targets.tar
+          rm targets.tar
+
+      - name: Download target directories (2.13.8, rootJVM)
+        uses: actions/download-artifact@v2
+        with:
+          name: target-${{ matrix.os }}-${{ matrix.java }}-2.13.8-rootJVM
+
+      - name: Inflate target directories (2.13.8, rootJVM)
+        run: |
+          tar xf targets.tar
+          rm targets.tar
+
+      - name: Download target directories (3.1.3, rootJS)
+        uses: actions/download-artifact@v2
+        with:
+          name: target-${{ matrix.os }}-${{ matrix.java }}-3.1.3-rootJS
+
+      - name: Inflate target directories (3.1.3, rootJS)
+        run: |
+          tar xf targets.tar
+          rm targets.tar
+
+      - name: Download target directories (3.1.3, rootJVM)
+        uses: actions/download-artifact@v2
+        with:
+          name: target-${{ matrix.os }}-${{ matrix.java }}-3.1.3-rootJVM
+
+      - name: Inflate target directories (3.1.3, rootJVM)
         run: |
           tar xf targets.tar
           rm targets.tar

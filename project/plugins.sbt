@@ -10,6 +10,6 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.4.1")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-ghpages" % "0.6.3")
 
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.10.1")
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.11.0")
 
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.0.0")

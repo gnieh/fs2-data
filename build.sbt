@@ -13,7 +13,7 @@ val literallyVersion = "1.1.0"
 
 val copyrightYears = "2019-2022"
 
-ThisBuild / tlBaseVersion := "1.3"
+ThisBuild / tlBaseVersion := "1.5"
 
 ThisBuild / organization := "org.gnieh"
 ThisBuild / organizationName := "Gnieh"
@@ -101,11 +101,26 @@ val publishSettings = List(
   )
 )
 
-val root = (project in file("."))
+val root = tlCrossRootProject
+  .aggregate(
+    text,
+    csv,
+    csvGeneric,
+    json,
+    jsonCirce,
+    jsonPlay,
+    jsonDiffson,
+    jsonInterpolators,
+    xml,
+    scalaXml,
+    cbor,
+    cborJson,
+    finiteState
+  )
   .settings(commonSettings)
   .enablePlugins(ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin, GhpagesPlugin)
   .settings(
-    name := "fs2-data",
+    // name := "fs2-data",
     publishArtifact := false,
     publish / skip := true,
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(
@@ -129,32 +144,6 @@ val root = (project in file("."))
     Nanoc / sourceDirectory := file("site"),
     git.remoteRepo := scmInfo.value.get.connection.replace("scm:git:", ""),
     ghpagesNoJekyll := true
-  )
-  .aggregate(
-    text.jvm,
-    text.js,
-    csv.jvm,
-    csv.js,
-    csvGeneric.jvm,
-    csvGeneric.js,
-    json.jvm,
-    json.js,
-    jsonCirce.jvm,
-    jsonCirce.js,
-    jsonDiffson.jvm,
-    jsonDiffson.js,
-    jsonInterpolators.jvm,
-    jsonInterpolators.js,
-    xml.jvm,
-    xml.js,
-    scalaXml.jvm,
-    scalaXml.js,
-    cbor.jvm,
-    cbor.js,
-    cborJson.jvm,
-    cborJson.js,
-    finiteState.jvm,
-    finiteState.js
   )
 
 lazy val text = crossProject(JVMPlatform, JSPlatform)
