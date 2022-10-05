@@ -21,9 +21,9 @@ jobs:
         run: |
           gem install nanoc kramdown-parser-gfm rouge
       - name: "Compile documentation"
-        run: "sbt ++2.13.8 'set ThisBuild / tlFatalWarningsInCi := false' documentation/mdoc"
+        run: "sbt 'set ThisBuild / tlFatalWarningsInCi := false' documentation/mdoc"
       - name: "Build site"
-        run: "sbt ++2.13.8 'set ThisBuild / tlFatalWarningsInCi := false' makeSite"
+        run: "sbt 'set ThisBuild / tlFatalWarningsInCi := false' makeSite"
       - uses: actions/upload-artifact@v3
         with:
           name: site
