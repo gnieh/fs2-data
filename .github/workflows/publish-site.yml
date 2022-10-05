@@ -22,8 +22,8 @@ jobs:
         run: "sbt ++2.13.8 documentation/mdoc"
       - name: "Build site"
         run: "sbt ++2.13.8 makeSite"
-      - name: "Publish site"
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./target/site
+      #- name: "Publish site"
+      #  uses: peaceiris/actions-gh-pages@v3
+      #  with:
+      #    github_token: ${{ secrets.GITHUB_TOKEN }}
+      #    publish_dir: ./target/site
