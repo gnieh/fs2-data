@@ -4,6 +4,7 @@ on:
     branches:
       - main
       - 0.x
+      - series/*
     tags:
       - "v*"
 jobs:

@@ -7,6 +7,9 @@ on:
     branches:
       - main
       - 0.x
+      - series/*
+  workflow_dispatch:
+
 jobs:
   build:
     name: Check format, build, test, check documentation
