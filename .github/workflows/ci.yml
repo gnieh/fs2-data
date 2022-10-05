@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - 0.x
+      - series/*
   workflow_dispatch:
 
 jobs:
