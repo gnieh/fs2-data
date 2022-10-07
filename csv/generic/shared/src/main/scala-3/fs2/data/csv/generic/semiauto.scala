@@ -37,7 +37,7 @@ object semiauto {
           ic.unfold[(Int, List[String], Option[DecoderError])]((0, row.values.toList, None))(
             [t] =>
               (acc: (Int, List[String], Option[DecoderError]), cd: OptCellDecoder[t]) => {
-                val result = cd(s"at index ${acc._1}", acc._2.headOption.filter(_.nonEmpty))
+                val result = cd(s"at index ${acc._1}", acc._2.headOption)
                 ((acc._1 + 1, acc._2.tail, result.left.toOption), result.toOption)
             }
           )
@@ -67,7 +67,7 @@ object semiauto {
           [t] =>
             (acc: (Int, CsvRow[String], Option[DecoderError]), cd: OptCellDecoder[t]) => {
               val columnName = names(acc._1)
-              val result = cd.apply(columnName, acc._2(columnName).filter(_.nonEmpty))
+              val result = cd.apply(columnName, acc._2(columnName))
               ((acc._1 + 1, row, result.left.toOption), result.toOption)
           }
         )
