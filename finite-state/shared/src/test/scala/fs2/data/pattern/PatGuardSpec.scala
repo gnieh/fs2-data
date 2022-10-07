@@ -25,7 +25,7 @@ import cats.effect._
 import cats.Show
 import cats.syntax.all._
 
-object PatSpec extends IOSuite {
+object PatGuardSpec extends IOSuite {
 
   type Res = DecisionTree[Guard[String], Tag[String], Int]
 
@@ -36,11 +36,9 @@ object PatSpec extends IOSuite {
       val dsl = new PatternDsl[String]
       import dsl._
       val cases = List(
-        state(0, 0)(value("one")) -> 1,
-        state(0, 1)(value("two")) -> 2,
-        state(0, 0)(value("two") | value("three")) -> 42,
-        state(0, 1)(any) -> 20000,
-        any -> -1
+        state(0, 0)(open when in("a", "b")) -> 1,
+        state(0, 0)(open when in("d", "e")) -> 2,
+        any -> 0
       )
 
       compiler.compile(cases)
@@ -48,24 +46,36 @@ object PatSpec extends IOSuite {
 
   implicit val showText: Show[MiniXML.Text] = Show.show(_.txt)
 
-  test("Pattern search 'one'") { tree =>
-    IO(expect.same(Some(1), tree.get(Input(0, 0, MiniXML.text("one").some))))
+  test("Guard 'a'") { tree =>
+    IO(expect.same(Some(1), tree.get(Input(0, 0, MiniXML.open("a").some))))
   }
 
-  test("Pattern search 'two'") { tree =>
-    IO(expect.same(Some(42), tree.get(Input(0, 0, MiniXML.text("two").some))))
+  test("Guard 'b'") { tree =>
+    IO(expect.same(Some(1), tree.get(Input(0, 0, MiniXML.open("b").some))))
   }
 
-  test("Pattern search 'two' depth 1") { tree =>
-    IO(expect.same(Some(2), tree.get(Input(0, 1, MiniXML.text("two").some))))
+  test("Guard 'c'") { tree =>
+    IO(expect.same(Some(0), tree.get(Input(0, 0, MiniXML.open("c").some))))
   }
 
-  test("Pattern search any") { tree =>
-    IO(expect.same(Some(-1), tree.get(Input(7, 2, MiniXML.text("two").some))))
+  test("Guard 'd'") { tree =>
+    IO(expect.same(Some(2), tree.get(Input(0, 0, MiniXML.open("d").some))))
   }
 
-  test("Pattern search anything") { tree =>
-    IO(expect.same(Some(20000), tree.get(Input(0, 1, MiniXML.text("something").some))))
+  test("Guard 'e'") { tree =>
+    IO(expect.same(Some(2), tree.get(Input(0, 0, MiniXML.open("e").some))))
+  }
+
+  test("Guard 'f'") { tree =>
+    IO(expect.same(Some(0), tree.get(Input(0, 0, MiniXML.open("f").some))))
+  }
+
+  test("Guard other state") { tree =>
+    IO(expect.same(Some(0), tree.get(Input(4, 0, MiniXML.open("a").some))))
+  }
+
+  test("Guard other depth") { tree =>
+    IO(expect.same(Some(0), tree.get(Input(0, 2, MiniXML.open("a").some))))
   }
 
 }

@@ -29,13 +29,14 @@ object Tag {
   case object End extends Tag[Nothing]
   case object Leaf extends Tag[Nothing]
   case class Value[T](v: T) extends Tag[T]
+  case object True extends Tag[Nothing]
 
   implicit def TagIsTag[T]: IsTag[Tag[T]] = new IsTag[Tag[T]] {
 
     def isOpen(tag: Tag[T]) =
       tag match {
-        case Input | Open | Close | Leaf | End => false
-        case _                                 => true
+        case Input | Open | Close | Leaf | End | True => false
+        case _                                        => true
       }
 
     override def eqv(x: Tag[T], y: Tag[T]): Boolean =
@@ -48,6 +49,7 @@ object Tag {
         case Close => Iterator(Close)
         case Leaf  => Iterator(Leaf)
         case End   => Iterator(End)
+        case True  => Iterator(True)
         case _     => Iterator.empty
       }
 

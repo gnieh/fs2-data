@@ -16,22 +16,19 @@
 
 package fs2.data.pattern
 
-import scala.annotation.tailrec
-
-sealed trait Skeleton[Tag] {
-  @tailrec
-  final def isWildcard: Boolean = this match {
-    case Skeleton.Wildcard(_)       => true
-    case Skeleton.Constructor(_, _) => false
-    case Skeleton.As(inner, _)      => inner.isWildcard
+sealed trait Skeleton[Expr, Tag] {
+  final def isTrivial: Boolean = this match {
+    case Skeleton.Wildcard(_) => true
+    case Skeleton.Guard(None) => true
+    case _                    => false
   }
-
 }
 object Skeleton {
-  case class Wildcard[Tag](as: Option[String]) extends Skeleton[Tag]
-  case class Constructor[Tag](tag: Tag, args: List[Skeleton[Tag]]) extends Skeleton[Tag]
-  case class As[Tag](inner: Skeleton[Tag], as: String) extends Skeleton[Tag]
-
-  def noArgConstructor[Tag](tag: Tag): Skeleton[Tag] =
-    Constructor(tag, Nil)
+  case class Wildcard[Expr, Tag](hasGuard: Boolean) extends Skeleton[Expr, Tag]
+  case class Constructor[Expr, Tag](tag: Tag, args: List[RawSkeleton[Expr, Tag]], hasGuard: Boolean)
+      extends Skeleton[Expr, Tag]
+  case class Guard[Expr, Tag](guard: Option[Expr]) extends Skeleton[Expr, Tag]
+  def noArgConstructor[Expr, Tag](tag: Tag): Skeleton[Expr, Tag] =
+    Constructor(tag, Nil, false)
+  def wildcard[Expr, Tag]: Skeleton[Expr, Tag] = Wildcard(false)
 }
