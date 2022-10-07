@@ -155,7 +155,7 @@ private[json] object TokenSelector {
             emitChunk(chunkAcc) >> Pull.raiseError[F](
               new JsonMissingFieldException(s"missing mandatory fields: ${mandatories.mkString(", ")}", mandatories))
           }
-        case token =>
+        case _ =>
           emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException("malformed json", Some(context)))
       }
 
@@ -188,7 +188,7 @@ private[json] object TokenSelector {
           // array is done, go up
           if (wrap) chunkAcc += Token.EndArray else chunkAcc
           Pull.pure(Some((chunk, idx + 1, rest, chunkAcc)))
-        case token =>
+        case _ =>
           val action =
             if (toSelect(arrIdx))
               // index is to be selected, then continue

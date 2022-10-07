@@ -65,7 +65,7 @@ object CsvParserTest extends SimpleIOSuite {
   loggedTest("Standard test suite files should be encoded and parsed correctly") { log =>
     allExpected
       .evalTap { case (path, _) => log.info(path.fileName.toString) }
-      .evalMap { case (path, expected) =>
+      .evalMap { case (_, expected) =>
         Stream
           .emits(expected)
           .map(m => CsvRow.fromListHeaders(m.toList))

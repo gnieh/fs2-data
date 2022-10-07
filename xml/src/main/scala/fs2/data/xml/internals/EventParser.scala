@@ -530,7 +530,7 @@ private[xml] object EventParser {
             nextChar(ctx, chunkAcc).flatMap {
               case (ctx, chunkAcc, '\n') =>
                 readAttributeValue(ctx, is11, delim, current.append('\n'), builder, chunkAcc)
-              case (ctx, chunkAcc, c) =>
+              case (ctx, chunkAcc, _) =>
                 readAttributeValue(ctx, is11, delim, current.append(' '), builder, chunkAcc)
             }
           case (ctx, chunkAcc, c) if isXmlWhitespace(c) =>

@@ -230,7 +230,7 @@ private[json] object TokenParser {
         }
       }
 
-    def continue(state: Int)(result: Option[(T.Context, VectorBuilder[Token])])(implicit F: RaiseThrowable[F]) =
+    def continue(state: Int)(result: Option[(T.Context, VectorBuilder[Token])]) =
       result match {
         case Some((context, chunkAcc)) =>
           go_(context, state, chunkAcc)
@@ -300,7 +300,7 @@ private[json] object TokenParser {
                 (c: @switch) match {
                   case ']' =>
                     Pull.pure(Some((T.advance(context), chunkAcc += Token.EndArray)))
-                  case c =>
+                  case _ =>
                     value_(context, State.AfterArrayValue, chunkAcc)
                       .flatMap(res => continue(State.AfterArrayValue)(res))
                 }

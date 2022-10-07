@@ -26,9 +26,9 @@ object SelectorInterpolator extends Literally[Selector] {
   def validate(c: Context)(string: String): Either[String, c.Expr[Selector]] = {
     import c.universe._
     SelectorParser.either(string) match {
-      case Left(JsonSelectorException(msg, idx)) => Left(msg)
-      case Left(t)                               => Left(t.getMessage)
-      case Right(v) => Right(c.Expr(q"_root_.fs2.data.json.SelectorParser.either($string).toOption.get"))
+      case Left(JsonSelectorException(msg, _)) => Left(msg)
+      case Left(t)                             => Left(t.getMessage)
+      case Right(_) => Right(c.Expr(q"_root_.fs2.data.json.SelectorParser.either($string).toOption.get"))
     }
   }
 

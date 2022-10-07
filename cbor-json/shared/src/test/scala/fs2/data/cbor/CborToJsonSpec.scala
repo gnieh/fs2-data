@@ -41,13 +41,13 @@ object CborToJsonSpec extends SimpleIOSuite {
       .foldMonoid
       .map(jawn.parse(_).flatMap(_.as[List[AppendixTestCase]]))
       .rethrow
-      .map(_.zipWithIndex.collect { case (AppendixTestCase(cbor, _, _, Some(json), jsonAlt, _), idx) =>
-        (idx, cbor, json, jsonAlt)
+      .map(_.collect { case AppendixTestCase(cbor, _, _, Some(json), jsonAlt, _) =>
+        (cbor, json, jsonAlt)
       })
       .flatMap(
         Stream
           .emits(_)
-          .evalMap { case (idx, cbor, expected, expectedAlt) =>
+          .evalMap { case (cbor, expected, expectedAlt) =>
             Stream
               .chunk(Chunk.byteVector(cbor))
               .through(items[IO])

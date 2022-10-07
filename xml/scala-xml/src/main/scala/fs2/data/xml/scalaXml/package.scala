@@ -98,7 +98,7 @@ package object scalaXml {
             .emits(doc.children)
             .flatMap(innerEventify(_)) ++ Stream.emit(XmlEvent.EndDocument)
         case Group(children) => Stream.emits(children).flatMap(innerEventify(_))
-        case other           => Stream.empty
+        case _               => Stream.empty
       }
 
     private def makeTexty(nodes: List[Node]): List[XmlEvent.XmlTexty] =

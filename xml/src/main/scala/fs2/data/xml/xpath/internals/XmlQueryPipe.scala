@@ -39,8 +39,8 @@ private[data] class XmlQueryPipe[F[_]: Concurrent](dfa: PDFA[LocationMatch, Star
 
   override def isClose(tok: XmlEvent): Boolean =
     tok match {
-      case tok @ XmlEvent.EndTag(_) => true
-      case _                        => false
+      case XmlEvent.EndTag(_) => true
+      case _                  => false
     }
 
   private def resolveAttr(attrs: List[Attr]): Map[QName, String] =
