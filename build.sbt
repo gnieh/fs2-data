@@ -123,10 +123,8 @@ val root = tlCrossRootProject
     finiteState
   )
   .settings(commonSettings)
-  .enablePlugins(ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin, GhpagesPlugin)
+  .enablePlugins(NoPublishPlugin, ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin, GhpagesPlugin)
   .settings(
-    publishArtifact := false,
-    publish / skip := true,
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
       cbor.jvm,
       cborJson.jvm,
@@ -148,46 +146,6 @@ val root = tlCrossRootProject
     Nanoc / sourceDirectory := file("site"),
     git.remoteRepo := scmInfo.value.get.connection.replace("scm:git:", ""),
     ghpagesNoJekyll := true
-  )
-  .aggregate(
-    text.jvm,
-    text.js,
-    text.native,
-    csv.jvm,
-    csv.js,
-    csv.native,
-    csvGeneric.jvm,
-    csvGeneric.js,
-    csvGeneric.native,
-    json.jvm,
-    json.js,
-    json.native,
-    jsonCirce.jvm,
-    jsonCirce.js,
-    jsonCirce.native,
-    jsonDiffson.jvm,
-    jsonDiffson.js,
-    jsonDiffson.native,
-    jsonInterpolators.jvm,
-    jsonInterpolators.js,
-    jsonInterpolators.native,
-    jsonPlay.jvm,
-    jsonPlay.js,
-    xml.jvm,
-    xml.js,
-    xml.native,
-    scalaXml.jvm,
-    scalaXml.js,
-    scalaXml.native,
-    cbor.jvm,
-    cbor.js,
-    cbor.native,
-    cborJson.jvm,
-    cborJson.js,
-    cborJson.native,
-    finiteState.jvm,
-    finiteState.js,
-    finiteState.native
   )
 
 lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
