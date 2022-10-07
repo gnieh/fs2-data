@@ -36,16 +36,16 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
                 case (c @ RawSkeleton.Constructor(tag, args, guard), hasGuard) =>
                   if (hasGuard) {
                     // at least one row of this column has a guard, apply guard splitting rule
-                    List(Skeleton.Constructor(tag, args, true), Skeleton.Guard(guard))
+                    List[Skeleton[Expr, Tag]](Skeleton.Constructor(tag, args, true), Skeleton.Guard(guard))
                   } else {
-                    List(Skeleton.Constructor(tag, args, false))
+                    List[Skeleton[Expr, Tag]](Skeleton.Constructor(tag, args, false))
                   }
                 case (RawSkeleton.Wildcard(guard), hasGuard) =>
                   if (hasGuard) {
                     // at least one row of this column has a guard, apply guard splitting rule
-                    List(Skeleton.Wildcard(true), Skeleton.Guard(guard))
+                    List[Skeleton[Expr, Tag]](Skeleton.Wildcard(true), Skeleton.Guard(guard))
                   } else {
-                    List(Skeleton.Wildcard(false))
+                    List[Skeleton[Expr, Tag]](Skeleton.Wildcard(false))
                   }
               }
             }
@@ -63,7 +63,7 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
     val rows = cases.flatMap { case (pat, out) =>
       Pat.decompose(pat).map(skel => (List(skel), out))
     }
-    expandMatrix(rows).flatMap(compileMatrix(List(Selector.Root), _))
+    expandMatrix(rows).flatMap(compileMatrix(List(Selector.Root()), _))
   }
 
   private def extractColumn[T](col: Int, pats: List[T]): Option[(T, List[T])] =
@@ -77,7 +77,7 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
     head ++ (t :: tail)
   }
 
-  def compileMatrix(occs: List[Selector[Expr, Tag]], matrix: Matrix): F[DecisionTree[Expr, Tag, Out]] = {
+  private def compileMatrix(occs: List[Selector[Expr, Tag]], matrix: Matrix): F[DecisionTree[Expr, Tag, Out]] = {
     matrix match {
       case Nil =>
         F.pure(DecisionTree.Fail())
@@ -122,7 +122,7 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
   private def constructors(skels: List[Skeleton[Expr, Tag]]): List[Skeleton.Constructor[Expr, Tag]] =
     skels.flatMap {
       case cons @ Skeleton.Constructor(_, _, _) => cons.some
-      case _                                    => none
+      case _                                    => none[Skeleton.Constructor[Expr, Tag]]
     }
 
   private def specialize(col: Int, tag: Tag, args: List[RawSkeleton[Expr, Tag]], matrix: Matrix): F[Matrix] =

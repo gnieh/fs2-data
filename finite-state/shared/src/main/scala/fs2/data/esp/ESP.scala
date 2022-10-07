@@ -113,7 +113,7 @@ private[data] class ESP[F[_], InTag, OutTag](init: Int,
           .map(inner => Expr.Open(Out.makeOpen(tag), Expr.concat(inner, Expr.Close(Out.makeClose(tag), Expr.Epsilon))))
       case Rhs.CapturedTree(name, inner) =>
         eval(env, depth, in, inner).flatMap { inner =>
-          in.flatMap(select(_, Selector.Cons(Selector.Root, Tag.Open, 0)))
+          in.flatMap(select(_, Selector.Cons(Selector.Root(), Tag.Open, 0)))
             .liftTo[Pull[F, Nothing, *]](new ESPException("cannot capture eos"))
             .map { v =>
               val tag = TT.convert(v)
@@ -123,7 +123,7 @@ private[data] class ESP[F[_], InTag, OutTag](init: Int,
       case Rhs.Leaf(v) =>
         Pull.pure(Expr.Leaf(Out.makeLeaf(v), Expr.Epsilon))
       case Rhs.CapturedLeaf(name) =>
-        in.flatMap(select(_, Selector.Cons(Selector.Root, Tag.Leaf, 0)))
+        in.flatMap(select(_, Selector.Cons(Selector.Root(), Tag.Leaf, 0)))
           .liftTo[Pull[F, Nothing, *]](new ESPException("cannot capture eos"))
           .map(v => Expr.Leaf(Out.makeLeaf(TT.convert(v)), Expr.Epsilon))
       case Rhs.Concat(rhs1, rhs2) =>

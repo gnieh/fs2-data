@@ -77,46 +77,55 @@ object Pattern {
       private def decompose(pat: Pattern[T], guard: Option[Guard[T]]): List[RawSkeleton[Guard[T], Tag[T]]] =
         pat match {
           case Wildcard =>
-            List(RawSkeleton.Wildcard(guard))
+            List(RawSkeleton.Wildcard[Guard[T], Tag[T]](guard))
           case EOS =>
-            List(RawSkeleton.Constructor(Tag.End, Nil, guard))
+            List(RawSkeleton.Constructor[Guard[T], Tag[T]](Tag.End, Nil, guard))
           case Input(Some(q), Some(d), inner) =>
             decompose(inner).map { inner =>
-              RawSkeleton.Constructor(
+              RawSkeleton.Constructor[Guard[T], Tag[T]](
                 Tag.Input,
                 List(RawSkeleton.noArgConstructor(Tag.State(q)), RawSkeleton.noArgConstructor(Tag.Depth(d)), inner),
                 guard)
             }
           case Input(Some(q), None, inner) =>
             decompose(inner).map { inner =>
-              RawSkeleton.Constructor(
+              RawSkeleton.Constructor[Guard[T], Tag[T]](
                 Tag.Input,
                 List(RawSkeleton.noArgConstructor(Tag.State(q)), RawSkeleton.Wildcard(none), inner),
                 guard)
             }
           case Input(None, Some(d), inner) =>
             decompose(inner).map { inner =>
-              RawSkeleton.Constructor(Tag.Input,
-                                      List(RawSkeleton.wildcard, RawSkeleton.noArgConstructor(Tag.Depth(d)), inner),
-                                      guard)
+              RawSkeleton.Constructor[Guard[T], Tag[T]](
+                Tag.Input,
+                List(RawSkeleton.wildcard, RawSkeleton.noArgConstructor(Tag.Depth(d)), inner),
+                guard)
             }
           case Input(None, None, inner) =>
             decompose(inner).map { inner =>
               RawSkeleton
-                .Constructor(Tag.Input, List(RawSkeleton.wildcard, RawSkeleton.wildcard, inner), guard)
+                .Constructor[Guard[T], Tag[T]](Tag.Input,
+                                               List(RawSkeleton.wildcard, RawSkeleton.wildcard, inner),
+                                               guard)
             }
           case Open(None) =>
-            List(RawSkeleton.Constructor(Tag.Open, List(RawSkeleton.wildcard), guard))
+            List(RawSkeleton.Constructor[Guard[T], Tag[T]](Tag.Open, List(RawSkeleton.wildcard), guard))
           case Open(Some(tag)) =>
-            List(RawSkeleton.Constructor(Tag.Open, List(RawSkeleton.noArgConstructor(Tag.Name(tag))), guard))
+            List(
+              RawSkeleton
+                .Constructor[Guard[T], Tag[T]](Tag.Open, List(RawSkeleton.noArgConstructor(Tag.Name(tag))), guard))
           case Close(None) =>
-            List(RawSkeleton.Constructor(Tag.Close, List(RawSkeleton.wildcard), guard))
+            List(RawSkeleton.Constructor[Guard[T], Tag[T]](Tag.Close, List(RawSkeleton.wildcard), guard))
           case Close(Some(tag)) =>
-            List(RawSkeleton.Constructor(Tag.Close, List(RawSkeleton.noArgConstructor(Tag.Name(tag))), guard))
+            List(
+              RawSkeleton
+                .Constructor[Guard[T], Tag[T]](Tag.Close, List(RawSkeleton.noArgConstructor(Tag.Name(tag))), guard))
           case Leaf(None) =>
-            List(RawSkeleton.Constructor(Tag.Leaf, List(RawSkeleton.wildcard), guard))
+            List(RawSkeleton.Constructor[Guard[T], Tag[T]](Tag.Leaf, List(RawSkeleton.wildcard), guard))
           case Leaf(Some(v)) =>
-            List(RawSkeleton.Constructor(Tag.Leaf, List(RawSkeleton.noArgConstructor(Tag.Value(v))), guard))
+            List(
+              RawSkeleton
+                .Constructor[Guard[T], Tag[T]](Tag.Leaf, List(RawSkeleton.noArgConstructor(Tag.Value(v))), guard))
           case Or(alts) =>
             alts.foldMap(decompose(_, guard))
           case Guarded(p, g) =>

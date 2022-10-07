@@ -109,7 +109,7 @@ object PatternSpec extends SimpleIOSuite {
       .compile(cases)
       .map(expect.same(
         DecisionTree.Switch[Guard, Tag, String](
-          Selector.Root,
+          Selector.Root(),
           Map(
             Tag.IntTag(0) -> DecisionTree.Leaf[Guard, Tag, String]("Zero or One"),
             Tag.IntTag(1) -> DecisionTree.Leaf[Guard, Tag, String]("Zero or One")
