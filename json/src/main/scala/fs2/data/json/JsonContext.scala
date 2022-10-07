@@ -19,7 +19,7 @@ package data
 package json
 
 import cats.Show
-import cats.implicits._
+import cats.syntax.all._
 
 /** A JSON trace context, positioning the current location in the JSON value
   * starting from the root.

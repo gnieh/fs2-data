@@ -50,7 +50,7 @@ object Pattern {
 
     override def decompose(pat: Pattern): List[Skeleton[Tag]] =
       pat match {
-        case VarPat(tpe, name) =>
+        case VarPat(_, name) =>
           List(Skeleton.Wildcard(name.some))
         case IntPat(v) =>
           List(Skeleton.Constructor(Tag.IntTag(v), Nil))
@@ -66,7 +66,7 @@ object Pattern {
           decompose(left) ++ decompose(right)
         case AsPat(inner, name) =>
           decompose(inner).map(Skeleton.As(_, name))
-        case WildPat(tpe) =>
+        case WildPat(_) =>
           List(Skeleton.Wildcard(none))
       }
 

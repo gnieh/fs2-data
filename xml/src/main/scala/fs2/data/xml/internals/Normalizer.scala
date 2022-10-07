@@ -19,8 +19,6 @@ package data
 package xml
 package internals
 
-import cats.implicits._
-
 import fs2._
 
 private[xml] object Normalizer {

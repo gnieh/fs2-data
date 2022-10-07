@@ -75,6 +75,7 @@ val commonSettings = List(
     }
     .toList
     .flatten,
+  scalacOptions ++= onScala3(scalaVersion.value)(List("-source:3.2-migration", "-no-indent")),
   testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
   scmInfo := Some(ScmInfo(url("https://github.com/satabin/fs2-data"), "scm:git:git@github.com:satabin/fs2-data.git"))
 )

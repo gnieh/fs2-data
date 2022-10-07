@@ -20,7 +20,7 @@ package xml
 package internals
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 
 private case class ResolverEnv(parent: Option[ResolverEnv], nss: Map[String, String], depth: Int) {
   def resolve(prefix: String): Option[String] =
@@ -75,7 +75,7 @@ private[xml] class NamespaceResolver[F[_]](implicit F: MonadError[F, Throwable])
 
   private def resolve(env: ResolverEnv, name: QName, withDefault: Boolean): F[QName] =
     name match {
-      case QName(Some(pfx), local) if pfx.take(3).toLowerCase =!= "xml" =>
+      case QName(Some(pfx), _) if pfx.take(3).toLowerCase =!= "xml" =>
         // prefixes starting by `xml` are reserved
         env.resolve(pfx) match {
           case None => F.raiseError(new XmlException(NSCPrefixDeclared, s"undeclared namespace $pfx"))

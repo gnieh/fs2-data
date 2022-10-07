@@ -20,7 +20,7 @@ package xml
 package internals
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 
 private[xml] class ReferenceResolver[F[_]](entities: Map[String, String])(implicit F: MonadError[F, Throwable]) {
 

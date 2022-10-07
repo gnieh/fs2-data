@@ -953,7 +953,7 @@ private[xml] object EventParser {
                             .flatMap {
                               case (ctx, chunkAcc, '>') =>
                                 // done
-                                Pull.pure(ctx, chunkAcc += XmlEvent.XmlDoctype(name, docname, systemid))
+                                Pull.pure((ctx, chunkAcc += XmlEvent.XmlDoctype(name, docname, systemid)))
                               case (ctx, chunkAcc, '[') =>
                                 skipInternalDTD(ctx, chunkAcc).map { case (ctx, chunkAcc) =>
                                   (ctx, chunkAcc += XmlEvent.XmlDoctype(name, docname, systemid))
