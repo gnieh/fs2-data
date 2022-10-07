@@ -41,7 +41,10 @@ val input = """i,s,j
 val textStream = Stream.emit(input).covary[Fallible]
 implicit val myRowDecoder: CsvRowDecoder[MyRow, String] = deriveCsvRowDecoder
 implicit val myRowEncoder: CsvRowEncoder[MyRow, String] = deriveCsvRowEncoder
-val decodedStream = textStream.through(decodeUsingHeaders[MyRow]())
+
+// decodeUsingHeaders can take a `Char` indicating the separator to use
+// for example `decodeUsingHeaders[MyRow](';') for a semi-colon separated csv
+val decodedStream = textStream.through(decodeUsingHeaders[MyRow]()) 
 val caseClasses = decodedStream.compile.toList
 
 val backAsText = decodedStream.through(encodeUsingFirstHeaders(fullRows = true)).compile.string

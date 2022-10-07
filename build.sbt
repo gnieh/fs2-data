@@ -1,15 +1,16 @@
-val scala212 = "2.12.16"
+val scala212 = "2.12.17"
 val scala213 = "2.13.8"
-val scala3 = "3.1.3"
-val fs2Version = "3.2.12"
-val circeVersion = "0.14.2"
-val circeExtrasVersion = "0.14.1"
-val playVersion = "2.9.2"
+val scala3 = "3.2.0"
+val fs2Version = "3.3.0"
+val circeVersion = "0.14.3"
+val circeExtrasVersion = "0.14.2"
+val playVersion = "2.10.0-RC6"
 val shapeless2Version = "2.3.9"
-val shapeless3Version = "3.1.0"
+val shapeless3Version = "3.2.0"
 val scalaJavaTimeVersion = "2.4.0"
-val diffsonVersion = "4.1.1"
+val diffsonVersion = "4.3.0"
 val literallyVersion = "1.1.0"
+val weaverVersion = "0.8.0"
 
 val copyrightYears = "2019-2022"
 
@@ -59,11 +60,11 @@ val commonSettings = List(
     "io.circe" %%% "circe-jawn" % circeVersion % "test",
     "io.circe" %%% "circe-generic" % circeVersion % "test",
     "co.fs2" %%% "fs2-io" % fs2Version % "test",
-    "com.disneystreaming" %%% "weaver-cats" % "0.7.15" % "test",
-    "com.disneystreaming" %%% "weaver-cats-core" % "0.7.15" % "test",
-    "com.disneystreaming" %%% "weaver-core" % "0.7.15" % "test",
-    "com.disneystreaming" %%% "weaver-framework" % "0.7.15" % "test",
-    "com.eed3si9n.expecty" %%% "expecty" % "0.15.4" % "test",
+    "com.disneystreaming" %%% "weaver-cats" % weaverVersion % "test",
+    "com.disneystreaming" %%% "weaver-cats-core" % weaverVersion % "test",
+    "com.disneystreaming" %%% "weaver-core" % weaverVersion % "test",
+    "com.disneystreaming" %%% "weaver-framework" % weaverVersion % "test",
+    "com.eed3si9n.expecty" %%% "expecty" % "0.16.0" % "test",
     "org.portable-scala" %%% "portable-scala-reflect" % "1.1.2" cross CrossVersion.for3Use2_13
   ) ++ PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
@@ -87,12 +88,16 @@ val publishSettings = List(
     Developer(id = "satabin",
               name = "Lucas Satabin",
               email = "lucas.satabin@gnieh.org",
-              url = url("https://github.com/satabin"))
+              url = url("https://github.com/satabin")),
+    Developer(id = "ybasket",
+              name = "Yannick Heiber",
+              email = "ybasket42+fs2-data@googlemail.com",
+              url = url("https://github.com/ybasket"))
   ),
   pomExtra := (
     <ciManagement>
-      <system>travis</system>
-      <url>https://travis-ci.org/#!/satabin/fs2-data</url>
+      <system>GitHub Actions</system>
+      <url>https://github.com/satabin/fs2-data/actions</url>
     </ciManagement>
     <issueManagement>
       <system>github</system>
@@ -120,23 +125,34 @@ val root = tlCrossRootProject
   .settings(commonSettings)
   .enablePlugins(ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin, GhpagesPlugin)
   .settings(
-    // name := "fs2-data",
     publishArtifact := false,
     publish / skip := true,
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(
       cbor.js,
+      cbor.native,
       cborJson.js,
+      cborJson.native,
       csv.js,
+      csv.native,
       csvGeneric.js,
+      csvGeneric.native,
       json.js,
+      json.native,
       jsonCirce.js,
+      jsonCirce.native,
       jsonDiffson.js,
+      jsonDiffson.native,
       jsonPlay.js,
       jsonInterpolators.js,
+      jsonInterpolators.native,
       text.js,
+      text.native,
       xml.js,
+      xml.native,
       scalaXml.js,
+      scalaXml.native,
       finiteState.js,
+      finiteState.native,
       benchmarks.jvm
     ),
     ScalaUnidoc / siteSubdirName := "api",
@@ -145,8 +161,48 @@ val root = tlCrossRootProject
     git.remoteRepo := scmInfo.value.get.connection.replace("scm:git:", ""),
     ghpagesNoJekyll := true
   )
+  .aggregate(
+    text.jvm,
+    text.js,
+    text.native,
+    csv.jvm,
+    csv.js,
+    csv.native,
+    csvGeneric.jvm,
+    csvGeneric.js,
+    csvGeneric.native,
+    json.jvm,
+    json.js,
+    json.native,
+    jsonCirce.jvm,
+    jsonCirce.js,
+    jsonCirce.native,
+    jsonDiffson.jvm,
+    jsonDiffson.js,
+    jsonDiffson.native,
+    jsonInterpolators.jvm,
+    jsonInterpolators.js,
+    jsonInterpolators.native,
+    jsonPlay.jvm,
+    jsonPlay.js,
+    xml.jvm,
+    xml.js,
+    xml.native,
+    scalaXml.jvm,
+    scalaXml.js,
+    scalaXml.native,
+    cbor.jvm,
+    cbor.js,
+    cbor.native,
+    cborJson.jvm,
+    cborJson.js,
+    cborJson.native,
+    finiteState.jvm,
+    finiteState.js,
+    finiteState.native
+  )
 
-lazy val text = crossProject(JVMPlatform, JSPlatform)
+lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("text"))
   .settings(commonSettings)
@@ -156,7 +212,7 @@ lazy val text = crossProject(JVMPlatform, JSPlatform)
     description := "Utilities for textual data format"
   )
 
-lazy val csv = crossProject(JVMPlatform, JSPlatform)
+lazy val csv = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("csv"))
   .settings(commonSettings)
@@ -171,7 +227,7 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform)
   )
   .dependsOn(text)
 
-lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
+lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("csv/generic"))
   .settings(commonSettings)
@@ -212,7 +268,7 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform)
   .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test)
   .dependsOn(csv)
 
-lazy val json = crossProject(JVMPlatform, JSPlatform)
+lazy val json = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("json"))
   .settings(commonSettings)
@@ -230,7 +286,7 @@ lazy val json = crossProject(JVMPlatform, JSPlatform)
   )
   .dependsOn(text, finiteState)
 
-lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
+lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("json/circe"))
   .settings(commonSettings)
@@ -254,14 +310,13 @@ lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform)
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
 
 lazy val jsonPlay = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Full)
+  .crossType(CrossType.Pure)
   .in(file("json/play"))
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
     name := "fs2-data-json-play",
     description := "Streaming JSON library with support for Play! JSON ASTs",
-    crossScalaVersions := Seq(scala212, scala213),
     libraryDependencies ++= List(
       "com.typesafe.play" %%% "play-json" % playVersion,
       "org.gnieh" %%% "diffson-play-json" % diffsonVersion % "test"
@@ -269,7 +324,7 @@ lazy val jsonPlay = crossProject(JVMPlatform, JSPlatform)
   )
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
 
-lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform)
+lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("json/diffson"))
   .settings(commonSettings)
@@ -283,7 +338,7 @@ lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform)
   )
   .dependsOn(json % "compile->compile;test->test")
 
-lazy val jsonInterpolators = crossProject(JVMPlatform, JSPlatform)
+lazy val jsonInterpolators = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("json/interpolators"))
   .settings(commonSettings)
@@ -301,7 +356,7 @@ lazy val jsonInterpolators = crossProject(JVMPlatform, JSPlatform)
   )
   .dependsOn(json % "compile->compile;test->test")
 
-lazy val xml = crossProject(JVMPlatform, JSPlatform)
+lazy val xml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("xml"))
   .settings(commonSettings)
@@ -322,7 +377,7 @@ lazy val xml = crossProject(JVMPlatform, JSPlatform)
   )
   .dependsOn(text, finiteState)
 
-lazy val scalaXml = crossProject(JVMPlatform, JSPlatform)
+lazy val scalaXml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("xml/scala-xml"))
   .settings(commonSettings)
@@ -337,7 +392,7 @@ lazy val scalaXml = crossProject(JVMPlatform, JSPlatform)
   )
   .dependsOn(xml % "compile->compile;test->test")
 
-lazy val cbor = crossProject(JVMPlatform, JSPlatform)
+lazy val cbor = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("cbor"))
   .settings(commonSettings)
@@ -356,7 +411,7 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform)
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
 
-lazy val finiteState = crossProject(JVMPlatform, JSPlatform)
+lazy val finiteState = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("finite-state"))
   .settings(commonSettings)
@@ -366,7 +421,7 @@ lazy val finiteState = crossProject(JVMPlatform, JSPlatform)
     description := "Streaming finite state machines"
   )
 
-lazy val cborJson = crossProject(JVMPlatform, JSPlatform)
+lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("cbor-json"))
   .settings(commonSettings)
@@ -390,7 +445,7 @@ lazy val documentation = project
     mdocIn := file("documentation/docs"),
     mdocOut := file("site/content/documentation"),
     libraryDependencies ++= List(
-      "com.beachape" %% "enumeratum" % "1.5.15",
+      "com.beachape" %% "enumeratum" % "1.7.0",
       "org.gnieh" %% "diffson-circe" % diffsonVersion,
       "io.circe" %% "circe-generic-extras" % circeExtrasVersion,
       "co.fs2" %% "fs2-io" % fs2Version

@@ -42,7 +42,7 @@ trait CharLikeChunks[F[_], In] {
   def needsPull(ctx: Context): Boolean
 
   /** Pulls the next chunk from the context. Returns `None` if stream is exhausted. */
-  def pullNext(ctx: Context): Pull[F, INothing, Option[Context]]
+  def pullNext(ctx: Context): Pull[F, Nothing, Option[Context]]
 
   /** Advances one character in the context.
     * This method is called for stepping through characters,
@@ -80,7 +80,7 @@ private class CharLikeCharChunks[F[_]] extends CharLikeChunks[F, Char] {
   def needsPull(ctx: CharContext): Boolean =
     ctx.idx >= ctx.chunk.size
 
-  def pullNext(ctx: CharContext): Pull[F, INothing, Option[CharContext]] =
+  def pullNext(ctx: CharContext): Pull[F, Nothing, Option[CharContext]] =
     ctx.rest.pull.uncons.map(_.map { case (hd, tl) =>
       ctx.chunk = hd
       ctx.idx = 0
@@ -109,7 +109,7 @@ private class CharLikeStringChunks[F[_]] extends CharLikeChunks[F, String] {
   def needsPull(ctx: StringContext): Boolean =
     ctx.sidx >= ctx.string.size
 
-  def pullNext(ctx: StringContext): Pull[F, INothing, Option[StringContext]] =
+  def pullNext(ctx: StringContext): Pull[F, Nothing, Option[StringContext]] =
     ctx.rest.pull.uncons1.map(_.map { case (hd, tl) =>
       ctx.string = hd
       ctx.sidx = 0
@@ -140,7 +140,7 @@ private class CharLikeSingleByteChunks[F[_]](charset: Charset) extends CharLikeC
   def needsPull(ctx: Context): Boolean =
     ctx.idx >= ctx.chunk.size
 
-  def pullNext(ctx: Context): Pull[F, INothing, Option[Context]] =
+  def pullNext(ctx: Context): Pull[F, Nothing, Option[Context]] =
     ctx.rest.pull.uncons.map(_.map { case (hd, tl) =>
       // This code is pure. The constructor replaces malformed input
       // with the charset default replacement string, so this never throws

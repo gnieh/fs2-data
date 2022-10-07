@@ -75,6 +75,18 @@ package object xml {
   def normalize[F[_]]: Pipe[F, XmlEvent, XmlEvent] =
     Normalizer.pipe[F]
 
+  /**
+    * Render the incoming xml events to their string representation. The output will be concise,
+    * without additional (or original) whitespace and with empty tags being collapsed to the short self-closed form <x/>
+    * if collapseEmpty is true. Preserves chunking, each String in the output will correspond to one event in the input.
+    */
+  def render[F[_]](collapseEmpty: Boolean = true): Pipe[F, XmlEvent, String] =
+    _.zipWithPrevious.map {
+      case (_, st: XmlEvent.StartTag)                                                 => st.render(collapseEmpty)
+      case (Some(XmlEvent.StartTag(_, _, true)), XmlEvent.EndTag(_)) if collapseEmpty => ""
+      case (_, event)                                                                 => event.show
+    }
+
   val ncNameStart = CharRanges.fromRanges(
     ('A', 'Z'),
     ('_', '_'),
