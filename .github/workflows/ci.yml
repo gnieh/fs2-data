@@ -7,6 +7,9 @@ on:
     branches:
       - main
       - 0.x
+      - series/*
+  workflow_dispatch:
+
 jobs:
   build:
     name: Check format, build, test, check documentation
@@ -14,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        scala: [2.12.16, 2.13.8, 3.2.0]
+        scala: [2.12.17, 2.13.8, 3.2.0]
         java: [adopt@1.11]
     runs-on: ${{ matrix.os }}
     steps:
