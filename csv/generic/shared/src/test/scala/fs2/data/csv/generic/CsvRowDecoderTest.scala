@@ -33,16 +33,19 @@ object CsvRowDecoderTest extends SimpleIOSuite {
     CsvRow.unsafe(NonEmptyList.of("1", "test", ""), NonEmptyList.of("i", "s", "j"))
   val csvRowNoJ =
     CsvRow.unsafe(NonEmptyList.of("1", "test"), NonEmptyList.of("i", "s"))
+  val csvRowEmptyCell = CsvRow.unsafe(NonEmptyList.of("1", "", "42"), NonEmptyList.of("i", "s", "j"))
 
   case class Test(i: Int = 0, s: String, j: Option[Int])
   case class TestOrder(s: String, j: Int, i: Int = 8888888)
   case class TestRename(s: String, @CsvName("j") k: Int, i: Int)
   case class TestOptionRename(s: String, @CsvName("j") k: Option[Int], i: Int)
+  case class TestOptionalString(i: Int, s: Option[String], j: Int)
 
   val testDecoder = deriveCsvRowDecoder[Test]
   val testOrderDecoder = deriveCsvRowDecoder[TestOrder]
   val testRenameDecoder = deriveCsvRowDecoder[TestRename]
   val testOptionRenameDecoder = deriveCsvRowDecoder[TestOptionRename]
+  val testOptionalStringDecoder = deriveCsvRowDecoder[TestOptionalString]
 
   pureTest("case classes should be decoded properly by header name and not position") {
     expect(testDecoder(csvRow) == Right(Test(1, "test", Some(42)))) and
@@ -72,6 +75,11 @@ object CsvRowDecoderTest extends SimpleIOSuite {
   pureTest("case classes should be decoded according to their field renames if value is optional") {
     expect(testOptionRenameDecoder(csvRow) == Right(TestOptionRename("test", Some(42), 1))) and
       expect(testOptionRenameDecoder(csvRowNoJ) == Right(TestOptionRename("test", None, 1)))
+  }
+
+  pureTest("allow empty strings as string cell values") {
+    expect(testDecoder(csvRowEmptyCell) == Right(Test(1, "", Some(42)))) and
+      expect(testOptionalStringDecoder(csvRowEmptyCell) == Right(TestOptionalString(1, None, 42)))
   }
 
 }
