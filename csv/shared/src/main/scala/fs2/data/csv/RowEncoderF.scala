@@ -48,9 +48,9 @@ object RowEncoderF extends ExportedRowEncoderFs {
   @inline
   def instance[H[+a] <: Option[a], T, Header](f: T => RowF[H, Header]): RowEncoderF[H, T, Header] = f(_)
 
-  // left for bincompat
+  @deprecated("retained for bincompat", "1.6.0")
   private[csv] implicit def fromNonEmptyMapCsvRowEncoder[Header](implicit
-      @unused order: Order[Header]): CsvRowEncoder[NonEmptyMap[Header, String], Header] =
+      @unused ev1: Order[Header]): CsvRowEncoder[NonEmptyMap[Header, String], Header] =
     CsvRowEncoder.instance(_.toNel)
 
   implicit def fromNonEmptyMapCsvRowEncoder[Header]: CsvRowEncoder[NonEmptyMap[Header, String], Header] =

@@ -20,11 +20,20 @@ package xml
 package dom
 
 import cats.syntax.all._
+
 import scala.collection.mutable.ListBuffer
 
 class XmlTreeException(msg: String) extends Exception(msg)
 
 class TreeParser[F[_], Node](implicit F: RaiseThrowable[F]) {
+
+  // Only for bincompat
+  private var legacyBuilder: DocumentBuilder[Node] = _
+
+  private[dom] def this(F: RaiseThrowable[F], builder: DocumentBuilder[Node]) = {
+    this()(F)
+    legacyBuilder = builder
+  }
 
   private def next(chunk: Chunk[XmlEvent],
                    idx: Int,
@@ -153,6 +162,9 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F]) {
         }
       case (evt, _, _, _) => Pull.raiseError(new XmlTreeException(s"unexpected event '$evt'"))
     }
+
+  @deprecated("only retained for bincompat", "1.6.0")
+  private[dom] def pipe: Pipe[F, XmlEvent, Node] = pipe(legacyBuilder)
 
   def pipe(implicit builder: DocumentBuilder[Node]): Pipe[F, XmlEvent, Node] = {
     def go(chunk: Chunk[XmlEvent], idx: Int, rest: Stream[F, XmlEvent]): Pull[F, Node, Unit] =

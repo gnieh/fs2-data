@@ -98,4 +98,20 @@ object semiauto {
 
   inline def deriveCellEncoder[T]: CellEncoder[T] = summonInline[DerivedCellEncoder[T]]
 
+  // bincompat stubs
+
+  private[generic] def deriveCsvRowDecoder[T](using
+      ic: K0.ProductInstances[OptCellDecoder, T],
+      labels: Labelling[T],
+      annotations: Annotations[CsvName, T]): CsvRowDecoder[T, String] = {
+    deriveCsvRowDecoder[T](using ic = ic, naming = summon[Names[T]])
+  }
+
+  private[generic] def deriveCsvRowEncoder[T](using
+      ic: K0.ProductInstances[CellEncoder, T],
+      labels: Labelling[T],
+      annotations: Annotations[CsvName, T]): CsvRowEncoder[T, String] = {
+    deriveCsvRowEncoder[T](using ic = ic, naming = summon[Names[T]])
+  }
+
 }
