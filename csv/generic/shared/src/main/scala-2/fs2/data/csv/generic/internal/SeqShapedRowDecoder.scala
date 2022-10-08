@@ -17,7 +17,7 @@
 package fs2.data.csv.generic.internal
 
 import cats.data.NonEmptyList
-import cats.implicits._
+import cats.syntax.all._
 import fs2.data.csv._
 import shapeless._
 

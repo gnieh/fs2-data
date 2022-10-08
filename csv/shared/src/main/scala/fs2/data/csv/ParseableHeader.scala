@@ -17,7 +17,7 @@
 package fs2.data.csv
 
 import cats.data.NonEmptyList
-import cats.implicits._
+import cats.syntax.all._
 import cats.{Functor, SemigroupK}
 
 /** A type class describing what it means to be a parseable

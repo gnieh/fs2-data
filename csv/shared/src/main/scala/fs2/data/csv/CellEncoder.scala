@@ -20,7 +20,7 @@ import java.net.URI
 import java.util.UUID
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 
 import scala.annotation.implicitNotFound
 import scala.concurrent.duration.{Duration, FiniteDuration}

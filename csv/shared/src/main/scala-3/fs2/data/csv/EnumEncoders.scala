@@ -16,6 +16,6 @@
 
 package fs2.data.csv
 
-import cats.implicits._
+import cats.syntax.all._
 
 trait EnumEncoders

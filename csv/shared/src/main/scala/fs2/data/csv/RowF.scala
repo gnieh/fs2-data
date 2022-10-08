@@ -18,7 +18,7 @@ package fs2.data.csv
 
 import cats._
 import cats.data._
-import cats.implicits._
+import cats.syntax.all._
 import scala.annotation.nowarn
 
 /** A CSV row with or without headers. The presence of headers is encoded via the first type param

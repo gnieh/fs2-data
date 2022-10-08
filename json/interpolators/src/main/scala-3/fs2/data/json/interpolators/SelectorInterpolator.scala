@@ -19,7 +19,7 @@ package data
 package json
 package interpolators
 
-import cats.implicits._
+import cats.syntax.all._
 
 import org.typelevel.literally.Literally
 

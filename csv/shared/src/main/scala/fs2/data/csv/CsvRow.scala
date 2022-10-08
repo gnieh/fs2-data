@@ -17,7 +17,7 @@
 package fs2.data.csv
 
 import cats.data.NonEmptyList
-import cats.implicits._
+import cats.syntax.all._
 
 object CsvRow {
 

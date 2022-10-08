@@ -17,7 +17,7 @@ This page covers the following topics:
 Let's use the following XML input as an example.
 
 ```scala mdoc
-import cats.implicits._
+import cats.syntax.all._
 
 import fs2._
 import fs2.data.xml._

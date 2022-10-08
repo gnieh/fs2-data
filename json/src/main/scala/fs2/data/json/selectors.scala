@@ -19,7 +19,7 @@ package data
 package json
 
 import cats.Show
-import cats.implicits._
+import cats.syntax.all._
 
 /** Used to select tokens in a token stream.
   */

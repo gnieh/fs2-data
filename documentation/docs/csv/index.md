@@ -121,7 +121,7 @@ To support your own type of `Header` you must provide an implicit `ParseableHead
 
 ```scala mdoc
 import enumeratum._
-import cats.implicits._
+import cats.syntax.all._
 import cats.data.NonEmptyList
 
 sealed trait MyHeaders extends EnumEntry

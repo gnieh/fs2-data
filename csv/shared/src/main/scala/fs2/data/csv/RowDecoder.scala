@@ -22,7 +22,7 @@ package fs2.data.csv
   * to build new decoders out of more basic one.
   *
   * Actually, `RowDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
-  * instance. To get the full power of it, import `cats.implicits._`.
+  * instance. To get the full power of it, import `cats.syntax.all._`.
   */
 
 object RowDecoder {

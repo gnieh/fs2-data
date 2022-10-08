@@ -16,7 +16,7 @@
 
 package fs2.data.csv.generic.internal
 
-import cats.implicits._
+import cats.syntax.all._
 import fs2.data.csv.generic.CsvValue
 import fs2.data.csv.{CellDecoder, DecoderError}
 import shapeless._

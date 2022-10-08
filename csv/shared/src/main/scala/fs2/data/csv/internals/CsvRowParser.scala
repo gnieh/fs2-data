@@ -19,7 +19,7 @@ package data
 package csv
 package internals
 
-import cats.implicits._
+import cats.syntax.all._
 
 private[csv] object CsvRowParser {
 
