@@ -254,7 +254,7 @@ package object csv {
       CsvRowParser.pipeAttempt[F, Header]
 
     // left here for bincompat
-    protected[csv] def headersAttempt[F[_], Header](implicit
+    private[csv] def headersAttempt[F[_], Header](implicit
         @unused F: RaiseThrowable[F],
         Header: ParseableHeader[Header]): Pipe[F, Row, Either[Throwable, CsvRow[Header]]] =
       CsvRowParser.pipeAttempt[F, Header]
