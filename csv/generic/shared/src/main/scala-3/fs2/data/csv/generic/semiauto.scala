@@ -100,17 +100,19 @@ object semiauto {
 
   // bincompat stubs
 
-  private[generic] def deriveCsvRowDecoder[T](using
-      ic: K0.ProductInstances[OptCellDecoder, T],
-      labels: Labelling[T],
-      annotations: Annotations[CsvName, T]): CsvRowDecoder[T, String] = {
+  private[generic] def deriveCsvRowDecoder[T](ic: K0.ProductInstances[OptCellDecoder, T],
+                                              labels: Labelling[T],
+                                              annotations: Annotations[CsvName, T]): CsvRowDecoder[T, String] = {
+    given Labelling[T] = labels
+    given Annotations[CsvName, T] = annotations
     deriveCsvRowDecoder[T](using ic = ic, naming = summon[Names[T]])
   }
 
-  private[generic] def deriveCsvRowEncoder[T](using
-      ic: K0.ProductInstances[CellEncoder, T],
-      labels: Labelling[T],
-      annotations: Annotations[CsvName, T]): CsvRowEncoder[T, String] = {
+  private[generic] def deriveCsvRowEncoder[T](ic: K0.ProductInstances[CellEncoder, T],
+                                              labels: Labelling[T],
+                                              annotations: Annotations[CsvName, T]): CsvRowEncoder[T, String] = {
+    given Labelling[T] = labels
+    given Annotations[CsvName, T] = annotations
     deriveCsvRowEncoder[T](using ic = ic, naming = summon[Names[T]])
   }
 

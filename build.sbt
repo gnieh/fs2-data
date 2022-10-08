@@ -390,7 +390,12 @@ lazy val scalaXml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     name := "fs2-data-xml-scala",
     description := "Support for Scala XML ASTs",
     libraryDependencies += "org.scala-lang.modules" %%% "scala-xml" % "2.1.0",
-    tlVersionIntroduced := Map("3" -> "1.4.0", "2.13" -> "1.4.0", "2.12" -> "1.4.0")
+    tlVersionIntroduced := Map("3" -> "1.4.0", "2.13" -> "1.4.0", "2.12" -> "1.4.0"),
+    mimaBinaryIssueFilters ++= List(
+      // Changed from implicit object to implicit val, seems impossible to stub. Second is Scala 3 only
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.xml.scalaXml.package$ScalaXmlBuilder$"),
+      ProblemFilters.exclude[MissingFieldProblem]("fs2.data.xml.scalaXml.package.ScalaXmlBuilder")
+    )
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))

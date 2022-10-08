@@ -24,21 +24,9 @@ import cats.syntax.all._
 
 import scala.xml._
 
-// remove all this when bincompat is no longer needed
-// ScalaXmlBuilder was changed from implicit object to implicit val during 1.x line
-trait ScalaXmlBinCompatAccessor {
-  private[xml] def getDocumentBuilder: DocumentBuilder.Aux[Document, Node, Elem]
-}
+package object scalaXml {
 
-trait ScalaXmlBinCompat { self: ScalaXmlBinCompatAccessor =>
-  def ScalaXmlBuilder: DocumentBuilder.Aux[Document, Node, Elem] = self.getDocumentBuilder
-}
-
-package object scalaXml extends ScalaXmlBinCompat with ScalaXmlBinCompatAccessor {
-
-  private[xml] def getDocumentBuilder: DocumentBuilder.Aux[Document, Node, Elem] = ScalaXmlBuilder
-
-  override implicit object ScalaXmlBuilder extends DocumentBuilder[Document] {
+  implicit val ScalaXmlBuilder: DocumentBuilder.Aux[Document, Node, Elem] = new DocumentBuilder[Document] {
 
     type Content = Node
     type Elem = scala.xml.Elem
