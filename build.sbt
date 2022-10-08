@@ -26,6 +26,7 @@ ThisBuild / developers := List(
   tlGitHubDev("satabin", "Lucas Satabin"),
   tlGitHubDev("ybasket", "Yannick Heiber")
 )
+ThisBuild / apiURL := Some(new java.net.URL("https://fs2-data.gnieh.org/api/"))
 
 ThisBuild / crossScalaVersions := Seq(scala212, scala213, scala3)
 ThisBuild / scalaVersion := scala213

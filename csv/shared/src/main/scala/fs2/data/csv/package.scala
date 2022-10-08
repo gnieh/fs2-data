@@ -102,7 +102,7 @@ package object csv {
     case object Literal extends QuoteHandling
   }
 
-  /** Decode a char-like stream (see [[CharLikeChunks]]) into a specified type,
+  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type,
     * assuming the file neither contains headers nor are they needed for decoding.
     */
   def decodeWithoutHeaders[T]: PartiallyAppliedDecodeWithoutHeaders[T] =
@@ -116,7 +116,7 @@ package object csv {
       lowlevel.rows(separator, quoteHandling) andThen lowlevel.noHeaders andThen lowlevel.decode
   }
 
-  /** Decode a char-like stream (see [[CharLikeChunks]]) into a specified type,
+  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type,
     * assuming the file contains headers, but they shall be skipped for decoding.
     */
   def decodeSkippingHeaders[T]: PartiallyAppliedDecodeSkippingHeaders[T] =
@@ -131,7 +131,7 @@ package object csv {
       lowlevel.rows(separator, quoteHandling) andThen lowlevel.skipHeaders andThen lowlevel.decode
   }
 
-  /** Decode a char-like stream (see [[CharLikeChunks]]) into a specified type,
+  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type,
     * assuming the file contains headers and they need to be taken into account for decoding.
     */
   def decodeUsingHeaders[T]: PartiallyAppliedDecodeUsingHeaders[T] =
@@ -147,7 +147,7 @@ package object csv {
       lowlevel.rows(separator, quoteHandling) andThen lowlevel.headers andThen lowlevel.decodeRow
   }
 
-  /** Decode a char-like stream (see [[CharLikeChunks]]) into a specified type,
+  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type,
     * assuming the file contains no headers, but is compliant with the set of headers given.
     */
   def decodeGivenHeaders[T]: PartiallyAppliedDecodeGivenHeaders[T] =
@@ -299,7 +299,7 @@ package object csv {
     def writeWithoutHeaders[F[_]]: Pipe[F, Row, NonEmptyList[String]] =
       _.map(_.values)
 
-    /** Serialize a CSV row to [[String]]s. No guarantees are given on how the resulting Strings are cut. */
+    /** Serialize a CSV row to [[java.lang.String]]s. No guarantees are given on how the resulting Strings are cut. */
     def toStrings[F[_]](separator: Char = ',',
                         newline: String = "\n",
                         escape: EscapeMode = EscapeMode.Auto): Pipe[F, NonEmptyList[String], String] = {
@@ -310,7 +310,7 @@ package object csv {
           .intersperse(separator.toString) ++ Stream(newline))
     }
 
-    /** Serialize a CSV row to [[String]]s. Guaranteed to emit one String per CSV row (= one line if no quoted newlines are contained in the value). */
+    /** Serialize a CSV row to [[java.lang.String]]s. Guaranteed to emit one String per CSV row (= one line if no quoted newlines are contained in the value). */
     def toRowStrings[F[_]](separator: Char = ',',
                            newline: String = "\n",
                            escape: EscapeMode = EscapeMode.Auto): Pipe[F, NonEmptyList[String], String] = {
