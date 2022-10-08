@@ -20,11 +20,12 @@ package json
 
 import ast._
 
-import cats.syntax.all._
-
 import weaver._
 
-abstract class JsonExceptionSpec[Json](implicit builder: Builder[Json]) extends SimpleIOSuite {
+import scala.annotation.nowarn
+
+@nowarn("cat=deprecation") abstract class JsonExceptionSpec[Json](implicit builder: Builder[Json])
+    extends SimpleIOSuite {
 
   pureTest("previous valid tokens should be emitted before Exception") {
     val input = """{"key": }"""
@@ -55,7 +56,7 @@ abstract class JsonExceptionSpec[Json](implicit builder: Builder[Json]) extends 
 
     val input = """{"key": "value"}[1,"""
 
-    val stream = Stream.emit(input).through(tokens[Fallible, String]).through(values).attempt
+    val stream = Stream.emit(input).through(tokens[Fallible, String]).through(ast.values).attempt
 
     expect(stream.compile.toList match {
       case Right(List(Right(o), Left(_: JsonException)))

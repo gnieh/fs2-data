@@ -20,7 +20,9 @@ package generic
 import cats.data.NonEmptyList
 import weaver._
 
-object AutoDerivationTest extends SimpleIOSuite {
+import scala.annotation.nowarn
+
+@nowarn object AutoDerivationTest extends SimpleIOSuite {
 
   val csvRow = CsvRow.unsafe[String](NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
   val plainRow = Row(NonEmptyList.of("1", "test", "42"))

@@ -19,14 +19,17 @@ package generic
 
 import weaver._
 
-object CellDecoderTest extends SimpleIOSuite {
+import scala.annotation.nowarn
+
+// ignore some warnings about unused stuff
+@nowarn object CellDecoderTest extends SimpleIOSuite {
 
   pureTest("derivation for coproducts should work out of the box for enum-style sealed traits") {
     val simpleDecoder: CellDecoder[Simple] = semiauto.deriveCellDecoder
 
     expect(simpleDecoder("On") == Right(On)) and
       expect(simpleDecoder("Off") == Right(Off)) and
-      expect(simpleDecoder("foo").isLeft == true)
+      expect(simpleDecoder("foo").isLeft)
   }
 
   pureTest("derivation for coproducts should handle non-case object cases") {
@@ -49,7 +52,7 @@ object CellDecoderTest extends SimpleIOSuite {
     expect(alphabetDecoder("A") == Right(Alpha)) and
       expect(alphabetDecoder("B") == Right(Beta)) and
       expect(alphabetDecoder("Gamma") == Right(Gamma)) and
-      expect(alphabetDecoder("foobar").isLeft == true)
+      expect(alphabetDecoder("foobar").isLeft)
   }
 
   pureTest("derivation for unary products should work for standard types") {

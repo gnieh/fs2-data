@@ -55,7 +55,7 @@ abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends Sim
 
         contentStream
           .through(tokens)
-          .through(values)
+          .through(ast.values)
           .compile
           .toList
           .flatMap(l =>
