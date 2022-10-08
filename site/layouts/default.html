@@ -21,7 +21,7 @@
               <li><a href="/">Home</a></li>
               <li><a href="/documentation/">Documentation</a></li>
               <li><a href="/api/">Scaladoc</a></li>
-              <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+              <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
             </ul>
           </div>
           <%# top level doc trick %>
@@ -54,12 +54,12 @@
       <li><a href="/">Home</a></li>
       <li><a href="/documentation/">Documentation</a></li>
       <li><a href="/api/">Scaladoc</a></li>
-      <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+      <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
     </ul>
 
     <% if @item.path.start_with? "/documentation/" then %>
     <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
-      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/main/documentation/docs/<%= @item.identifier.to_s.delete_prefix("/documentation/") %>" target="_blank">
+      <a class="btn-floating btn-large blue darken-2" href="https://github.com/gnieh/fs2-data/edit/main/documentation/docs/<%= @item.identifier.to_s.delete_prefix("/documentation/") %>" target="_blank">
         <i class="large material-icons">mode_edit</i>
       </a>
     </div>

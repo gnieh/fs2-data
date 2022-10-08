@@ -40,7 +40,7 @@ object semiauto {
           [t] =>
             (cd: OptCellDecoder[t]) =>
               StateT[DecoderResult, List[(String, Int)], t] {
-                case (hd, idx) :: tail => cd(s"at index $idx", Some(hd).filter(_.nonEmpty)).tupleLeft(tail)
+                case (hd, idx) :: tail => cd(s"at index $idx", Some(hd)).tupleLeft(tail)
                 // do not fail immediately as optional decoding could succeed without input
                 case Nil => cd(s"at index -1", None).tupleLeft(Nil)
             }
@@ -68,9 +68,10 @@ object semiauto {
       override def apply(row: CsvRow[String]): DecoderResult[T] = {
         ic.constructM[StateT[DecoderResult, List[(String, Option[String])], *]] {
           [t] =>
+
             (cd: OptCellDecoder[t]) =>
               StateT[DecoderResult, List[(String, Option[String])], t] {
-                case (name, value) :: tail => cd(name, value.filter(_.nonEmpty)).tupleLeft(tail)
+                case (name, value) :: tail => cd(name, value).tupleLeft(tail)
                 case Nil                   => new DecoderError("Bug in derivation logic.").asLeft
             }
         }(summon, summon, summon)
