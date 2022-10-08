@@ -29,6 +29,7 @@ object RowDecoderTest extends SimpleIOSuite {
   val csvRow = Row(NonEmptyList.of("1", "test", "42"))
   val csvRowEmptyI = Row(NonEmptyList.of("", "test", "42"))
   val csvRowEmptyJ = Row(NonEmptyList.of("1", "test", ""))
+  val csvRowEmptyS = Row(NonEmptyList.of("1", "", "42"))
 
   case class Test(i: Int, s: String, j: Int)
   case class TestOrder(s: String, i: Int, j: Int)
@@ -50,6 +51,10 @@ object RowDecoderTest extends SimpleIOSuite {
       expect(testOptIDecoder(csvRowEmptyI) == Right(TestOptI(None, "test", 42))) and
       expect(testOptJDecoder(csvRow) == Right(TestOptJ(1, "test", Some(42)))) and
       expect(testOptJDecoder(csvRowEmptyJ) == Right(TestOptJ(1, "test", None)))
+  }
+
+  pureTest("allow empty strings as string cell values") {
+    expect(testDecoder(csvRowEmptyS) == Right(Test(1, "", 42)))
   }
 
 }
