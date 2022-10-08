@@ -16,11 +16,18 @@
 
 package fs2.data.csv
 
+import scala.annotation.unused
+
 trait LiteralCellDecoders {
 
   private abstract class LiteralCellDecoder[A, L <: A](decodeA: CellDecoder[A]) extends CellDecoder[L] {
     protected[csv] def check(a: A): Boolean
     protected[csv] def message: String
+
+    @deprecated("retained for bincompat", "1.6.0")
+    protected def this(decodeA: CellDecoder[A], @unused L: ValueOf[L]) = {
+      this(decodeA)
+    }
 
     final def apply(s: String): DecoderResult[L] = decodeA(s) match {
       case r @ Right(value) if check(value) => r.asInstanceOf[DecoderResult[L]]

@@ -183,7 +183,6 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     name := "fs2-data-csv",
     description := "Streaming CSV manipulation library",
     mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.csv.LiteralCellDecoders#LiteralCellDecoder.this"),
       // Static forwarder, only relevant for Java
       ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.csv.RowEncoderF.fromNonEmptyMapCsvRowEncoder")
     )
