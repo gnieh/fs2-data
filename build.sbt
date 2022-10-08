@@ -305,7 +305,8 @@ lazy val jsonPlay = crossProject(JVMPlatform, JSPlatform)
       "org.gnieh" %%% "diffson-play-json" % diffsonVersion % "test"
     ),
     // 2.x support was actually introduced in 1.3.0, but we forgot to publish the artifacts in later versions
-    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1"),
+    tlMimaPreviousVersions ~= { (versions: Set[String]) => versions.diff(Set("1.3.1", "1.4.0", "1.4.1", "1.5.0")) }
   )
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
 
