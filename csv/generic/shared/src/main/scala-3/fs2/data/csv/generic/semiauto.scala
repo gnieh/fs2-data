@@ -69,7 +69,6 @@ object semiauto {
       override def apply(row: CsvRow[String]): DecoderResult[T] = {
         ic.constructM[StateT[DecoderResult, List[(String, Option[String])], *]] {
           [t] =>
-
             (cd: OptCellDecoder[t]) =>
               StateT[DecoderResult, List[(String, Option[String])], t] {
                 case (name, value) :: tail => cd(name, value).tupleLeft(tail)
