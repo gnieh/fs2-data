@@ -19,9 +19,11 @@ package data
 package json
 package internals
 
-import scala.annotation.{tailrec, switch}
+import scala.annotation.{nowarn, switch, tailrec}
 
-private[json] class Renderer(pretty: Boolean, resetOnChunk: Boolean, indent: String)
+@nowarn("msg=discarded non-Unit value") private[json] class Renderer(pretty: Boolean,
+                                                                     resetOnChunk: Boolean,
+                                                                     indent: String)
     extends Collector.Builder[Token, String] {
 
   import Renderer._

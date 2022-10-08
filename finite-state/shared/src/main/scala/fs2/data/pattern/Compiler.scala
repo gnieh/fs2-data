@@ -36,7 +36,7 @@ class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: Monad
       implicit Tag: IsTag[Tag]): F[DecisionTree[Tag, Out]] =
     matrix match {
       case Nil => F.pure(DecisionTree.Fail())
-      case (row @ Row(_, bindings, pats, out)) :: ors =>
+      case (row @ Row(_, bindings, pats, out)) :: _ =>
         if (row.isWidcard) {
           // all the patterns in the row are wildcards on the top row
           // this means this always succeeds, and the other rows are
@@ -66,8 +66,6 @@ class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: Monad
                   shuffledOccs.headOption.liftTo[F](new PatternException("Occurrences cannot be empty")).flatMap {
                     headOcc =>
                       matchFirstColumn(headOcc, shuffledMatrix).flatMap { case (specializedMatrices, defaultMatrix) =>
-                        def swapFailureCont(l: List[List[Skeleton[Tag]]]) =
-                          l.map(swapBack(maxScoreIndex, _))
                         def makeBranch(subOccs: List[Selector[Tag]], subp: SubProblem) =
                           compileMatrix(heuristic, subOccs ++ shuffledOccs.tail, subp.subMatrix)
                         def branches =
@@ -99,15 +97,6 @@ class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: Monad
           case (_, t :: ts) => go(n - 1, ts).map { case (t1, ts1) => (t1, t :: ts1) }
         }
       go(n, ts).map { case (t1, l1) => t1 :: l1 }
-    }
-
-  private def swapBack[T](n: Int, ts: List[T]): List[T] =
-    ts match {
-      case Nil =>
-        throw new PatternException("Cannot swap back on empty list (THIS IS A BUG)")
-      case p :: ps =>
-        val (ys, zs) = ps.splitAt(n - 1)
-        ys ++ (p :: zs)
     }
 
   private def swapColumn(idx: Int, matrix: Matrix[Tag, Pat, Out]): F[Matrix[Tag, Pat, Out]] = {
@@ -193,7 +182,7 @@ class Compiler[F[_], Tag, Pat, Out](heuristic: Heuristic[Tag])(implicit F: Monad
           row match {
             case Row(pat, bindings, Skeleton.Wildcard(id) :: ps, out) =>
               Row(pat, id.fold(bindings)(_ -> expr :: bindings), ps, out).some.pure[F]
-            case Row(pat, bindings, Skeleton.Constructor(_, _) :: ps, out) =>
+            case Row(_, _, Skeleton.Constructor(_, _) :: _, _) =>
               none.pure[F]
             case Row(pat, bindings, Skeleton.As(p, id) :: ps, out) =>
               go(Row(pat, bindings, p :: ps, out)).map(_.map(_.bind(id -> expr)))

@@ -23,8 +23,6 @@ import esp.{Depth, ESP, Rhs => ERhs, Pattern, PatternDsl, Tag => ETag}
 import cats.{Defer, MonadError}
 import cats.syntax.all._
 
-import scala.collection.compat._
-
 sealed trait Forest
 object Forest {
   case object Self extends Forest
@@ -112,7 +110,7 @@ private[data] class MFT[InTag, OutTag](init: Int, rules: Map[Int, Rules[InTag, O
     val compiler =
       new pattern.Compiler[F, ETag[InTag], Pattern[InTag], ERhs[OutTag]](Pattern.heuristic)
 
-    compiler.compile(cases).map(new ESP(init, rules.view.mapValues(_.params).toMap, _))
+    compiler.compile(cases).map(new ESP(init, rules.fmap(_.params), _))
   }
 
 }

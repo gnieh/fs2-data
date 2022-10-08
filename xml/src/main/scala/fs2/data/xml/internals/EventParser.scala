@@ -478,7 +478,6 @@ private[xml] object EventParser {
     def readAttributes(
         ctx: T.Context,
         is11: Boolean,
-        tname: QName,
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], List[Attr])] = {
       def loop(ctx: T.Context,
                attributes: VectorBuilder[Attr],
@@ -571,7 +570,7 @@ private[xml] object EventParser {
         is11: Boolean,
         name: QName,
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], XmlEvent.StartTag)] =
-      readAttributes(ctx, is11, name, chunkAcc).flatMap { case (ctx, chunkAcc, attributes) =>
+      readAttributes(ctx, is11, chunkAcc).flatMap { case (ctx, chunkAcc, attributes) =>
         space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
           peekChar(ctx, chunkAcc)
             .flatMap {

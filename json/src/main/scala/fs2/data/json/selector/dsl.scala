@@ -149,19 +149,19 @@ object NamesBuilder {
 }
 
 /** Marker class to notify that a given selector builder capability is not applicable for this case. */
-class NotApplicable private {}
+final class NotApplicable private[selector] {}
 
 /** Marker class to notify that a selector '''doesn't''' require the elements it selects to be present. */
-class Optional private {}
+final class Optional private[selector] {}
 
 /** Marker class to notify that a selector requires the elements it selects to be present. */
-class Mandatory private {}
+final class Mandatory private[selector] {}
 
 /** Marker class to notify that a selector requires the type of the element it is applied to to be the expected one (array or object) */
-class Strict private {}
+final class Strict private[selector] {}
 
 /** Marker class to notify that a selector '''doesn't''' require the type of the element it is applied to to be the expected one (array or object) */
-class Lenient private {}
+final class Lenient private[selector] {}
 
 sealed trait Lenientable[In, M] {
   type Out <: SelectorBuilder[M, Lenient]

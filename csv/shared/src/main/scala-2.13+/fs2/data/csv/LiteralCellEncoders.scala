@@ -18,7 +18,9 @@ package fs2.data.csv
 
 import cats.syntax.all._
 
-trait LiteralCellEncoders {
+import scala.annotation.nowarn
+
+@nowarn("msg=parameter value L in method .+ is never used") trait LiteralCellEncoders {
 
   implicit final def literalStringEncoder[L <: String](implicit L: ValueOf[L]): CellEncoder[L] =
     CellEncoder.stringEncoder.narrow

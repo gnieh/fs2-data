@@ -44,7 +44,6 @@ object DerivedCellDecoder extends DerivedCellDecoderInstances0 {
   final implicit val decodeCNil: DerivedCellDecoder[CNil] = (_: String) => Left(new DecoderError("CNil"))
 
   final implicit def decodeCCons[K <: Symbol, L, R <: Coproduct](implicit
-      witK: Witness.Aux[K],
       decodeL: CellDecoder[L],
       decodeR: Lazy[DerivedCellDecoder[R]]): DerivedCellDecoder[FieldType[K, L] :+: R] =
     s =>
@@ -56,10 +55,8 @@ object DerivedCellDecoder extends DerivedCellDecoderInstances0 {
 
 private[generic] trait DerivedCellDecoderInstances0 extends DerivedCellDecoderInstances1 {
   final implicit def decodeCConsObjAnnotated[K <: Symbol, L, R <: Coproduct](implicit
-      witK: Witness.Aux[K],
       witL: Witness.Aux[L],
       annotation: Annotation[CsvValue, L],
-      gen: Generic.Aux[L, HNil],
       decodeR: Lazy[DerivedCellDecoder[R]]): DerivedCellDecoder[FieldType[K, L] :+: R] =
     s =>
       if (annotation().value == s) Inl(field[K](witL.value)).asRight
@@ -70,7 +67,6 @@ private[generic] trait DerivedCellDecoderInstances1 {
   final implicit def decodeCConsObj[K <: Symbol, L, R <: Coproduct](implicit
       witK: Witness.Aux[K],
       witL: Witness.Aux[L],
-      gen: Generic.Aux[L, HNil],
       decodeR: Lazy[DerivedCellDecoder[R]]): DerivedCellDecoder[FieldType[K, L] :+: R] =
     s =>
       if (witK.value.name == s) Inl(field[K](witL.value)).asRight

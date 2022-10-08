@@ -24,7 +24,6 @@ import org.typelevel.literally.Literally
 import cats.syntax.all._
 import cats.data.NonEmptyList
 
-import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 import scala.annotation.unused
 

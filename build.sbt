@@ -75,7 +75,19 @@ val commonSettings = List(
     }
     .toList
     .flatten,
-  scalacOptions ++= onScala3(scalaVersion.value)(List("-source:3.2-migration", "-no-indent")),
+  scalacOptions := scalacOptions.value.filterNot(_ == "-source:3.0-migration"),
+  scalacOptions ++= PartialFunction
+    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
+      case Some((2, 12)) =>
+        List(
+          "-Wconf:msg=it is not recommended to define classes/objects inside of package objects:s",
+          "-Wconf:msg=type parameter .+ defined in .+ shadows .+:s", // esp.Tag
+          "-Wconf:msg=value T is deprecated:s" // jsonpath/xpath literals
+        )
+      case Some((3, _)) => List("-source:3.2-migration", "-no-indent")
+    }
+    .toList
+    .flatten,
   testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
   scmInfo := Some(ScmInfo(url("https://github.com/satabin/fs2-data"), "scm:git:git@github.com:satabin/fs2-data.git"))
 )

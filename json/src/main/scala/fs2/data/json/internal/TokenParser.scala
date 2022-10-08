@@ -70,7 +70,7 @@ private[json] object TokenParser {
             else
               emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
           case n /* StringState.ExpectNUnicode */ =>
-            val cidx = hexa.indexOf(c.toLower)
+            val cidx = hexa.indexOf(c.toLower.toInt)
             if (cidx >= 0) {
               val unicode1 = (unicode << 4) | (0x0000000f & cidx)
               if (n == 1) {

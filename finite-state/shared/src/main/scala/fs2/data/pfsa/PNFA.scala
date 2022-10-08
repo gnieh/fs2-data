@@ -25,8 +25,6 @@ import cats.syntax.all._
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuilder
 
-import scala.collection.compat._
-
 private[data] class PNFA[P, T](val init: Int, val finals: Set[Int], val transitions: Map[Int, List[(Option[P], Int)]])(
     implicit P: Pred[P, T]) {
 
@@ -90,7 +88,8 @@ private[data] class PNFA[P, T](val init: Int, val finals: Set[Int], val transiti
               .flatMap(_.collect { case (Some(p), q) =>
                 (p, q)
               })
-              .groupMap(_._1)(_._2)
+              .groupBy(_._1)
+              .fmap(_.map(_._2))
               .fmap(epsilonClosure(_))
               .toList
             val ts1 =

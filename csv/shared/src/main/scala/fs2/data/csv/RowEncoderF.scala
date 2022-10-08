@@ -19,7 +19,7 @@ package fs2.data.csv
 import cats._
 import cats.data.{NonEmptyList, NonEmptyMap}
 
-import scala.annotation.implicitNotFound
+import scala.annotation.{implicitNotFound, unused}
 
 /** Describes how a row can be encoded from a value of the given type.
   */
@@ -48,7 +48,12 @@ object RowEncoderF extends ExportedRowEncoderFs {
   @inline
   def instance[H[+a] <: Option[a], T, Header](f: T => RowF[H, Header]): RowEncoderF[H, T, Header] = f(_)
 
-  implicit def fromNonEmptyMapCsvRowEncoder[Header: Order]: CsvRowEncoder[NonEmptyMap[Header, String], Header] =
+  // left for bincompat
+  protected[csv] implicit def fromNonEmptyMapCsvRowEncoder[Header](implicit
+      @unused order: Order[Header]): CsvRowEncoder[NonEmptyMap[Header, String], Header] =
+    CsvRowEncoder.instance(_.toNel)
+
+  implicit def fromNonEmptyMapCsvRowEncoder[Header]: CsvRowEncoder[NonEmptyMap[Header, String], Header] =
     CsvRowEncoder.instance(_.toNel)
 
   implicit val fromNelRowEncoder: RowEncoder[NonEmptyList[String]] =

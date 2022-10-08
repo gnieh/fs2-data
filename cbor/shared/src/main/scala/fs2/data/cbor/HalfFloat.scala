@@ -72,7 +72,7 @@ object HalfFloat {
         else 0F
       } else if (e != 31) {
         // normal number
-        math.pow(2F, e - 15).toFloat * (1F + m / 1024F)
+        math.pow(2F, e - 15D).toFloat * (1F + m / 1024F)
       } else if ((raw & 1023) != 0) {
         Float.NaN
       } else {

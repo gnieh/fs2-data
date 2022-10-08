@@ -23,7 +23,7 @@ import csv.internals._
 import cats.data._
 import cats.syntax.all._
 
-import scala.annotation.implicitNotFound
+import scala.annotation.{implicitNotFound, unused}
 
 package object csv {
 
@@ -82,6 +82,7 @@ package object csv {
   type CsvRowEncoder[T, Header] = RowEncoderF[Some, T, Header]
 
   sealed trait QuoteHandling
+
   object QuoteHandling {
 
     /** Treats quotation marks as the start of a quoted value if the first
@@ -249,7 +250,12 @@ package object csv {
 
     /** Transforms a stream of raw CSV rows into parsed CSV rows with headers, with failures at the element level instead of failing the stream */
     def headersAttempt[F[_], Header](implicit
-        F: RaiseThrowable[F],
+        Header: ParseableHeader[Header]): Pipe[F, Row, Either[Throwable, CsvRow[Header]]] =
+      CsvRowParser.pipeAttempt[F, Header]
+
+    // left here for bincompat
+    protected[csv] def headersAttempt[F[_], Header](implicit
+        @unused F: RaiseThrowable[F],
         Header: ParseableHeader[Header]): Pipe[F, Row, Either[Throwable, CsvRow[Header]]] =
       CsvRowParser.pipeAttempt[F, Header]
 
