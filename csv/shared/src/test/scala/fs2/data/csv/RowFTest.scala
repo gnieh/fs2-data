@@ -33,4 +33,23 @@ object RowFTest extends SimpleIOSuite {
       expect.eql(NonEmptyList.of("a", "b", "c", "d"), extended.headers.get)
   }
 
+  pureTest("CsvRow.asNonEmpty should return None for empty cells") {
+    val row = CsvRow.unsafe(NonEmptyList.of("", "2", "3"), NonEmptyList.of("a", "b", "c"))
+    expect(row.asNonEmpty[Int]("a").contains(None))
+  }
+
+  pureTest("CsvRow.asNonEmpty should return decoded value for non-empty cells") {
+    val row = CsvRow.unsafe(NonEmptyList.of("", "2", "3"), NonEmptyList.of("a", "b", "c"))
+    expect(row.asNonEmpty[Int]("b").contains(Some(2)))
+  }
+
+  pureTest("Row.asNonEmptyAt should return None for empty cells") {
+    val row = Row(NonEmptyList.of("", "2", "3"))
+    expect(row.asNonEmptyAt[Int](0).contains(None))
+  }
+
+  pureTest("Row.asNonEmptyAt should return decoded value for non-empty cells") {
+    val row = Row(NonEmptyList.of("", "2", "3"))
+    expect(row.asNonEmptyAt[Int](1).contains(Some(2)))
+  }
 }
