@@ -33,20 +33,16 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
           .map { hasGuards =>
             cases.map { pats =>
               pats.zip(hasGuards).flatMap {
-                case (c @ RawSkeleton.Constructor(tag, args, guard), hasGuard) =>
-                  if (hasGuard) {
-                    // at least one row of this column has a guard, apply guard splitting rule
-                    List[Skeleton[Expr, Tag]](Skeleton.Constructor(tag, args, true), Skeleton.Guard(guard))
-                  } else {
-                    List[Skeleton[Expr, Tag]](Skeleton.Constructor(tag, args, false))
-                  }
-                case (RawSkeleton.Wildcard(guard), hasGuard) =>
-                  if (hasGuard) {
-                    // at least one row of this column has a guard, apply guard splitting rule
-                    List[Skeleton[Expr, Tag]](Skeleton.Wildcard(true), Skeleton.Guard(guard))
-                  } else {
-                    List[Skeleton[Expr, Tag]](Skeleton.Wildcard(false))
-                  }
+                case (c @ RawSkeleton.Constructor(tag, args, guard), true) =>
+                  // at least one row of this column has a guard, apply guard splitting rule
+                  List[Skeleton[Expr, Tag]](Skeleton.Constructor(tag, args, true), Skeleton.Guard(guard))
+                case (c @ RawSkeleton.Constructor(tag, args, guard), false) =>
+                  List[Skeleton[Expr, Tag]](Skeleton.Constructor(tag, args, false))
+                case (RawSkeleton.Wildcard(guard), true) =>
+                  // at least one row of this column has a guard, apply guard splitting rule
+                  List[Skeleton[Expr, Tag]](Skeleton.Wildcard(true), Skeleton.Guard(guard))
+                case (RawSkeleton.Wildcard(guard), false) =>
+                  List[Skeleton[Expr, Tag]](Skeleton.Wildcard(false))
               }
             }
           }
@@ -104,11 +100,7 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
                     dmat.traverse { case (hasGuard, dmat) =>
                       compileMatrix(if (hasGuard) insertColumn(col, occ, restOccs) else restOccs, dmat)
                     }
-                  val sel =
-                    g match {
-                      case None    => occ
-                      case Some(g) => Selector.Guard(occ, g)
-                    }
+                  val sel = g.fold(occ)(Selector.Guard(occ, _))
                   (branches, defaultBranch).mapN(DecisionTree.Switch(sel, _, _))
                 }
               }
@@ -120,10 +112,7 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
     matrix.traverse(_.patterns.get(col).liftTo[F](new PatternException("malformed pattern matching")))
 
   private def constructors(skels: List[Skeleton[Expr, Tag]]): List[Skeleton.Constructor[Expr, Tag]] =
-    skels.flatMap {
-      case cons @ Skeleton.Constructor(_, _, _) => cons.some
-      case _                                    => none[Skeleton.Constructor[Expr, Tag]]
-    }
+    skels.collect { case cons @ Skeleton.Constructor(_, _, _) => cons }
 
   private def specialize(col: Int, tag: Tag, args: List[RawSkeleton[Expr, Tag]], matrix: Matrix): F[Matrix] =
     matrix match {
@@ -230,13 +219,8 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
       case Row(Nil, _) :: _ =>
         matrix
       case _ =>
-        matrix.flatMap {
-          case Row(ExtractColumn(Skeleton.Wildcard(_), ps), out) =>
-            Some(Row(ps, out))
-          case Row(ExtractColumn(Skeleton.Guard(None), ps), out) =>
-            Some(Row(ps, out))
-          case Row(_, _) =>
-            None
+        matrix.collect { case Row(ExtractColumn(Skeleton.Wildcard(_) | Skeleton.Guard(None), ps), out) =>
+          Row(ps, out)
         }
     }
   }

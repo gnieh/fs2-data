@@ -47,21 +47,21 @@ object Guard {
       override def eval(guard: Guard[T], tree: ConstructorTree[Tag[T]]): Option[Tag[T]] =
         (tree, guard) match {
           case (ConstructorTree(Tag.Name(v), _), In(values)) =>
-            values.contains(v).guard[Option].as(Tag.True)
+            values.contains(v).some.ifM(Some(Tag.True), None)
           case (ConstructorTree(Tag.Value(v), _), In(values)) =>
-            values.contains(v).guard[Option].as(Tag.True)
+            values.contains(v).some.ifM(Some(Tag.True), None)
           case (ConstructorTree(Tag.Name(v), _), NotIn(values)) =>
-            values.contains(v).guard[Option].fold[Option[Tag[T]]](Some(Tag.True))(_ => None)
+            values.contains(v).some.ifM(None, Some(Tag.True))
           case (ConstructorTree(Tag.Value(v), _), NotIn(values)) =>
-            values.contains(v).guard[Option].fold[Option[Tag[T]]](Some(Tag.True))(_ => None)
+            values.contains(v).some.ifM(None, Some(Tag.True))
           case (ConstructorTree(Tag.Open | Tag.Close, List(ConstructorTree(Tag.Name(v), _))), In(values)) =>
-            values.contains(v).guard[Option].as(Tag.True)
+            values.contains(v).some.ifM(Some(Tag.True), None)
           case (ConstructorTree(Tag.Leaf, List(ConstructorTree(Tag.Value(v), _))), In(values)) =>
-            values.contains(v).guard[Option].as(Tag.True)
+            values.contains(v).some.ifM(Some(Tag.True), None)
           case (ConstructorTree(Tag.Open | Tag.Close, List(ConstructorTree(Tag.Name(v), _))), NotIn(values)) =>
-            values.contains(v).guard[Option].fold[Option[Tag[T]]](Some(Tag.True))(_ => None)
+            values.contains(v).some.ifM(None, Some(Tag.True))
           case (ConstructorTree(Tag.Leaf, List(ConstructorTree(Tag.Value(v), _))), NotIn(values)) =>
-            values.contains(v).guard[Option].fold[Option[Tag[T]]](Some(Tag.True))(_ => None)
+            values.contains(v).some.ifM(None, Some(Tag.True))
           case (_, And(l, r)) =>
             eval(l, tree) >> eval(r, tree)
           case (_, Or(l, r)) =>
