@@ -32,27 +32,6 @@ ThisBuild / crossScalaVersions := Seq(scala212, scala213, scala3)
 ThisBuild / scalaVersion := scala213
 
 val commonSettings = List(
-  // Copied from circe
-  Compile / unmanagedSourceDirectories ++= {
-    def extraDirs(suffix: String) =
-      CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + suffix))
-
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, y)) => extraDirs("-2") ++ (if (y >= 13) extraDirs("-2.13+") else Nil)
-      case Some((3, _)) => extraDirs("-3") ++ extraDirs("-2.13+")
-      case _            => Nil
-    }
-  },
-  Test / unmanagedSourceDirectories ++= {
-    def extraDirs(suffix: String) =
-      CrossType.Full.sharedSrcDir(baseDirectory.value, "test").toList.map(f => file(f.getPath + suffix))
-
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, y)) => extraDirs("-2") ++ (if (y >= 13) extraDirs("-2.13+") else Nil)
-      case Some((3, _)) => extraDirs("-3") ++ extraDirs("-2.13+")
-      case _            => Nil
-    }
-  },
   headerLicense := Some(HeaderLicense.ALv2("2022", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
