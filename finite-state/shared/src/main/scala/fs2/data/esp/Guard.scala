@@ -28,7 +28,6 @@ sealed trait Guard[T] {
       case Guard.Or(g1, g2)  => !g1 && !g2
       case Guard.And(g1, g2) => !g1 || !g2
       case Guard.Not(g)      => g
-      case _                 => Guard.Not(this)
     }
 }
 

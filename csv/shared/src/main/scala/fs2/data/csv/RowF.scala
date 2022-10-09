@@ -60,9 +60,9 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     * to the expected type.
     */
   def asNonEmptyAt[T](idx: Int)(implicit decoder: CellDecoder[T]): DecoderResult[Option[T]] =
-    values.get(idx) match {
+    values.get(idx.toLong) match {
       case Some(v) if v.isEmpty => Right(None)
-      case Some(v)              => decoder(v).map(Some(_))
+      case Some(v)              => decoder.apply(v).map(Some(_))
       case None                 => Left(new DecoderError(s"unknown index $idx"))
     }
 
@@ -158,8 +158,9 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     * Fails if the field doesn't exist or cannot be decoded
     * to the expected type.
     */
-  def asNonEmpty[T](
-      header: Header)(implicit hasHeaders: HasHeaders[H, Header], decoder: CellDecoder[T]): DecoderResult[Option[T]] =
+  def asNonEmpty[T](header: Header)(implicit
+      @unused hasHeaders: HasHeaders[H, Header],
+      decoder: CellDecoder[T]): DecoderResult[Option[T]] =
     (byHeader: @nowarn("msg=HasHeaders")).get(header) match {
       case Some(v) if v.isEmpty => Right(None)
       case Some(v)              => decoder(v).map(Some(_))
