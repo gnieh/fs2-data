@@ -276,7 +276,7 @@ private[xml] object EventParser {
         read(ctx, chunkAcc)
       }
 
-    /** We have read '<!-' so far */
+    /* We have read '<!-' so far */
     def readComment(
         ctx: T.Context,
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], MarkupToken)] =
@@ -303,7 +303,7 @@ private[xml] object EventParser {
         }
       }
 
-    /** We have read '<![' so far */
+    /* We have read '<![' so far */
     def readCDATA(
         ctx: T.Context,
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], MarkupToken)] =
@@ -311,7 +311,7 @@ private[xml] object EventParser {
         (ctx, chunkAcc, MarkupToken.CDataToken)
       }
 
-    /** We have just read the PI target */
+    /* We have just read the PI target */
     def readPIBody(ctx: T.Context,
                    chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], String)] =
       space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
@@ -333,7 +333,7 @@ private[xml] object EventParser {
         loop(ctx, new StringBuilder, chunkAcc)
       }
 
-    /** We read the beginning of internal DTD subset, read until final ']>' */
+    /* We read the beginning of internal DTD subset, read until final ']>' */
     def skipInternalDTD(ctx: T.Context,
                         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
       nextChar(ctx, chunkAcc).flatMap {
@@ -413,7 +413,7 @@ private[xml] object EventParser {
         }
       }
 
-    /** We read '&#' so far */
+    /* We read '&#' so far */
     def readCharRef(ctx: T.Context,
                     is11: Boolean,
                     chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], Int)] = {
@@ -586,7 +586,7 @@ private[xml] object EventParser {
         }
       }
 
-    /** We read '<[CDATA[' so far */
+    /* We read '<[CDATA[' so far */
     def readCDATABody(
         ctx: T.Context,
         sb: StringBuilder,
