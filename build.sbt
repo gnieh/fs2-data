@@ -153,6 +153,9 @@ lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     name := "fs2-data-text",
     description := "Utilities for textual data format"
   )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
+  )
 
 lazy val csv = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
@@ -173,6 +176,9 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion % Test
     ),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
   )
   .dependsOn(text)
 
@@ -229,6 +235,9 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     )
   )
   .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test)
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
+  )
   .dependsOn(csv)
 
 lazy val json = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -246,6 +255,9 @@ lazy val json = crossProject(JVMPlatform, JSPlatform, NativePlatform)
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
       }
       .toList
+  )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
   )
   .dependsOn(text, finiteState)
 
@@ -270,6 +282,9 @@ lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform, NativePlatform)
             .withArrayIndexOutOfBounds(org.scalajs.linker.interface.CheckedBehavior.Unchecked))
     }
   )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
+  )
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
 
 lazy val jsonPlay = crossProject(JVMPlatform, JSPlatform)
@@ -285,7 +300,7 @@ lazy val jsonPlay = crossProject(JVMPlatform, JSPlatform)
       "org.gnieh" %%% "diffson-play-json" % diffsonVersion % "test"
     ),
     // 2.x support was actually introduced in 1.3.0, but we forgot to publish the artifacts in later versions
-    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1"),
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.3.0", "2.12" -> "1.3.0"),
     tlMimaPreviousVersions ~= { (versions: Set[String]) => versions.diff(Set("1.3.1", "1.4.0", "1.4.1", "1.5.0")) }
   )
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
@@ -301,6 +316,9 @@ lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     libraryDependencies ++= List(
       "org.gnieh" %%% "diffson-core" % diffsonVersion
     )
+  )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
   )
   .dependsOn(json % "compile->compile;test->test")
 
@@ -319,6 +337,12 @@ lazy val jsonInterpolators = crossProject(JVMPlatform, JSPlatform, NativePlatfor
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
       }
       .toList
+  )
+  .jsSettings(
+    tlVersionIntroduced := Map("3" -> "1.4.0", "2.13" -> "1.4.0", "2.12" -> "1.4.0")
+  )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
   )
   .dependsOn(json % "compile->compile;test->test")
 
@@ -360,6 +384,9 @@ lazy val xml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
+  )
   .dependsOn(text, finiteState)
 
 lazy val scalaXml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -381,6 +408,9 @@ lazy val scalaXml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
+  )
   .dependsOn(xml % "compile->compile;test->test")
 
 lazy val cbor = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -401,6 +431,9 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
+  )
 
 lazy val finiteState = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
@@ -411,6 +444,9 @@ lazy val finiteState = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     name := "fs2-data-finite-state",
     description := "Streaming finite state machines",
     tlVersionIntroduced := Map("3" -> "1.6.0", "2.13" -> "1.6.0", "2.12" -> "1.6.0")
+  )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
   )
 
 lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -427,6 +463,9 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
   .dependsOn(cbor, json, jsonCirce % "test")
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
+  )
 
 lazy val documentation = project
   .in(file("documentation"))
