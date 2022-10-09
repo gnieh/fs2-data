@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ private[json] object TokenParser {
             else
               emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
           case n /* StringState.ExpectNUnicode */ =>
-            val cidx = hexa.indexOf(c.toLower)
+            val cidx = hexa.indexOf(c.toLower.toInt)
             if (cidx >= 0) {
               val unicode1 = (unicode << 4) | (0x0000000f & cidx)
               if (n == 1) {
@@ -230,7 +230,7 @@ private[json] object TokenParser {
         }
       }
 
-    def continue(state: Int)(result: Option[(T.Context, VectorBuilder[Token])])(implicit F: RaiseThrowable[F]) =
+    def continue(state: Int)(result: Option[(T.Context, VectorBuilder[Token])]) =
       result match {
         case Some((context, chunkAcc)) =>
           go_(context, state, chunkAcc)
@@ -300,7 +300,7 @@ private[json] object TokenParser {
                 (c: @switch) match {
                   case ']' =>
                     Pull.pure(Some((T.advance(context), chunkAcc += Token.EndArray)))
-                  case c =>
+                  case _ =>
                     value_(context, State.AfterArrayValue, chunkAcc)
                       .flatMap(res => continue(State.AfterArrayValue)(res))
                 }

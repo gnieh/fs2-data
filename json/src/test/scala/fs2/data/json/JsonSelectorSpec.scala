@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,14 @@ package json
 
 import ast._
 import selector._
-
 import weaver._
 import cats.effect.IO
 
-abstract class JsonSelectorSpec[Json](implicit builder: Builder[Json], tokenizer: Tokenizer[Json])
+import scala.annotation.nowarn
+
+@nowarn("cat=deprecation") abstract class JsonSelectorSpec[Json](implicit
+    builder: Builder[Json],
+    tokenizer: Tokenizer[Json])
     extends SimpleIOSuite {
 
   pureTest("mandatory fields should fail in the missing single case") {

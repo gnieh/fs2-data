@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package data
 package csv
 package internals
 
-import cats.implicits._
+import cats.syntax.all._
 
 private[csv] object CsvRowParser {
 
@@ -31,9 +31,7 @@ private[csv] object CsvRowParser {
 
   /** Like `pipe` except that instead of failing the stream on parse errors, it emits `Left` elements for bad rows */
   def pipeAttempt[F[_], Header](implicit
-      F: RaiseThrowable[F],
-      Header: ParseableHeader[Header]
-  ): Pipe[F, Row, Either[Throwable, CsvRow[Header]]] =
+      Header: ParseableHeader[Header]): Pipe[F, Row, Either[Throwable, CsvRow[Header]]] =
     _.pull.uncons1
       .flatMap {
         case Some((firstRow, tail)) =>

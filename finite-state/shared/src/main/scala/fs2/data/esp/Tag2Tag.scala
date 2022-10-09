@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@
 package fs2.data.esp
 
 /** A typeclass that describes how to transform an input tag into an output tag. */
-trait Tag2Tag[InTag, OutTag] {
+@FunctionalInterface trait Tag2Tag[InTag, OutTag] {
   def convert(tag: InTag): OutTag
 }
 
 object Tag2Tag {
-  implicit def same[Tag]: Tag2Tag[Tag, Tag] = identity
+  implicit def same[T]: Tag2Tag[T, T] = identity
 }

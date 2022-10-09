@@ -20,7 +20,7 @@ To create a stream of JSON tokens from an input stream, use the `tokens` pipe in
 
 ```scala mdoc
 import cats.effect._
-import cats.implicits._
+import cats.syntax.all._
 
 import fs2._
 import fs2.data.json._

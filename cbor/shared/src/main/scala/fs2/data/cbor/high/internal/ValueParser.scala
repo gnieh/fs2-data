@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -250,7 +250,11 @@ object ValueParser {
             Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.Integer(value))))
           case CborItem.Float16(raw) =>
             Pull.pure(
-              (chunk, idx + 1, rest, chunkAcc, tags(CborValue.Float32(HalfFloat.toFloat(raw.toShort(signed = false))))))
+              (chunk,
+               idx + 1,
+               rest,
+               chunkAcc,
+               tags(CborValue.Float32(fs2.data.cbor.HalfFloat.toFloat(raw.toShort(signed = false))))))
           case CborItem.Float32(raw) =>
             Pull.pure(
               (chunk,

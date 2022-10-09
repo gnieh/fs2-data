@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package internals
 
 import ast._
 
+import scala.annotation.unused
 import scala.collection.immutable.VectorBuilder
 
 private[json] object TokenSelector {
@@ -43,7 +44,7 @@ private[json] object TokenSelector {
           .pure(toA(json))
           .flatMap {
             case Left(e) =>
-              Pull.raiseError(new JsonException("An error occurred while transforming Json data", Some(context), e))
+              Pull.raiseError(JsonException("An error occurred while transforming Json data", Some(context), e))
             case Right(v) =>
               val chunkAcc1 = fromB(f(v)) match {
                 case Some(json) => chunkAcc ++= key.map(Token.Key(_)) ++= tokenizer.tokenize(json).toList
@@ -77,7 +78,7 @@ private[json] object TokenSelector {
           .flatMap(a => Pull.eval(f(a)))
           .handleErrorWith(t =>
             emitChunk(chunkAcc) >> Pull.raiseError(
-              new JsonException("An error occurred while transforming Json data", Some(context), t)))
+              JsonException("An error occurred while transforming Json data", Some(context), t)))
           .map { transformed =>
             val chunkAcc1 = fromB(transformed) match {
               case Some(transformed) =>
@@ -111,7 +112,7 @@ private[json] object TokenSelector {
         case Some((hd, tl)) =>
           chunkAcc.clear()
           selectName(hd, 0, tl, emitNonSelected, wrap, emitEarly, toSelect, mandatories, context, onSelect, chunkAcc)
-        case None => Pull.raiseError[F](new JsonException("unexpected end of input", Some(context)))
+        case None => Pull.raiseError[F](JsonException("unexpected end of input", Some(context)))
       }
     } else
       chunk(idx) match {
@@ -142,7 +143,7 @@ private[json] object TokenSelector {
                          onSelect,
                          chunkAcc)
             case None =>
-              Pull.raiseError[F](new JsonException("unexpected end of input", Some(context)))
+              Pull.raiseError[F](JsonException("unexpected end of input", Some(context)))
           }
 
         case Token.EndObject =>
@@ -155,8 +156,8 @@ private[json] object TokenSelector {
             emitChunk(chunkAcc) >> Pull.raiseError[F](
               new JsonMissingFieldException(s"missing mandatory fields: ${mandatories.mkString(", ")}", mandatories))
           }
-        case token =>
-          emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException("malformed json", Some(context)))
+        case _ =>
+          emitChunk(chunkAcc) >> Pull.raiseError[F](JsonException("malformed json", Some(context)))
       }
 
   private def selectIndex[F[_]](chunk: Chunk[Token],
@@ -180,7 +181,7 @@ private[json] object TokenSelector {
         case Some((hd, tl)) =>
           chunkAcc.clear()
           selectIndex(hd, 0, tl, emitNonSelected, wrap, arrIdx, toSelect, context, onSelect, chunkAcc)
-        case None => Pull.raiseError[F](new JsonException("unexpected end of input", Some(context)))
+        case None => Pull.raiseError[F](JsonException("unexpected end of input", Some(context)))
       }
     } else
       chunk(idx) match {
@@ -188,11 +189,11 @@ private[json] object TokenSelector {
           // array is done, go up
           if (wrap) chunkAcc += Token.EndArray else chunkAcc
           Pull.pure(Some((chunk, idx + 1, rest, chunkAcc)))
-        case token =>
+        case _ =>
           val action =
             if (toSelect(arrIdx))
               // index is to be selected, then continue
-              onSelect(chunk, idx, rest, JsonContext.Index(arrIdx, context), chunkAcc, None)
+              onSelect(chunk, idx, rest, JsonContext.Index(arrIdx.toLong, context), chunkAcc, None)
             else if (emitNonSelected)
               emitValue(chunk, idx, rest, 0, chunkAcc)
             else
@@ -202,7 +203,7 @@ private[json] object TokenSelector {
             case Some((chunk, idx, rest, chunkAcc)) =>
               selectIndex(chunk, idx, rest, emitNonSelected, wrap, arrIdx + 1, toSelect, context, onSelect, chunkAcc)
             case None =>
-              Pull.raiseError[F](new JsonException("unexpected end of input", Some(context)))
+              Pull.raiseError[F](JsonException("unexpected end of input", Some(context)))
           }
       }
 
@@ -253,7 +254,7 @@ private[json] object TokenSelector {
             case token =>
               if (strict)
                 emitChunk(chunkAcc) >> Pull.raiseError[F](
-                  new JsonException(s"cannot index ${token.kind} with string", Some(context)))
+                  JsonException(s"cannot index ${token.kind} with string", Some(context)))
               else if (emitNonSelected)
                 emitValue(chunk, idx, rest, 0, chunkAcc)
               else
@@ -269,7 +270,7 @@ private[json] object TokenSelector {
             case token =>
               if (strict)
                 emitChunk(chunkAcc) >> Pull.raiseError[F](
-                  new JsonException(s"cannot index ${token.kind} with number", Some(context)))
+                  JsonException(s"cannot index ${token.kind} with number", Some(context)))
               else if (emitNonSelected)
                 emitValue(chunk, idx, rest, 0, chunkAcc)
               else
@@ -293,7 +294,7 @@ private[json] object TokenSelector {
                           chunkAcc)
             case Token.StartObject =>
               // enter the object context and go down to the name
-              if (wrap) chunkAcc += Token.StartObject else chunkAcc
+              if (wrap) chunkAcc += Token.StartObject
               selectName(chunk,
                          idx + 1,
                          rest,
@@ -308,7 +309,7 @@ private[json] object TokenSelector {
             case token =>
               if (strict)
                 emitChunk(chunkAcc) >> Pull.raiseError[F](
-                  new JsonException(s"cannot iterate over ${token.kind}", Some(context)))
+                  JsonException(s"cannot iterate over ${token.kind}", Some(context)))
               else if (emitNonSelected)
                 emitValue(chunk, idx, rest, 0, chunkAcc)
               else
@@ -379,9 +380,9 @@ private[json] object TokenSelector {
   private def emit[F[_]](chunk: Chunk[Token],
                          idx: Int,
                          rest: Stream[F, Token],
-                         context: JsonContext,
+                         @unused context: JsonContext,
                          chunkAcc: VectorBuilder[Token],
-                         key: Option[String])(implicit
+                         @unused key: Option[String])(implicit
       F: RaiseThrowable[F]): Pull[F, Token, Result[F, VectorBuilder[Token]]] =
     emitValue[F](chunk, idx, rest, 0, chunkAcc)
 

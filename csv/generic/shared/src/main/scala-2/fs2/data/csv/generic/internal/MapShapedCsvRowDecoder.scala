@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package fs2.data.csv.generic.internal
 
-import cats.implicits._
+import cats.syntax.all._
 import fs2.data.csv._
 import fs2.data.csv.generic.CsvName
 import shapeless._

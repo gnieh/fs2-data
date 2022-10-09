@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -459,13 +459,13 @@ object ParserSpec extends SimpleIOSuite {
       .foldMonoid
       .map(jawn.parse(_).flatMap(_.as[List[AppendixTestCase]]))
       .rethrow
-      .map(_.zipWithIndex.collect { case (AppendixTestCase(cbor, _, _, _, Some(diag1), diag2), idx) =>
-        (idx, cbor, diag1, diag2)
+      .map(_.collect { case AppendixTestCase(cbor, _, _, _, Some(diag1), diag2) =>
+        (cbor, diag1, diag2)
       })
       .flatMap(
         Stream
           .emits(_)
-          .evalMap { case (idx, cbor, expected, expectedAlt) =>
+          .evalMap { case (cbor, expected, expectedAlt) =>
             Stream
               .chunk(Chunk.byteVector(cbor))
               .through(items[IO])

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@
 
 package fs2.data.csv
 
-import cats.implicits._
+import cats.syntax.all._
 
-trait LiteralCellEncoders {
+import scala.annotation.nowarn
+
+@nowarn("msg=parameter value L in method .+ is never used") trait LiteralCellEncoders {
 
   implicit final def literalStringEncoder[L <: String](implicit L: ValueOf[L]): CellEncoder[L] =
     CellEncoder.stringEncoder.narrow

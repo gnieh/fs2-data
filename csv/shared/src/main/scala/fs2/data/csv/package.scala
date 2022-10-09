@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import text._
 import cats._
 import csv.internals._
 import cats.data._
-import cats.implicits._
+import cats.syntax.all._
 
-import scala.annotation.implicitNotFound
+import scala.annotation.{implicitNotFound, unused}
 
 package object csv {
 
@@ -51,7 +51,7 @@ package object csv {
     * to build new decoders out of more basic one.
     *
     * Actually, `RowDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
-    * instance. To get the full power of it, import `cats.implicits._`.
+    * instance. To get the full power of it, import `cats.syntax.all._`.
     */
   @implicitNotFound(
     "No implicit RowDecoder found for type ${T}.\nYou can define one using RowDecoder.instance, by calling map on another RowDecoder or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val rowDecoder: RowDecoder[${T}] = deriveRowDecoder\nMake sure to have instances of CellDecoder for every member type in scope.\n")
@@ -69,7 +69,7 @@ package object csv {
     * to build new decoders out of more basic one.
     *
     * Actually, `CsvRowDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
-    * instance. To get the full power of it, import `cats.implicits._`.
+    * instance. To get the full power of it, import `cats.syntax.all._`.
     */
   @implicitNotFound(
     "No implicit CsvRowDecoder found for type ${T}.\nYou can define one using CsvRowDecoder.instance, by calling map on another CsvRowDecoder or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val csvRowDecoder: CsvRowDecoder[${T}] = deriveCsvRowDecoder\nMake sure to have instances of CellDecoder for every member type in scope.\n")
@@ -82,6 +82,7 @@ package object csv {
   type CsvRowEncoder[T, Header] = RowEncoderF[Some, T, Header]
 
   sealed trait QuoteHandling
+
   object QuoteHandling {
 
     /** Treats quotation marks as the start of a quoted value if the first
@@ -101,7 +102,7 @@ package object csv {
     case object Literal extends QuoteHandling
   }
 
-  /** Decode a char-like stream (see [[CharLikeChunks]]) into a specified type,
+  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type,
     * assuming the file neither contains headers nor are they needed for decoding.
     */
   def decodeWithoutHeaders[T]: PartiallyAppliedDecodeWithoutHeaders[T] =
@@ -115,7 +116,7 @@ package object csv {
       lowlevel.rows(separator, quoteHandling) andThen lowlevel.noHeaders andThen lowlevel.decode
   }
 
-  /** Decode a char-like stream (see [[CharLikeChunks]]) into a specified type,
+  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type,
     * assuming the file contains headers, but they shall be skipped for decoding.
     */
   def decodeSkippingHeaders[T]: PartiallyAppliedDecodeSkippingHeaders[T] =
@@ -130,7 +131,7 @@ package object csv {
       lowlevel.rows(separator, quoteHandling) andThen lowlevel.skipHeaders andThen lowlevel.decode
   }
 
-  /** Decode a char-like stream (see [[CharLikeChunks]]) into a specified type,
+  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type,
     * assuming the file contains headers and they need to be taken into account for decoding.
     */
   def decodeUsingHeaders[T]: PartiallyAppliedDecodeUsingHeaders[T] =
@@ -146,7 +147,7 @@ package object csv {
       lowlevel.rows(separator, quoteHandling) andThen lowlevel.headers andThen lowlevel.decodeRow
   }
 
-  /** Decode a char-like stream (see [[CharLikeChunks]]) into a specified type,
+  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type,
     * assuming the file contains no headers, but is compliant with the set of headers given.
     */
   def decodeGivenHeaders[T]: PartiallyAppliedDecodeGivenHeaders[T] =
@@ -249,7 +250,12 @@ package object csv {
 
     /** Transforms a stream of raw CSV rows into parsed CSV rows with headers, with failures at the element level instead of failing the stream */
     def headersAttempt[F[_], Header](implicit
-        F: RaiseThrowable[F],
+        Header: ParseableHeader[Header]): Pipe[F, Row, Either[Throwable, CsvRow[Header]]] =
+      CsvRowParser.pipeAttempt[F, Header]
+
+    // left here for bincompat
+    private[csv] def headersAttempt[F[_], Header](implicit
+        @unused F: RaiseThrowable[F],
         Header: ParseableHeader[Header]): Pipe[F, Row, Either[Throwable, CsvRow[Header]]] =
       CsvRowParser.pipeAttempt[F, Header]
 
@@ -293,7 +299,7 @@ package object csv {
     def writeWithoutHeaders[F[_]]: Pipe[F, Row, NonEmptyList[String]] =
       _.map(_.values)
 
-    /** Serialize a CSV row to [[String]]s. No guarantees are given on how the resulting Strings are cut. */
+    /** Serialize a CSV row to Strings. No guarantees are given on how the resulting Strings are cut. */
     def toStrings[F[_]](separator: Char = ',',
                         newline: String = "\n",
                         escape: EscapeMode = EscapeMode.Auto): Pipe[F, NonEmptyList[String], String] = {
@@ -304,7 +310,7 @@ package object csv {
           .intersperse(separator.toString) ++ Stream(newline))
     }
 
-    /** Serialize a CSV row to [[String]]s. Guaranteed to emit one String per CSV row (= one line if no quoted newlines are contained in the value). */
+    /** Serialize a CSV row to Strings. Guaranteed to emit one String per CSV row (= one line if no quoted newlines are contained in the value). */
     def toRowStrings[F[_]](separator: Char = ',',
                            newline: String = "\n",
                            escape: EscapeMode = EscapeMode.Auto): Pipe[F, NonEmptyList[String], String] = {

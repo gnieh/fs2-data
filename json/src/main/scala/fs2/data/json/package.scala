@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,8 +48,8 @@ package object json {
     * called on every selected value from upstream, and the resulting value replaces it.
     * The rest of the stream is left unchanged.
     *
-    * This operator locally creates Json AST values using the [[Builder]], and
-    * returns tokens as emitted by the [[Tokenizer]] on the resulting value.
+    * This operator locally creates Json AST values using the [[fs2.data.json.ast.Builder]], and
+    * returns tokens as emitted by the [[fs2.data.json.ast.Tokenizer]] on the resulting value.
     */
   @deprecated(message = "Use `fs2.data.json.ast.transform` instead", since = "1.3.0")
   def transform[F[_], Json](selector: Selector, f: Json => Json)(implicit
@@ -64,8 +64,8 @@ package object json {
     * is located at, if any).
     * The rest of the stream is left unchanged.
     *
-    * This operator locally creates Json AST values using the [[Builder]], and
-    * returns tokens as emitted by the [[Tokenizer]] on the resulting value.
+    * This operator locally creates Json AST values using the [[fs2.data.json.ast.Builder]], and
+    * returns tokens as emitted by the [[fs2.data.json.ast.Tokenizer]] on the resulting value.
     */
   @deprecated(message = "Use `fs2.data.json.ast.transformOpt` instead", since = "1.3.0")
   def transformOpt[F[_], Json](selector: Selector, f: Json => Option[Json])(implicit
@@ -79,8 +79,8 @@ package object json {
     * The rest of the stream is left unchanged. The operation can fail, in case the returned
     * `F` is failed at one step.
     *
-    * This operator locally creates Json AST values using the [[Builder]], and
-    * returns tokens as emitted by the [[Tokenizer]] on the resulting value.
+    * This operator locally creates Json AST values using the [[fs2.data.json.ast.Builder]], and
+    * returns tokens as emitted by the [[fs2.data.json.ast.Tokenizer]] on the resulting value.
     */
   @deprecated(message = "Use `fs2.data.json.ast.transformF` instead", since = "1.3.0")
   def transformF[F[_], Json](selector: Selector, f: Json => F[Json])(implicit

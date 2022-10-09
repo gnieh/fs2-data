@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,9 @@ package generic
 import cats.data.NonEmptyList
 import weaver._
 
-object AutoDerivationTest extends SimpleIOSuite {
+import scala.annotation.nowarn
+
+@nowarn object AutoDerivationTest extends SimpleIOSuite {
 
   val csvRow = CsvRow.unsafe[String](NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
   val plainRow = Row(NonEmptyList.of("1", "test", "42"))

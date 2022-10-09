@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import weaver._
 
 abstract class TokenizerSpec[Json](implicit builder: Builder[Json], tokenizer: Tokenizer[Json]) extends SimpleIOSuite {
 
-  pureTest("`tokenize` and `values` should work well together") {
+  pureTest("`ast.tokenize` and `ast.values` should work well together") {
 
     val input = Stream.emit("""true {"field1": "test", "field2": 23}""")
 
     val toks = input.through(tokens[Fallible, String])
 
-    val roundtrip = toks.through(values).through(tokenize)
+    val roundtrip = toks.through(ast.values).through(ast.tokenize)
 
     expect(toks.compile.toList == roundtrip.compile.toList)
 

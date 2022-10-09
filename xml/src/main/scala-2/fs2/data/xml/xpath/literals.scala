@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import cats.syntax.all._
 
 import org.typelevel.literally.Literally
 
-import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 import scala.annotation.unused
 
@@ -38,10 +37,11 @@ object literals {
     val c: Context
     import c.universe._
 
-    implicit def nel[T](implicit @unused T: Liftable[T]): Liftable[NonEmptyList[T]] = Liftable[NonEmptyList[T]] {
-      case NonEmptyList(t, Nil)  => q"_root_.cats.data.NonEmptyList.one($t)"
-      case NonEmptyList(t, tail) => q"_root_.cats.data.NonEmptyList($t, $tail)"
-    }
+    implicit def nel[T](implicit @unused T: Liftable[T]): Liftable[NonEmptyList[T]] =
+      Liftable[NonEmptyList[T]] {
+        case NonEmptyList(t, Nil)  => q"_root_.cats.data.NonEmptyList.one($t)"
+        case NonEmptyList(t, tail) => q"_root_.cats.data.NonEmptyList($t, $tail)"
+      }
 
     implicit lazy val qnameLiftable: Liftable[QName] = Liftable[QName] { n =>
       q"_root_.fs2.data.xml.QName(${n.prefix}, ${n.local})"

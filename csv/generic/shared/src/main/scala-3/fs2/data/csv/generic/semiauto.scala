@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package fs2
 package data
 package csv
@@ -68,7 +69,6 @@ object semiauto {
       override def apply(row: CsvRow[String]): DecoderResult[T] = {
         ic.constructM[StateT[DecoderResult, List[(String, Option[String])], *]] {
           [t] =>
-
             (cd: OptCellDecoder[t]) =>
               StateT[DecoderResult, List[(String, Option[String])], t] {
                 case (name, value) :: tail => cd(name, value).tupleLeft(tail)
@@ -97,5 +97,23 @@ object semiauto {
   inline def deriveCellDecoder[T]: CellDecoder[T] = summonInline[DerivedCellDecoder[T]]
 
   inline def deriveCellEncoder[T]: CellEncoder[T] = summonInline[DerivedCellEncoder[T]]
+
+  // bincompat stubs
+
+  private[generic] def deriveCsvRowDecoder[T](ic: K0.ProductInstances[OptCellDecoder, T],
+                                              labels: Labelling[T],
+                                              annotations: Annotations[CsvName, T]): CsvRowDecoder[T, String] = {
+    given Labelling[T] = labels
+    given Annotations[CsvName, T] = annotations
+    deriveCsvRowDecoder[T](using ic = ic, naming = summon[Names[T]])
+  }
+
+  private[generic] def deriveCsvRowEncoder[T](ic: K0.ProductInstances[CellEncoder, T],
+                                              labels: Labelling[T],
+                                              annotations: Annotations[CsvName, T]): CsvRowEncoder[T, String] = {
+    given Labelling[T] = labels
+    given Annotations[CsvName, T] = annotations
+    deriveCsvRowEncoder[T](using ic = ic, naming = summon[Names[T]])
+  }
 
 }

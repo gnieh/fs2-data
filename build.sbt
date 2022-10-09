@@ -1,3 +1,5 @@
+import com.typesafe.tools.mima.core._
+
 val scala212 = "2.12.17"
 val scala213 = "2.13.8"
 val scala3 = "3.2.0"
@@ -14,54 +16,26 @@ val weaverVersion = "0.8.0"
 
 val copyrightYears = "2019-2022"
 
-ThisBuild / resolvers ++= Resolver.sonatypeOssRepos("snapshots")
+ThisBuild / tlBaseVersion := "1.6"
+
+ThisBuild / organization := "org.gnieh"
+ThisBuild / organizationName := "Gnieh"
+ThisBuild / licenses := Seq(License.Apache2)
+ThisBuild / developers := List(
+  // your GitHub handle and name
+  tlGitHubDev("satabin", "Lucas Satabin"),
+  tlGitHubDev("ybasket", "Yannick Heiber")
+)
+ThisBuild / apiURL := Some(new java.net.URL("https://fs2-data.gnieh.org/api/"))
+
+ThisBuild / crossScalaVersions := Seq(scala212, scala213, scala3)
+ThisBuild / scalaVersion := scala213
 
 val commonSettings = List(
-  scalaVersion := scala213,
-  crossScalaVersions := Seq(scala213, scala212, scala3),
-  // Copied from circe
-  Compile / unmanagedSourceDirectories ++= {
-    def extraDirs(suffix: String) =
-      CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + suffix))
-
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, y)) => extraDirs("-2") ++ (if (y >= 13) extraDirs("-2.13+") else Nil)
-      case Some((3, _)) => extraDirs("-3") ++ extraDirs("-2.13+")
-      case _            => Nil
-    }
-  },
-  Test / unmanagedSourceDirectories ++= {
-    def extraDirs(suffix: String) =
-      CrossType.Full.sharedSrcDir(baseDirectory.value, "test").toList.map(f => file(f.getPath + suffix))
-
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, y)) => extraDirs("-2") ++ (if (y >= 13) extraDirs("-2.13+") else Nil)
-      case Some((3, _)) => extraDirs("-3") ++ extraDirs("-2.13+")
-      case _            => Nil
-    }
-  },
-  organization := "org.gnieh",
-  headerLicense := Some(HeaderLicense.ALv2(copyrightYears, "Lucas Satabin")),
+  headerLicense := Some(HeaderLicense.ALv2("2022", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
   versionScheme := Some("early-semver"),
-  scalacOptions ++= List("-feature",
-                         "-deprecation",
-                         "-unchecked",
-                         "-Ypatmat-exhaust-depth",
-                         "off",
-                         "-Ywarn-unused:imports,privates"),
-  scalacOptions ++= PartialFunction
-    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
-      case Some((2, n)) if n < 13 =>
-        List("-Ypartial-unification", "-language:higherKinds")
-      case Some((2, 13)) =>
-        List("-Vimplicits", "-Vtype-diffs")
-      case Some((3, _)) =>
-        List("-Ykind-projector", "-source:future-migration", "-no-indent")
-    }
-    .toList
-    .flatten,
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.8.1",
@@ -81,6 +55,19 @@ val commonSettings = List(
         compilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
         compilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary)
       )
+    }
+    .toList
+    .flatten,
+  scalacOptions := scalacOptions.value.filterNot(_ == "-source:3.0-migration"),
+  scalacOptions ++= PartialFunction
+    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
+      case Some((2, 12)) =>
+        List(
+          "-Wconf:msg=it is not recommended to define classes/objects inside of package objects:s",
+          "-Wconf:msg=type parameter .+ defined in .+ shadows .+:s", // esp.Tag
+          "-Wconf:msg=value T is deprecated:s" // jsonpath/xpath literals
+        )
+      case Some((3, _)) => List("-source:3.2-migration", "-no-indent")
     }
     .toList
     .flatten,
@@ -115,39 +102,39 @@ val publishSettings = List(
   )
 )
 
-val root = (project in file("."))
+val root = tlCrossRootProject
+  .aggregate(
+    text,
+    csv,
+    csvGeneric,
+    json,
+    jsonCirce,
+    jsonPlay,
+    jsonDiffson,
+    jsonInterpolators,
+    xml,
+    scalaXml,
+    cbor,
+    cborJson,
+    finiteState
+  )
   .settings(commonSettings)
-  .enablePlugins(ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin, GhpagesPlugin)
+  .enablePlugins(NoPublishPlugin, ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin, GhpagesPlugin)
   .settings(
-    name := "fs2-data",
-    publishArtifact := false,
-    publish / skip := true,
-    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(
-      cbor.js,
-      cbor.native,
-      cborJson.js,
-      cborJson.native,
-      csv.js,
-      csv.native,
-      csvGeneric.js,
-      csvGeneric.native,
-      json.js,
-      json.native,
-      jsonCirce.js,
-      jsonCirce.native,
-      jsonDiffson.js,
-      jsonDiffson.native,
-      jsonPlay.js,
-      jsonInterpolators.js,
-      jsonInterpolators.native,
-      text.js,
-      text.native,
-      xml.js,
-      xml.native,
-      scalaXml.js,
-      scalaXml.native,
-      finiteState.js,
-      finiteState.native,
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
+      cbor.jvm,
+      cborJson.jvm,
+      csv.jvm,
+      csvGeneric.jvm,
+      json.jvm,
+      jsonCirce.jvm,
+      jsonDiffson.jvm,
+      jsonPlay.jvm,
+      jsonInterpolators.jvm,
+      text.jvm,
+      xml.jvm,
+      scalaXml.jvm,
+      finiteState.jvm,
       benchmarks.jvm
     ),
     ScalaUnidoc / siteSubdirName := "api",
@@ -155,46 +142,6 @@ val root = (project in file("."))
     Nanoc / sourceDirectory := file("site"),
     git.remoteRepo := scmInfo.value.get.connection.replace("scm:git:", ""),
     ghpagesNoJekyll := true
-  )
-  .aggregate(
-    text.jvm,
-    text.js,
-    text.native,
-    csv.jvm,
-    csv.js,
-    csv.native,
-    csvGeneric.jvm,
-    csvGeneric.js,
-    csvGeneric.native,
-    json.jvm,
-    json.js,
-    json.native,
-    jsonCirce.jvm,
-    jsonCirce.js,
-    jsonCirce.native,
-    jsonDiffson.jvm,
-    jsonDiffson.js,
-    jsonDiffson.native,
-    jsonInterpolators.jvm,
-    jsonInterpolators.js,
-    jsonInterpolators.native,
-    jsonPlay.jvm,
-    jsonPlay.js,
-    xml.jvm,
-    xml.js,
-    xml.native,
-    scalaXml.jvm,
-    scalaXml.js,
-    scalaXml.native,
-    cbor.jvm,
-    cbor.js,
-    cbor.native,
-    cborJson.jvm,
-    cborJson.js,
-    cborJson.native,
-    finiteState.jvm,
-    finiteState.js,
-    finiteState.native
   )
 
 lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -206,19 +153,32 @@ lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     name := "fs2-data-text",
     description := "Utilities for textual data format"
   )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
+  )
 
 lazy val csv = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("csv"))
   .settings(commonSettings)
   .settings(publishSettings)
-  .settings(name := "fs2-data-csv", description := "Streaming CSV manipulation library")
+  .settings(
+    name := "fs2-data-csv",
+    description := "Streaming CSV manipulation library",
+    mimaBinaryIssueFilters ++= List(
+      // Static forwarder, only relevant for Java
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.csv.RowEncoderF.fromNonEmptyMapCsvRowEncoder")
+    )
+  )
   .jsSettings(
     libraryDependencies ++= List(
       "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test,
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion % Test
     ),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
   )
   .dependsOn(text)
 
@@ -258,9 +218,21 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform, NativePlatform)
           )
       }
       .toList
-      .flatten
+      .flatten,
+    // Filter related to DerivedCellDecoder come from removed implicit params. These are only the Java forwarders.
+    mimaBinaryIssueFilters ++= List(
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "fs2.data.csv.generic.internal.DerivedCellDecoder.decodeCCons"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "fs2.data.csv.generic.internal.DerivedCellDecoder.decodeCConsObjAnnotated"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "fs2.data.csv.generic.internal.DerivedCellDecoder.decodeCConsObj")
+    )
   )
   .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test)
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
+  )
   .dependsOn(csv)
 
 lazy val json = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -278,6 +250,9 @@ lazy val json = crossProject(JVMPlatform, JSPlatform, NativePlatform)
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
       }
       .toList
+  )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
   )
   .dependsOn(text, finiteState)
 
@@ -302,6 +277,9 @@ lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform, NativePlatform)
             .withArrayIndexOutOfBounds(org.scalajs.linker.interface.CheckedBehavior.Unchecked))
     }
   )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
+  )
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
 
 lazy val jsonPlay = crossProject(JVMPlatform, JSPlatform)
@@ -315,7 +293,10 @@ lazy val jsonPlay = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= List(
       "com.typesafe.play" %%% "play-json" % playVersion,
       "org.gnieh" %%% "diffson-play-json" % diffsonVersion % "test"
-    )
+    ),
+    // 2.x support was actually introduced in 1.3.0, but we forgot to publish the artifacts in later versions
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.3.0", "2.12" -> "1.3.0"),
+    tlMimaPreviousVersions ~= { (versions: Set[String]) => versions.diff(Set("1.3.1", "1.4.0", "1.4.1", "1.5.0")) }
   )
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
 
@@ -330,6 +311,9 @@ lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     libraryDependencies ++= List(
       "org.gnieh" %%% "diffson-core" % diffsonVersion
     )
+  )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
   )
   .dependsOn(json % "compile->compile;test->test")
 
@@ -349,6 +333,12 @@ lazy val jsonInterpolators = crossProject(JVMPlatform, JSPlatform, NativePlatfor
       }
       .toList
   )
+  .jsSettings(
+    tlVersionIntroduced := Map("3" -> "1.4.0", "2.13" -> "1.4.0", "2.12" -> "1.4.0")
+  )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
+  )
   .dependsOn(json % "compile->compile;test->test")
 
 lazy val xml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -365,10 +355,32 @@ lazy val xml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
       }
-      .toList
+      .toList,
+    // all filters related to CommentToken come from converting it from case object to case class
+    mimaBinaryIssueFilters ++= List(
+      ProblemFilters.exclude[MissingTypesProblem]("fs2.data.xml.internals.MarkupToken$CommentToken$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "fs2.data.xml.internals.MarkupToken#CommentToken.productElementName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "fs2.data.xml.internals.MarkupToken#CommentToken.productElementNames"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.xml.internals.MarkupToken#CommentToken.render"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "fs2.data.xml.internals.MarkupToken#CommentToken.productPrefix"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "fs2.data.xml.internals.MarkupToken#CommentToken.productArity"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "fs2.data.xml.internals.MarkupToken#CommentToken.productElement"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "fs2.data.xml.internals.MarkupToken#CommentToken.productIterator"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.xml.internals.MarkupToken#CommentToken.canEqual"),
+      ProblemFilters.exclude[FinalMethodProblem]("fs2.data.xml.internals.MarkupToken#CommentToken.toString")
+    )
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
   )
   .dependsOn(text, finiteState)
 
@@ -380,10 +392,19 @@ lazy val scalaXml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .settings(
     name := "fs2-data-xml-scala",
     description := "Support for Scala XML ASTs",
-    libraryDependencies += "org.scala-lang.modules" %%% "scala-xml" % "2.1.0"
+    libraryDependencies += "org.scala-lang.modules" %%% "scala-xml" % "2.1.0",
+    tlVersionIntroduced := Map("3" -> "1.4.0", "2.13" -> "1.4.0", "2.12" -> "1.4.0"),
+    mimaBinaryIssueFilters ++= List(
+      // Changed from implicit object to implicit val, seems impossible to stub. Second is Scala 3 only
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.xml.scalaXml.package$ScalaXmlBuilder$"),
+      ProblemFilters.exclude[MissingFieldProblem]("fs2.data.xml.scalaXml.package.ScalaXmlBuilder")
+    )
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
   )
   .dependsOn(xml % "compile->compile;test->test")
 
@@ -405,6 +426,9 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
+  )
 
 lazy val finiteState = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
@@ -413,7 +437,11 @@ lazy val finiteState = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .settings(publishSettings)
   .settings(
     name := "fs2-data-finite-state",
-    description := "Streaming finite state machines"
+    description := "Streaming finite state machines",
+    tlVersionIntroduced := Map("3" -> "1.6.0", "2.13" -> "1.6.0", "2.12" -> "1.6.0")
+  )
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
   )
 
 lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -423,12 +451,16 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .settings(publishSettings)
   .settings(
     name := "fs2-data-cbor-json",
-    description := "Streaming CBOR/JSON interoperability library"
+    description := "Streaming CBOR/JSON interoperability library",
+    tlVersionIntroduced := Map("3" -> "1.5.0", "2.13" -> "1.5.0", "2.12" -> "1.5.0")
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
   .dependsOn(cbor, json, jsonCirce % "test")
+  .nativeSettings(
+    tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
+  )
 
 lazy val documentation = project
   .in(file("documentation"))

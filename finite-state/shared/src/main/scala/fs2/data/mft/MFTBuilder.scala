@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ class MFTBuilder[InTag, OutTag] private[mft] {
 
   class RuleBuilder private[mft] (q: StateBuilder, pat: PatternBuilder) {
 
-    def ->(rhs: Rhs[OutTag]): Unit =
+    def ->(rhs: Rhs[OutTag]): Unit = {
       pat match {
         case PatternBuilder.Node(in) => q.rules += (EventSelector.Node(in) -> rhs)
         case PatternBuilder.AnyNode  => q.rules += (EventSelector.AnyNode -> rhs)
@@ -56,6 +56,8 @@ class MFTBuilder[InTag, OutTag] private[mft] {
         case PatternBuilder.Any =>
           q.rules += (EventSelector.AnyNode -> rhs) += (EventSelector.AnyLeaf -> rhs) += (EventSelector.Epsilon -> rhs)
       }
+      () // to silence discard warnings
+    }
 
   }
 

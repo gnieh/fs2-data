@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,20 @@ package xml
 package dom
 
 import cats.syntax.all._
+
 import scala.collection.mutable.ListBuffer
 
 class XmlTreeException(msg: String) extends Exception(msg)
 
 class TreeParser[F[_], Node](implicit F: RaiseThrowable[F]) {
+
+  // Only for bincompat
+  private var legacyBuilder: DocumentBuilder[Node] = _
+
+  private[dom] def this(F: RaiseThrowable[F], builder: DocumentBuilder[Node]) = {
+    this()(F)
+    legacyBuilder = builder
+  }
 
   private def next(chunk: Chunk[XmlEvent],
                    idx: Int,
@@ -133,22 +142,29 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F]) {
       builder: DocumentBuilder[Node]): Pull[F, Node, (Chunk[XmlEvent], Int, Stream[F, XmlEvent])] =
     next(chunk, idx, rest).flatMap {
       case (XmlEvent.StartDocument, chunk, idx, rest) =>
-        for {
-          (decl, doctype, prolog, chunk, idx, rest) <- prolog(chunk, idx, rest)
-          (node, chunk, idx, rest) <- element(chunk, idx, rest)
-          (postlog, chunk, idx, rest) <- postlog(chunk, idx, rest)
-          (chunk, idx, rest) <- expect(XmlEvent.EndDocument, chunk, idx, rest)
-          () <- Pull.output1(
-            builder.makeDocument(decl.map(_.version),
-                                 decl.flatMap(_.encoding),
-                                 decl.flatMap(_.standalone),
-                                 doctype,
-                                 prolog,
-                                 node,
-                                 postlog))
-        } yield (chunk, idx, rest)
+        prolog(chunk, idx, rest).flatMap { case (decl, doctype, prolog, chunk, idx, rest) =>
+          element(chunk, idx, rest).flatMap { case (node, chunk, idx, rest) =>
+            postlog(chunk, idx, rest).flatMap { case (postlog, chunk, idx, rest) =>
+              expect(XmlEvent.EndDocument, chunk, idx, rest).flatMap { case (chunk, idx, rest) =>
+                Pull
+                  .output1(
+                    builder.makeDocument(decl.map(_.version),
+                                         decl.flatMap(_.encoding),
+                                         decl.flatMap(_.standalone),
+                                         doctype,
+                                         prolog,
+                                         node,
+                                         postlog))
+                  .as((chunk, idx, rest))
+              }
+            }
+          }
+        }
       case (evt, _, _, _) => Pull.raiseError(new XmlTreeException(s"unexpected event '$evt'"))
     }
+
+  @deprecated("only retained for bincompat", "1.6.0")
+  private[dom] def pipe: Pipe[F, XmlEvent, Node] = pipe(legacyBuilder)
 
   def pipe(implicit builder: DocumentBuilder[Node]): Pipe[F, XmlEvent, Node] = {
     def go(chunk: Chunk[XmlEvent], idx: Int, rest: Stream[F, XmlEvent]): Pull[F, Node, Unit] =

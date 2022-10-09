@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ object Pattern {
           }
         case OrPat(left, right) =>
           decompose(left) ++ decompose(right)
-        case WildPat(tpe) =>
+        case WildPat(_) =>
           List(RawSkeleton.wildcard)
       }
 

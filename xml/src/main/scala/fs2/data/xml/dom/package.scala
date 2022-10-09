@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ package object dom {
   /** Transforms a stream of XML events into a stream of XML document trees.
     */
   def documents[F[_], Node](implicit F: RaiseThrowable[F], builder: DocumentBuilder[Node]): Pipe[F, XmlEvent, Node] =
-    new TreeParser[F, Node].pipe
+    new TreeParser[F, Node].pipe(builder) // explicit implicit for bincompat overloading resolution
 
   /** Transforms a stream of XML events into a stream of XML elements trees.
     *

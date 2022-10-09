@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ package fs2.data.csv
   * to build new decoders out of more basic one.
   *
   * Actually, `RowDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
-  * instance. To get the full power of it, import `cats.implicits._`.
+  * instance. To get the full power of it, import `cats.syntax.all._`.
   */
 
 object RowDecoder {

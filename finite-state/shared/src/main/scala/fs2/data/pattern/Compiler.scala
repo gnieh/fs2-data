@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022 Lucas Satabin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package fs2.data.pattern
 
 import cats.{Defer, MonadError}
@@ -33,15 +49,15 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
           .map { hasGuards =>
             cases.map { pats =>
               pats.zip(hasGuards).flatMap {
-                case (c @ RawSkeleton.Constructor(tag, args, guard), true) =>
+                case (RawSkeleton.Constructor(tag, args, guard), true) =>
                   // at least one row of this column has a guard, apply guard splitting rule
                   List[Skeleton[Expr, Tag]](Skeleton.Constructor(tag, args, true), Skeleton.Guard(guard))
-                case (c @ RawSkeleton.Constructor(tag, args, guard), false) =>
+                case (RawSkeleton.Constructor(tag, args, _), false) =>
                   List[Skeleton[Expr, Tag]](Skeleton.Constructor(tag, args, false))
                 case (RawSkeleton.Wildcard(guard), true) =>
                   // at least one row of this column has a guard, apply guard splitting rule
                   List[Skeleton[Expr, Tag]](Skeleton.Wildcard(true), Skeleton.Guard(guard))
-                case (RawSkeleton.Wildcard(guard), false) =>
+                case (RawSkeleton.Wildcard(_), false) =>
                   List[Skeleton[Expr, Tag]](Skeleton.Wildcard(false))
               }
             }
@@ -77,7 +93,7 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
     matrix match {
       case Nil =>
         F.pure(DecisionTree.Fail())
-      case (row @ Row(pats, out)) :: rows =>
+      case Row(pats, out) :: _ =>
         pats.indexWhere(!_.isTrivial) match {
           case -1 =>
             // all the patterns in the row are wildcard or trivially true guards
@@ -109,7 +125,7 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
   }
 
   private def column(col: Int, matrix: Matrix) =
-    matrix.traverse(_.patterns.get(col).liftTo[F](new PatternException("malformed pattern matching")))
+    matrix.traverse(_.patterns.get(col.toLong).liftTo[F](new PatternException("malformed pattern matching")))
 
   private def constructors(skels: List[Skeleton[Expr, Tag]]): List[Skeleton.Constructor[Expr, Tag]] =
     skels.collect { case cons @ Skeleton.Constructor(_, _, _) => cons }
@@ -157,7 +173,7 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
 
     object Col {
       def unapply(pats: List[Skeleton[Expr, Tag]]): Option[Skeleton[Expr, Tag]] =
-        pats.get(col)
+        pats.get(col.toLong)
     }
 
     matrix match {
@@ -181,7 +197,7 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
               (none, smats, none)
             }
           }
-      case Row(Col(skel @ Skeleton.Guard(g)), _) :: _ =>
+      case Row(Col(Skeleton.Guard(g)), _) :: _ =>
         column(col, matrix).flatMap {
           case Nil =>
             F.pure((none, Map.empty, none))
@@ -190,12 +206,12 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
             if (nonTrivialIdx >= 0) {
               // there are non trivially true guards after the first one
               specialize(col, Pat.trueTag, Nil, matrix.take(1 + nonTrivialIdx)).map { smat =>
-                (g, Map(Pat.trueTag -> (false, Nil, smat)), (false, matrix.drop(1 + nonTrivialIdx)).some)
+                (g, Map(Pat.trueTag -> ((false, Nil, smat))), (false, matrix.drop(1 + nonTrivialIdx)).some)
               }
             } else {
               // only trivially false guard afterwards
               specialize(col, Pat.trueTag, Nil, matrix).map { smat =>
-                (g, Map(Pat.trueTag -> (false, Nil, smat)), (false, defaultMatrix(col, matrix)).some)
+                (g, Map(Pat.trueTag -> ((false, Nil, smat))), (false, defaultMatrix(col, matrix)).some)
               }
             }
         }

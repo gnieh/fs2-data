@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package xml
 package internals
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 
 private[xml] class ReferenceResolver[F[_]](entities: Map[String, String])(implicit F: MonadError[F, Throwable]) {
 

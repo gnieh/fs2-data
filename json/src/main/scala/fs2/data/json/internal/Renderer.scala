@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@ package data
 package json
 package internals
 
-import scala.annotation.{tailrec, switch}
+import scala.annotation.{nowarn, switch, tailrec}
 
-private[json] class Renderer(pretty: Boolean, resetOnChunk: Boolean, indent: String)
+@nowarn("msg=discarded non-Unit value") private[json] class Renderer(pretty: Boolean,
+                                                                     resetOnChunk: Boolean,
+                                                                     indent: String)
     extends Collector.Builder[Token, String] {
 
   import Renderer._

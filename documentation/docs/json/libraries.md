@@ -55,7 +55,7 @@ import fs2.data.json.circe._
 import io.circe._
 
 import cats.effect._
-import cats.implicits._
+import cats.syntax.all._
 import cats.effect.unsafe.implicits.global
 
 stream
@@ -105,7 +105,7 @@ Dropping values can be done similarly.
 ```scala mdoc:nest
 import fs2.data.json.circe._
 import io.circe._
-import cats.implicits._
+import cats.syntax.all._
 
 val f1 = root.field("field1").compile
 

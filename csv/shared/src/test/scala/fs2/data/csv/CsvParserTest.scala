@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ object CsvParserTest extends SimpleIOSuite {
   loggedTest("Standard test suite files should be encoded and parsed correctly") { log =>
     allExpected
       .evalTap { case (path, _) => log.info(path.fileName.toString) }
-      .evalMap { case (path, expected) =>
+      .evalMap { case (_, expected) =>
         Stream
           .emits(expected)
           .map(m => CsvRow.fromListHeaders(m.toList))

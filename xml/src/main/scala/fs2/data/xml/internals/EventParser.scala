@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -276,7 +276,7 @@ private[xml] object EventParser {
         read(ctx, chunkAcc)
       }
 
-    /** We have read '<!-' so far */
+    /* We have read '<!-' so far */
     def readComment(
         ctx: T.Context,
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], MarkupToken)] =
@@ -303,7 +303,7 @@ private[xml] object EventParser {
         }
       }
 
-    /** We have read '<![' so far */
+    /* We have read '<![' so far */
     def readCDATA(
         ctx: T.Context,
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], MarkupToken)] =
@@ -311,7 +311,7 @@ private[xml] object EventParser {
         (ctx, chunkAcc, MarkupToken.CDataToken)
       }
 
-    /** We have just read the PI target */
+    /* We have just read the PI target */
     def readPIBody(ctx: T.Context,
                    chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], String)] =
       space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
@@ -333,7 +333,7 @@ private[xml] object EventParser {
         loop(ctx, new StringBuilder, chunkAcc)
       }
 
-    /** We read the beginning of internal DTD subset, read until final ']>' */
+    /* We read the beginning of internal DTD subset, read until final ']>' */
     def skipInternalDTD(ctx: T.Context,
                         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
       nextChar(ctx, chunkAcc).flatMap {
@@ -413,7 +413,7 @@ private[xml] object EventParser {
         }
       }
 
-    /** We read '&#' so far */
+    /* We read '&#' so far */
     def readCharRef(ctx: T.Context,
                     is11: Boolean,
                     chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], Int)] = {
@@ -478,7 +478,6 @@ private[xml] object EventParser {
     def readAttributes(
         ctx: T.Context,
         is11: Boolean,
-        tname: QName,
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], List[Attr])] = {
       def loop(ctx: T.Context,
                attributes: VectorBuilder[Attr],
@@ -530,7 +529,7 @@ private[xml] object EventParser {
             nextChar(ctx, chunkAcc).flatMap {
               case (ctx, chunkAcc, '\n') =>
                 readAttributeValue(ctx, is11, delim, current.append('\n'), builder, chunkAcc)
-              case (ctx, chunkAcc, c) =>
+              case (ctx, chunkAcc, _) =>
                 readAttributeValue(ctx, is11, delim, current.append(' '), builder, chunkAcc)
             }
           case (ctx, chunkAcc, c) if isXmlWhitespace(c) =>
@@ -571,7 +570,7 @@ private[xml] object EventParser {
         is11: Boolean,
         name: QName,
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], XmlEvent.StartTag)] =
-      readAttributes(ctx, is11, name, chunkAcc).flatMap { case (ctx, chunkAcc, attributes) =>
+      readAttributes(ctx, is11, chunkAcc).flatMap { case (ctx, chunkAcc, attributes) =>
         space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
           peekChar(ctx, chunkAcc)
             .flatMap {
@@ -587,7 +586,7 @@ private[xml] object EventParser {
         }
       }
 
-    /** We read '<[CDATA[' so far */
+    /* We read '<[CDATA[' so far */
     def readCDATABody(
         ctx: T.Context,
         sb: StringBuilder,
@@ -953,7 +952,7 @@ private[xml] object EventParser {
                             .flatMap {
                               case (ctx, chunkAcc, '>') =>
                                 // done
-                                Pull.pure(ctx, chunkAcc += XmlEvent.XmlDoctype(name, docname, systemid))
+                                Pull.pure((ctx, chunkAcc += XmlEvent.XmlDoctype(name, docname, systemid)))
                               case (ctx, chunkAcc, '[') =>
                                 skipInternalDTD(ctx, chunkAcc).map { case (ctx, chunkAcc) =>
                                   (ctx, chunkAcc += XmlEvent.XmlDoctype(name, docname, systemid))

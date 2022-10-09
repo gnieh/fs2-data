@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import scala.annotation.tailrec
   * to build new decoders out of more basic one.
   *
   * Actually, `RowDecoderF` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
-  * instance. To get the full power of it, import `cats.implicits._`.
+  * instance. To get the full power of it, import `cats.syntax.all._`.
   */
 @FunctionalInterface trait RowDecoderF[H[+a] <: Option[a], T, Header] {
   def apply(row: RowF[H, Header]): DecoderResult[T]

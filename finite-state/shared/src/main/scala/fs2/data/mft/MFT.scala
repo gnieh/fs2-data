@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ import esp.{Depth, ESP, Rhs => ERhs, Guard => EGuard, Pattern, PatternDsl, Tag =
 
 import cats.{Defer, MonadError}
 import cats.syntax.all._
-
-import scala.collection.compat._
 
 sealed trait Forest
 object Forest {
@@ -112,7 +110,7 @@ private[data] class MFT[InTag, OutTag](init: Int, rules: Map[Int, Rules[InTag, O
     val compiler =
       new pattern.Compiler[F, EGuard[InTag], ETag[InTag], Pattern[InTag], ERhs[OutTag]]
 
-    compiler.compile(cases).map(new ESP(init, rules.view.mapValues(_.params).toMap, _))
+    compiler.compile(cases).map(new ESP(init, rules.fmap(_.params), _))
   }
 
 }

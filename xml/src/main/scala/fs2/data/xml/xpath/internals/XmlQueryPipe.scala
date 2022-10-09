@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,8 +39,8 @@ private[data] class XmlQueryPipe[F[_]: Concurrent](dfa: PDFA[LocationMatch, Star
 
   override def isClose(tok: XmlEvent): Boolean =
     tok match {
-      case tok @ XmlEvent.EndTag(_) => true
-      case _                        => false
+      case XmlEvent.EndTag(_) => true
+      case _                  => false
     }
 
   private def resolveAttr(attrs: List[Attr]): Map[QName, String] =

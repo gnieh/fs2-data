@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,9 @@ package fs2.data.csv
 
 import cats._
 import cats.data._
-import cats.implicits._
-import scala.annotation.nowarn
+import cats.syntax.all._
+
+import scala.annotation.{nowarn, unused}
 
 /** A CSV row with or without headers. The presence of headers is encoded via the first type param
   * which is a subtype of [[scala.Option]]. By preserving this information in types, it's possible to define
@@ -42,14 +43,14 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     * An empty cell value results in `Some("")`.
     */
   def at(idx: Int): Option[String] =
-    values.get(idx)
+    values.get(idx.toLong)
 
   /** Returns the decoded content of the cell at `idx`.
     * Fails if the index doesn't exist or cannot be decoded
     * to the expected type.
     */
   def asAt[T](idx: Int)(implicit decoder: CellDecoder[T]): DecoderResult[T] =
-    values.get(idx) match {
+    values.get(idx.toLong) match {
       case Some(v) => decoder(v)
       case None    => Left(new DecoderError(s"unknown index $idx"))
     }
@@ -59,9 +60,9 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     * to the expected type.
     */
   def asNonEmptyAt[T](idx: Int)(implicit decoder: CellDecoder[T]): DecoderResult[Option[T]] =
-    values.get(idx) match {
+    values.get(idx.toLong) match {
       case Some(v) if v.isEmpty => Right(None)
-      case Some(v)              => decoder(v).map(Some(_))
+      case Some(v)              => decoder.apply(v).map(Some(_))
       case None                 => Left(new DecoderError(s"unknown index $idx"))
     }
 
@@ -139,14 +140,15 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     * Returns `None` if `header` does not exist for the row.
     * An empty cell value results in `Some("")`.
     */
-  def apply(header: Header)(implicit hasHeaders: HasHeaders[H, Header]): Option[String] =
+  def apply(header: Header)(implicit @unused hasHeaders: HasHeaders[H, Header]): Option[String] =
     byHeader.get(header): @nowarn("msg=HasHeaders")
 
   /** Returns the decoded content of the cell at `header`.
     * Fails if the field doesn't exist or cannot be decoded
     * to the expected type.
     */
-  def as[T](header: Header)(implicit hasHeaders: HasHeaders[H, Header], decoder: CellDecoder[T]): DecoderResult[T] =
+  def as[T](
+      header: Header)(implicit @unused hasHeaders: HasHeaders[H, Header], decoder: CellDecoder[T]): DecoderResult[T] =
     (byHeader: @nowarn("msg=HasHeaders")).get(header) match {
       case Some(v) => decoder(v)
       case None    => Left(new DecoderError(s"unknown field $header"))
@@ -156,8 +158,9 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     * Fails if the field doesn't exist or cannot be decoded
     * to the expected type.
     */
-  def asNonEmpty[T](
-      header: Header)(implicit hasHeaders: HasHeaders[H, Header], decoder: CellDecoder[T]): DecoderResult[Option[T]] =
+  def asNonEmpty[T](header: Header)(implicit
+      @unused hasHeaders: HasHeaders[H, Header],
+      decoder: CellDecoder[T]): DecoderResult[Option[T]] =
     (byHeader: @nowarn("msg=HasHeaders")).get(header) match {
       case Some(v) if v.isEmpty => Right(None)
       case Some(v)              => decoder(v).map(Some(_))
@@ -166,12 +169,14 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
 
   /** Returns a representation of this row as Map from headers to corresponding cell values.
     */
-  def toMap(implicit hasHeaders: HasHeaders[H, Header]): Map[Header, String] =
+  def toMap(implicit @unused hasHeaders: HasHeaders[H, Header]): Map[Header, String] =
     byHeader: @nowarn("msg=HasHeaders")
 
   /** Returns a representation of this row as NonEmptyMap from headers to corresponding cell values.
     */
-  def toNonEmptyMap(implicit hasHeaders: HasHeaders[H, Header], order: Order[Header]): NonEmptyMap[Header, String] =
+  def toNonEmptyMap(implicit
+      @unused hasHeaders: HasHeaders[H, Header],
+      order: Order[Header]): NonEmptyMap[Header, String] =
     headers.get.zip(values).toNem
 
   /** Drop all headers (if any).
@@ -184,7 +189,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
   // instance is provided, meaning that the `Option` is `Some`
   // of course using a lazy val prevents us to make this constraint statistically checked, but
   // the gain is significant enough to allow for this local unsafety
-  @deprecated("Have you checked that you have a `HasHeaders` instance in scope?")
+  @deprecated("Have you checked that you have a `HasHeaders` instance in scope?", "1.5.0")
   private lazy val byHeader: Map[Header, String] =
     headers.get.toList.zip(values.toList).toMap
 

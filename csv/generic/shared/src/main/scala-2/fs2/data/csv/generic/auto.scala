@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@ package fs2.data.csv
 package generic
 
 import fs2.data.csv.generic.internal.ExportMacros
-
-import scala.language.experimental.macros
 
 trait AutoDerivedRowDecoders {
   implicit def exportRowDecoder[A]: Exported[RowDecoder[A]] =

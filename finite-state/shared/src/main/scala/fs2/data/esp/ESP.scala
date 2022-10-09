@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Lucas Satabin
+ * Copyright 2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ private[data] class ESP[F[_], InTag, OutTag](init: Int,
       case Rhs.Tree(tag, inner) =>
         eval(env, depth, in, inner)
           .map(inner => Expr.Open(Out.makeOpen(tag), Expr.concat(inner, Expr.Close(Out.makeClose(tag), Expr.Epsilon))))
-      case Rhs.CapturedTree(name, inner) =>
+      case Rhs.CapturedTree(_, inner) =>
         eval(env, depth, in, inner).flatMap { inner =>
           in.flatMap(select(_, Selector.Cons(Selector.Root(), Tag.Open, 0)))
             .liftTo[Pull[F, Nothing, *]](new ESPException("cannot capture eos"))
@@ -122,7 +122,7 @@ private[data] class ESP[F[_], InTag, OutTag](init: Int,
         }
       case Rhs.Leaf(v) =>
         Pull.pure(Expr.Leaf(Out.makeLeaf(v), Expr.Epsilon))
-      case Rhs.CapturedLeaf(name) =>
+      case Rhs.CapturedLeaf(_) =>
         in.flatMap(select(_, Selector.Cons(Selector.Root(), Tag.Leaf, 0)))
           .liftTo[Pull[F, Nothing, *]](new ESPException("cannot capture eos"))
           .map(v => Expr.Leaf(Out.makeLeaf(TT.convert(v)), Expr.Epsilon))
