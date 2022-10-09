@@ -19,30 +19,36 @@ package fs2.data.pattern
 /** Describes the structure of an expression in term of constructor
   * trees that can be selected.
   */
-trait Selectable[Expr, Tag] {
+trait Selectable[Expr, GExpr, Tag] {
   def tree(e: Expr): ConstructorTree[Tag]
 
-  def select(e: Expr, sel: Selector[Tag]): Option[Tag] =
+  def select(e: Expr, sel: Selector[GExpr, Tag])(implicit evaluator: Evaluator[GExpr, Tag]): Option[Tag] =
     tree(e).select(sel).map(_.tag)
 
 }
 
+trait Evaluator[Expr, Tag] {
+  def eval(guard: Expr, tree: ConstructorTree[Tag]): Option[Tag]
+}
+
 object Selectable {
-  def apply[Expr, Tag](implicit ev: Selectable[Expr, Tag]): Selectable[Expr, Tag] =
+  def apply[Expr, GExpr, Tag](implicit ev: Selectable[Expr, GExpr, Tag]): Selectable[Expr, GExpr, Tag] =
     ev
 }
 
 case class ConstructorTree[Tag](tag: Tag, args: List[ConstructorTree[Tag]]) {
-  def select(sel: Selector[Tag]): Option[ConstructorTree[Tag]] =
+  def select[Expr](sel: Selector[Expr, Tag])(implicit evaluator: Evaluator[Expr, Tag]): Option[ConstructorTree[Tag]] =
     sel match {
-      case Selector.Root => Some(this)
-      case Selector.Sel(parent, tag, n) =>
+      case Selector.Root() => Some(this)
+      case Selector.Cons(parent, tag, n) =>
         select(parent).flatMap { const =>
           if (const.tag == tag)
             const.args.lift(n)
           else
             None
         }
+      case Selector.Guard(parent, guard) =>
+        select(parent).flatMap(evaluator.eval(guard, _).map(ConstructorTree(_, Nil)))
     }
 }
 object ConstructorTree {

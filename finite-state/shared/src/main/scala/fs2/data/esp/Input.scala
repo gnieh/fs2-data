@@ -23,8 +23,9 @@ case class Input[In](state: Int, depth: Int, evt: Option[In])
 
 object Input {
 
-  implicit def InputSelectable[In, InTag](implicit In: Selectable[In, Tag[InTag]]): Selectable[Input[In], Tag[InTag]] =
-    new Selectable[Input[In], Tag[InTag]] {
+  implicit def InputSelectable[In, InTag](implicit
+      In: Selectable[In, Guard[InTag], Tag[InTag]]): Selectable[Input[In], Guard[InTag], Tag[InTag]] =
+    new Selectable[Input[In], Guard[InTag], Tag[InTag]] {
 
       override def tree(e: Input[In]): ConstructorTree[Tag[InTag]] =
         ConstructorTree(

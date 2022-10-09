@@ -18,8 +18,6 @@ package fs2.data.pattern
 
 import cats._
 
-import scala.annotation.tailrec
-
 trait IsTag[Tag] extends Eq[Tag] {
 
   /** Indicates whether this tag is open.
@@ -32,12 +30,12 @@ trait IsTag[Tag] extends Eq[Tag] {
     */
   def range(tag: Tag): Iterator[Tag]
 
-  @tailrec
-  final def hasUnmatched(skel: Skeleton[Tag], matched: Set[Tag]): Boolean =
+  final def hasUnmatchedConstructor(skel: Skeleton[_, Tag], matched: Set[Tag]): Boolean =
     skel match {
-      case Skeleton.Constructor(tag, _) => isOpen(tag) || range(tag).exists(!matched.contains(_))
-      case Skeleton.Wildcard(_)         => false
-      case Skeleton.As(inner, _)        => hasUnmatched(inner, matched)
+      case Skeleton.Constructor(tag, _, _) => isOpen(tag) || range(tag).exists(!matched.contains(_))
+      case Skeleton.Wildcard(_)            => false
+      case Skeleton.Guard(Some(_))         => true
+      case Skeleton.Guard(None)            => false
     }
 
 }
