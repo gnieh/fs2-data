@@ -16,17 +16,15 @@
 
 package fs2.data.pattern
 
-import fs2.data.matching.Table
-
 import scala.annotation.tailrec
 
-sealed trait DecisionTree[Tag, Out] {
-  def get[In](in: In)(implicit In: Selectable[In, Tag]): Option[(Map[String, Selector[Tag]], Out)] = {
+sealed trait DecisionTree[Expr, Tag, Out] {
+  def get[In](in: In)(implicit In: Selectable[In, Expr, Tag], Expr: Evaluator[Expr, Tag]): Option[Out] = {
     val skel = In.tree(in)
     @tailrec
-    def loop(tree: DecisionTree[Tag, Out]): Option[(Map[String, Selector[Tag]], Out)] =
+    def loop(tree: DecisionTree[Expr, Tag, Out]): Option[Out] =
       (skel, tree) match {
-        case (_, DecisionTree.Leaf(bindings, out)) => Some((bindings, out))
+        case (_, DecisionTree.Leaf(out)) => Some(out)
         case (skel, DecisionTree.Switch(on, branches, fallBack)) =>
           skel.select(on) match {
             case Some(c) =>
@@ -39,7 +37,10 @@ sealed trait DecisionTree[Tag, Out] {
                   }
               }
             case None =>
-              None
+              fallBack match {
+                case Some(tree) => loop(tree)
+                case None       => None
+              }
           }
         case _ => None
       }
@@ -48,21 +49,10 @@ sealed trait DecisionTree[Tag, Out] {
 }
 
 object DecisionTree {
-  case class Fail[Tag, Out]() extends DecisionTree[Tag, Out]
-  case class Leaf[Tag, Out](bindings: Map[String, Selector[Tag]], out: Out) extends DecisionTree[Tag, Out]
-  case class Switch[Tag, Out](on: Selector[Tag],
-                              branches: Map[Tag, DecisionTree[Tag, Out]],
-                              catchAll: Option[DecisionTree[Tag, Out]])
-      extends DecisionTree[Tag, Out]
-
-  implicit def DecisionTreeIsTable[I, Tag, O](implicit I: Selectable[I, Tag]): Table[DecisionTree[Tag, O], I, O] =
-    new Table[DecisionTree[Tag, O], I, O] {
-      type In = I
-      type Out = O
-
-      override def get(tree: DecisionTree[Tag, O])(in: I): Option[O] =
-        tree.get(in).map(_._2)
-
-    }
-
+  case class Fail[Expr, Tag, Out]() extends DecisionTree[Expr, Tag, Out]
+  case class Leaf[Expr, Tag, Out](out: Out) extends DecisionTree[Expr, Tag, Out]
+  case class Switch[Expr, Tag, Out](on: Selector[Expr, Tag],
+                                    branches: Map[Tag, DecisionTree[Expr, Tag, Out]],
+                                    catchAll: Option[DecisionTree[Expr, Tag, Out]])
+      extends DecisionTree[Expr, Tag, Out]
 }

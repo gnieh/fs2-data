@@ -55,6 +55,17 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
       case None    => Left(new DecoderError(s"unknown index $idx"))
     }
 
+  /** Returns the decoded content of the cell at `idx` wrapped in Some if the cell is non-empty, None otherwise.
+    * Fails if the index doesn't exist or cannot be decoded
+    * to the expected type.
+    */
+  def asNonEmptyAt[T](idx: Int)(implicit decoder: CellDecoder[T]): DecoderResult[Option[T]] =
+    values.get(idx) match {
+      case Some(v) if v.isEmpty => Right(None)
+      case Some(v)              => decoder(v).map(Some(_))
+      case None                 => Left(new DecoderError(s"unknown index $idx"))
+    }
+
   /** Modifies the cell content at the given `idx` using the function `f`.
     */
   def modifyAt(idx: Int)(f: String => String): RowF[H, Header] =
@@ -141,6 +152,18 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     (byHeader: @nowarn("msg=HasHeaders")).get(header) match {
       case Some(v) => decoder(v)
       case None    => Left(new DecoderError(s"unknown field $header"))
+    }
+
+  /** Returns the decoded content of the cell at `header` wrapped in Some if the cell is non-empty, None otherwise.
+    * Fails if the field doesn't exist or cannot be decoded
+    * to the expected type.
+    */
+  def asNonEmpty[T](
+      header: Header)(implicit hasHeaders: HasHeaders[H, Header], decoder: CellDecoder[T]): DecoderResult[Option[T]] =
+    (byHeader: @nowarn("msg=HasHeaders")).get(header) match {
+      case Some(v) if v.isEmpty => Right(None)
+      case Some(v)              => decoder(v).map(Some(_))
+      case None                 => Left(new DecoderError(s"unknown field $header"))
     }
 
   /** Returns a representation of this row as Map from headers to corresponding cell values.

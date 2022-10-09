@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Lucas Satabin
+ * Copyright 2019-2022 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,15 @@
 
 package fs2.data.pattern
 
-/** A type class that describes how the pattern type `Pat`
-  * can be decomposed into [[Skeleton]]s.
-  *
-  * Skeletons represent `or` patterns, and are matched left to right.
-  */
-trait IsPattern[Pat, Expr, Tag] {
-
-  def decompose(pat: Pat): List[RawSkeleton[Expr, Tag]]
-
-  def trueTag: Tag
-
+sealed trait RawSkeleton[Expr, Tag] {
+  val guard: Option[Expr]
+}
+object RawSkeleton {
+  case class Wildcard[Expr, Tag](guard: Option[Expr]) extends RawSkeleton[Expr, Tag]
+  case class Constructor[Expr, Tag](tag: Tag, args: List[RawSkeleton[Expr, Tag]], guard: Option[Expr])
+      extends RawSkeleton[Expr, Tag]
+  def noArgConstructor[Expr, Tag](tag: Tag): RawSkeleton[Expr, Tag] =
+    Constructor(tag, Nil, None)
+  def wildcard[Expr, Tag]: RawSkeleton[Expr, Tag] =
+    Wildcard(None)
 }

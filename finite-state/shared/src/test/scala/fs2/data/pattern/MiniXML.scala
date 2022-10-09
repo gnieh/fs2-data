@@ -18,6 +18,7 @@ package fs2.data.pattern
 
 import fs2.data.esp.Tag
 import fs2.data.esp.Conversion
+import fs2.data.esp.Guard
 
 import cats.Eq
 
@@ -27,9 +28,15 @@ object MiniXML {
   case class Close(name: String) extends MiniXML
   case class Text(txt: String) extends MiniXML
 
+  def text(txt: String): MiniXML = Text(txt)
+
+  def open(name: String): MiniXML = Open(name)
+
+  def close(name: String): MiniXML = Close(name)
+
   implicit val eq: Eq[MiniXML] = Eq.fromUniversalEquals
 
-  implicit object MiniXMLSelectable extends Selectable[MiniXML, Tag[String]] {
+  implicit object MiniXMLSelectable extends Selectable[MiniXML, Guard[String], Tag[String]] {
 
     override def tree(e: MiniXML): ConstructorTree[Tag[String]] =
       e match {

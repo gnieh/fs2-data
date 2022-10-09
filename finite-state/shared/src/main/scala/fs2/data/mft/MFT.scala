@@ -18,7 +18,7 @@ package fs2
 package data
 package mft
 
-import esp.{Depth, ESP, Rhs => ERhs, Pattern, PatternDsl, Tag => ETag}
+import esp.{Depth, ESP, Rhs => ERhs, Guard => EGuard, Pattern, PatternDsl, Tag => ETag}
 
 import cats.{Defer, MonadError}
 import cats.syntax.all._
@@ -88,13 +88,13 @@ private[data] class MFT[InTag, OutTag](init: Int, rules: Map[Int, Rules[InTag, O
     val cases = rules.toList.flatMap { case (q, Rules(params, tree)) =>
       tree.flatMap {
         case (EventSelector.Node(tag), rhs) =>
-          List(state(q, 0)(open(tag, none)) -> translateRhs(rhs))
+          List(state(q, 0)(open(tag)) -> translateRhs(rhs))
         case (EventSelector.AnyNode, rhs) =>
-          List(state(q, 0)(open(as = "in")) -> translateRhs(rhs))
+          List(state(q, 0)(open) -> translateRhs(rhs))
         case (EventSelector.Leaf(in), rhs) =>
           List(state(q, 0)(value(in)) -> translateRhs(rhs))
         case (EventSelector.AnyLeaf, rhs) =>
-          List(state(q, 0)(value(as = "in")) -> translateRhs(rhs))
+          List(state(q, 0)(value) -> translateRhs(rhs))
         case (EventSelector.Epsilon, rhs) =>
           val dflt = translateRhs(rhs)
           List(state(q, 0)(close) -> dflt, state(q)(eos) -> dflt)
@@ -108,7 +108,7 @@ private[data] class MFT[InTag, OutTag](init: Int, rules: Map[Int, Rules[InTag, O
     }
 
     val compiler =
-      new pattern.Compiler[F, ETag[InTag], Pattern[InTag], ERhs[OutTag]](Pattern.heuristic)
+      new pattern.Compiler[F, EGuard[InTag], ETag[InTag], Pattern[InTag], ERhs[OutTag]]
 
     compiler.compile(cases).map(new ESP(init, rules.fmap(_.params), _))
   }

@@ -20,7 +20,6 @@ package pattern
 package example
 
 import cats.effect._
-import cats.syntax.all._
 
 import weaver._
 
@@ -36,38 +35,36 @@ object Typ {
   case class TList(elt: Typ) extends Typ
 }
 
+sealed trait Guard
+
 sealed trait Pattern
 object Pattern {
-  case class VarPat(tpe: Typ, name: String) extends Pattern
   case class IntPat(v: Int) extends Pattern
   case class NilPat(tpe: Typ) extends Pattern
   case class ConsPat(tpe: Typ, head: Pattern, tail: Pattern) extends Pattern
   case class OrPat(left: Pattern, right: Pattern) extends Pattern
-  case class AsPat(inner: Pattern, name: String) extends Pattern
   case class WildPat(tpe: Typ) extends Pattern
 
-  implicit object PatIsPattern extends IsPattern[Pattern, Tag] {
+  implicit object PatIsPattern extends IsPattern[Pattern, Guard, Tag] {
 
-    override def decompose(pat: Pattern): List[Skeleton[Tag]] =
+    override def trueTag: Tag = Tag.True
+
+    override def decompose(pat: Pattern): List[RawSkeleton[Guard, Tag]] =
       pat match {
-        case VarPat(_, name) =>
-          List(Skeleton.Wildcard(name.some))
         case IntPat(v) =>
-          List(Skeleton.Constructor(Tag.IntTag(v), Nil))
+          List(RawSkeleton.Constructor(Tag.IntTag(v), Nil, None))
         case NilPat(tpe) =>
-          List(Skeleton.Constructor(Tag.NilTag(tpe), Nil))
+          List(RawSkeleton.Constructor(Tag.NilTag(tpe), Nil, None))
         case ConsPat(tpe, head, tail) =>
           decompose(tail).flatMap { tail =>
             decompose(head).map { head =>
-              Skeleton.Constructor(Tag.ConstTag(tpe), List(head, tail))
+              RawSkeleton.Constructor(Tag.ConstTag(tpe), List(head, tail), None)
             }
           }
         case OrPat(left, right) =>
           decompose(left) ++ decompose(right)
-        case AsPat(inner, name) =>
-          decompose(inner).map(Skeleton.As(_, name))
         case WildPat(_) =>
-          List(Skeleton.Wildcard(none))
+          List(RawSkeleton.wildcard)
       }
 
   }
@@ -78,6 +75,7 @@ object Tag {
   case class NilTag(tpe: Typ) extends Tag
   case class ConstTag(tpe: Typ) extends Tag
   case class IntTag(v: Int) extends Tag
+  case object True extends Tag
 
   implicit object TagIsTag extends IsTag[Tag] {
 
@@ -107,16 +105,16 @@ object PatternSpec extends SimpleIOSuite {
       List(Pattern.OrPat(Pattern.IntPat(0), Pattern.IntPat(1)) -> "Zero or One",
            Pattern.WildPat(Typ.TInt) -> "something else")
 
-    new Compiler[IO, Tag, Pattern, String](Heuristic.firstRow)
+    new Compiler[IO, Guard, Tag, Pattern, String]
       .compile(cases)
       .map(expect.same(
-        DecisionTree.Switch[Tag, String](
-          Selector.Root,
+        DecisionTree.Switch[Guard, Tag, String](
+          Selector.Root(),
           Map(
-            Tag.IntTag(0) -> DecisionTree.Leaf[Tag, String](Map(), "Zero or One"),
-            Tag.IntTag(1) -> DecisionTree.Leaf[Tag, String](Map(), "Zero or One")
+            Tag.IntTag(0) -> DecisionTree.Leaf[Guard, Tag, String]("Zero or One"),
+            Tag.IntTag(1) -> DecisionTree.Leaf[Guard, Tag, String]("Zero or One")
           ),
-          Some(DecisionTree.Leaf[Tag, String](Map(), "something else"))
+          Some(DecisionTree.Leaf[Guard, Tag, String]("something else"))
         ),
         _
       ))
