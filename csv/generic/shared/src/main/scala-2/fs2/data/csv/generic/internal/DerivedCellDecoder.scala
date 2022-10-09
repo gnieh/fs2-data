@@ -24,7 +24,7 @@ import shapeless.labelled._
 
 trait DerivedCellDecoder[T] extends CellDecoder[T]
 
-object DerivedCellDecoder extends DerivedCellDecoderInstances0 {
+object DerivedCellDecoder extends DerivedCellDecoderInstances0 with DerivedCellDecoderBinCompat {
 
   // Unary Products
 
@@ -71,4 +71,30 @@ private[generic] trait DerivedCellDecoderInstances1 {
     s =>
       if (witK.value.name == s) Inl(field[K](witL.value)).asRight
       else decodeR.value(s).map(Inr(_))
+}
+
+// stubs for bincompat
+trait DerivedCellDecoderBinCompat { self: DerivedCellDecoder.type =>
+  import scala.annotation.unused
+
+  private[internal] final def decodeCCons[K <: Symbol, L, R <: Coproduct](
+      @unused witK: Witness.Aux[K],
+      decodeL: CellDecoder[L],
+      decodeR: Lazy[DerivedCellDecoder[R]]): DerivedCellDecoder[FieldType[K, L] :+: R] =
+    self.decodeCCons(decodeL, decodeR)
+
+  private[internal] final def decodeCConsObjAnnotated[K <: Symbol, L, R <: Coproduct](
+      @unused witK: Witness.Aux[K],
+      witL: Witness.Aux[L],
+      annotation: Annotation[CsvValue, L],
+      @unused gen: Generic.Aux[L, HNil],
+      decodeR: Lazy[DerivedCellDecoder[R]]): DerivedCellDecoder[FieldType[K, L] :+: R] =
+    self.decodeCConsObjAnnotated(witL, annotation, decodeR)
+
+  private[internal] final def decodeCConsObj[K <: Symbol, L, R <: Coproduct](
+      witK: Witness.Aux[K],
+      witL: Witness.Aux[L],
+      @unused gen: Generic.Aux[L, HNil],
+      decodeR: Lazy[DerivedCellDecoder[R]]): DerivedCellDecoder[FieldType[K, L] :+: R] =
+    self.decodeCConsObj(witK, witL, decodeR)
 }

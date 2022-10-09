@@ -219,19 +219,14 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       }
       .toList
       .flatten,
-    // Filter related to DerivedCellDecoder come from removed implicits. Fine as it's internal and implicit.
+    // Filter related to DerivedCellDecoder come from removed implicit params. These are only the Java forwarders.
     mimaBinaryIssueFilters ++= List(
       ProblemFilters.exclude[DirectMissingMethodProblem](
         "fs2.data.csv.generic.internal.DerivedCellDecoder.decodeCCons"),
       ProblemFilters.exclude[DirectMissingMethodProblem](
         "fs2.data.csv.generic.internal.DerivedCellDecoder.decodeCConsObjAnnotated"),
       ProblemFilters.exclude[DirectMissingMethodProblem](
-        "fs2.data.csv.generic.internal.DerivedCellDecoder.decodeCConsObj"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "fs2.data.csv.generic.internal.DerivedCellDecoder.decodeCConsObjAnnotated"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "fs2.data.csv.generic.internal.DerivedCellDecoder.decodeCConsObj"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.csv.generic.internal.DerivedCellDecoder.decodeCCons")
+        "fs2.data.csv.generic.internal.DerivedCellDecoder.decodeCConsObj")
     )
   )
   .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test)
