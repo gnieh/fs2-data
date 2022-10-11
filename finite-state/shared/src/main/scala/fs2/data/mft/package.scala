@@ -18,14 +18,14 @@ package fs2.data
 
 package object mft {
 
-  def dsl[InTag, OutTag](build: MFTBuilder[InTag, OutTag] => Unit): MFT[InTag, OutTag] = {
-    val builder = new MFTBuilder[InTag, OutTag]
+  def dsl[Guard, InTag, OutTag](build: MFTBuilder[Guard, InTag, OutTag] => Unit): MFT[Guard, InTag, OutTag] = {
+    val builder = new MFTBuilder[Guard, InTag, OutTag]
     build(builder)
     builder.build
   }
 
-  def state[InTag, OutTag](args: Int, initial: Boolean = false)(implicit
-      builder: MFTBuilder[InTag, OutTag]): builder.StateBuilder = {
+  def state[Guard, InTag, OutTag](args: Int, initial: Boolean = false)(implicit
+      builder: MFTBuilder[Guard, InTag, OutTag]): builder.StateBuilder = {
     val q = builder.states.size
     if (initial)
       builder.initial = q
@@ -34,22 +34,24 @@ package object mft {
     st
   }
 
-  def any[InTag, OutTag](implicit builder: MFTBuilder[InTag, OutTag]): builder.PatternBuilder =
+  def any[Guard, InTag, OutTag](implicit builder: MFTBuilder[Guard, InTag, OutTag]): builder.PatternBuilder =
     builder.PatternBuilder.Any
 
-  def node[InTag, OutTag](in: InTag)(implicit builder: MFTBuilder[InTag, OutTag]): builder.PatternBuilder =
+  def node[Guard, InTag, OutTag](in: InTag)(implicit
+      builder: MFTBuilder[Guard, InTag, OutTag]): builder.PatternBuilder =
     builder.PatternBuilder.Node(in)
 
-  def anyNode[InTag, OutTag](implicit builder: MFTBuilder[InTag, OutTag]): builder.PatternBuilder =
+  def anyNode[Guard, InTag, OutTag](implicit builder: MFTBuilder[Guard, InTag, OutTag]): builder.PatternBuilder =
     builder.PatternBuilder.AnyNode
 
-  def leaf[InTag, OutTag](in: InTag)(implicit builder: MFTBuilder[InTag, OutTag]): builder.PatternBuilder =
+  def leaf[Guard, InTag, OutTag](in: InTag)(implicit
+      builder: MFTBuilder[Guard, InTag, OutTag]): builder.PatternBuilder =
     builder.PatternBuilder.Leaf(in)
 
-  def anyLeaf[InTag, OutTag](implicit builder: MFTBuilder[InTag, OutTag]): builder.PatternBuilder =
+  def anyLeaf[Guard, InTag, OutTag](implicit builder: MFTBuilder[Guard, InTag, OutTag]): builder.PatternBuilder =
     builder.PatternBuilder.AnyLeaf
 
-  def epsilon[InTag, OutTag](implicit builder: MFTBuilder[InTag, OutTag]): builder.PatternBuilder =
+  def epsilon[Guard, InTag, OutTag](implicit builder: MFTBuilder[Guard, InTag, OutTag]): builder.PatternBuilder =
     builder.PatternBuilder.Epsilon
 
   def eps: Rhs[Nothing] =

@@ -30,7 +30,7 @@ object ESPSpec extends IOSuite {
   val Main = 0
   val Rev = 1
 
-  val mft: MFT[String, String] = dsl { implicit builder =>
+  val mft: MFT[NoGuard, String, String] = dsl { implicit builder =>
     val main = state(args = 0, initial = true)
     val rev = state(args = 1)
 
@@ -43,7 +43,7 @@ object ESPSpec extends IOSuite {
     rev(epsilon) -> y(0)
   }
 
-  type Res = ESP[IO, String, String]
+  type Res = ESP[IO, NoGuard, String, String]
 
   override def sharedResource: Resource[IO, Res] = Resource.eval(mft.esp)
 

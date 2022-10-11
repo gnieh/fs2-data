@@ -19,10 +19,10 @@ package fs2.data.pattern
 /** Describes the structure of an expression in term of constructor
   * trees that can be selected.
   */
-trait Selectable[Expr, GExpr, Tag] {
+trait Selectable[Expr, Tag] {
   def tree(e: Expr): ConstructorTree[Tag]
 
-  def select(e: Expr, sel: Selector[GExpr, Tag])(implicit evaluator: Evaluator[GExpr, Tag]): Option[Tag] =
+  def select[GExpr](e: Expr, sel: Selector[GExpr, Tag])(implicit evaluator: Evaluator[GExpr, Tag]): Option[Tag] =
     tree(e).select(sel).map(_.tag)
 
 }
@@ -31,8 +31,20 @@ trait Evaluator[Expr, Tag] {
   def eval(guard: Expr, tree: ConstructorTree[Tag]): Option[Tag]
 }
 
+object Evaluator {
+  implicit def noop[Tag]: Evaluator[NoGuard, Tag] =
+    new Evaluator[NoGuard, Tag] {
+      override def eval(guard: NoGuard, tree: ConstructorTree[Tag]): Option[Tag] = None
+    }
+}
+
+/** A sealed trait with no implementation so that it has no inhabitant.
+  * To be used when a pattern language has no guards.
+  */
+sealed trait NoGuard
+
 object Selectable {
-  def apply[Expr, GExpr, Tag](implicit ev: Selectable[Expr, GExpr, Tag]): Selectable[Expr, GExpr, Tag] =
+  def apply[Expr, Tag](implicit ev: Selectable[Expr, Tag]): Selectable[Expr, Tag] =
     ev
 }
 

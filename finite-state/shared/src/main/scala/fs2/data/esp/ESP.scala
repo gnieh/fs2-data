@@ -29,16 +29,16 @@ import scala.annotation.tailrec
   * It encodes its recognized patterns into a [[fs2.data.matching.DecisionTree Decision Tree]], including the state and depth. This flexibility allows for easily implementing
   * catch all rules, no matter what the state or depth is.
   */
-private[data] class ESP[F[_], InTag, OutTag](init: Int,
-                                             val params: Map[Int, List[Int]],
-                                             val rules: DecisionTree[Guard[InTag], Tag[InTag], Rhs[OutTag]])(implicit
+private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
+                                                    val params: Map[Int, List[Int]],
+                                                    val rules: DecisionTree[Guard, Tag[InTag], Rhs[OutTag]])(implicit
     F: RaiseThrowable[F]) {
 
   def call[In, Out](env: Map[Int, Expr[Out]], q: Int, d: Int, args: List[Expr[Out]], in: Option[In])(implicit
-      In: Selectable[In, Guard[InTag], Tag[InTag]],
+      In: Selectable[In, Tag[InTag]],
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
-      G: Evaluator[Guard[InTag], Tag[InTag]]) =
+      G: Evaluator[Guard, Tag[InTag]]) =
     params.get(q).liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown state $q")).flatMap { params =>
       if (params.size === args.size) {
         args
@@ -60,19 +60,19 @@ private[data] class ESP[F[_], InTag, OutTag](init: Int,
       }
     }
 
-  private def select[In](in: In, selector: Selector[Guard[InTag], Tag[InTag]])(implicit
-      In: Selectable[In, Guard[InTag], Tag[InTag]],
-      G: Evaluator[Guard[InTag], Tag[InTag]]) =
+  private def select[In](in: In, selector: Selector[Guard, Tag[InTag]])(implicit
+      In: Selectable[In, Tag[InTag]],
+      G: Evaluator[Guard, Tag[InTag]]) =
     In.select(in, selector).collect {
       case Tag.Name(tag)  => tag
       case Tag.Value(tag) => tag
     }
 
   def step[In, Out](env: Map[Int, Expr[Out]], e: Expr[Out], in: Option[In])(implicit
-      In: Selectable[In, Guard[InTag], Tag[InTag]],
+      In: Selectable[In, Tag[InTag]],
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
-      G: Evaluator[Guard[InTag], Tag[InTag]]): Pull[F, Nothing, Expr[Out]] =
+      G: Evaluator[Guard, Tag[InTag]]): Pull[F, Nothing, Expr[Out]] =
     e match {
       case Expr.Call(q, d, args) =>
         call(env, q, d, args, in)
@@ -89,10 +89,10 @@ private[data] class ESP[F[_], InTag, OutTag](init: Int,
     }
 
   def eval[In, Out](env: Map[Int, Expr[Out]], depth: Int, in: Option[In], rhs: Rhs[OutTag])(implicit
-      In: Selectable[In, Guard[InTag], Tag[InTag]],
+      In: Selectable[In, Tag[InTag]],
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
-      G: Evaluator[Guard[InTag], Tag[InTag]]): Pull[F, Nothing, Expr[Out]] =
+      G: Evaluator[Guard, Tag[InTag]]): Pull[F, Nothing, Expr[Out]] =
     rhs match {
       case Rhs.Call(q, d, params) =>
         params
@@ -169,10 +169,10 @@ private[data] class ESP[F[_], InTag, OutTag](init: Int,
                          env: Map[Int, Expr[Out]],
                          e: Expr[Out],
                          chunkAcc: ListBuffer[Out])(implicit
-      In: Selectable[In, Guard[InTag], Tag[InTag]],
+      In: Selectable[In, Tag[InTag]],
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
-      G: Evaluator[Guard[InTag], Tag[InTag]]): Pull[F, Out, Unit] =
+      G: Evaluator[Guard, Tag[InTag]]): Pull[F, Out, Unit] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.result())) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) =>
@@ -193,10 +193,10 @@ private[data] class ESP[F[_], InTag, OutTag](init: Int,
     }
 
   def pipe[In, Out](implicit
-      In: Selectable[In, Guard[InTag], Tag[InTag]],
+      In: Selectable[In, Tag[InTag]],
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
-      G: Evaluator[Guard[InTag], Tag[InTag]]): Pipe[F, In, Out] =
+      G: Evaluator[Guard, Tag[InTag]]): Pipe[F, In, Out] =
     transform(Chunk.empty, 0, _, Map.empty, Expr.Call(init, 0, Nil), new ListBuffer).stream
 
 }

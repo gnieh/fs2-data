@@ -27,13 +27,13 @@ import cats.syntax.all._
 
 object PatSpec extends IOSuite {
 
-  type Res = DecisionTree[Guard[String], Tag[String], Int]
+  type Res = DecisionTree[NoGuard, Tag[String], Int]
 
-  val compiler = new Compiler[IO, Guard[String], Tag[String], Pattern[String], Int]
+  val compiler = new Compiler[IO, NoGuard, Tag[String], Pattern[NoGuard, String], Int]
 
   override def sharedResource: Resource[IO, Res] =
     Resource.eval {
-      val dsl = new PatternDsl[String]
+      val dsl = new PatternDsl[NoGuard, String]
       import dsl._
       val cases = List(
         state(0, 0)(value("one")) -> 1,

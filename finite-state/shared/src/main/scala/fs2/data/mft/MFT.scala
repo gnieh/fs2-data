@@ -18,7 +18,7 @@ package fs2
 package data
 package mft
 
-import esp.{Depth, ESP, Rhs => ERhs, Guard => EGuard, Pattern, PatternDsl, Tag => ETag}
+import esp.{Depth, ESP, Rhs => ERhs, Pattern, PatternDsl, Tag => ETag}
 
 import cats.{Defer, MonadError}
 import cats.syntax.all._
@@ -30,13 +30,15 @@ object Forest {
   case object Second extends Forest
 }
 
-sealed trait EventSelector[+InTag]
+sealed trait EventSelector[Guard, InTag]
 object EventSelector {
-  case object AnyNode extends EventSelector[Nothing]
-  case class Node[InTag](tag: InTag) extends EventSelector[InTag]
-  case object AnyLeaf extends EventSelector[Nothing]
-  case class Leaf[InTag](v: InTag) extends EventSelector[InTag]
-  case object Epsilon extends EventSelector[Nothing]
+  case class AnyNode[Guard, InTag]() extends EventSelector[Guard, InTag]
+  case class Node[Guard, InTag](tag: InTag) extends EventSelector[Guard, InTag]
+  case class NodeGuarded[Guard, InTag](guard: Guard) extends EventSelector[Guard, InTag]
+  case class AnyLeaf[Guard, InTag]() extends EventSelector[Guard, InTag]
+  case class Leaf[Guard, InTag](v: InTag) extends EventSelector[Guard, InTag]
+  case class LeafGuarded[Guard, InTag](guard: Guard) extends EventSelector[Guard, InTag]
+  case class Epsilon[Guard, InTag]() extends EventSelector[Guard, InTag]
 }
 
 sealed trait Rhs[+OutTag] {
@@ -60,15 +62,15 @@ object Rhs {
   *
   * An MFT is an intermediate structure towards a compiled [[fs2.data.esp.ESP Events Stream Processor]]
   */
-private[data] class MFT[InTag, OutTag](init: Int, rules: Map[Int, Rules[InTag, OutTag]]) {
+private[data] class MFT[Guard, InTag, OutTag](init: Int, rules: Map[Int, Rules[Guard, InTag, OutTag]]) {
 
   /** Compiles this MFT into an ESP.
     * The generated ESP contains one decision tree encoding all the patterns
     * of this MFT.
     */
-  def esp[F[_]](implicit F: MonadError[F, Throwable], defer: Defer[F]): F[ESP[F, InTag, OutTag]] = {
+  def esp[F[_]](implicit F: MonadError[F, Throwable], defer: Defer[F]): F[ESP[F, Guard, InTag, OutTag]] = {
 
-    val dsl = new PatternDsl[InTag]
+    val dsl = new PatternDsl[Guard, InTag]
     import dsl._
 
     def translateRhs(rhs: Rhs[OutTag]): ERhs[OutTag] =
@@ -89,13 +91,17 @@ private[data] class MFT[InTag, OutTag](init: Int, rules: Map[Int, Rules[InTag, O
       tree.flatMap {
         case (EventSelector.Node(tag), rhs) =>
           List(state(q, 0)(open(tag)) -> translateRhs(rhs))
-        case (EventSelector.AnyNode, rhs) =>
+        case (EventSelector.AnyNode(), rhs) =>
           List(state(q, 0)(open) -> translateRhs(rhs))
+        case (EventSelector.NodeGuarded(guard), rhs) =>
+          List(state(q, 0)(open).when(guard) -> translateRhs(rhs))
         case (EventSelector.Leaf(in), rhs) =>
           List(state(q, 0)(value(in)) -> translateRhs(rhs))
-        case (EventSelector.AnyLeaf, rhs) =>
+        case (EventSelector.AnyLeaf(), rhs) =>
           List(state(q, 0)(value) -> translateRhs(rhs))
-        case (EventSelector.Epsilon, rhs) =>
+        case (EventSelector.LeafGuarded(guard), rhs) =>
+          List(state(q, 0)(value).when(guard) -> translateRhs(rhs))
+        case (EventSelector.Epsilon(), rhs) =>
           val dflt = translateRhs(rhs)
           List(state(q, 0)(close) -> dflt, state(q)(eos) -> dflt)
       } ++ List(
@@ -108,7 +114,7 @@ private[data] class MFT[InTag, OutTag](init: Int, rules: Map[Int, Rules[InTag, O
     }
 
     val compiler =
-      new pattern.Compiler[F, EGuard[InTag], ETag[InTag], Pattern[InTag], ERhs[OutTag]]
+      new pattern.Compiler[F, Guard, ETag[InTag], Pattern[Guard, InTag], ERhs[OutTag]]
 
     compiler.compile(cases).map(new ESP(init, rules.fmap(_.params), _))
   }
