@@ -23,15 +23,15 @@ import mft._
 import cats.effect._
 
 import weaver._
-import fs2.data.pattern.MiniXML
+import fs2.data.pattern._
 
 object CopySpec extends IOSuite {
 
-  type Res = ESP[IO, String, String]
+  type Res = ESP[IO, NoGuard, String, String]
 
   override def sharedResource: Resource[IO, Res] = Resource.eval {
 
-    val mft = dsl[String, String] { implicit builder =>
+    val mft = dsl[NoGuard, String, String] { implicit builder =>
       val main = state(args = 0, initial = true)
       val cop = state(args = 0)
 

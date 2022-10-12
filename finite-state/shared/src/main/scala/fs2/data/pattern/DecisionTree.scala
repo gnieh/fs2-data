@@ -19,7 +19,7 @@ package fs2.data.pattern
 import scala.annotation.tailrec
 
 sealed trait DecisionTree[Expr, Tag, Out] {
-  def get[In](in: In)(implicit In: Selectable[In, Expr, Tag], Expr: Evaluator[Expr, Tag]): Option[Out] = {
+  def get[In](in: In)(implicit In: Selectable[In, Tag], Expr: Evaluator[Expr, Tag]): Option[Out] = {
     val skel = In.tree(in)
     @tailrec
     def loop(tree: DecisionTree[Expr, Tag, Out]): Option[Out] =

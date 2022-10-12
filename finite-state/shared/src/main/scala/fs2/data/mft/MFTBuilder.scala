@@ -18,7 +18,7 @@ package fs2.data.mft
 
 import scala.collection.mutable.ListBuffer
 
-class MFTBuilder[InTag, OutTag] private[mft] {
+class MFTBuilder[Guard, InTag, OutTag] private[mft] {
   self =>
 
   private[mft] var initial = 0
@@ -26,7 +26,7 @@ class MFTBuilder[InTag, OutTag] private[mft] {
   private[mft] val states = new ListBuffer[StateBuilder]
 
   final class StateBuilder private[mft] (val q: Int, val nargs: Int) {
-    val rules = new ListBuffer[(EventSelector[InTag], Rhs[OutTag])]
+    val rules = new ListBuffer[(EventSelector[Guard, InTag], Rhs[OutTag])]
     def apply(pat: PatternBuilder): RuleBuilder =
       new RuleBuilder(this, pat)
 
@@ -38,9 +38,11 @@ class MFTBuilder[InTag, OutTag] private[mft] {
   private[mft] object PatternBuilder {
     case object Any extends PatternBuilder
     case class Node(in: InTag) extends PatternBuilder
+    case class GuardedNode(guard: Guard) extends PatternBuilder
     case object AnyNode extends PatternBuilder
     case class Leaf(in: InTag) extends PatternBuilder
     case object AnyLeaf extends PatternBuilder
+    case class GuardedLeaf(guard: Guard) extends PatternBuilder
     case object Epsilon extends PatternBuilder
   }
 
@@ -48,20 +50,23 @@ class MFTBuilder[InTag, OutTag] private[mft] {
 
     def ->(rhs: Rhs[OutTag]): Unit = {
       pat match {
-        case PatternBuilder.Node(in) => q.rules += (EventSelector.Node(in) -> rhs)
-        case PatternBuilder.AnyNode  => q.rules += (EventSelector.AnyNode -> rhs)
-        case PatternBuilder.Leaf(in) => q.rules += (EventSelector.Leaf(in) -> rhs)
-        case PatternBuilder.AnyLeaf  => q.rules += (EventSelector.AnyLeaf -> rhs)
-        case PatternBuilder.Epsilon  => q.rules += (EventSelector.Epsilon -> rhs)
+        case PatternBuilder.Node(in)       => q.rules += (EventSelector.Node(in) -> rhs)
+        case PatternBuilder.AnyNode        => q.rules += (EventSelector.AnyNode() -> rhs)
+        case PatternBuilder.GuardedNode(g) => q.rules += (EventSelector.NodeGuarded(g) -> rhs)
+        case PatternBuilder.Leaf(in)       => q.rules += (EventSelector.Leaf(in) -> rhs)
+        case PatternBuilder.AnyLeaf        => q.rules += (EventSelector.AnyLeaf() -> rhs)
+        case PatternBuilder.GuardedLeaf(g) => q.rules += (EventSelector.LeafGuarded(g) -> rhs)
+        case PatternBuilder.Epsilon        => q.rules += (EventSelector.Epsilon() -> rhs)
         case PatternBuilder.Any =>
-          q.rules += (EventSelector.AnyNode -> rhs) += (EventSelector.AnyLeaf -> rhs) += (EventSelector.Epsilon -> rhs)
+          q.rules += (EventSelector.AnyNode() -> rhs) += (EventSelector.AnyLeaf() -> rhs) += (EventSelector
+            .Epsilon() -> rhs)
       }
       () // to silence discard warnings
     }
 
   }
 
-  def build: MFT[InTag, OutTag] =
+  def build: MFT[Guard, InTag, OutTag] =
     new MFT(initial, states.map { st => st.q -> Rules(List.range(0, st.nargs), st.rules.result()) }.toMap)
 
 }

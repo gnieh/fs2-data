@@ -28,7 +28,7 @@ import cats.effect._
 
 object ArticleSpec extends IOSuite {
 
-  type Res = ESP[IO, String, String]
+  type Res = ESP[IO, NoGuard, String, String]
 
   val Main = 0
   val Title = 1
@@ -50,7 +50,7 @@ object ArticleSpec extends IOSuite {
   override def sharedResource: Resource[IO, Res] =
     Resource.eval {
 
-      val mft = new MFT[String, String](
+      val mft = new MFT[NoGuard, String, String](
         Main,
         Map(
           Main -> Rules(
@@ -85,8 +85,8 @@ object ArticleSpec extends IOSuite {
             List(
               EventSelector.Node("key") -> Rhs.Concat(Rhs.Node("em", Rhs.Call(Copy, Forest.First, Nil)),
                                                       Rhs.Call(Key2Em, Forest.Second, Nil)),
-              EventSelector.AnyLeaf -> Rhs.Concat(Rhs.CopyLeaf, Rhs.Call(Key2Em, Forest.First, Nil)),
-              EventSelector.Epsilon -> Rhs.Epsilon
+              EventSelector.AnyLeaf() -> Rhs.Concat(Rhs.CopyLeaf, Rhs.Call(Key2Em, Forest.First, Nil)),
+              EventSelector.Epsilon() -> Rhs.Epsilon
             )
           ),
           AllKeys -> Rules(
@@ -94,17 +94,17 @@ object ArticleSpec extends IOSuite {
             List(
               EventSelector.Node("key") -> Rhs.Concat(Rhs.Node("li", Rhs.Call(Copy, Forest.First, Nil)),
                                                       Rhs.Call(AllKeys, Forest.Second, Nil)),
-              EventSelector.AnyLeaf -> Rhs.Call(AllKeys, Forest.First, Nil),
-              EventSelector.Epsilon -> Rhs.Epsilon
+              EventSelector.AnyLeaf() -> Rhs.Call(AllKeys, Forest.First, Nil),
+              EventSelector.Epsilon() -> Rhs.Epsilon
             )
           ),
           Copy -> Rules(
             Nil,
             List(
-              EventSelector.AnyNode -> Rhs.Concat(Rhs.CopyNode(Rhs.Call(Copy, Forest.First, Nil)),
-                                                  Rhs.Call(Copy, Forest.Second, Nil)),
-              EventSelector.AnyLeaf -> Rhs.Concat(Rhs.CopyLeaf, Rhs.Call(Copy, Forest.First, Nil)),
-              EventSelector.Epsilon -> Rhs.Epsilon
+              EventSelector.AnyNode() -> Rhs.Concat(Rhs.CopyNode(Rhs.Call(Copy, Forest.First, Nil)),
+                                                    Rhs.Call(Copy, Forest.Second, Nil)),
+              EventSelector.AnyLeaf() -> Rhs.Concat(Rhs.CopyLeaf, Rhs.Call(Copy, Forest.First, Nil)),
+              EventSelector.Epsilon() -> Rhs.Epsilon
             )
           )
         )

@@ -27,17 +27,26 @@ import cats.syntax.all._
 
 object PatGuardSpec extends IOSuite {
 
-  type Res = DecisionTree[Guard[String], Tag[String], Int]
+  implicit object evaluator extends Evaluator[Set[String], Tag[String]] {
+    def eval(guard: Set[String], tree: ConstructorTree[Tag[String]]): Option[Tag[String]] =
+      tree match {
+        case ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(n), _))) if guard.contains(n) => Some(Tag.True)
+        case ConstructorTree(Tag.Name(n), _) if guard.contains(n)                                  => Some(Tag.True)
+        case _                                                                                     => None
+      }
+  }
 
-  val compiler = new Compiler[IO, Guard[String], Tag[String], Pattern[String], Int]
+  type Res = DecisionTree[Set[String], Tag[String], Int]
+
+  val compiler = new Compiler[IO, Set[String], Tag[String], Pattern[Set[String], String], Int]
 
   override def sharedResource: Resource[IO, Res] =
     Resource.eval {
-      val dsl = new PatternDsl[String]
+      val dsl = new PatternDsl[Set[String], String]
       import dsl._
       val cases = List(
-        state(0, 0)(open when in("a", "b")) -> 1,
-        state(0, 0)(open when in("d", "e")) -> 2,
+        state(0, 0)(open when Set("a", "b")) -> 1,
+        state(0, 0)(open when Set("d", "e")) -> 2,
         any -> 0
       )
 
