@@ -3,7 +3,7 @@ ThisBuild / libraryDependencySchemes ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
 )
 
-addSbtPlugin("org.typelevel" % "sbt-typelevel" % "0.4.9")
+addSbtPlugin("org.typelevel" % "sbt-typelevel" % "0.4.16")
 
 addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.5.0")
 
