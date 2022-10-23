@@ -32,12 +32,10 @@ object Forest {
 
 sealed trait EventSelector[Guard, InTag]
 object EventSelector {
-  case class AnyNode[Guard, InTag]() extends EventSelector[Guard, InTag]
-  case class Node[Guard, InTag](tag: InTag) extends EventSelector[Guard, InTag]
-  case class NodeGuarded[Guard, InTag](guard: Guard) extends EventSelector[Guard, InTag]
-  case class AnyLeaf[Guard, InTag]() extends EventSelector[Guard, InTag]
-  case class Leaf[Guard, InTag](v: InTag) extends EventSelector[Guard, InTag]
-  case class LeafGuarded[Guard, InTag](guard: Guard) extends EventSelector[Guard, InTag]
+  case class AnyNode[Guard, InTag](guard: Option[Guard]) extends EventSelector[Guard, InTag]
+  case class Node[Guard, InTag](tag: InTag, guard: Option[Guard]) extends EventSelector[Guard, InTag]
+  case class AnyLeaf[Guard, InTag](guard: Option[Guard]) extends EventSelector[Guard, InTag]
+  case class Leaf[Guard, InTag](v: InTag, guard: Option[Guard]) extends EventSelector[Guard, InTag]
   case class Epsilon[Guard, InTag]() extends EventSelector[Guard, InTag]
 }
 
@@ -89,18 +87,22 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, rules: Map[Int, Rules[G
 
     val cases = rules.toList.flatMap { case (q, Rules(params, tree)) =>
       tree.flatMap {
-        case (EventSelector.Node(tag), rhs) =>
+        case (EventSelector.Node(tag, None), rhs) =>
           List(state(q, 0)(open(tag)) -> translateRhs(rhs))
-        case (EventSelector.AnyNode(), rhs) =>
+        case (EventSelector.AnyNode(None), rhs) =>
           List(state(q, 0)(open) -> translateRhs(rhs))
-        case (EventSelector.NodeGuarded(guard), rhs) =>
+        case (EventSelector.Node(tag, Some(guard)), rhs) =>
+          List(state(q, 0)(open(tag)).when(guard) -> translateRhs(rhs))
+        case (EventSelector.AnyNode(Some(guard)), rhs) =>
           List(state(q, 0)(open).when(guard) -> translateRhs(rhs))
-        case (EventSelector.Leaf(in), rhs) =>
+        case (EventSelector.Leaf(in, None), rhs) =>
           List(state(q, 0)(value(in)) -> translateRhs(rhs))
-        case (EventSelector.AnyLeaf(), rhs) =>
+        case (EventSelector.AnyLeaf(None), rhs) =>
           List(state(q, 0)(value) -> translateRhs(rhs))
-        case (EventSelector.LeafGuarded(guard), rhs) =>
-          List(state(q, 0)(value).when(guard) -> translateRhs(rhs))
+        case (EventSelector.Leaf(in, Some(guard)), rhs) =>
+          List(state(q, 0)(value(in).when(guard)) -> translateRhs(rhs))
+        case (EventSelector.AnyLeaf(Some(guard)), rhs) =>
+          List(state(q, 0)(value.when(guard)) -> translateRhs(rhs))
         case (EventSelector.Epsilon(), rhs) =>
           val dflt = translateRhs(rhs)
           List(state(q, 0)(close) -> dflt, state(q)(eos) -> dflt)

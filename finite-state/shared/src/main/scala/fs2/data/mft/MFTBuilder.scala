@@ -35,14 +35,25 @@ class MFTBuilder[Guard, InTag, OutTag] private[mft] {
   }
 
   sealed trait PatternBuilder
+  sealed trait Guardable extends PatternBuilder {
+    def when(guard: Guard): PatternBuilder
+  }
   private[mft] object PatternBuilder {
-    case object Any extends PatternBuilder
-    case class Node(in: InTag) extends PatternBuilder
-    case class GuardedNode(guard: Guard) extends PatternBuilder
-    case object AnyNode extends PatternBuilder
-    case class Leaf(in: InTag) extends PatternBuilder
-    case object AnyLeaf extends PatternBuilder
-    case class GuardedLeaf(guard: Guard) extends PatternBuilder
+    case class Any(guard: Option[Guard]) extends Guardable {
+      override def when(guard: Guard): PatternBuilder = Any(Some(guard))
+    }
+    case class Node(in: InTag, guard: Option[Guard]) extends Guardable {
+      override def when(guard: Guard): PatternBuilder = Node(in, Some(guard))
+    }
+    case class AnyNode(guard: Option[Guard]) extends Guardable {
+      override def when(guard: Guard): PatternBuilder = AnyNode(Some(guard))
+    }
+    case class Leaf(in: InTag, guard: Option[Guard]) extends Guardable {
+      override def when(guard: Guard): PatternBuilder = Leaf(in, Some(guard))
+    }
+    case class AnyLeaf(guard: Option[Guard]) extends Guardable {
+      override def when(guard: Guard): PatternBuilder = AnyLeaf(Some(guard))
+    }
     case object Epsilon extends PatternBuilder
   }
 
@@ -50,15 +61,13 @@ class MFTBuilder[Guard, InTag, OutTag] private[mft] {
 
     def ->(rhs: Rhs[OutTag]): Unit = {
       pat match {
-        case PatternBuilder.Node(in)       => q.rules += (EventSelector.Node(in) -> rhs)
-        case PatternBuilder.AnyNode        => q.rules += (EventSelector.AnyNode() -> rhs)
-        case PatternBuilder.GuardedNode(g) => q.rules += (EventSelector.NodeGuarded(g) -> rhs)
-        case PatternBuilder.Leaf(in)       => q.rules += (EventSelector.Leaf(in) -> rhs)
-        case PatternBuilder.AnyLeaf        => q.rules += (EventSelector.AnyLeaf() -> rhs)
-        case PatternBuilder.GuardedLeaf(g) => q.rules += (EventSelector.LeafGuarded(g) -> rhs)
-        case PatternBuilder.Epsilon        => q.rules += (EventSelector.Epsilon() -> rhs)
-        case PatternBuilder.Any =>
-          q.rules += (EventSelector.AnyNode() -> rhs) += (EventSelector.AnyLeaf() -> rhs) += (EventSelector
+        case PatternBuilder.Node(in, g) => q.rules += (EventSelector.Node(in, g) -> rhs)
+        case PatternBuilder.AnyNode(g)  => q.rules += (EventSelector.AnyNode(g) -> rhs)
+        case PatternBuilder.Leaf(in, g) => q.rules += (EventSelector.Leaf(in, g) -> rhs)
+        case PatternBuilder.AnyLeaf(g)  => q.rules += (EventSelector.AnyLeaf(g) -> rhs)
+        case PatternBuilder.Epsilon     => q.rules += (EventSelector.Epsilon() -> rhs)
+        case PatternBuilder.Any(g) =>
+          q.rules += (EventSelector.AnyNode(g) -> rhs) += (EventSelector.AnyLeaf(g) -> rhs) += (EventSelector
             .Epsilon() -> rhs)
       }
       () // to silence discard warnings

@@ -34,13 +34,21 @@ object ESPSpec extends IOSuite {
     val main = state(args = 0, initial = true)
     val rev = state(args = 1)
 
-    main(node("rev")) -> node("rev", rev(x1, eps)) ~ main(x2)
-    main(anyNode) -> copy(main(x1)) ~ main(x2)
-    main(anyLeaf) -> copy ~ main(x1)
+    main(aNode("rev")) ->
+      node("rev") {
+        rev(x1, eps)
+      } ~ main(x2)
+    main(anyNode) ->
+      copy(main(x1)) ~ main(x2)
+    main(anyLeaf) ->
+      copy ~ main(x1)
 
-    rev(anyNode) -> rev(x2, copy(rev(x1, eps)) ~ y(0))
-    rev(anyLeaf) -> rev(x1, copy ~ y(0))
-    rev(epsilon) -> y(0)
+    rev(anyNode) ->
+      rev(x2, copy(rev(x1, eps)) ~ y(0))
+    rev(anyLeaf) ->
+      rev(x1, copy ~ y(0))
+    rev(epsilon) ->
+      y(0)
   }
 
   type Res = ESP[IO, NoGuard, String, String]
