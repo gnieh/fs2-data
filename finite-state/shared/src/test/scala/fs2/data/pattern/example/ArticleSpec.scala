@@ -51,27 +51,63 @@ object ArticleSpec extends IOSuite {
         val AllKeys = state(args = 0)
         val Copy = state(args = 0)
 
-        Main(node("article")) -> node("html", node("head", Title(x1)) ~ node("body", InArticle(x1, eps)))
+        Main(aNode("article")) ->
+          node("html") {
+            node("head") {
+              Title(x1)
+            } ~ node("body") {
+              InArticle(x1, eps)
+            }
+          }
 
-        Title(node("title")) -> node("title", Copy(x1))
+        Title(aNode("title")) ->
+          node("title") {
+            Copy(x1)
+          }
 
-        InArticle(node("title")) -> node("h1", Copy(x1)) ~ InArticle(x2, y(0))
-        InArticle(node("para")) -> node("p", Key2Em(x1)) ~ InArticle(x2, y(0) ~ AllKeys(x1))
-        InArticle(node("postscript")) -> node("h2", leaf("Index")) ~ node("ul", y(0)) ~ node(
-          "h2",
-          leaf("Postscript")) ~ node("p", Copy(x1))
+        InArticle(aNode("title")) ->
+          node("h1") {
+            Copy(x1)
+          } ~ InArticle(x2, y(0))
+        InArticle(aNode("para")) ->
+          node("p") {
+            Key2Em(x1)
+          } ~ InArticle(x2, y(0) ~ AllKeys(x1))
+        InArticle(aNode("postscript")) ->
+          node("h2") {
+            leaf("Index")
+          } ~ node("ul") {
+            y(0)
+          } ~ node("h2") {
+            leaf("Postscript")
+          } ~ node("p") {
+            Copy(x1)
+          }
 
-        Key2Em(node("key")) -> node("em", Copy(x1)) ~ Key2Em(x2)
-        Key2Em(anyLeaf) -> copy ~ Key2Em(x1)
-        Key2Em(epsilon) -> eps
+        Key2Em(aNode("key")) ->
+          node("em") {
+            Copy(x1)
+          } ~ Key2Em(x2)
+        Key2Em(anyLeaf) ->
+          copy ~ Key2Em(x1)
+        Key2Em(epsilon) ->
+          eps
 
-        AllKeys(node("key")) -> node("li", Copy(x1)) ~ AllKeys(x2)
-        AllKeys(anyLeaf) -> AllKeys(x1)
-        AllKeys(epsilon) -> eps
+        AllKeys(aNode("key")) ->
+          node("li") {
+            Copy(x1)
+          } ~ AllKeys(x2)
+        AllKeys(anyLeaf) ->
+          AllKeys(x1)
+        AllKeys(epsilon) ->
+          eps
 
-        Copy(anyNode) -> copy(Copy(x1)) ~ Copy(x2)
-        Copy(anyLeaf) -> copy ~ Copy(x1)
-        Copy(epsilon) -> eps
+        Copy(anyNode) ->
+          copy(Copy(x1)) ~ Copy(x2)
+        Copy(anyLeaf) ->
+          copy ~ Copy(x1)
+        Copy(epsilon) ->
+          eps
       }
 
       mft.esp

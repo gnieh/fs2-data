@@ -37,13 +37,13 @@ package object mft {
   def any[Guard, InTag, OutTag](implicit builder: MFTBuilder[Guard, InTag, OutTag]): builder.Guardable =
     builder.PatternBuilder.Any(None)
 
-  def node[Guard, InTag, OutTag](in: InTag)(implicit builder: MFTBuilder[Guard, InTag, OutTag]): builder.Guardable =
+  def aNode[Guard, InTag, OutTag](in: InTag)(implicit builder: MFTBuilder[Guard, InTag, OutTag]): builder.Guardable =
     builder.PatternBuilder.Node(in, None)
 
   def anyNode[Guard, InTag, OutTag](implicit builder: MFTBuilder[Guard, InTag, OutTag]): builder.Guardable =
     builder.PatternBuilder.AnyNode(None)
 
-  def leaf[Guard, InTag, OutTag](in: InTag)(implicit builder: MFTBuilder[Guard, InTag, OutTag]): builder.Guardable =
+  def aLeaf[Guard, InTag, OutTag](in: InTag)(implicit builder: MFTBuilder[Guard, InTag, OutTag]): builder.Guardable =
     builder.PatternBuilder.Leaf(in, None)
 
   def anyLeaf[Guard, InTag, OutTag](implicit builder: MFTBuilder[Guard, InTag, OutTag]): builder.Guardable =
@@ -67,7 +67,7 @@ package object mft {
   def x2: Forest =
     Forest.Second
 
-  def node[OutTag](out: OutTag, children: Rhs[OutTag]): Rhs[OutTag] =
+  def node[OutTag](out: OutTag)(children: Rhs[OutTag] = Rhs.Epsilon): Rhs[OutTag] =
     Rhs.Node(out, children)
 
   def copy[OutTag](children: Rhs[OutTag]): Rhs[OutTag] =
