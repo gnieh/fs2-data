@@ -28,7 +28,7 @@ object DerivedCsvRowDecoder {
       gen: LabelledGeneric.Aux[T, Repr],
       defaults: Default.AsOptions.Aux[T, DefaultRepr],
       annotations: Annotations.Aux[CsvName, T, AnnoRepr],
-      cc: Lazy[MapShapedCsvRowDecoder.WithDefaults[T, Repr, DefaultRepr, AnnoRepr]]): DerivedCsvRowDecoder[T] =
+      cc: Lazy[MapShapedCsvRowDecoder.WithDefaults[Repr, DefaultRepr, AnnoRepr]]): DerivedCsvRowDecoder[T] =
     new DerivedCsvRowDecoder[T] {
       def apply(row: CsvRow[String]): DecoderResult[T] =
         cc.value.fromWithDefault(row, defaults(), annotations()).map(gen.from(_))
