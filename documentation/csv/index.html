@@ -9,7 +9,7 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
-    <meta name="generator" content="Nanoc 4.12.8">
+    <meta name="generator" content="Nanoc 4.12.10">
   </head>
   <body>
     <header>
@@ -21,7 +21,7 @@
               <li><a href="/">Home</a></li>
               <li><a href="/documentation/">Documentation</a></li>
               <li><a href="/api/">Scaladoc</a></li>
-              <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+              <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
             </ul>
           </div>
           
@@ -48,12 +48,12 @@
       <li><a href="/">Home</a></li>
       <li><a href="/documentation/">Documentation</a></li>
       <li><a href="/api/">Scaladoc</a></li>
-      <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+      <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
     </ul>
 
     
     <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
-      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/main/documentation/docs/csv/index.md" target="_blank">
+      <a class="btn-floating btn-large blue darken-2" href="https://github.com/gnieh/fs2-data/edit/main/documentation/docs/csv/index.md" target="_blank">
         <i class="large material-icons">mode_edit</i>
       </a>
     </div>
@@ -115,11 +115,14 @@
 <span class="k">val</span> <span class="nv">textStream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emit</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">covary</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">]</span>
 <span class="c1">// textStream: Stream[Fallible, String] = Stream(..)</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">myRowDecoder</span><span class="k">:</span> <span class="kt">CsvRowDecoder</span><span class="o">[</span><span class="kt">MyRow</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="n">deriveCsvRowDecoder</span>
-<span class="c1">// myRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@3fb8064b</span>
+<span class="c1">// myRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@122acd43</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">myRowEncoder</span><span class="k">:</span> <span class="kt">CsvRowEncoder</span><span class="o">[</span><span class="kt">MyRow</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="n">deriveCsvRowEncoder</span>
-<span class="c1">// myRowEncoder: CsvRowEncoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowEncoder$$anonfun$productWriter$2@1ac6747b</span>
-<span class="k">val</span> <span class="nv">decodedStream</span> <span class="k">=</span> <span class="nv">textStream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decodeUsingHeaders</span><span class="o">[</span><span class="kt">MyRow</span><span class="o">]())</span>
-<span class="c1">// decodedStream: Stream[[x]Fallible[x], MyRow] = Stream(..)</span>
+<span class="c1">// myRowEncoder: CsvRowEncoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowEncoder$$anonfun$productWriter$2@1610cef1</span>
+
+<span class="c1">// decodeUsingHeaders can take a `Char` indicating the separator to use</span>
+<span class="c1">// for example `decodeUsingHeaders[MyRow](';') for a semi-colon separated csv</span>
+<span class="k">val</span> <span class="nv">decodedStream</span> <span class="k">=</span> <span class="nv">textStream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decodeUsingHeaders</span><span class="o">[</span><span class="kt">MyRow</span><span class="o">]())</span> 
+<span class="c1">// decodedStream: Stream[[x]Fallible[x], MyRow] = Stream(..) </span>
 <span class="k">val</span> <span class="nv">caseClasses</span> <span class="k">=</span> <span class="nv">decodedStream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
 <span class="c1">// caseClasses: Either[Throwable, List[MyRow]] = Right(</span>
 <span class="c1">//   value = List(</span>
@@ -300,7 +303,7 @@
 <p>To support your own type of <code>Header</code> you must provide an implicit <code>ParseableHeader[Header]</code>. For instance if you have a fix set of headers represented as <a href="https://github.com/lloydmeta/enumeratum/">enumeratum</a> enum values, you can provide an instance of <code>ParseableHeader</code> as follows:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">enumeratum._</span>
-<span class="k">import</span> <span class="nn">cats.implicits._</span>
+<span class="k">import</span> <span class="nn">cats.syntax.all._</span>
 <span class="k">import</span> <span class="nn">cats.data.NonEmptyList</span>
 
 <span class="k">sealed</span> <span class="k">trait</span> <span class="nc">MyHeaders</span> <span class="k">extends</span> <span class="nc">EnumEntry</span>
@@ -396,12 +399,12 @@
 <p>For <code>CellEncoder</code>, it is even easier to define your own as encoding can’t fail, so basically it’s just a function <code>A =&gt; String</code>. The easiest ways to roll your own are using Scala’s single abstract method sugar:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Wrapper</span><span class="o">(</span><span class="n">content</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">wrapperCellEncoder</span><span class="k">:</span> <span class="kt">CellEncoder</span><span class="o">[</span><span class="kt">Wrapper</span><span class="o">]</span> <span class="k">=</span> <span class="o">(</span><span class="n">w</span><span class="k">:</span> <span class="kt">Wrapper</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nv">w</span><span class="o">.</span><span class="py">content</span>
-<span class="c1">// wrapperCellEncoder: CellEncoder[Wrapper] = repl.MdocSession$MdocApp$$anonfun$7@45b01a49</span>
+<span class="c1">// wrapperCellEncoder: CellEncoder[Wrapper] = repl.MdocSession$MdocApp$$anonfun$7@6ac938aa</span>
 </code></pre></div></div>
 
 <p>or using <code>contramap</code> on an existing encoder:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="nv">wrapperCellEncoder2</span><span class="k">:</span> <span class="kt">CellEncoder</span><span class="o">[</span><span class="kt">Wrapper</span><span class="o">]</span> <span class="k">=</span> <span class="nc">CellEncoder</span><span class="o">[</span><span class="kt">String</span><span class="o">].</span><span class="py">contramap</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">content</span><span class="o">)</span>
-<span class="c1">// wrapperCellEncoder2: CellEncoder[Wrapper] = fs2.data.csv.CellEncoder$$anonfun$contramap$2@21ec6319</span>
+<span class="c1">// wrapperCellEncoder2: CellEncoder[Wrapper] = fs2.data.csv.CellEncoder$$anonfun$contramap$2@b9ed39b</span>
 </code></pre></div></div>
 
 <h4 id="rowdecoder--rowencoder"><code>RowDecoder</code> &amp; <code>RowEncoder</code></h4>

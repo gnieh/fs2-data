@@ -9,7 +9,7 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
-    <meta name="generator" content="Nanoc 4.12.8">
+    <meta name="generator" content="Nanoc 4.12.10">
   </head>
   <body>
     <header>
@@ -21,7 +21,7 @@
               <li><a href="/">Home</a></li>
               <li><a href="/documentation/">Documentation</a></li>
               <li><a href="/api/">Scaladoc</a></li>
-              <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+              <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
             </ul>
           </div>
           
@@ -60,12 +60,12 @@
       <li><a href="/">Home</a></li>
       <li><a href="/documentation/">Documentation</a></li>
       <li><a href="/api/">Scaladoc</a></li>
-      <li><a href="https://github.com/satabin/fs2-data">Github</a></li>
+      <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
     </ul>
 
     
     <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
-      <a class="btn-floating btn-large blue darken-2" href="https://github.com/satabin/fs2-data/edit/main/documentation/docs/json/libraries.md" target="_blank">
+      <a class="btn-floating btn-large blue darken-2" href="https://github.com/gnieh/fs2-data/edit/main/documentation/docs/json/libraries.md" target="_blank">
         <i class="large material-icons">mode_edit</i>
       </a>
     </div>
@@ -146,7 +146,7 @@ For instance both examples from the <a href="/documentation/json/">core module d
 <span class="k">import</span> <span class="nn">io.circe._</span>
 
 <span class="k">import</span> <span class="nn">cats.effect._</span>
-<span class="k">import</span> <span class="nn">cats.implicits._</span>
+<span class="k">import</span> <span class="nn">cats.syntax.all._</span>
 <span class="k">import</span> <span class="nn">cats.effect.unsafe.implicits.global</span>
 
 <span class="n">stream</span>
@@ -236,7 +236,7 @@ For instance both examples from the <a href="/documentation/json/">core module d
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
 <span class="k">import</span> <span class="nn">io.circe._</span>
-<span class="k">import</span> <span class="nn">cats.implicits._</span>
+<span class="k">import</span> <span class="nn">cats.syntax.all._</span>
 
 <span class="k">val</span> <span class="nv">f1</span> <span class="k">=</span> <span class="nv">root</span><span class="o">.</span><span class="py">field</span><span class="o">(</span><span class="s">"field1"</span><span class="o">).</span><span class="py">compile</span>
 <span class="c1">// f1: Selector = NameSelector(</span>
