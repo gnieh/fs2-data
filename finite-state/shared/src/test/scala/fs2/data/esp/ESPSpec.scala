@@ -18,28 +18,44 @@ package fs2
 package data
 package mft
 
-import esp.ESP
+import esp.{ESP, Tag}
 import pattern._
 
 import weaver._
 import cats.effect.IO
 import cats.effect.Resource
+import cats.syntax.all._
+
+case class NodeGuard(names: Set[String], positive: Boolean)
+object NodeGuard {
+  implicit object evaluator extends Evaluator[NodeGuard, Tag[String]] {
+
+    override def eval(guard: NodeGuard, tree: ConstructorTree[Tag[String]]): Option[Tag[String]] =
+      tree match {
+        case ConstructorTree(Tag.Name(n), _) => (guard.names.contains(n) == guard.positive).guard[Option].as(Tag.True)
+        case ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(n), _))) =>
+          (guard.names.contains(n) == guard.positive).guard[Option].as(Tag.True)
+        case _ => None
+      }
+
+  }
+}
 
 object ESPSpec extends IOSuite {
 
   val Main = 0
   val Rev = 1
 
-  val mft: MFT[NoGuard, String, String] = dsl { implicit builder =>
+  val mft: MFT[NodeGuard, String, String] = dsl { implicit builder =>
     val main = state(args = 0, initial = true)
     val rev = state(args = 1)
 
+    main(anyNode.when(NodeGuard(Set("rev"), false))) ->
+      copy(main(x1)) ~ main(x2)
     main(aNode("rev")) ->
       node("rev") {
         rev(x1, eps)
       } ~ main(x2)
-    main(anyNode) ->
-      copy(main(x1)) ~ main(x2)
     main(anyLeaf) ->
       copy ~ main(x1)
 
@@ -51,7 +67,7 @@ object ESPSpec extends IOSuite {
       y(0)
   }
 
-  type Res = ESP[IO, NoGuard, String, String]
+  type Res = ESP[IO, NodeGuard, String, String]
 
   override def sharedResource: Resource[IO, Res] = Resource.eval(mft.esp)
 

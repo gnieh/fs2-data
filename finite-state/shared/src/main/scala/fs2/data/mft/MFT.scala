@@ -92,9 +92,9 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, rules: Map[Int, Rules[G
         case (EventSelector.AnyNode(None), rhs) =>
           List(state(q, 0)(open) -> translateRhs(rhs))
         case (EventSelector.Node(tag, Some(guard)), rhs) =>
-          List(state(q, 0)(open(tag)).when(guard) -> translateRhs(rhs))
+          List(state(q, 0)(open(tag).when(guard)) -> translateRhs(rhs))
         case (EventSelector.AnyNode(Some(guard)), rhs) =>
-          List(state(q, 0)(open).when(guard) -> translateRhs(rhs))
+          List(state(q, 0)(open.when(guard)) -> translateRhs(rhs))
         case (EventSelector.Leaf(in, None), rhs) =>
           List(state(q, 0)(value(in)) -> translateRhs(rhs))
         case (EventSelector.AnyLeaf(None), rhs) =>
