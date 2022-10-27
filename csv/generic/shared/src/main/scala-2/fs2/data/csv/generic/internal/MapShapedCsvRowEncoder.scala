@@ -26,10 +26,10 @@ trait MapShapedCsvRowEncoder[Repr] extends CsvRowEncoder[Repr, String]
 
 object MapShapedCsvRowEncoder extends LowPrioMapShapedCsvRowEncoderImplicits {
 
-  implicit def lastElemRowEncoder[Wrapped, Repr, Anno, Key <: Symbol](implicit
+  implicit def lastElemRowEncoder[Repr, Anno, Key <: Symbol](implicit
       Last: CellEncoder[Repr],
       ev: <:<[Anno, Option[CsvName]],
-      witness: Witness.Aux[Key]): WithAnnotations[Wrapped, FieldType[Key, Repr] :: HNil, Anno :: HNil] =
+      witness: Witness.Aux[Key]): WithAnnotations[FieldType[Key, Repr] :: HNil, Anno :: HNil] =
     (row: Repr :: HNil, annotation: Anno :: HNil) =>
       CsvRow.unsafe(NonEmptyList.one(Last(row.head)),
                     NonEmptyList.one(annotation.head.fold(witness.value.name)(_.name)))
@@ -37,22 +37,16 @@ object MapShapedCsvRowEncoder extends LowPrioMapShapedCsvRowEncoderImplicits {
 }
 
 private[generic] trait LowPrioMapShapedCsvRowEncoderImplicits {
-  trait WithAnnotations[Wrapped, Repr, AnnoRepr] {
+  trait WithAnnotations[Repr, AnnoRepr] {
     def fromWithAnnotation(row: Repr, annotation: AnnoRepr): CsvRow[String]
   }
 
-  implicit def hconsRowEncoder[Wrapped,
-                               Key <: Symbol,
-                               Head,
-                               Tail <: HList,
-                               DefaultTail <: HList,
-                               Anno,
-                               AnnoTail <: HList](implicit
+  implicit def hconsRowEncoder[Key <: Symbol, Head, Tail <: HList, DefaultTail <: HList, Anno, AnnoTail <: HList](
+      implicit
       witness: Witness.Aux[Key],
       Head: CellEncoder[Head],
       ev: <:<[Anno, Option[CsvName]],
-      Tail: Lazy[WithAnnotations[Wrapped, Tail, AnnoTail]])
-      : WithAnnotations[Wrapped, FieldType[Key, Head] :: Tail, Anno :: AnnoTail] =
+      Tail: Lazy[WithAnnotations[Tail, AnnoTail]]): WithAnnotations[FieldType[Key, Head] :: Tail, Anno :: AnnoTail] =
     (row: FieldType[Key, Head] :: Tail, annotation: Anno :: AnnoTail) => {
       val tailRow = Tail.value.fromWithAnnotation(row.tail, annotation.tail)
       CsvRow.unsafe(NonEmptyList(Head(row.head), tailRow.values.toList),
