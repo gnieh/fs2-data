@@ -29,6 +29,9 @@ object WriteableHeader {
   def apply[Header: WriteableHeader]: WriteableHeader[Header] =
     implicitly[WriteableHeader[Header]]
 
+  def instance[Header](encode: Header => String): WriteableHeader[Header] =
+    _.map(encode)
+
   implicit object StringWriteableHeader extends WriteableHeader[String] {
     def apply(names: NonEmptyList[String]): NonEmptyList[String] = names
   }
