@@ -29,6 +29,10 @@ object WriteableHeader {
   def apply[Header: WriteableHeader]: WriteableHeader[Header] =
     implicitly[WriteableHeader[Header]]
 
+  /**
+    * Define an instance of [[WriteableHeader]] that encodes each column individually using the provided
+    * `encode` function.
+    */
   def instance[Header](encode: Header => String): WriteableHeader[Header] =
     _.map(encode)
 

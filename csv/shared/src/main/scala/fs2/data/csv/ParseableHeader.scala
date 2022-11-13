@@ -34,6 +34,10 @@ object ParseableHeader {
   def apply[Header: ParseableHeader]: ParseableHeader[Header] =
     implicitly[ParseableHeader[Header]]
 
+  /**
+    * Define an instance of [[ParseableHeader]] that decodes each column individually using the provided
+    * `parse` function.
+    */
   def instance[Header](parse: String => Either[HeaderError, Header]): ParseableHeader[Header] =
     _.traverse[Either[HeaderError, *], Header](parse)
 
