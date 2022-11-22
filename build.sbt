@@ -12,7 +12,7 @@ val shapeless3Version = "3.2.0"
 val scalaJavaTimeVersion = "2.4.0"
 val diffsonVersion = "4.3.0"
 val literallyVersion = "1.1.0"
-val weaverVersion = "0.8.1"
+val weaverVersion = "0.8.0"
 
 val copyrightYears = "2019-2022"
 
