@@ -50,6 +50,6 @@ private[generic] trait LowPrioMapShapedCsvRowEncoderImplicits {
     (row: FieldType[Key, Head] :: Tail, annotation: Anno :: AnnoTail) => {
       val tailRow = Tail.value.fromWithAnnotation(row.tail, annotation.tail)
       CsvRow.unsafe(NonEmptyList(Head(row.head), tailRow.values.toList),
-                    NonEmptyList(annotation.head.fold(witness.value.name)(_.name), tailRow.headers.get.toList))
+                    NonEmptyList(annotation.head.fold(witness.value.name)(_.name), tailRow.optHeaders.get.toList))
     }
 }

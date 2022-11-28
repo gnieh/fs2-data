@@ -31,9 +31,9 @@ import scala.annotation.{nowarn, unused}
   *
   * '''Note:''' the following invariant holds when using this class: `values` and `headers` have the same size if headers are present.
   */
-case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
-                                            headers: H[NonEmptyList[Header]],
-                                            line: Option[Long] = None) {
+class RowF[H[+a] <: Option[a], Header](val values: NonEmptyList[String],
+                                       val optHeaders: H[NonEmptyList[Header]],
+                                       val line: Option[Long] = None) {
 
   /** Number of cells in the row. */
   def size: Int = values.size
@@ -72,7 +72,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     if (idx < 0 || idx >= values.size)
       this
     else
-      new RowF[H, Header](values.zipWithIndex.map { case (cell, i) => if (i === idx) f(cell) else cell }, headers)
+      new RowF[H, Header](values.zipWithIndex.map { case (cell, i) => if (i === idx) f(cell) else cell }, optHeaders)
 
   /** Modifies the cell content at the given `header` using the function `f`.
     *
@@ -81,7 +81,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     * should not be duplicated.
     */
   def modify(header: Header)(f: String => String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] =
-    hasHeaders(modifyAt(headers.get.toList.indexOf(header))(f))
+    hasHeaders(modifyAt(optHeaders.get.toList.indexOf(header))(f))
 
   /** Returns the row with the cell at `idx` modified to `value`. */
   def updatedAt(idx: Int, value: String): RowF[H, Header] =
@@ -94,7 +94,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     * should not be duplicated.
     */
   def updated(header: Header, value: String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] =
-    hasHeaders(updatedAt(headers.get.toList.indexOf(header), value))
+    hasHeaders(updatedAt(optHeaders.get.toList.indexOf(header), value))
 
   /** Returns the row with the cell at `header` modified to `value`.
     * If the header wasn't present in the row, it is added to the end of the fields.
@@ -104,9 +104,9 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     * should not be duplicated.
     */
   def set(header: Header, value: String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] = {
-    val idx = headers.get.toList.indexOf(header)
+    val idx = optHeaders.get.toList.indexOf(header)
     if (idx < 0)
-      hasHeaders(new RowF(values :+ value, headers.map(_ :+ header).asInstanceOf[H[NonEmptyList[Header]]]))
+      hasHeaders(new RowF(values :+ value, optHeaders.map(_ :+ header).asInstanceOf[H[NonEmptyList[Header]]]))
     else
       hasHeaders(updatedAt(idx, value))
   }
@@ -119,7 +119,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
       Some(this)
     } else {
       val (before, after) = values.toList.splitAt(idx)
-      val nh = htraverse(headers) { headers =>
+      val nh = htraverse(optHeaders) { headers =>
         val (h1, h2) = headers.toList.splitAt(idx)
         NonEmptyList.fromList(h1 ::: h2.tail)
       }
@@ -134,7 +134,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     * should not be duplicated.
     */
   def delete(header: Header)(implicit hasHeaders: HasHeaders[H, Header]): Option[CsvRow[Header]] =
-    deleteAt(headers.get.toList.indexOf(header)).map(hasHeaders)
+    deleteAt(optHeaders.get.toList.indexOf(header)).map(hasHeaders)
 
   /** Returns the content of the cell at `header` if it exists.
     * Returns `None` if `header` does not exist for the row.
@@ -177,7 +177,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
   def toNonEmptyMap(implicit
       @unused hasHeaders: HasHeaders[H, Header],
       order: Order[Header]): NonEmptyMap[Header, String] =
-    headers.get.zip(values).toNem
+    optHeaders.get.zip(values).toNem
 
   /** Drop all headers (if any).
     * @return a row without headers, but same values
@@ -191,7 +191,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
   // the gain is significant enough to allow for this local unsafety
   @deprecated("Have you checked that you have a `HasHeaders` instance in scope?", "1.5.0")
   private lazy val byHeader: Map[Header, String] =
-    headers.get.toList.zip(values.toList).toMap
+    optHeaders.get.toList.zip(values.toList).toMap
 
   // Like Traverse[Option], but preserves the H type
   private def htraverse[G[_]: Applicative, A, B](h: H[A])(f: A => G[B]): G[H[B]] = h match {
@@ -202,6 +202,6 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
 
 object RowF {
   implicit object functor extends Functor[CsvRow[*]] {
-    override def map[A, B](fa: CsvRow[A])(f: A => B): CsvRow[B] = fa.copy(headers = Some(fa.headers.get.map(f)))
+    override def map[A, B](fa: CsvRow[A])(f: A => B): CsvRow[B] = fa.copy(optHeaders = fa.optHeaders.map(f))
   }
 }

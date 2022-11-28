@@ -30,7 +30,7 @@ object RowFTest extends SimpleIOSuite {
     val row = CsvRow.unsafe(NonEmptyList.of("1", "2", "3"), NonEmptyList.of("a", "b", "c"))
     val extended = row.set("d", "4")
     expect.eql(NonEmptyList.of("1", "2", "3", "4"), extended.values) and
-      expect.eql(NonEmptyList.of("a", "b", "c", "d"), extended.headers.get)
+      expect.eql(NonEmptyList.of("a", "b", "c", "d"), extended.optHeaders.get)
   }
 
   pureTest("CsvRow.asNonEmpty should return None for empty cells") {
