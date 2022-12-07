@@ -59,6 +59,13 @@ val commonSettings = List(
   scalacOptions := scalacOptions.value.filterNot(_ == "-source:3.0-migration"),
   scalacOptions ++= PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
+      case Some((2, _)) => List("-Ypatmat-exhaust-depth", "40")
+      case _            => Nil
+    }
+    .toList
+    .flatten,
+  scalacOptions ++= PartialFunction
+    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
       case Some((2, 12)) =>
         List(
           "-Wconf:msg=it is not recommended to define classes/objects inside of package objects:s",
@@ -437,6 +444,9 @@ lazy val finiteState = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     name := "fs2-data-finite-state",
     description := "Streaming finite state machines",
     tlVersionIntroduced := Map("3" -> "1.6.0", "2.13" -> "1.6.0", "2.12" -> "1.6.0")
+  )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
   .nativeSettings(
     tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")

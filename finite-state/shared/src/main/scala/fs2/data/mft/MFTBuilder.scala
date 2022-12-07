@@ -37,6 +37,8 @@ class MFTBuilder[Guard, InTag, OutTag] private[mft] {
   sealed trait PatternBuilder
   sealed trait Guardable extends PatternBuilder {
     def when(guard: Guard): PatternBuilder
+    def when(guard: Option[Guard]): PatternBuilder =
+      guard.fold[PatternBuilder](this)(when(_))
   }
   private[mft] object PatternBuilder {
     case class Any(guard: Option[Guard]) extends Guardable {
