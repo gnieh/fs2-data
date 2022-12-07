@@ -28,7 +28,7 @@ import cats.data.NonEmptyList
   * The compiler is based on the approach described in [[https://doi.org/10.1109/ICDE.2014.6816714 _XQuery Streaming by Forest Transducers_]]
   * and generalized for the abstract query language on trees.
   */
-private[fs2] abstract class QueryCompiler[Tag, Path] {
+private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
 
   type Matcher
   type Pattern
@@ -56,7 +56,7 @@ private[fs2] abstract class QueryCompiler[Tag, Path] {
   def cases(matcher: Matcher): List[(Pattern, List[Guard])]
 
   /** Return the constructor tag of this pattern, or `None` if it is a wildcard. */
-  def tagOf(pattern: Pattern): Option[Tag]
+  def tagOf(pattern: Pattern): Option[InTag]
 
   /** Compiles the `query` into an [[MFT Macro Forest Transducer]].
     * The `credit` parameter defines the maximum number of optimization passes that
@@ -67,8 +67,8 @@ private[fs2] abstract class QueryCompiler[Tag, Path] {
     *
     * If you do not want to perform any optimization, you can set this value to `0`.
     */
-  def compile(query: Query[Tag, Path], credit: Int = 50): MFT[NonEmptyList[Guard], Tag, Tag] = {
-    val mft = dsl[NonEmptyList[Guard], Tag, Tag] { implicit builder =>
+  def compile(query: Query[OutTag, Path], credit: Int = 50): MFT[NonEmptyList[Guard], InTag, OutTag] = {
+    val mft = dsl[NonEmptyList[Guard], InTag, OutTag] { implicit builder =>
       val q0 = state(args = 0, initial = true)
       val qinit = state(args = 1)
       val qcopy = state(args = 0)
@@ -134,7 +134,7 @@ private[fs2] abstract class QueryCompiler[Tag, Path] {
           }
       }
 
-      def translate(query: Query[Tag, Path], vars: List[String], q: builder.StateBuilder): Unit =
+      def translate(query: Query[OutTag, Path], vars: List[String], q: builder.StateBuilder): Unit =
         query match {
           case Query.Empty() =>
             q(any) -> eps
@@ -192,7 +192,7 @@ private[fs2] abstract class QueryCompiler[Tag, Path] {
 
             // compile and sequence every query in the sequence
             val rhs =
-              queries.foldLeft[Rhs[Tag]](eps) { (acc, query) =>
+              queries.foldLeft[Rhs[OutTag]](eps) { (acc, query) =>
                 val q1 = state(args = q.nargs)
 
                 // translate the query
@@ -211,7 +211,7 @@ private[fs2] abstract class QueryCompiler[Tag, Path] {
       translate(query, List("$input"), qinit)
     }
     // apply some optimizations until nothing changes or credit is exhausted
-    def optimize(mft: MFT[NonEmptyList[Guard], Tag, Tag], credit: Int): MFT[NonEmptyList[Guard], Tag, Tag] =
+    def optimize(mft: MFT[NonEmptyList[Guard], InTag, OutTag], credit: Int): MFT[NonEmptyList[Guard], InTag, OutTag] =
       if (credit > 0) {
         val mft1 = mft.removeUnusedParameters.inlineStayMoves.removeUnreachableStates
         if (mft1.rules == mft.rules)

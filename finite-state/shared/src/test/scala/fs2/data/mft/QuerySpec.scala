@@ -57,7 +57,7 @@ abstract class QuerySpec(credit: Int) extends SimpleIOSuite {
 
   }
 
-  object MiniXQueryCompiler extends QueryCompiler[String, MiniXPath] {
+  object MiniXQueryCompiler extends QueryCompiler[String, String, MiniXPath] {
 
     type Matcher = Set[String]
     type Char = String

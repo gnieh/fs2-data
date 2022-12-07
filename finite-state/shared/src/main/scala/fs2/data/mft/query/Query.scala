@@ -35,4 +35,6 @@ object Query {
   case class Leaf[Tag, Path](tag: Tag) extends Query[Tag, Path]
   case class Sequence[Tag, Path](elements: NonEmptyList[Query[Tag, Path]]) extends Query[Tag, Path]
   case class LeafFunction[Tag, Path](f: Tag => Either[String, Tag]) extends Query[Tag, Path]
+
+  def empty[Tag, Path]: Query[Tag, Path] = Empty()
 }

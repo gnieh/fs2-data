@@ -17,8 +17,7 @@
 package fs2
 package data
 package json
-package jsonpath
-package internals
+package tagged
 
 import scala.collection.mutable.ListBuffer
 

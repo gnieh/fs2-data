@@ -20,13 +20,15 @@ package json
 package jsonpath
 package internals
 
+import tagged._
 import pfsa._
 
+import cats.Eq
 import cats.effect.Concurrent
 import cats.syntax.all._
 
-private[jsonpath] sealed trait PathMatcher
-private[jsonpath] object PathMatcher {
+private[json] sealed trait PathMatcher
+private[json] object PathMatcher {
   case object True extends PathMatcher
   case object False extends PathMatcher
   case object AnyKey extends PathMatcher
@@ -38,11 +40,16 @@ private[jsonpath] object PathMatcher {
     def intersection(that: Range): Range =
       Range(Math.max(this.low, that.low), Math.min(this.high, that.high))
 
+    def union(that: Range): Range =
+      Range(math.min(this.low, that.low), math.max(this.high, that.high))
+
   }
 
   case class And(left: PathMatcher, right: PathMatcher) extends PathMatcher
   case class Or(left: PathMatcher, right: PathMatcher) extends PathMatcher
   case class Not(inner: PathMatcher) extends PathMatcher
+
+  implicit val eq: Eq[PathMatcher] = Eq.fromUniversalEquals
 
   implicit val PathMatcherPred: Pred[PathMatcher, TaggedJson] =
     new Pred[PathMatcher, TaggedJson] {
@@ -89,13 +96,14 @@ private[jsonpath] object PathMatcher {
 
       override def or(p1: PathMatcher, p2: PathMatcher): PathMatcher =
         (p1, p2) match {
-          case (True, _)                 => True
-          case (_, True)                 => True
-          case (False, _)                => p2
-          case (_, False)                => p1
-          case (Key(_) | AnyKey, AnyKey) => AnyKey
-          case (AnyKey, Key(_) | AnyKey) => AnyKey
-          case (_, _)                    => Or(p1, p2)
+          case (True, _)                                                 => True
+          case (_, True)                                                 => True
+          case (False, _)                                                => p2
+          case (_, False)                                                => p1
+          case (r1 @ Range(_, _), r2 @ Range(_, _)) if r1.intersects(r2) => r1.intersection(r2)
+          case (Key(_) | AnyKey, AnyKey)                                 => AnyKey
+          case (AnyKey, Key(_) | AnyKey)                                 => AnyKey
+          case (_, _)                                                    => Or(p1, p2)
         }
 
       override def not(p: PathMatcher): PathMatcher =

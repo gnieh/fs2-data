@@ -24,6 +24,7 @@ import cats.syntax.all._
 import scala.annotation.nowarn
 
 import ast.Builder
+import tagged._
 import jsonpath.internals._
 import pfsa.{PDFA, PNFA}
 
@@ -120,15 +121,6 @@ package object jsonpath {
             .aggregate(_, _.map(untag(_)).unNone.compile.to(collector), deterministic, maxMatch, maxNest))
 
   }
-
-  private def untag(tj: TaggedJson): Option[Token] =
-    tj match {
-      case TaggedJson.Raw(t)                 => Some(t)
-      case TaggedJson.StartArrayElement(_)   => None
-      case TaggedJson.EndArrayElement        => None
-      case TaggedJson.StartObjectValue(name) => Some(Token.Key(name))
-      case TaggedJson.EndObjectValue         => None
-    }
 
   private def compileJsonPath(path: JsonPath): PDFA[PathMatcher, TaggedJson] = {
 

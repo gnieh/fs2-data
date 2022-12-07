@@ -450,6 +450,9 @@ lazy val finiteState = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
   .nativeSettings(
     tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
   )
