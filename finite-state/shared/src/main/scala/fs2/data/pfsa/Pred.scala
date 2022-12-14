@@ -47,6 +47,13 @@ object Pred {
   def apply[P, T](implicit ev: Pred[P, T]): Pred[P, T] = ev
 
   object syntax {
+
+    def always[P](implicit P: Pred[P, _]): P =
+      P.always
+
+    def never[P](implicit P: Pred[P, _]): P =
+      P.never
+
     implicit class PredOps[P](val p1: P) extends AnyVal {
       def satisfies[Elt](e: Elt)(implicit P: Pred[P, Elt]): Boolean =
         P.satsifies(p1)(e)
