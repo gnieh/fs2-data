@@ -16,6 +16,9 @@
 
 package fs2.data.pfsa
 
+import cats.Foldable
+import cats.syntax.foldable._
+
 import Pred.syntax._
 
 private[data] class PDFA[P, T](val init: Int, val finals: Set[Int], val transitions: Array[List[(P, Int)]])(implicit
@@ -26,5 +29,19 @@ private[data] class PDFA[P, T](val init: Int, val finals: Set[Int], val transiti
       None
     else
       transitions(q).collectFirst { case (p, q) if p.satisfies(t) => q }
+
+  def recognizes[S[_]: Foldable](input: S[T]): Boolean =
+    input
+      .foldLeftM((init, 0)) { case ((q, idx), c) =>
+        transitions
+          .lift(q)
+          .flatMap(_.collectFirst {
+            case (p, q) if p.satisfies(c) =>
+              (q, idx + 1)
+          })
+      }
+      .exists { case (q, idx) =>
+        idx == input.size && finals.contains(q)
+      }
 
 }

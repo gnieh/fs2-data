@@ -44,9 +44,7 @@ val commonSettings = List(
     "io.circe" %%% "circe-generic" % circeVersion % "test",
     "co.fs2" %%% "fs2-io" % fs2Version % "test",
     "com.disneystreaming" %%% "weaver-cats" % weaverVersion % "test",
-    "com.disneystreaming" %%% "weaver-cats-core" % weaverVersion % "test",
-    "com.disneystreaming" %%% "weaver-core" % weaverVersion % "test",
-    "com.disneystreaming" %%% "weaver-framework" % weaverVersion % "test",
+    "com.disneystreaming" %%% "weaver-scalacheck" % weaverVersion % Test,
     "com.eed3si9n.expecty" %%% "expecty" % "0.16.0" % "test",
     "org.portable-scala" %%% "portable-scala-reflect" % "1.1.2" cross CrossVersion.for3Use2_13
   ) ++ PartialFunction
