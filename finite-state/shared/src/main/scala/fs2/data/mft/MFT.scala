@@ -64,7 +64,7 @@ object Rhs {
   *
   * An MFT is an intermediate structure towards a compiled [[fs2.data.esp.ESP Events Stream Processor]]
   */
-private[data] class MFT[Guard, InTag, OutTag](init: Int, rules: Map[Int, Rules[Guard, InTag, OutTag]]) {
+private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rules[Guard, InTag, OutTag]]) {
 
   /** Compiles this MFT into an ESP.
     * The generated ESP contains one decision tree encoding all the patterns

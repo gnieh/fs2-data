@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package fs2.data.pattern
-
-import fs2.data.esp.Tag
-import fs2.data.esp.Conversion
+package fs2.data
 
 import cats.Eq
+import fs2.data.esp.{Conversion, Tag}
+import fs2.data.pattern.{ConstructorTree, Selectable}
 
 sealed trait MiniXML
 object MiniXML {
