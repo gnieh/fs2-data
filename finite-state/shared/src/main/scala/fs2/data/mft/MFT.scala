@@ -22,12 +22,19 @@ import esp.{Depth, ESP, Rhs => ERhs, Pattern, PatternDsl, Tag => ETag}
 
 import cats.{Defer, MonadError}
 import cats.syntax.all._
+import cats.Show
 
 sealed trait Forest
 object Forest {
   case object Self extends Forest
   case object First extends Forest
   case object Second extends Forest
+
+  implicit val show: Show[Forest] = Show.show {
+    case Self   => "x0"
+    case First  => "x1"
+    case Second => "x2"
+  }
 }
 
 sealed trait EventSelector[Guard, InTag]
@@ -56,6 +63,19 @@ object Rhs {
   case class Leaf[OutTag](value: OutTag) extends Rhs[OutTag]
   case object CopyLeaf extends Rhs[Nothing]
   case class Concat[OutTag](fst: Rhs[OutTag], snd: Rhs[OutTag]) extends Rhs[OutTag]
+
+  implicit def show[O: Show]: Show[Rhs[O]] =
+    Show.show {
+      case Call(q, x, Nil)     => show"q$q($x)"
+      case Call(q, x, ps)      => show"q$q($x${ps.map(_.show).mkString(", ", ", ", "")})"
+      case Epsilon             => ""
+      case Param(i)            => show"y$i"
+      case Node(tag, children) => show"<$tag>($children)"
+      case CopyNode(children)  => show"%t($children)"
+      case Leaf(value)         => show"<$value>"
+      case CopyLeaf            => "%t"
+      case Concat(l, r)        => show"$l $r"
+    }
 }
 
 /** A Macro Forest Transducer, as described in _Streamlining Functional XML Processing_.
@@ -123,6 +143,35 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
       new pattern.Compiler[F, Guard, ETag[InTag], Pattern[Guard, InTag], ERhs[OutTag]]
 
     compiler.compile(cases).map(new ESP(init, rules.fmap(_.params), _))
+  }
+
+}
+
+object MFT {
+
+  implicit def show[G: Show, I: Show, O: Show]: Show[MFT[G, I, O]] = Show.show { mft =>
+    mft.rules.toList
+      .sortBy(_._1)
+      .map { case (src, rules) =>
+        val params =
+          if (rules.params.isEmpty)
+            ""
+          else
+            rules.params.map(i => s"y$i").mkString(", ", ", ", "")
+        implicit val showSelector: Show[EventSelector[G, I]] = Show.show {
+          case EventSelector.AnyNode(g) => show"(<%t>$params)${g.fold("")(g => show" when $g")}"
+          case EventSelector.Node(t, g) => show"(<$t>$params)${g.fold("")(g => show" when $g")}"
+          case EventSelector.AnyLeaf(g) => show"(<%t />$params)${g.fold("")(g => show" when $g")}"
+          case EventSelector.Leaf(t, g) => show"(<$t />$params)${g.fold("")(g => show" when $g")}"
+          case EventSelector.Epsilon()  => "(ε)"
+        }
+        rules.tree
+          .map { case (pat, rhs) =>
+            show"q$src$pat -> $rhs"
+          }
+          .mkString_("\n")
+      }
+      .mkString_("\n\n")
   }
 
 }

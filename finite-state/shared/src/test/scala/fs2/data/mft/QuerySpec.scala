@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022 Lucas Satabin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package fs2
 package data
 package mft
@@ -124,7 +140,11 @@ object QuerySpec extends IOSuite {
             MiniXML.Open("a"),
               MiniXML.Open("b"),
                 MiniXML.Open("c"),
+                  MiniXML.Open("c"),
+                  MiniXML.Close("c"),
                 MiniXML.Close("c"),
+                MiniXML.Open("d"),
+                MiniXML.Close("d"),
                 MiniXML.Open("d"),
                 MiniXML.Close("d"),
               MiniXML.Close("b"),
@@ -138,12 +158,69 @@ object QuerySpec extends IOSuite {
         )
       )
       .covary[IO]
-      .debug(s => s"before: $s")
       .through(esp.pipe)
-      .debug(s => s"after: $s")
       .compile
-      .drain
-      .as(expect(true))
+      .toList
+      .map(events =>
+        expect.same(
+          List[MiniXML](
+            // format: off
+            MiniXML.Open("a"),
+              MiniXML.Open("b"),
+                MiniXML.Open("c"),
+                  MiniXML.Open("c"),
+                  MiniXML.Close("c"),
+                MiniXML.Close("c"),
+                MiniXML.Open("d"),
+                MiniXML.Close("d"),
+                MiniXML.Open("d"),
+                MiniXML.Close("d"),
+              MiniXML.Close("b"),
+              MiniXML.Open("b"),
+                MiniXML.Open("d"),
+                MiniXML.Close("d"),
+              MiniXML.Close("b"),
+            MiniXML.Close("a"),
+            MiniXML.Open("b"),
+              MiniXML.Open("c"),
+                MiniXML.Open("c"),
+                MiniXML.Close("c"),
+              MiniXML.Close("c"),
+              MiniXML.Open("d"),
+              MiniXML.Close("d"),
+              MiniXML.Open("d"),
+              MiniXML.Close("d"),
+            MiniXML.Close("b"),
+            MiniXML.Open("c"),
+              MiniXML.Open("c"),
+              MiniXML.Close("c"),
+            MiniXML.Close("c"),
+            MiniXML.Open("c"),
+            MiniXML.Close("c"),
+            MiniXML.Open("d"),
+            MiniXML.Close("d"),
+            MiniXML.Open("a"),
+              MiniXML.Open("b"),
+                MiniXML.Open("c"),
+                MiniXML.Close("c"),
+                MiniXML.Open("d"),
+                MiniXML.Close("d"),
+              MiniXML.Close("b"),
+              MiniXML.Open("b"),
+                MiniXML.Open("d"),
+                MiniXML.Close("d"),
+              MiniXML.Close("b"),
+            MiniXML.Close("a"),
+            MiniXML.Open("b"),
+              MiniXML.Open("d"),
+              MiniXML.Close("d"),
+            MiniXML.Close("b"),
+            MiniXML.Open("d"),
+            MiniXML.Close("d"),
+            // format: on
+          ),
+          events
+        ))
   }
 
 }

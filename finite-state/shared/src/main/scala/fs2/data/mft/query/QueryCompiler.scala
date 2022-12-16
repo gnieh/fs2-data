@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022 Lucas Satabin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package fs2.data
 package mft
 package query
@@ -88,7 +104,7 @@ abstract class QueryCompiler[Tag, Path] {
         }
         .groupMap(_._1)(t => (t._2, t._3, t._4))
       // we can apply the DFA to MFT translation now
-      finalTransitions.foldLeft(Map.empty[Int, builder.StateBuilder]) { case (states, (src, transitions)) =>
+      finalTransitions.foldLeft(Map(dfa.init -> start)) { case (states, (src, transitions)) =>
         val initialSrc = src === dfa.init
         val (q1, states1) =
           states.get(src) match {
@@ -108,11 +124,7 @@ abstract class QueryCompiler[Tag, Path] {
             states.get(tgt) match {
               case Some(q2) => (q2, states)
               case None =>
-                val q2 =
-                  if (finalTgt)
-                    end
-                  else
-                    state(args = start.nargs)
+                val q2 = state(args = q1.nargs)
                 (q2, states.updated(tgt, q2))
             }
           val pat: builder.Guardable = tagOf(pattern).fold(anyNode)(aNode(_))
@@ -121,9 +133,9 @@ abstract class QueryCompiler[Tag, Path] {
           } else if (initialSrc && !finalTgt) {
             q1(pat.when(guard)) -> q2(x1, copyArgs: _*)
           } else if (!initialSrc && finalTgt) {
-            q1(pat.when(guard)) -> q2(x0, (copyArgs :+ copy(qcopy(x1))): _*)
+            q1(pat.when(guard)) -> end(x0, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*)
           } else {
-            q1(pat.when(guard)) -> q2(x1, (copyArgs :+ copy(qcopy(x1))): _*)
+            q1(pat.when(guard)) -> end(x1, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*)
           }
           states1
         }
