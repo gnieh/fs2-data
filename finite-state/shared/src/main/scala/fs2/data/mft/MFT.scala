@@ -163,7 +163,7 @@ object MFT {
           case EventSelector.Node(t, g) => show"(<$t>$params)${g.fold("")(g => show" when $g")}"
           case EventSelector.AnyLeaf(g) => show"(<%t />$params)${g.fold("")(g => show" when $g")}"
           case EventSelector.Leaf(t, g) => show"(<$t />$params)${g.fold("")(g => show" when $g")}"
-          case EventSelector.Epsilon()  => "(ε)"
+          case EventSelector.Epsilon()  => show"(ε$params)"
         }
         rules.tree
           .map { case (pat, rhs) =>

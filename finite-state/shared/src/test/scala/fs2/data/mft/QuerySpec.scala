@@ -20,17 +20,15 @@ package mft
 package query
 
 import cats.Eq
-import cats.effect.{IO, Resource}
-import fs2.data.esp.{Conversion, ESP, Tag}
+import cats.data.NonEmptyList
+import cats.effect.IO
+import fs2.data.esp.{Conversion, Tag}
 import fs2.data.pattern.{ConstructorTree, Evaluator}
 import weaver._
 
 import pfsa.{Candidate, Pred, Regular}
-import cats.data.NonEmptyList
 
-object QuerySpec extends IOSuite {
-
-  type Res = ESP[IO, NonEmptyList[Set[String]], String, String]
+object QuerySpec extends SimpleIOSuite {
 
   implicit object StringConversions extends Conversion[String, MiniXML] {
 
@@ -89,10 +87,14 @@ object QuerySpec extends IOSuite {
 
     override def path2regular(path: MiniXPath): Regular[Matcher] =
       path.steps.foldLeft(Regular.epsilon[Matcher]) {
-        case (acc, Step.Child(name)) =>
+        case (acc, Step.Child(Some(name))) =>
           acc ~ Regular.chars(Set(name))
-        case (acc, Step.Descendant(name)) =>
+        case (acc, Step.Child(None)) =>
+          acc ~ Regular.any
+        case (acc, Step.Descendant(Some(name))) =>
           acc ~ Regular.any.rep ~ Regular.chars(Set(name))
+        case (acc, Step.Descendant(None)) =>
+          acc ~ Regular.any.rep ~ Regular.any
       }
 
     override def cases(matcher: Matcher): List[(Pattern, List[Guard])] =
@@ -107,120 +109,529 @@ object QuerySpec extends IOSuite {
 
   }
 
-  override def sharedResource: Resource[IO, Res] = Resource.eval {
-    val mft =
-      MiniXQueryCompiler.compile(
-        Query.ForClause(
-          "v1",
-          MiniXPath(NonEmptyList.one(Step.Descendant("a"))),
-          Query.ForClause(
-            "v2",
-            MiniXPath(NonEmptyList.one(Step.Descendant("b"))),
-            Query.LetClause(
-              "v3",
-              Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant("c")))),
-              Query.LetClause(
-                "v4",
-                Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant("d")))),
-                Query.Sequence(NonEmptyList
-                  .of(Query.Variable("v1"), Query.Variable("v2"), Query.Variable("v3"), Query.Variable("v4")))
-              )
+  test("child path") {
+    MiniXQueryCompiler
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(Some("a"))))))
+      .esp[IO]
+      .flatMap { esp =>
+        Stream
+          .emits(
+            List[MiniXML](
+              // format: off
+              MiniXML.Open("a"),
+                MiniXML.Open("a"),
+                  MiniXML.Open("a"),
+                  MiniXML.Close("a"),
+                MiniXML.Close("a"),
+                MiniXML.Open("b"),
+                  MiniXML.Open("a"),
+                  MiniXML.Close("a"),
+                MiniXML.Close("b"),
+              MiniXML.Close("a"),
+              // format: on
             )
           )
-        ))
-    mft.esp[IO]
+          .through(esp.pipe)
+          .compile
+          .toList
+          .map { events =>
+            expect.eql(
+              List(
+                // format: off
+                MiniXML.Open("a"),
+                  MiniXML.Open("a"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("a"),
+                  MiniXML.Open("b"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("a"),
+                // format: on
+              ),
+              events
+            )
+          }
+      }
   }
 
-  test("simple query") { esp =>
-    Stream
-      .emits(
-        List[MiniXML](
-          // format: off
-          MiniXML.Open("doc"),
-            MiniXML.Open("a"),
-              MiniXML.Open("b"),
+  test("any child path") {
+    MiniXQueryCompiler
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(None)))))
+      .esp[IO]
+      .flatMap { esp =>
+        Stream
+          .emits(
+            List[MiniXML](
+              // format: off
+              MiniXML.Open("a"),
+                MiniXML.Open("a"),
+                MiniXML.Close("a"),
+                MiniXML.Open("b"),
+                MiniXML.Close("b"),
+              MiniXML.Close("a"),
+              MiniXML.Open("a"),
                 MiniXML.Open("c"),
+                MiniXML.Close("c"),
+              MiniXML.Close("a"),
+              // format: on
+            )
+          )
+          .through(esp.pipe)
+          .compile
+          .toList
+          .map { events =>
+            expect.eql(
+              List(
+                // format: off
+                MiniXML.Open("a"),
+                  MiniXML.Open("a"),
+                  MiniXML.Close("a"),
+                  MiniXML.Open("b"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("a"),
+                MiniXML.Open("a"),
                   MiniXML.Open("c"),
                   MiniXML.Close("c"),
-                MiniXML.Close("c"),
-                MiniXML.Open("d"),
-                MiniXML.Close("d"),
-                MiniXML.Open("d"),
-                MiniXML.Close("d"),
-              MiniXML.Close("b"),
-              MiniXML.Open("b"),
-                MiniXML.Open("d"),
-                MiniXML.Close("d"),
-              MiniXML.Close("b"),
-            MiniXML.Close("a"),
-          MiniXML.Close("doc"),
-          // format: on
-        )
-      )
-      .covary[IO]
-      .through(esp.pipe)
-      .compile
-      .toList
-      .map(events =>
-        expect.same(
-          List[MiniXML](
-            // format: off
-            MiniXML.Open("a"),
-              MiniXML.Open("b"),
-                MiniXML.Open("c"),
+                MiniXML.Close("a"),
+                // format: on
+              ),
+              events
+            )
+          }
+      }
+  }
+
+  test("descendant path") {
+    MiniXQueryCompiler
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))))
+      .esp[IO]
+      .flatMap { esp =>
+        Stream
+          .emits(
+            List[MiniXML](
+              // format: off
+              MiniXML.Open("doc"),
+                MiniXML.Open("a"),
+                  MiniXML.Open("a"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("a"),
+                  MiniXML.Open("b"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("a"),
+              MiniXML.Close("doc"),
+              // format: on
+            )
+          )
+          .through(esp.pipe)
+          .compile
+          .toList
+          .map { events =>
+            expect.eql(
+              List(
+                // format: off
+                MiniXML.Open("a"),
+                  MiniXML.Open("a"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("a"),
+                  MiniXML.Open("b"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("a"),
+                MiniXML.Open("a"),
+                  MiniXML.Open("a"),
+                  MiniXML.Close("a"),
+                MiniXML.Close("a"),
+                MiniXML.Open("a"),
+                MiniXML.Close("a"),
+                MiniXML.Open("a"),
+                MiniXML.Close("a"),
+                // format: on
+              ),
+              events
+            )
+          }
+      }
+  }
+
+  test("any descendant path") {
+    MiniXQueryCompiler
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(None)))))
+      .esp[IO]
+      .flatMap { esp =>
+        Stream
+          .emits(
+            List[MiniXML](
+              // format: off
+              MiniXML.Open("a"),
+                MiniXML.Open("a"),
+                  MiniXML.Open("a"),
+                  MiniXML.Close("a"),
+                MiniXML.Close("a"),
+                MiniXML.Open("b"),
+                  MiniXML.Open("a"),
+                  MiniXML.Close("a"),
+                MiniXML.Close("b"),
+              MiniXML.Close("a"),
+              // format: on
+            )
+          )
+          .through(esp.pipe)
+          .compile
+          .toList
+          .map { events =>
+            expect.eql(
+              List(
+                // format: off
+                MiniXML.Open("a"),
+                  MiniXML.Open("a"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("a"),
+                  MiniXML.Open("b"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("a"),
+                MiniXML.Open("a"),
+                  MiniXML.Open("a"),
+                  MiniXML.Close("a"),
+                MiniXML.Close("a"),
+                MiniXML.Open("a"),
+                MiniXML.Close("a"),
+                MiniXML.Open("b"),
+                  MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("b"),
+                MiniXML.Open("a"),
+                MiniXML.Close("a"),
+                // format: on
+              ),
+              events
+            )
+          }
+      }
+  }
+
+  test("simple let") {
+    MiniXQueryCompiler
+      .compile(
+        Query
+          .LetClause("v", Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))), Query.Variable("v")))
+      .esp[IO]
+      .flatMap { esp =>
+        Stream
+          .emits(
+            List[MiniXML](
+              // format: off
+              MiniXML.Open("doc"),
+                MiniXML.Open("a"),
+                  MiniXML.Open("a"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("a"),
+                  MiniXML.Open("b"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("a"),
+              MiniXML.Close("doc"),
+              // format: on
+            )
+          )
+          .through(esp.pipe)
+          .compile
+          .toList
+          .map { events =>
+            expect.eql(
+              List(
+                // format: off
+                MiniXML.Open("a"),
+                  MiniXML.Open("a"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("a"),
+                  MiniXML.Open("b"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("a"),
+                MiniXML.Open("a"),
+                  MiniXML.Open("a"),
+                  MiniXML.Close("a"),
+                MiniXML.Close("a"),
+                MiniXML.Open("a"),
+                MiniXML.Close("a"),
+                MiniXML.Open("a"),
+                MiniXML.Close("a"),
+                // format: on
+              ),
+              events
+            )
+          }
+      }
+  }
+
+  test("simple for") {
+    MiniXQueryCompiler
+      .compile(
+        Query
+          .ForClause("v", MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))), Query.Variable("v")))
+      .esp[IO]
+      .flatMap { esp =>
+        Stream
+          .emits(
+            List[MiniXML](
+              // format: off
+              MiniXML.Open("doc"),
+                MiniXML.Open("a"),
+                  MiniXML.Open("a"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("a"),
+                  MiniXML.Open("b"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("a"),
+              MiniXML.Close("doc"),
+              // format: on
+            )
+          )
+          .through(esp.pipe)
+          .compile
+          .toList
+          .map { events =>
+            expect.eql(
+              List(
+                // format: off
+                MiniXML.Open("a"),
+                  MiniXML.Open("a"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("a"),
+                  MiniXML.Open("b"),
+                    MiniXML.Open("a"),
+                    MiniXML.Close("a"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("a"),
+                MiniXML.Open("a"),
+                  MiniXML.Open("a"),
+                  MiniXML.Close("a"),
+                MiniXML.Close("a"),
+                MiniXML.Open("a"),
+                MiniXML.Close("a"),
+                MiniXML.Open("a"),
+                MiniXML.Close("a"),
+                // format: on
+              ),
+              events
+            )
+          }
+      }
+  }
+
+  test("nested for") {
+    IO(
+      MiniXQueryCompiler
+        .compile(Query.ForClause(
+          "a",
+          MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))),
+          Query.ForClause("b",
+                          MiniXPath(NonEmptyList.one(Step.Child(Some("b")))),
+                          Query.Sequence(NonEmptyList.of(Query.Variable("a"), Query.Variable("b"))))
+        )))
+    .flatTap(IO.println(_))
+      .flatMap(_.esp[IO])
+      .flatMap { esp =>
+        Stream
+          .emits(
+            List[MiniXML](
+              // format: off
+              MiniXML.Open("a"),
+                MiniXML.Open("b"),
+                MiniXML.Close("b"),
+                MiniXML.Open("a"),
+                  MiniXML.Open("b"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("a"),
+                MiniXML.Open("b"),
                   MiniXML.Open("c"),
                   MiniXML.Close("c"),
-                MiniXML.Close("c"),
-                MiniXML.Open("d"),
-                MiniXML.Close("d"),
-                MiniXML.Open("d"),
-                MiniXML.Close("d"),
-              MiniXML.Close("b"),
-              MiniXML.Open("b"),
-                MiniXML.Open("d"),
-                MiniXML.Close("d"),
-              MiniXML.Close("b"),
-            MiniXML.Close("a"),
-            MiniXML.Open("b"),
-              MiniXML.Open("c"),
-                MiniXML.Open("c"),
-                MiniXML.Close("c"),
-              MiniXML.Close("c"),
-              MiniXML.Open("d"),
-              MiniXML.Close("d"),
-              MiniXML.Open("d"),
-              MiniXML.Close("d"),
-            MiniXML.Close("b"),
-            MiniXML.Open("c"),
-              MiniXML.Open("c"),
-              MiniXML.Close("c"),
-            MiniXML.Close("c"),
-            MiniXML.Open("c"),
-            MiniXML.Close("c"),
-            MiniXML.Open("d"),
-            MiniXML.Close("d"),
-            MiniXML.Open("a"),
-              MiniXML.Open("b"),
-                MiniXML.Open("c"),
-                MiniXML.Close("c"),
-                MiniXML.Open("d"),
-                MiniXML.Close("d"),
-              MiniXML.Close("b"),
-              MiniXML.Open("b"),
-                MiniXML.Open("d"),
-                MiniXML.Close("d"),
-              MiniXML.Close("b"),
-            MiniXML.Close("a"),
-            MiniXML.Open("b"),
-              MiniXML.Open("d"),
-              MiniXML.Close("d"),
-            MiniXML.Close("b"),
-            MiniXML.Open("d"),
-            MiniXML.Close("d"),
-            // format: on
-          ),
-          events
-        ))
+                MiniXML.Close("b"),
+              MiniXML.Close("a"),
+              // format: on
+            ))
+          .through(esp.pipe)
+          .compile
+          .toList
+          .map { events =>
+            expect.eql(
+              List(
+                // format: off
+                MiniXML.Open("a"),
+                  MiniXML.Open("b"),
+                  MiniXML.Close("b"),
+                  MiniXML.Open("a"),
+                    MiniXML.Open("b"),
+                    MiniXML.Close("b"),
+                  MiniXML.Close("a"),
+                  MiniXML.Open("b"),
+                    MiniXML.Open("c"),
+                    MiniXML.Close("c"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("a"),
+                MiniXML.Open("b"),
+                MiniXML.Close("b"),
+                MiniXML.Open("a"),
+                  MiniXML.Open("b"),
+                  MiniXML.Close("b"),
+                  MiniXML.Open("a"),
+                    MiniXML.Open("b"),
+                    MiniXML.Close("b"),
+                  MiniXML.Close("a"),
+                  MiniXML.Open("b"),
+                    MiniXML.Open("c"),
+                    MiniXML.Close("c"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("a"),
+                MiniXML.Open("b"),
+                  MiniXML.Open("c"),
+                  MiniXML.Close("c"),
+                MiniXML.Close("b"),
+                MiniXML.Open("a"),
+                  MiniXML.Open("b"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("a"),
+                MiniXML.Open("b"),
+                MiniXML.Close("b"),
+                // format: on
+              ),
+              events
+            )
+          }
+      }
+  }
+
+  test("simple query") {
+    ignore("debugging")
+    // MiniXQueryCompiler
+    //  .compile(
+    //    Query.ForClause(
+    //      "v1",
+    //      MiniXPath(NonEmptyList.one(Step.Descendant("a"))),
+    //      Query.ForClause(
+    //        "v2",
+    //        MiniXPath(NonEmptyList.one(Step.Descendant("b"))),
+    //        Query.LetClause(
+    //          "v3",
+    //          Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant("c")))),
+    //          Query.LetClause(
+    //            "v4",
+    //            Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant("d")))),
+    //            Query.Sequence(NonEmptyList
+    //              .of(Query.Variable("v1"), Query.Variable("v2"), Query.Variable("v3"), Query.Variable("v4")))
+    //          )
+    //        )
+    //      )
+    //    ))
+    //  .esp[IO]
+    //  .flatMap { esp =>
+    //    Stream
+    //      .emits(
+    //        List[MiniXML](
+    //          // format: off
+    //          MiniXML.Open("doc"),
+    //            MiniXML.Open("a"),
+    //              MiniXML.Open("b"),
+    //                MiniXML.Open("c"),
+    //                  MiniXML.Open("c"),
+    //                  MiniXML.Close("c"),
+    //                MiniXML.Close("c"),
+    //                MiniXML.Open("d"),
+    //                MiniXML.Close("d"),
+    //                MiniXML.Open("d"),
+    //                MiniXML.Close("d"),
+    //              MiniXML.Close("b"),
+    //              MiniXML.Open("b"),
+    //                MiniXML.Open("d"),
+    //                MiniXML.Close("d"),
+    //              MiniXML.Close("b"),
+    //            MiniXML.Close("a"),
+    //          MiniXML.Close("doc"),
+    //          // format: on
+    //        )
+    //      )
+    //      .through(esp.pipe)
+    //      .compile
+    //      .toList
+    //      .map(events =>
+    //        expect.same(
+    //          List[MiniXML](
+    //            // format: off
+    //            MiniXML.Open("a"),
+    //              MiniXML.Open("b"),
+    //                MiniXML.Open("c"),
+    //                  MiniXML.Open("c"),
+    //                  MiniXML.Close("c"),
+    //                MiniXML.Close("c"),
+    //                MiniXML.Open("d"),
+    //                MiniXML.Close("d"),
+    //                MiniXML.Open("d"),
+    //                MiniXML.Close("d"),
+    //              MiniXML.Close("b"),
+    //              MiniXML.Open("b"),
+    //                MiniXML.Open("d"),
+    //                MiniXML.Close("d"),
+    //              MiniXML.Close("b"),
+    //            MiniXML.Close("a"),
+    //            MiniXML.Open("b"),
+    //              MiniXML.Open("c"),
+    //                MiniXML.Open("c"),
+    //                MiniXML.Close("c"),
+    //              MiniXML.Close("c"),
+    //              MiniXML.Open("d"),
+    //              MiniXML.Close("d"),
+    //              MiniXML.Open("d"),
+    //              MiniXML.Close("d"),
+    //            MiniXML.Close("b"),
+    //            MiniXML.Open("c"),
+    //              MiniXML.Open("c"),
+    //              MiniXML.Close("c"),
+    //            MiniXML.Close("c"),
+    //            MiniXML.Open("c"),
+    //            MiniXML.Close("c"),
+    //            MiniXML.Open("d"),
+    //            MiniXML.Close("d"),
+    //            MiniXML.Open("a"),
+    //              MiniXML.Open("b"),
+    //                MiniXML.Open("c"),
+    //                MiniXML.Close("c"),
+    //                MiniXML.Open("d"),
+    //                MiniXML.Close("d"),
+    //              MiniXML.Close("b"),
+    //              MiniXML.Open("b"),
+    //                MiniXML.Open("d"),
+    //                MiniXML.Close("d"),
+    //              MiniXML.Close("b"),
+    //            MiniXML.Close("a"),
+    //            MiniXML.Open("b"),
+    //              MiniXML.Open("d"),
+    //              MiniXML.Close("d"),
+    //            MiniXML.Close("b"),
+    //            MiniXML.Open("d"),
+    //            MiniXML.Close("d"),
+    //            // format: on
+    //          ),
+    //          events
+    //        ))
+    //  }
   }
 
 }

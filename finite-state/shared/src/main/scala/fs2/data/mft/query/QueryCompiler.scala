@@ -22,14 +22,13 @@ import pfsa.{Candidate, Pred, Regular}
 import cats.Eq
 import cats.syntax.all._
 import cats.data.NonEmptyList
-import scala.annotation.tailrec
 
 /** This compiler can be used to compile to an MFT any query language that can be represented by nested for loops.
   *
   * The compiler is based on the approach described in [[https://doi.org/10.1109/ICDE.2014.6816714 _XQuery Streaming by Forest Transducers_]]
   * and generalized for the abstract query language on trees.
   */
-abstract class QueryCompiler[Tag, Path] {
+private[fs2] abstract class QueryCompiler[Tag, Path] {
 
   type Matcher
   type Pattern
@@ -72,39 +71,20 @@ abstract class QueryCompiler[Tag, Path] {
     q0(any) -> qinit(x0, qcopy(x0))
 
     def translatePath(path: Path, start: builder.StateBuilder, end: builder.StateBuilder): Unit = {
-      val dfa = path2regular(path).deriveDFA
+      val regular = path2regular(path)
+      val dfa = regular.deriveDFA
       // resolve transitions into patterns and guards
-      val resolvedTransitions =
-        dfa.transitions.toList.zipWithIndex.flatMap { case (transitions, src) =>
-          transitions.flatMap { case (cond, tgt) =>
-            cases(cond).map { case (pat, guard) =>
-              (src, pat, NonEmptyList.fromList(guard), tgt)
-            }
-          }
-        }
-      val outgoingTransitions = resolvedTransitions.groupMapReduce(_._1)(t => Set(t._4))(_ ++ _)
-      val incomingTransitions = resolvedTransitions.groupMapReduce(_._4)(t => Set(t._1))(_ ++ _)
-      @tailrec
-      def dropUnreachableStates(qs: List[Int], visited: Set[Int], reach: Map[Int, Set[Int]]): Set[Int] =
-        qs match {
-          case Nil => visited
-          case q :: qs =>
-            if (visited.contains(q))
-              dropUnreachableStates(qs, visited, reach)
-            else
-              dropUnreachableStates(qs ++ reach.getOrElse(q, Set.empty).diff(visited), visited + q, reach)
-        }
-      // keep only the states that are part of realisable paths
-      val reachableStates = dropUnreachableStates(List(dfa.init), Set.empty, outgoingTransitions)
-      val aliveStates = dropUnreachableStates(dfa.finals.toList, Set.empty, incomingTransitions)
-      // we now have the final transitions
-      val finalTransitions = resolvedTransitions
-        .filter { case (src, _, _, tgt) =>
-          reachableStates.contains(src) && aliveStates.contains(tgt)
-        }
-        .groupMap(_._1)(t => (t._2, t._3, t._4))
+      val transitionCases =
+        dfa.transitions.toList.zipWithIndex.map { case (transitions, src) =>
+          (src,
+           transitions.flatMap { case (cond, tgt) =>
+             cases(cond).map { case (pat, guard) =>
+               (pat, NonEmptyList.fromList(guard), tgt)
+             }
+           })
+        }.toMap
       // we can apply the DFA to MFT translation now
-      finalTransitions.foldLeft(Map(dfa.init -> start)) { case (states, (src, transitions)) =>
+      transitionCases.foldLeft(Map(dfa.init -> start)) { case (states, (src, transitions)) =>
         val initialSrc = src === dfa.init
         val (q1, states1) =
           states.get(src) match {
@@ -128,14 +108,12 @@ abstract class QueryCompiler[Tag, Path] {
                 (q2, states.updated(tgt, q2))
             }
           val pat: builder.Guardable = tagOf(pattern).fold(anyNode)(aNode(_))
-          if (!initialSrc && !finalTgt) {
-            q1(pat.when(guard)) -> q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
-          } else if (initialSrc && !finalTgt) {
-            q1(pat.when(guard)) -> q2(x1, copyArgs: _*)
-          } else if (!initialSrc && finalTgt) {
-            q1(pat.when(guard)) -> end(x0, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*)
+          if (!finalTgt) {
+            q1(pat.when(guard)) ->
+              q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
           } else {
-            q1(pat.when(guard)) -> end(x1, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*)
+            q1(pat.when(guard)) ->
+              end(x1, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
           }
           states1
         }
@@ -144,6 +122,9 @@ abstract class QueryCompiler[Tag, Path] {
 
     def translate(query: Query[Tag, Path], vars: List[String], q: builder.StateBuilder): Unit =
       query match {
+        case Query.Empty() =>
+          q(any) -> eps
+
         case Query.ForClause(variable, source, result) =>
           val q1 = state(args = q.nargs + 1)
 
@@ -174,7 +155,7 @@ abstract class QueryCompiler[Tag, Path] {
 
           // emit the result
           q1(any) -> y(q.nargs)
-        case Query.Element(tag, Some(child)) =>
+        case Query.Node(tag, child) =>
           val q1 = state(args = q.nargs)
 
           // translate the child query
@@ -184,7 +165,7 @@ abstract class QueryCompiler[Tag, Path] {
           val copyArgs = List.tabulate(q.nargs)(y(_))
           q(any) -> node(tag)(q1(x0, copyArgs: _*))
 
-        case Query.Element(tag, None) =>
+        case Query.Leaf(tag) =>
           // just emit it
           q(any) -> leaf(tag)
 
