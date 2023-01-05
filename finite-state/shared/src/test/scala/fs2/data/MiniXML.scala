@@ -59,9 +59,9 @@ object MiniXML {
   implicit object MiniXMLShow extends Show[MiniXML] {
     def show(node: MiniXML): String =
       node match {
-        case Open(name) => s"<$name>"
+        case Open(name)  => s"<$name>"
         case Close(name) => s"</$name>"
-        case Text(t) => t
+        case Text(t)     => t
       }
   }
 

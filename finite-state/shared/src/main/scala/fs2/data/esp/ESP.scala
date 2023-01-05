@@ -30,7 +30,7 @@ import scala.annotation.tailrec
   * catch all rules, no matter what the state or depth is.
   */
 private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
-                                                    val params: Map[Int, List[Int]],
+                                                    val params: Map[Int, Int],
                                                     val rules: DecisionTree[Guard, Tag[InTag], Rhs[OutTag]])(implicit
     F: RaiseThrowable[F]) {
 
@@ -40,9 +40,8 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
       TT: Tag2Tag[InTag, OutTag],
       G: Evaluator[Guard, Tag[InTag]]) =
     params.get(q).liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown state $q")).flatMap { params =>
-      if (params.size === args.size) {
-        args
-          .zip(params)
+      if (params === args.size) {
+        args.zipWithIndex
           .foldLeftM(env) { case (env, (arg, param)) =>
             step(env, arg, in).map { rhs =>
               env.updated(param, rhs)
@@ -56,7 +55,7 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
           }
       } else {
         Pull.raiseError(new ESPException(
-          s"wrong number of argument given in state $q reading input $in (expected ${params.size} but got ${args.size})"))
+          s"wrong number of argument given in state $q reading input $in (expected $params but got ${args.size})"))
       }
     }
 
@@ -111,7 +110,7 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
       case Rhs.Tree(tag, inner) =>
         eval(env, depth, in, inner)
           .map(inner => Expr.Open(Out.makeOpen(tag), Expr.concat(inner, Expr.Close(Out.makeClose(tag), Expr.Epsilon))))
-      case Rhs.CapturedTree(_, inner) =>
+      case Rhs.CapturedTree(inner) =>
         eval(env, depth, in, inner).flatMap { inner =>
           in.flatMap(select(_, Selector.Cons(Selector.Root(), Tag.Open, 0)))
             .liftTo[Pull[F, Nothing, *]](new ESPException("cannot capture eos"))
@@ -122,7 +121,7 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
         }
       case Rhs.Leaf(v) =>
         Pull.pure(Expr.Leaf(Out.makeLeaf(v), Expr.Epsilon))
-      case Rhs.CapturedLeaf(_) =>
+      case Rhs.CapturedLeaf =>
         in.flatMap(select(_, Selector.Cons(Selector.Root(), Tag.Leaf, 0)))
           .liftTo[Pull[F, Nothing, *]](new ESPException("cannot capture eos"))
           .map(v => Expr.Leaf(Out.makeLeaf(TT.convert(v)), Expr.Epsilon))
@@ -181,8 +180,9 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
         case None =>
           step(env, e, none).map(squeezeAll(_)).flatMap { case (e, s) =>
             e match {
-              case Expr.Epsilon => Pull.output(Chunk.seq(s))
-              case _            => Pull.raiseError(new ESPException(s"unexpected end of input $e"))
+              case Expr.Epsilon =>
+                Pull.output(Chunk.seq(s))
+              case _ => Pull.raiseError(new ESPException(s"unexpected end of input $e"))
             }
           }
       }
@@ -197,6 +197,6 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
       G: Evaluator[Guard, Tag[InTag]]): Pipe[F, In, Out] =
-    transform(Chunk.empty, 0, _, Map.empty, Expr.Call(init, 0, Nil), new ListBuffer).stream
+    transform[In, Out](Chunk.empty, 0, _, Map.empty, Expr.Call(init, 0, Nil), new ListBuffer).stream
 
 }

@@ -41,13 +41,13 @@ object Rhs {
   case class Tree[OutTag](tag: OutTag, inner: Rhs[OutTag]) extends Rhs[OutTag]
 
   /** Builds a tree with the captured node tag in pattern. */
-  case class CapturedTree[OutTag](name: String, inner: Rhs[OutTag]) extends Rhs[OutTag]
+  case class CapturedTree[OutTag](inner: Rhs[OutTag]) extends Rhs[OutTag]
 
   /** Emits a leaf value. */
   case class Leaf[OutTag](value: OutTag) extends Rhs[OutTag]
 
   /** Emits the captured input value. */
-  case class CapturedLeaf(name: String) extends Rhs[Nothing]
+  case object CapturedLeaf extends Rhs[Nothing]
 
   /** Concatenates two RHS. */
   case class Concat[OutTag](fst: Rhs[OutTag], snd: Rhs[OutTag]) extends Rhs[OutTag]

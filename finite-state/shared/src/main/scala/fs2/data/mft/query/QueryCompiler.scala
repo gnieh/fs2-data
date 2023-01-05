@@ -58,140 +58,141 @@ private[fs2] abstract class QueryCompiler[Tag, Path] {
   /** Return the constructor tag of this pattern, or `None` if it is a wildcard. */
   def tagOf(pattern: Pattern): Option[Tag]
 
-  def compile(query: Query[Tag, Path]): MFT[NonEmptyList[Guard], Tag, Tag] = dsl { implicit builder =>
-    val q0 = state(args = 0, initial = true)
-    val qinit = state(args = 1)
-    val qcopy = state(args = 0)
+  def compile(query: Query[Tag, Path]): MFT[NonEmptyList[Guard], Tag, Tag] = dsl[NonEmptyList[Guard], Tag, Tag] {
+    implicit builder =>
+      val q0 = state(args = 0, initial = true)
+      val qinit = state(args = 1)
+      val qcopy = state(args = 0)
 
-    qcopy(anyNode) -> copy(qcopy(x1)) ~ qcopy(x2)
-    qcopy(anyLeaf) -> copy
-    qcopy(epsilon) -> eps
+      qcopy(anyNode) -> copy(qcopy(x1)) ~ qcopy(x2)
+      qcopy(anyLeaf) -> copy ~ qcopy(x1)
+      qcopy(epsilon) -> eps
 
-    // input is copied in the first argument
-    q0(any) -> qinit(x0, qcopy(x0))
+      // input is copied in the first argument
+      q0(any) -> qinit(x0, qcopy(x0))
 
-    def translatePath(path: Path, start: builder.StateBuilder, end: builder.StateBuilder): Unit = {
-      val regular = path2regular(path)
-      val dfa = regular.deriveDFA
-      // resolve transitions into patterns and guards
-      val transitionCases =
-        dfa.transitions.toList.zipWithIndex.map { case (transitions, src) =>
-          (src,
-           transitions.flatMap { case (cond, tgt) =>
-             cases(cond).map { case (pat, guard) =>
-               (pat, NonEmptyList.fromList(guard), tgt)
-             }
-           })
-        }.toMap
-      // we can apply the DFA to MFT translation now
-      transitionCases.foldLeft(Map(dfa.init -> start)) { case (states, (src, transitions)) =>
-        val initialSrc = src === dfa.init
-        val (q1, states1) =
-          states.get(src) match {
-            case Some(q1) => (q1, states)
-            case None =>
-              val q1 =
-                if (initialSrc)
-                  start
-                else
-                  state(args = start.nargs)
-              (q1, states.updated(src, q1))
-          }
-        val copyArgs = List.tabulate(q1.nargs)(y(_))
-        transitions.foldLeft(states1) { case (states, (pattern, guard, tgt)) =>
-          val finalTgt = dfa.finals.contains(tgt)
-          val (q2, states1) =
-            states.get(tgt) match {
-              case Some(q2) => (q2, states)
+      def translatePath(path: Path, start: builder.StateBuilder, end: builder.StateBuilder): Unit = {
+        val regular = path2regular(path)
+        val dfa = regular.deriveDFA
+        // resolve transitions into patterns and guards
+        val transitionCases =
+          dfa.transitions.toList.zipWithIndex.map { case (transitions, src) =>
+            (src,
+             transitions.flatMap { case (cond, tgt) =>
+               cases(cond).map { case (pat, guard) =>
+                 (pat, NonEmptyList.fromList(guard), tgt)
+               }
+             })
+          }.toMap
+        // we can apply the DFA to MFT translation now
+        transitionCases.foldLeft(Map(dfa.init -> start)) { case (states, (src, transitions)) =>
+          val initialSrc = src === dfa.init
+          val (q1, states1) =
+            states.get(src) match {
+              case Some(q1) => (q1, states)
               case None =>
-                val q2 = state(args = q1.nargs)
-                (q2, states.updated(tgt, q2))
+                val q1 =
+                  if (initialSrc)
+                    start
+                  else
+                    state(args = start.nargs)
+                (q1, states.updated(src, q1))
             }
-          val pat: builder.Guardable = tagOf(pattern).fold(anyNode)(aNode(_))
-          if (!finalTgt) {
-            q1(pat.when(guard)) ->
-              q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
-          } else {
-            q1(pat.when(guard)) ->
-              end(x1, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
+          val copyArgs = List.tabulate(q1.nargs)(y(_))
+          transitions.foldLeft(states1) { case (states, (pattern, guard, tgt)) =>
+            val finalTgt = dfa.finals.contains(tgt)
+            val (q2, states1) =
+              states.get(tgt) match {
+                case Some(q2) => (q2, states)
+                case None =>
+                  val q2 = state(args = q1.nargs)
+                  (q2, states.updated(tgt, q2))
+              }
+            val pat: builder.Guardable = tagOf(pattern).fold(anyNode)(aNode(_))
+            if (!finalTgt) {
+              q1(pat.when(guard)) ->
+                q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
+            } else {
+              q1(pat.when(guard)) ->
+                end(x1, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
+            }
+            states1
           }
-          states1
-        }
-      }: Unit
-    }
-
-    def translate(query: Query[Tag, Path], vars: List[String], q: builder.StateBuilder): Unit =
-      query match {
-        case Query.Empty() =>
-          q(any) -> eps
-
-        case Query.ForClause(variable, source, result) =>
-          val q1 = state(args = q.nargs + 1)
-
-          // compile the variable binding path
-          translatePath(source, q, q1)
-
-          // then the body with the bound variable
-          translate(result, variable :: vars, q1)
-
-        case Query.LetClause(variable, query, result) =>
-          val qv = state(args = q.nargs)
-          val q1 = state(args = q.nargs + 1)
-
-          // compile the variable binding query
-          translate(query, vars, qv)
-          // then the body with the bound variable
-          translate(result, variable :: vars, q1)
-
-          // bind everything
-          val copyArgs = List.tabulate(q.nargs)(y(_))
-          q(any) -> q1(x0, (copyArgs :+ qv(x0, copyArgs: _*)): _*)
-
-        case Query.Ordpath(path) =>
-          val q1 = state(args = q.nargs + 1)
-
-          // compile the path
-          translatePath(path, q, q1)
-
-          // emit the result
-          q1(any) -> y(q.nargs)
-        case Query.Node(tag, child) =>
-          val q1 = state(args = q.nargs)
-
-          // translate the child query
-          translate(child, vars, q1)
-
-          // bind it
-          val copyArgs = List.tabulate(q.nargs)(y(_))
-          q(any) -> node(tag)(q1(x0, copyArgs: _*))
-
-        case Query.Leaf(tag) =>
-          // just emit it
-          q(any) -> leaf(tag)
-
-        case Query.Variable(name) =>
-          // variable named are pushed on top of the list, so indexing is reversed
-          q(any) -> y(vars.size - 1 - vars.indexOf(name))
-
-        case Query.Sequence(queries) =>
-          val copyArgs = List.tabulate(q.nargs)(y(_))
-
-          // compile and sequence every query in the sequence
-          val rhs =
-            queries.foldLeft[Rhs[Tag]](eps) { (acc, query) =>
-              val q1 = state(args = q.nargs)
-
-              // translate the query
-              translate(query, vars, q1)
-
-              acc ~ q1(x0, copyArgs: _*)
-            }
-
-          // emit rhs for any input
-          q(any) -> rhs
+        }: Unit
       }
 
-    translate(query, List("$input"), qinit)
-  }
+      def translate(query: Query[Tag, Path], vars: List[String], q: builder.StateBuilder): Unit =
+        query match {
+          case Query.Empty() =>
+            q(any) -> eps
+
+          case Query.ForClause(variable, source, result) =>
+            val q1 = state(args = q.nargs + 1)
+
+            // compile the variable binding path
+            translatePath(source, q, q1)
+
+            // then the body with the bound variable
+            translate(result, variable :: vars, q1)
+
+          case Query.LetClause(variable, query, result) =>
+            val qv = state(args = q.nargs)
+            val q1 = state(args = q.nargs + 1)
+
+            // compile the variable binding query
+            translate(query, vars, qv)
+            // then the body with the bound variable
+            translate(result, variable :: vars, q1)
+
+            // bind everything
+            val copyArgs = List.tabulate(q.nargs)(y(_))
+            q(any) -> q1(x0, (copyArgs :+ qv(x0, copyArgs: _*)): _*)
+
+          case Query.Ordpath(path) =>
+            val q1 = state(args = q.nargs + 1)
+
+            // compile the path
+            translatePath(path, q, q1)
+
+            // emit the result
+            q1(any) -> y(q.nargs)
+          case Query.Node(tag, child) =>
+            val q1 = state(args = q.nargs)
+
+            // translate the child query
+            translate(child, vars, q1)
+
+            // bind it
+            val copyArgs = List.tabulate(q.nargs)(y(_))
+            q(any) -> node(tag)(q1(x0, copyArgs: _*))
+
+          case Query.Leaf(tag) =>
+            // just emit it
+            q(any) -> leaf(tag)
+
+          case Query.Variable(name) =>
+            // variable named are pushed on top of the list, so indexing is reversed
+            q(any) -> y(vars.size - 1 - vars.indexOf(name))
+
+          case Query.Sequence(queries) =>
+            val copyArgs = List.tabulate(q.nargs)(y(_))
+
+            // compile and sequence every query in the sequence
+            val rhs =
+              queries.foldLeft[Rhs[Tag]](eps) { (acc, query) =>
+                val q1 = state(args = q.nargs)
+
+                // translate the query
+                translate(query, vars, q1)
+
+                acc ~ q1(x0, copyArgs: _*)
+              }
+
+            // emit rhs for any input
+            q(any) -> rhs
+        }
+
+      translate(query, List("$input"), qinit)
+  }.removeUnusedParameters
 
 }

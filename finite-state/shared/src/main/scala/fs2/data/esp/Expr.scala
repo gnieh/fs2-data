@@ -16,6 +16,10 @@
 
 package fs2.data.esp
 
+import cats.Show
+import cats.syntax.foldable._
+import cats.syntax.show._
+
 sealed trait Expr[+Out]
 object Expr {
   case class Call[Out](q: Int, depth: Int, params: List[Expr[Out]]) extends Expr[Out]
@@ -34,4 +38,13 @@ object Expr {
       case (Leaf(v, Epsilon), _)  => Leaf(v, e2)
       case (_, _)                 => Concat(e1, e2)
     }
+
+  implicit def show[Out: Show]: Show[Expr[Out]] = Show.show {
+    case Call(q, d, ps) => show"q${q}_$d(${ps.mkString_(", ")})"
+    case Epsilon        => ""
+    case Open(o, next)  => show"$o $next"
+    case Close(c, next) => show"$c $next"
+    case Leaf(l, next)  => show"$l $next"
+    case Concat(e1, e2) => show"$e1 $e2"
+  }
 }

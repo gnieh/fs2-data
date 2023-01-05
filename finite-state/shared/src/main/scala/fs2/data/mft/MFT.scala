@@ -23,6 +23,7 @@ import esp.{Depth, ESP, Rhs => ERhs, Pattern, PatternDsl, Tag => ETag}
 import cats.{Defer, MonadError}
 import cats.syntax.all._
 import cats.Show
+import scala.annotation.tailrec
 
 sealed trait Forest
 object Forest {
@@ -86,6 +87,75 @@ object Rhs {
   */
 private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rules[Guard, InTag, OutTag]]) {
 
+  def removeUnusedParameters: MFT[Guard, InTag, OutTag] = {
+    def bareOccurences(rhs: Rhs[OutTag]): Set[Int] =
+      rhs match {
+        case Rhs.Param(i)           => Set(i)
+        case Rhs.Node(_, children)  => bareOccurences(children)
+        case Rhs.CopyNode(children) => bareOccurences(children)
+        case Rhs.Concat(rhs1, rhs2) => bareOccurences(rhs1) ++ bareOccurences(rhs2)
+        case _                      => Set()
+      }
+
+    def findAllCalls(rhs: Rhs[OutTag]): List[Rhs.Call[OutTag]] =
+      rhs match {
+        case c @ Rhs.Call(_, _, ps) => c :: ps.flatMap(findAllCalls(_))
+        case Rhs.Node(_, children)  => findAllCalls(children)
+        case Rhs.CopyNode(children) => findAllCalls(children)
+        case Rhs.Concat(fst, snd)   => findAllCalls(fst) ++ findAllCalls(snd)
+        case _                      => Nil
+      }
+
+    val usedParams =
+      rules.fmap { case Rules(_, rhss) =>
+        rhss.map { case (_, rhs) => bareOccurences(rhs) }.combineAll
+      }
+
+    @tailrec
+    def findAllUsedParams(usedParams: Map[Int, Set[Int]]): Map[Int, Set[Int]] = {
+      val newUsed = usedParams.combine(rules.fmap { case Rules(_, rhss) =>
+        rhss.flatMap { case (_, rhs) =>
+          findAllCalls(rhs).flatMap { case Rhs.Call(q1, _, args) =>
+            val usedInQ1 = usedParams.getOrElse(q1, Set())
+            args.zipWithIndex.collect {
+              case (rhs, i) if usedInQ1.contains(i) =>
+                bareOccurences(rhs)
+            }
+          }
+        }.combineAll
+      })
+      if (newUsed == usedParams)
+        usedParams
+      else
+        findAllUsedParams(newUsed)
+    }
+
+    val allUsedParams = findAllUsedParams(usedParams)
+
+    def dropUnused(rhs: Rhs[OutTag], usedParams: Set[Int]): Rhs[OutTag] =
+      rhs match {
+        case Rhs.Call(q, x, args) =>
+          Rhs.Call(q,
+                   x,
+                   args.zipWithIndex
+                     .collect {
+                       case (a, i) if allUsedParams.getOrElse(q, Set()).contains(i) =>
+                         dropUnused(a, usedParams)
+                     })
+        case Rhs.Node(tag, children) => Rhs.Node(tag, dropUnused(children, usedParams))
+        case Rhs.CopyNode(children)  => Rhs.CopyNode(dropUnused(children, usedParams))
+        case Rhs.Concat(rhs1, rhs2)  => Rhs.Concat(dropUnused(rhs1, usedParams), dropUnused(rhs2, usedParams))
+        case Rhs.Param(i) => Rhs.Param(usedParams.foldLeft(0) { (idx, used) => if (used < i) idx + 1 else idx })
+        case _            => rhs
+      }
+
+    val rules1 = rules.map2(allUsedParams) { case (Rules(_, rhss), usedParams) =>
+      Rules(usedParams.size, rhss.map { case (sel, rhs) => (sel, dropUnused(rhs, usedParams)) })
+    }
+
+    new MFT(init, rules1)
+  }
+
   /** Compiles this MFT into an ESP.
     * The generated ESP contains one decision tree encoding all the patterns
     * of this MFT.
@@ -103,9 +173,9 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
         case Rhs.Param(i)                       => ERhs.Param(i)
         case Rhs.Epsilon                        => ERhs.Epsilon
         case Rhs.Node(tag, inner)               => ERhs.Tree(tag, translateRhs(inner))
-        case Rhs.CopyNode(inner)                => ERhs.CapturedTree("in", translateRhs(inner))
+        case Rhs.CopyNode(inner)                => ERhs.CapturedTree(translateRhs(inner))
         case Rhs.Leaf(v)                        => ERhs.Leaf(v)
-        case Rhs.CopyLeaf                       => ERhs.CapturedLeaf("in")
+        case Rhs.CopyLeaf                       => ERhs.CapturedLeaf
         case Rhs.Concat(rhs1, rhs2)             => ERhs.Concat(translateRhs(rhs1), translateRhs(rhs2))
       }
 
@@ -131,10 +201,10 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
           val dflt = translateRhs(rhs)
           List(state(q, 0)(close) -> dflt, state(q)(eos) -> dflt)
       } ++ List(
-        state(q)(open) -> ERhs.Call(q, Depth.Increment, params.map(ERhs.Param(_))),
+        state(q)(open) -> ERhs.Call(q, Depth.Increment, List.tabulate(params)(ERhs.Param(_))),
         state(q, 0)(close) -> ERhs.Epsilon,
-        state(q)(close) -> ERhs.Call(q, Depth.Decrement, params.map(ERhs.Param(_))),
-        state(q)(value) -> ERhs.Call(q, Depth.Copy, params.map(ERhs.Param(_))),
+        state(q)(close) -> ERhs.Call(q, Depth.Decrement, List.tabulate(params)(ERhs.Param(_))),
+        state(q)(value) -> ERhs.Call(q, Depth.Copy, List.tabulate(params)(ERhs.Param(_))),
         state(q)(eos) -> ERhs.Epsilon
       )
     }
@@ -142,7 +212,7 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
     val compiler =
       new pattern.Compiler[F, Guard, ETag[InTag], Pattern[Guard, InTag], ERhs[OutTag]]
 
-    compiler.compile(cases).map(new ESP(init, rules.fmap(_.params), _))
+    compiler.compile(cases).map(new ESP(init, rules.fmap(_.nparams), _))
   }
 
 }
@@ -154,10 +224,10 @@ object MFT {
       .sortBy(_._1)
       .map { case (src, rules) =>
         val params =
-          if (rules.params.isEmpty)
+          if (rules.nparams == 0)
             ""
           else
-            rules.params.map(i => s"y$i").mkString(", ", ", ", "")
+            List.tabulate(rules.nparams)(i => s"y$i").mkString(", ", ", ", "")
         implicit val showSelector: Show[EventSelector[G, I]] = Show.show {
           case EventSelector.AnyNode(g) => show"(<%t>$params)${g.fold("")(g => show" when $g")}"
           case EventSelector.Node(t, g) => show"(<$t>$params)${g.fold("")(g => show" when $g")}"

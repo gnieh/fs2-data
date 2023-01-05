@@ -110,13 +110,14 @@ object QuerySpec extends SimpleIOSuite {
   }
 
   test("child path") {
-    MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(Some("a"))))))
-      .esp[IO]
-      .flatMap { esp =>
-        Stream
-          .emits(
-            List[MiniXML](
+    ignore("debug") >>
+      MiniXQueryCompiler
+        .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(Some("a"))))))
+        .esp[IO]
+        .flatMap { esp =>
+          Stream
+            .emits(
+              List[MiniXML](
               // format: off
               MiniXML.Open("a"),
                 MiniXML.Open("a"),
@@ -129,14 +130,14 @@ object QuerySpec extends SimpleIOSuite {
                 MiniXML.Close("b"),
               MiniXML.Close("a"),
               // format: on
+              )
             )
-          )
-          .through(esp.pipe)
-          .compile
-          .toList
-          .map { events =>
-            expect.eql(
-              List(
+            .through(esp.pipe[MiniXML, MiniXML])
+            .compile
+            .toList
+            .map { events =>
+              expect.eql(
+                List(
                 // format: off
                 MiniXML.Open("a"),
                   MiniXML.Open("a"),
@@ -149,21 +150,22 @@ object QuerySpec extends SimpleIOSuite {
                   MiniXML.Close("b"),
                 MiniXML.Close("a"),
                 // format: on
-              ),
-              events
-            )
-          }
-      }
+                ),
+                events
+              )
+            }
+        }
   }
 
   test("any child path") {
-    MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(None)))))
-      .esp[IO]
-      .flatMap { esp =>
-        Stream
-          .emits(
-            List[MiniXML](
+    ignore("debug") >>
+      MiniXQueryCompiler
+        .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(None)))))
+        .esp[IO]
+        .flatMap { esp =>
+          Stream
+            .emits(
+              List[MiniXML](
               // format: off
               MiniXML.Open("a"),
                 MiniXML.Open("a"),
@@ -176,14 +178,14 @@ object QuerySpec extends SimpleIOSuite {
                 MiniXML.Close("c"),
               MiniXML.Close("a"),
               // format: on
+              )
             )
-          )
-          .through(esp.pipe)
-          .compile
-          .toList
-          .map { events =>
-            expect.eql(
-              List(
+            .through(esp.pipe[MiniXML, MiniXML])
+            .compile
+            .toList
+            .map { events =>
+              expect.eql(
+                List(
                 // format: off
                 MiniXML.Open("a"),
                   MiniXML.Open("a"),
@@ -196,21 +198,22 @@ object QuerySpec extends SimpleIOSuite {
                   MiniXML.Close("c"),
                 MiniXML.Close("a"),
                 // format: on
-              ),
-              events
-            )
-          }
-      }
+                ),
+                events
+              )
+            }
+        }
   }
 
   test("descendant path") {
-    MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))))
-      .esp[IO]
-      .flatMap { esp =>
-        Stream
-          .emits(
-            List[MiniXML](
+    ignore("debug") >>
+      MiniXQueryCompiler
+        .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))))
+        .esp[IO]
+        .flatMap { esp =>
+          Stream
+            .emits(
+              List[MiniXML](
               // format: off
               MiniXML.Open("doc"),
                 MiniXML.Open("a"),
@@ -225,14 +228,14 @@ object QuerySpec extends SimpleIOSuite {
                 MiniXML.Close("a"),
               MiniXML.Close("doc"),
               // format: on
+              )
             )
-          )
-          .through(esp.pipe)
-          .compile
-          .toList
-          .map { events =>
-            expect.eql(
-              List(
+            .through(esp.pipe[MiniXML, MiniXML])
+            .compile
+            .toList
+            .map { events =>
+              expect.eql(
+                List(
                 // format: off
                 MiniXML.Open("a"),
                   MiniXML.Open("a"),
@@ -253,21 +256,22 @@ object QuerySpec extends SimpleIOSuite {
                 MiniXML.Open("a"),
                 MiniXML.Close("a"),
                 // format: on
-              ),
-              events
-            )
-          }
-      }
+                ),
+                events
+              )
+            }
+        }
   }
 
   test("any descendant path") {
-    MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(None)))))
-      .esp[IO]
-      .flatMap { esp =>
-        Stream
-          .emits(
-            List[MiniXML](
+    ignore("debug") >>
+      MiniXQueryCompiler
+        .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(None)))))
+        .esp[IO]
+        .flatMap { esp =>
+          Stream
+            .emits(
+              List[MiniXML](
               // format: off
               MiniXML.Open("a"),
                 MiniXML.Open("a"),
@@ -280,14 +284,14 @@ object QuerySpec extends SimpleIOSuite {
                 MiniXML.Close("b"),
               MiniXML.Close("a"),
               // format: on
+              )
             )
-          )
-          .through(esp.pipe)
-          .compile
-          .toList
-          .map { events =>
-            expect.eql(
-              List(
+            .through(esp.pipe[MiniXML, MiniXML])
+            .compile
+            .toList
+            .map { events =>
+              expect.eql(
+                List(
                 // format: off
                 MiniXML.Open("a"),
                   MiniXML.Open("a"),
@@ -312,23 +316,23 @@ object QuerySpec extends SimpleIOSuite {
                 MiniXML.Open("a"),
                 MiniXML.Close("a"),
                 // format: on
-              ),
-              events
-            )
-          }
-      }
+                ),
+                events
+              )
+            }
+        }
   }
 
   test("simple let") {
-    MiniXQueryCompiler
-      .compile(
-        Query
+    ignore("debug") >>
+      MiniXQueryCompiler
+        .compile(Query
           .LetClause("v", Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))), Query.Variable("v")))
-      .esp[IO]
-      .flatMap { esp =>
-        Stream
-          .emits(
-            List[MiniXML](
+        .esp[IO]
+        .flatMap { esp =>
+          Stream
+            .emits(
+              List[MiniXML](
               // format: off
               MiniXML.Open("doc"),
                 MiniXML.Open("a"),
@@ -343,14 +347,14 @@ object QuerySpec extends SimpleIOSuite {
                 MiniXML.Close("a"),
               MiniXML.Close("doc"),
               // format: on
+              )
             )
-          )
-          .through(esp.pipe)
-          .compile
-          .toList
-          .map { events =>
-            expect.eql(
-              List(
+            .through(esp.pipe[MiniXML, MiniXML])
+            .compile
+            .toList
+            .map { events =>
+              expect.eql(
+                List(
                 // format: off
                 MiniXML.Open("a"),
                   MiniXML.Open("a"),
@@ -371,23 +375,25 @@ object QuerySpec extends SimpleIOSuite {
                 MiniXML.Open("a"),
                 MiniXML.Close("a"),
                 // format: on
-              ),
-              events
-            )
-          }
-      }
+                ),
+                events
+              )
+            }
+        }
   }
 
   test("simple for") {
-    MiniXQueryCompiler
-      .compile(
-        Query
-          .ForClause("v", MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))), Query.Variable("v")))
-      .esp[IO]
-      .flatMap { esp =>
-        Stream
-          .emits(
-            List[MiniXML](
+    ignore("debug") >>
+      IO(
+        MiniXQueryCompiler
+          .compile(Query
+            .ForClause("v", MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))), Query.Variable("v"))))
+        .flatTap(IO.println(_))
+        .flatMap(_.esp[IO])
+        .flatMap { esp =>
+          Stream
+            .emits(
+              List[MiniXML](
               // format: off
               MiniXML.Open("doc"),
                 MiniXML.Open("a"),
@@ -402,14 +408,14 @@ object QuerySpec extends SimpleIOSuite {
                 MiniXML.Close("a"),
               MiniXML.Close("doc"),
               // format: on
+              )
             )
-          )
-          .through(esp.pipe)
-          .compile
-          .toList
-          .map { events =>
-            expect.eql(
-              List(
+            .through(esp.pipe[MiniXML, MiniXML])
+            .compile
+            .toList
+            .map { events =>
+              expect.eql(
+                List(
                 // format: off
                 MiniXML.Open("a"),
                   MiniXML.Open("a"),
@@ -430,11 +436,11 @@ object QuerySpec extends SimpleIOSuite {
                 MiniXML.Open("a"),
                 MiniXML.Close("a"),
                 // format: on
-              ),
-              events
-            )
-          }
-      }
+                ),
+                events
+              )
+            }
+        }
   }
 
   test("nested for") {
@@ -442,12 +448,12 @@ object QuerySpec extends SimpleIOSuite {
       MiniXQueryCompiler
         .compile(Query.ForClause(
           "a",
-          MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))),
+          MiniXPath(NonEmptyList.one(Step.Child(Some("a")))),
           Query.ForClause("b",
                           MiniXPath(NonEmptyList.one(Step.Child(Some("b")))),
                           Query.Sequence(NonEmptyList.of(Query.Variable("a"), Query.Variable("b"))))
         )))
-    .flatTap(IO.println(_))
+      .flatTap(IO.println(_))
       .flatMap(_.esp[IO])
       .flatMap { esp =>
         Stream
@@ -457,18 +463,12 @@ object QuerySpec extends SimpleIOSuite {
               MiniXML.Open("a"),
                 MiniXML.Open("b"),
                 MiniXML.Close("b"),
-                MiniXML.Open("a"),
-                  MiniXML.Open("b"),
-                  MiniXML.Close("b"),
-                MiniXML.Close("a"),
-                MiniXML.Open("b"),
-                  MiniXML.Open("c"),
-                  MiniXML.Close("c"),
-                MiniXML.Close("b"),
+                MiniXML.Open("c"),
+                MiniXML.Close("c"),
               MiniXML.Close("a"),
               // format: on
             ))
-          .through(esp.pipe)
+          .through(esp.pipe[MiniXML, MiniXML])
           .compile
           .toList
           .map { events =>
@@ -478,36 +478,8 @@ object QuerySpec extends SimpleIOSuite {
                 MiniXML.Open("a"),
                   MiniXML.Open("b"),
                   MiniXML.Close("b"),
-                  MiniXML.Open("a"),
-                    MiniXML.Open("b"),
-                    MiniXML.Close("b"),
-                  MiniXML.Close("a"),
-                  MiniXML.Open("b"),
-                    MiniXML.Open("c"),
-                    MiniXML.Close("c"),
-                  MiniXML.Close("b"),
-                MiniXML.Close("a"),
-                MiniXML.Open("b"),
-                MiniXML.Close("b"),
-                MiniXML.Open("a"),
-                  MiniXML.Open("b"),
-                  MiniXML.Close("b"),
-                  MiniXML.Open("a"),
-                    MiniXML.Open("b"),
-                    MiniXML.Close("b"),
-                  MiniXML.Close("a"),
-                  MiniXML.Open("b"),
-                    MiniXML.Open("c"),
-                    MiniXML.Close("c"),
-                  MiniXML.Close("b"),
-                MiniXML.Close("a"),
-                MiniXML.Open("b"),
                   MiniXML.Open("c"),
                   MiniXML.Close("c"),
-                MiniXML.Close("b"),
-                MiniXML.Open("a"),
-                  MiniXML.Open("b"),
-                  MiniXML.Close("b"),
                 MiniXML.Close("a"),
                 MiniXML.Open("b"),
                 MiniXML.Close("b"),

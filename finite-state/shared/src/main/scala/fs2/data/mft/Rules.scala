@@ -16,4 +16,4 @@
 
 package fs2.data.mft
 
-case class Rules[Guard, InTag, OutTag](params: List[Int], tree: List[(EventSelector[Guard, InTag], Rhs[OutTag])])
+case class Rules[Guard, InTag, OutTag](nparams: Int, tree: List[(EventSelector[Guard, InTag], Rhs[OutTag])])

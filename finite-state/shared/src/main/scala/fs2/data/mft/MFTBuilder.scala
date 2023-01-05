@@ -78,6 +78,6 @@ class MFTBuilder[Guard, InTag, OutTag] private[mft] {
   }
 
   def build: MFT[Guard, InTag, OutTag] =
-    new MFT(initial, states.map { st => st.q -> Rules(List.range(0, st.nargs), st.rules.result()) }.toMap)
+    new MFT(initial, states.map { st => st.q -> Rules(st.nargs, st.rules.result()) }.toMap)
 
 }
