@@ -125,7 +125,7 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
         in.flatMap(select(_, Selector.Cons(Selector.Root(), Tag.Leaf, 0)))
           .liftTo[Pull[F, Nothing, *]](new ESPException("cannot capture eos"))
           .map(v => Expr.Leaf(Out.makeLeaf(TT.convert(v)), Expr.Epsilon))
-      case Rhs.ApplyToLeaf(f: (OutTag => Either[String, OutTag])) =>
+      case Rhs.ApplyToLeaf(f: (OutTag => Either[String, OutTag]) @unchecked) =>
         in.flatMap(select(_, Selector.Cons(Selector.Root(), Tag.Leaf, 0)))
           .liftTo[Pull[F, Nothing, *]](new ESPException("cannot capture eos"))
           .flatMap(v =>
