@@ -24,6 +24,7 @@ import cats.{Defer, MonadError}
 import cats.syntax.all._
 import cats.Show
 import scala.annotation.tailrec
+import scala.collection.compat._
 
 sealed trait Forest
 object Forest {
@@ -68,7 +69,7 @@ object Rhs {
   implicit def show[O: Show]: Show[Rhs[O]] =
     Show.show {
       case Call(q, x, Nil)     => show"q$q($x)"
-      case Call(q, x, ps)      => show"q$q($x${ps.map(_.show).mkString(", ", ", ", "")})"
+      case Call(q, x, ps)      => show"q$q($x${(ps: List[Rhs[O]]).mkString_(", ", ", ", "")})"
       case Epsilon             => ""
       case Param(i)            => show"y$i"
       case Node(tag, children) => show"<$tag>($children)"
@@ -87,6 +88,9 @@ object Rhs {
   */
 private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rules[Guard, InTag, OutTag]]) {
 
+  /** Returns an MFT that has the same behavior, but only propagates
+    * parameters that actually contribute to the output.
+    */
   def removeUnusedParameters: MFT[Guard, InTag, OutTag] = {
     def bareOccurences(rhs: Rhs[OutTag]): Set[Int] =
       rhs match {
@@ -99,7 +103,7 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
 
     def findAllCalls(rhs: Rhs[OutTag]): List[Rhs.Call[OutTag]] =
       rhs match {
-        case c @ Rhs.Call(_, _, ps) => c :: ps.flatMap(findAllCalls(_))
+        case Rhs.Call(q, x, ps)     => Rhs.Call(q, x, ps) :: ps.flatMap(findAllCalls(_))
         case Rhs.Node(_, children)  => findAllCalls(children)
         case Rhs.CopyNode(children) => findAllCalls(children)
         case Rhs.Concat(fst, snd)   => findAllCalls(fst) ++ findAllCalls(snd)
@@ -145,8 +149,8 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
         case Rhs.Node(tag, children) => Rhs.Node(tag, dropUnused(children, usedParams))
         case Rhs.CopyNode(children)  => Rhs.CopyNode(dropUnused(children, usedParams))
         case Rhs.Concat(rhs1, rhs2)  => Rhs.Concat(dropUnused(rhs1, usedParams), dropUnused(rhs2, usedParams))
-        case Rhs.Param(i) => Rhs.Param(usedParams.foldLeft(0) { (idx, used) => if (used < i) idx + 1 else idx })
-        case _            => rhs
+        case Rhs.Param(i)            => Rhs.Param(usedParams.count(_ < i))
+        case _                       => rhs
       }
 
     val rules1 = rules.map2(allUsedParams) { case (Rules(_, rhss), usedParams) =>
@@ -154,6 +158,90 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
     }
 
     new MFT(init, rules1)
+  }
+
+  /** Returns an MFT that has the same behavior but with stay moves inlined when possible. */
+  def inlineStayMoves: MFT[Guard, InTag, OutTag] = {
+    // first we gather all the stay states, for which the RHS is only calling other states on self
+    // and is the same for all cases.
+    def hasOnlySelfCalls(rhs: Rhs[OutTag]): Boolean =
+      rhs match {
+        case Rhs.Call(_, Forest.Self, _) => true
+        case Rhs.Call(_, _, _)           => false
+        case Rhs.Node(_, children)       => hasOnlySelfCalls(children)
+        case Rhs.CopyNode(children)      => hasOnlySelfCalls(children)
+        case Rhs.Concat(rhs1, rhs2)      => hasOnlySelfCalls(rhs1) && hasOnlySelfCalls(rhs2)
+        case _                           => true
+      }
+
+    val stayStates = rules.mapFilter { rules =>
+      if (rules.isWildcard)
+        rules.tree.headOption.collect { case (_, rhs) if hasOnlySelfCalls(rhs) => rhs }
+      else
+        none
+    }
+
+    def subst(rhs: Rhs[OutTag], x: Forest, args: List[Rhs[OutTag]]): Rhs[OutTag] =
+      rhs match {
+        case Rhs.Call(q, _, args1)  => Rhs.Call(q, x, args1.map(subst(_, x, args)))
+        case Rhs.Param(i)           => args.lift(i).getOrElse(Rhs.Epsilon)
+        case Rhs.Node(t, children)  => Rhs.Node(t, subst(children, x, args))
+        case Rhs.CopyNode(children) => Rhs.CopyNode(subst(children, x, args))
+        case Rhs.Concat(rhs1, rhs2) => Rhs.Concat(subst(rhs1, x, args), subst(rhs2, x, args))
+        case _                      => rhs
+      }
+
+    def inlineStayCalls(rhs: Rhs[OutTag]): Rhs[OutTag] =
+      rhs match {
+        case Rhs.Call(q, x, args) =>
+          stayStates.get(q) match {
+            case Some(rhs) =>
+              subst(rhs, x, args.map(inlineStayCalls(_)))
+            case None => rhs
+          }
+        case Rhs.Node(t, children)  => Rhs.Node(t, inlineStayCalls(children))
+        case Rhs.CopyNode(children) => Rhs.CopyNode(inlineStayCalls(children))
+        case Rhs.Concat(rhs1, rhs2) => Rhs.Concat(inlineStayCalls(rhs1), inlineStayCalls(rhs2))
+        case _                      => rhs
+      }
+
+    val rules1 = rules.fmap { case Rules(nparams, rhss) =>
+      Rules(nparams,
+            rhss.map { case (sel, rhs) =>
+              (sel, inlineStayCalls(rhs))
+            })
+    }
+
+    new MFT(init, rules1)
+  }
+
+  /** Returns an MFT that has the same behavior but without states
+    * that are never called from the initial state.
+    */
+  def removeUnreachableStates: MFT[Guard, InTag, OutTag] = {
+    def reachable(toProcess: List[Int], processed: Set[Int]): Set[Int] =
+      toProcess match {
+        case q :: qs =>
+          if (processed.contains(q)) {
+            reachable(qs, processed)
+          } else {
+            def calledStates(rhs: Rhs[OutTag]): List[Int] =
+              rhs match {
+                case Rhs.Call(q, _, args)   => q :: args.flatMap(calledStates(_))
+                case Rhs.Node(_, children)  => calledStates(children)
+                case Rhs.CopyNode(children) => calledStates(children)
+                case Rhs.Concat(rhs1, rhs2) => calledStates(rhs1) ++ calledStates(rhs2)
+                case _                      => Nil
+              }
+            val newStates = rules.get(q).map(_.tree.map(_._2).flatMap(calledStates(_))).getOrElse(Nil)
+            reachable(newStates ++ qs, processed + q)
+          }
+        case Nil => processed
+      }
+
+    val reachableStates = reachable(List(init), Set())
+
+    new MFT(init, rules.view.filterKeys(reachableStates.contains(_)).toMap)
   }
 
   /** Compiles this MFT into an ESP.

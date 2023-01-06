@@ -58,8 +58,8 @@ private[fs2] abstract class QueryCompiler[Tag, Path] {
   /** Return the constructor tag of this pattern, or `None` if it is a wildcard. */
   def tagOf(pattern: Pattern): Option[Tag]
 
-  def compile(query: Query[Tag, Path]): MFT[NonEmptyList[Guard], Tag, Tag] = dsl[NonEmptyList[Guard], Tag, Tag] {
-    implicit builder =>
+  def compile(query: Query[Tag, Path]): MFT[NonEmptyList[Guard], Tag, Tag] = {
+    val mft = dsl[NonEmptyList[Guard], Tag, Tag] { implicit builder =>
       val q0 = state(args = 0, initial = true)
       val qinit = state(args = 1)
       val qcopy = state(args = 0)
@@ -99,25 +99,29 @@ private[fs2] abstract class QueryCompiler[Tag, Path] {
                 (q1, states.updated(src, q1))
             }
           val copyArgs = List.tabulate(q1.nargs)(y(_))
-          transitions.foldLeft(states1) { case (states, (pattern, guard, tgt)) =>
-            val finalTgt = dfa.finals.contains(tgt)
-            val (q2, states1) =
-              states.get(tgt) match {
-                case Some(q2) => (q2, states)
-                case None =>
-                  val q2 = state(args = q1.nargs)
-                  (q2, states.updated(tgt, q2))
+          val states2 =
+            transitions.foldLeft(states1) { case (states, (pattern, guard, tgt)) =>
+              val finalTgt = dfa.finals.contains(tgt)
+              val (q2, states1) =
+                states.get(tgt) match {
+                  case Some(q2) => (q2, states)
+                  case None =>
+                    val q2 = state(args = q1.nargs)
+                    (q2, states.updated(tgt, q2))
+                }
+              val pat: builder.Guardable = tagOf(pattern).fold(anyNode)(aNode(_))
+              if (!finalTgt) {
+                q1(pat.when(guard)) -> q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
+              } else {
+                q1(pat.when(guard)) -> end(x1, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*) ~ q1(
+                  x2,
+                  copyArgs: _*)
               }
-            val pat: builder.Guardable = tagOf(pattern).fold(anyNode)(aNode(_))
-            if (!finalTgt) {
-              q1(pat.when(guard)) ->
-                q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
-            } else {
-              q1(pat.when(guard)) ->
-                end(x1, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
+              states1
             }
-            states1
-          }
+          q1(anyLeaf) -> eps
+          q1(epsilon) -> eps
+          states2
         }: Unit
       }
 
@@ -193,6 +197,19 @@ private[fs2] abstract class QueryCompiler[Tag, Path] {
         }
 
       translate(query, List("$input"), qinit)
-  }.removeUnusedParameters
+    }
+    // apply some optimizations until nothing changes or credit is exhausted
+    def optimize(mft: MFT[NonEmptyList[Guard], Tag, Tag], credit: Int): MFT[NonEmptyList[Guard], Tag, Tag] =
+      if (credit > 0) {
+        val mft1 = mft.removeUnusedParameters.inlineStayMoves.removeUnreachableStates
+        if (mft1.rules == mft.rules)
+          mft
+        else
+          optimize(mft1, credit - 1)
+      } else {
+        mft
+      }
+    optimize(mft, 50)
+  }
 
 }

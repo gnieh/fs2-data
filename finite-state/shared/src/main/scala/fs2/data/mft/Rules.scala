@@ -16,4 +16,9 @@
 
 package fs2.data.mft
 
-case class Rules[Guard, InTag, OutTag](nparams: Int, tree: List[(EventSelector[Guard, InTag], Rhs[OutTag])])
+case class Rules[Guard, InTag, OutTag](nparams: Int, tree: List[(EventSelector[Guard, InTag], Rhs[OutTag])]) {
+  def isWildcard: Boolean =
+    tree.map(_._1).toSet == Set(EventSelector.AnyLeaf(None),
+                                EventSelector.AnyNode(None),
+                                EventSelector.Epsilon()) && tree.map(_._2).toSet.size == 1
+}

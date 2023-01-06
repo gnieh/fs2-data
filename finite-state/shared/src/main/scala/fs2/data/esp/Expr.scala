@@ -40,7 +40,7 @@ object Expr {
     }
 
   implicit def show[Out: Show]: Show[Expr[Out]] = Show.show {
-    case Call(q, d, ps) => show"q${q}_$d(${ps.mkString_(", ")})"
+    case Call(q, d, ps) => show"q${q}_$d(${(ps: List[Expr[Out]]).mkString_(", ")})"
     case Epsilon        => ""
     case Open(o, next)  => show"$o $next"
     case Close(c, next) => show"$c $next"

@@ -100,7 +100,7 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
       case Rhs.SelfCall(q, params) =>
         params
           .traverse(eval(env, depth, in, _))
-          .flatMap(params => call(env, q, 0, params, in))
+          .flatMap(call(env, q, 0, _, in))
       case Rhs.Param(i) =>
         env
           .get(i)
