@@ -24,7 +24,6 @@ import cats.{Defer, MonadError}
 import cats.syntax.all._
 import cats.Show
 import scala.annotation.tailrec
-import scala.collection.compat._
 
 sealed trait Forest
 object Forest {
@@ -243,7 +242,7 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
 
     val reachableStates = reachable(List(init), Set())
 
-    new MFT(init, rules.view.filterKeys(reachableStates.contains(_)).toMap)
+    new MFT(init, rules.filter { case (k, _) => reachableStates.contains(k) })
   }
 
   /** Compiles this MFT into an ESP.
