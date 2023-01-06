@@ -1,4 +1,5 @@
-# fs2 data
+# fs2-data
+[![Typelevel Affiliate Project](https://img.shields.io/badge/typelevel-affiliate%20project-FFB4B5.svg)](https://typelevel.org/projects/)
 [![Build Status](https://github.com/satabin/fs2-data/actions/workflows/ci.yml/badge.svg)](https://github.com/satabin/fs2-data/actions/workflows/ci.yml)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/fb0e5806644146869e7764c99b8ed3e9)](https://www.codacy.com/gh/gnieh/fs2-data/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=gnieh/fs2-data&amp;utm_campaign=Badge_Grade)
 [![Discord](https://img.shields.io/discord/632277896739946517.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2)](https://discord.gg/7qNAFsYkTn)
