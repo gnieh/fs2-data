@@ -194,6 +194,9 @@ private[fs2] abstract class QueryCompiler[Tag, Path] {
 
             // emit rhs for any input
             q(any) -> rhs
+
+          case Query.LeafFunction(f) =>
+            q(anyLeaf) -> applyToLeaf(f)
         }
 
       translate(query, List("$input"), qinit)

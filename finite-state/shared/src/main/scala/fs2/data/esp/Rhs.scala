@@ -49,6 +49,9 @@ object Rhs {
   /** Emits the captured input value. */
   case object CapturedLeaf extends Rhs[Nothing]
 
+  /** Applies the function to a leaf value. */
+  case class ApplyToLeaf[OutTag](f: OutTag => Either[String, OutTag]) extends Rhs[OutTag]
+
   /** Concatenates two RHS. */
   case class Concat[OutTag](fst: Rhs[OutTag], snd: Rhs[OutTag]) extends Rhs[OutTag]
 

@@ -19,11 +19,13 @@ package data
 package mft
 package query
 
+import esp.{Conversion, Tag}
+import pattern.{ConstructorTree, Evaluator}
+
 import cats.Eq
 import cats.data.NonEmptyList
 import cats.effect.IO
-import fs2.data.esp.{Conversion, Tag}
-import fs2.data.pattern.{ConstructorTree, Evaluator}
+import cats.syntax.all._
 import weaver._
 
 import pfsa.{Candidate, Pred, Regular}
@@ -492,6 +494,147 @@ object QuerySpec extends SimpleIOSuite {
               events
             )
           }
+      }
+  }
+
+  test("leaves") {
+    MiniXQueryCompiler
+      .compile(
+        Query.ForClause("a", MiniXPath(NonEmptyList.of(Step.Child(Some("a")), Step.Child(None))), Query.Variable("a")))
+      .esp[IO]
+      .flatMap { esp =>
+        Stream
+          .emits(
+            List[MiniXML](
+              //format: off
+              MiniXML.Open("a"),
+                MiniXML.Open("b"),
+                  MiniXML.Text("b text"),
+                MiniXML.Close("b"),
+                MiniXML.Text("a text"),
+              MiniXML.Close("a"),
+              //format: on
+            )
+          )
+          .through(esp.pipe)
+          .compile
+          .toList
+          .map(events =>
+            expect.same(List[MiniXML](
+                          //format: off
+                          MiniXML.Open("b"),
+                            MiniXML.Text("b text"),
+                          MiniXML.Close("b")
+                          //format: on
+                        ),
+                        events))
+      }
+  }
+
+  test("leaf function") {
+    MiniXQueryCompiler
+      .compile(Query.ForClause("a", MiniXPath(NonEmptyList.of(Step.Descendant(None))), Query.LeafFunction(_.asRight)))
+      .esp[IO]
+      .flatMap { esp =>
+        Stream
+          .emits(
+            List[MiniXML](
+              //format: off
+              MiniXML.Open("a"),
+                MiniXML.Open("b"),
+                  MiniXML.Text("b text"),
+                MiniXML.Close("b"),
+                MiniXML.Text("a text"),
+              MiniXML.Close("a"),
+              //format: on
+            )
+          )
+          .through(esp.pipe)
+          .compile
+          .toList
+          .map(events =>
+            expect.same(List[MiniXML](
+                          //format: off
+                          MiniXML.Text("a text"),
+                          MiniXML.Text("b text"),
+                          //format: on
+                        ),
+                        events))
+      }
+  }
+
+  test("leaf function failure") {
+    MiniXQueryCompiler
+      .compile(
+        Query.ForClause("a",
+                        MiniXPath(NonEmptyList.of(Step.Descendant(None))),
+                        Query.LeafFunction(t => s"No text expected but got $t".asLeft)))
+      .esp[IO]
+      .flatMap { esp =>
+        Stream
+          .emits(
+            List[MiniXML](
+              //format: off
+              MiniXML.Open("a"),
+                MiniXML.Open("b"),
+                  MiniXML.Text("b text"),
+                MiniXML.Close("b"),
+                MiniXML.Text("a text"),
+              MiniXML.Close("a"),
+              //format: on
+            )
+          )
+          .through(esp.pipe)
+          .compile
+          .drain
+          .as(failure("The pipe should have failed"))
+          .handleError(t => expect.same("No text expected but got b text", t.getMessage))
+      }
+  }
+
+  test("wrap") {
+    MiniXQueryCompiler
+      .compile(Query
+        .ForClause("a", MiniXPath(NonEmptyList.of(Step.Descendant(None))), Query.Node("wrapped", Query.Variable("a"))))
+      .esp[IO]
+      .flatMap { esp =>
+        Stream
+          .emits(
+            List[MiniXML](
+              //format: off
+              MiniXML.Open("a"),
+                MiniXML.Open("b"),
+                  MiniXML.Text("b text"),
+                MiniXML.Close("b"),
+                MiniXML.Text("a text"),
+              MiniXML.Close("a"),
+              //format: on
+            )
+          )
+          .through(esp.pipe)
+          .compile
+          .toList
+          .map(events =>
+            expect.same(
+              List(
+                //format: off
+                MiniXML.Open("wrapped"),
+                  MiniXML.Open("a"),
+                    MiniXML.Open("b"),
+                      MiniXML.Text("b text"),
+                    MiniXML.Close("b"),
+                    MiniXML.Text("a text"),
+                  MiniXML.Close("a"),
+                MiniXML.Close("wrapped"),
+                MiniXML.Open("wrapped"),
+                  MiniXML.Open("b"),
+                    MiniXML.Text("b text"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("wrapped"),
+                //format: on
+              ),
+              events
+            ))
       }
   }
 

@@ -64,6 +64,7 @@ object Rhs {
   case class CopyNode[OutTag](children: Rhs[OutTag]) extends Rhs[OutTag]
   case class Leaf[OutTag](value: OutTag) extends Rhs[OutTag]
   case object CopyLeaf extends Rhs[Nothing]
+  case class ApplyToLeaf[OutTag](f: OutTag => Either[String, OutTag]) extends Rhs[OutTag]
   case class Concat[OutTag](fst: Rhs[OutTag], snd: Rhs[OutTag]) extends Rhs[OutTag]
 
   implicit def show[O: Show]: Show[Rhs[O]] =
@@ -76,6 +77,7 @@ object Rhs {
       case CopyNode(children)  => show"%t($children)"
       case Leaf(value)         => show"<$value>"
       case CopyLeaf            => "%t"
+      case ApplyToLeaf(_)      => "<leaf-function>"
       case Concat(l, r)        => show"$l $r"
     }
 }
@@ -264,6 +266,7 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
         case Rhs.CopyNode(inner)                => ERhs.CapturedTree(translateRhs(inner))
         case Rhs.Leaf(v)                        => ERhs.Leaf(v)
         case Rhs.CopyLeaf                       => ERhs.CapturedLeaf
+        case Rhs.ApplyToLeaf(f)                 => ERhs.ApplyToLeaf(f)
         case Rhs.Concat(rhs1, rhs2)             => ERhs.Concat(translateRhs(rhs1), translateRhs(rhs2))
       }
 
