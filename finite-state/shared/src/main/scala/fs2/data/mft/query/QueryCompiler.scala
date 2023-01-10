@@ -113,9 +113,8 @@ private[fs2] abstract class QueryCompiler[Tag, Path] {
               if (!finalTgt) {
                 q1(pat.when(guard)) -> q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
               } else {
-                q1(pat.when(guard)) -> end(x1, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*) ~ q1(
-                  x2,
-                  copyArgs: _*)
+                q1(pat.when(guard)) -> end(x1, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*) ~
+                  q1(x2, copyArgs: _*)
               }
               states1
             }

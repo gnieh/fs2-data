@@ -99,7 +99,7 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
         case Rhs.Node(_, children)  => bareOccurences(children)
         case Rhs.CopyNode(children) => bareOccurences(children)
         case Rhs.Concat(rhs1, rhs2) => bareOccurences(rhs1) ++ bareOccurences(rhs2)
-        case _                      => Set()
+        case _                      => Set.empty
       }
 
     def findAllCalls(rhs: Rhs[OutTag]): List[Rhs.Call[OutTag]] =
@@ -144,7 +144,7 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
                    x,
                    args.zipWithIndex
                      .collect {
-                       case (a, i) if allUsedParams.getOrElse(q, Set()).contains(i) =>
+                       case (a, i) if allUsedParams.getOrElse(q, Set.empty).contains(i) =>
                          dropUnused(a, usedParams)
                      })
         case Rhs.Node(tag, children) => Rhs.Node(tag, dropUnused(children, usedParams))
@@ -240,7 +240,7 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
         case Nil => processed
       }
 
-    val reachableStates = reachable(List(init), Set())
+    val reachableStates = reachable(List(init), Set.empty)
 
     new MFT(init, rules.filter { case (k, _) => reachableStates.contains(k) })
   }
