@@ -14,6 +14,11 @@ compile '/**/index.md' do
   write item.identifier.without_ext + '.html'
 end
 
+compile '/**/*.toml' do
+  filter :erb
+  write item.identifier.to_s
+end
+
 compile '/api/**/*' do
   write item.identifier.to_s
 end
