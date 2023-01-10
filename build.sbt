@@ -117,7 +117,7 @@ val root = tlCrossRootProject
     finiteState
   )
   .settings(commonSettings)
-  .enablePlugins(NoPublishPlugin, ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin, GhpagesPlugin)
+  .enablePlugins(NoPublishPlugin, ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin)
   .settings(
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
       cbor.jvm,
@@ -131,15 +131,11 @@ val root = tlCrossRootProject
       jsonInterpolators.jvm,
       text.jvm,
       xml.jvm,
-      scalaXml.jvm,
-      finiteState.jvm,
-      benchmarks.jvm
+      scalaXml.jvm
     ),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
-    Nanoc / sourceDirectory := file("site"),
-    git.remoteRepo := scmInfo.value.get.connection.replace("scm:git:", ""),
-    ghpagesNoJekyll := true
+    Nanoc / sourceDirectory := file("site")
   )
 
 lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
