@@ -43,8 +43,8 @@ object CsvRowDecoderTest extends SimpleIOSuite {
   case class TestOptionRename(s: String, @CsvName("j") k: Option[Int], i: Int)
   case class TestOptionalString(i: Int, s: Option[String], j: Int)
 
-  implicit val testDataCsvRowDecoder = deriveCsvRowDecoder[TestData]
-  implicit val testDataRowDecoder = deriveRowDecoder[TestData]
+  implicit val testDataCsvRowDecoder: CsvRowDecoder[TestData, String] = deriveCsvRowDecoder[TestData]
+  implicit val testDataRowDecoder: RowDecoder[TestData] = deriveRowDecoder[TestData]
 
   val testDecoder = deriveCsvRowDecoder[Test]
   val testOrderDecoder = deriveCsvRowDecoder[TestOrder]
