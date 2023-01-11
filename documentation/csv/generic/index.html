@@ -9,6 +9,12 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+
+    <!-- search index -->
+    <link rel="stylesheet" href="/css/stork.css" />
+    <script src="/js/stork.js"></script>
+
     <meta name="generator" content="Nanoc 4.12.14">
   </head>
   <body>
@@ -22,6 +28,14 @@
               <li><a href="/documentation/">Documentation</a></li>
               <li><a href="/api/">Scaladoc</a></li>
               <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
+              <li><i class="material-icons">search</i></li>
+              <li>
+                <form>
+                  <div class="input-field">
+                    <input data-stork="search" id="search" type="search" required placeholder="Search the website" autocomplete="off" />
+                  </div>
+                </form>
+              </li>
             </ul>
           </div>
           
@@ -41,6 +55,9 @@
           </div>
           
         </nav>
+        <div class="stork-wrapper-flat">
+          <div data-stork="search-output" class="stork-output"></div>
+        </div>
 
     </header>
 
@@ -106,7 +123,7 @@
 <span class="o">}</span>
 
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">stateDecoder</span> <span class="k">=</span> <span class="n">deriveCellDecoder</span><span class="o">[</span><span class="kt">State</span><span class="o">]</span>
-<span class="c1">// stateDecoder: CellDecoder[State] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@18a0adc2</span>
+<span class="c1">// stateDecoder: CellDecoder[State] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@6e96c55f</span>
 <span class="c1">// use stateDecoder to derive decoders for rows...or just test:</span>
 <span class="nf">stateDecoder</span><span class="o">(</span><span class="s">"On"</span><span class="o">)</span>
 <span class="c1">// res1: DecoderResult[State] = Right(value = On)</span>
@@ -115,7 +132,7 @@
 
 <span class="c1">// same goes for the encoder</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">stateEncoder</span> <span class="k">=</span> <span class="n">deriveCellEncoder</span><span class="o">[</span><span class="kt">State</span><span class="o">]</span>
-<span class="c1">// stateEncoder: CellEncoder[State] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@4edb57eb</span>
+<span class="c1">// stateEncoder: CellEncoder[State] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@5a13b2c5</span>
 <span class="nf">stateEncoder</span><span class="o">(</span><span class="nv">State</span><span class="o">.</span><span class="py">On</span><span class="o">)</span>
 <span class="c1">// res3: String = "On"</span>
 </code></pre></div></div>
@@ -132,9 +149,9 @@
 
 <span class="c1">// works as we have an implicit CellDecoder[String]</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">unknownDecoder</span> <span class="k">=</span> <span class="n">deriveCellDecoder</span><span class="o">[</span><span class="kt">Advanced.Unknown</span><span class="o">]</span>
-<span class="c1">// unknownDecoder: CellDecoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$unaryProductDecoder$3@46ac4945</span>
+<span class="c1">// unknownDecoder: CellDecoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$unaryProductDecoder$3@5b8a2f6f</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">advancedDecoder</span> <span class="k">=</span> <span class="n">deriveCellDecoder</span><span class="o">[</span><span class="kt">Advanced</span><span class="o">]</span>
-<span class="c1">// advancedDecoder: CellDecoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@7b4fcf16</span>
+<span class="c1">// advancedDecoder: CellDecoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@7f567c3</span>
 
 <span class="nf">advancedDecoder</span><span class="o">(</span><span class="s">"Active"</span><span class="o">)</span>
 <span class="c1">// res4: DecoderResult[Advanced] = Right(value = On)</span>
@@ -142,9 +159,9 @@
 <span class="c1">// res5: DecoderResult[Advanced] = Right(value = Unknown(name = "Off"))</span>
 
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">unknownEncoder</span> <span class="k">=</span> <span class="n">deriveCellEncoder</span><span class="o">[</span><span class="kt">Advanced.Unknown</span><span class="o">]</span>
-<span class="c1">// unknownEncoder: CellEncoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$unaryProductEncoder$3@661ca300</span>
+<span class="c1">// unknownEncoder: CellEncoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$unaryProductEncoder$3@5f91f65f</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">advancedEncoder</span> <span class="k">=</span> <span class="n">deriveCellEncoder</span><span class="o">[</span><span class="kt">Advanced</span><span class="o">]</span>
-<span class="c1">// advancedEncoder: CellEncoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@726cc427</span>
+<span class="c1">// advancedEncoder: CellEncoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@1853e2f2</span>
 
 <span class="nf">advancedEncoder</span><span class="o">(</span><span class="nv">Advanced</span><span class="o">.</span><span class="py">On</span><span class="o">)</span>
 <span class="c1">// res6: String = "Active"</span>
@@ -200,7 +217,7 @@
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.csv.generic.semiauto._</span>
 
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">MyRowDecoder</span><span class="k">:</span> <span class="kt">CsvRowDecoder</span><span class="o">[</span><span class="kt">MyRow</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="n">deriveCsvRowDecoder</span><span class="o">[</span><span class="kt">MyRow</span><span class="o">]</span>
-<span class="c1">// MyRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@44c209fa</span>
+<span class="c1">// MyRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@697ff0e6</span>
 
 <span class="k">val</span> <span class="nv">decoded</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decodeUsingHeaders</span><span class="o">[</span><span class="kt">MyRow</span><span class="o">]())</span>
 <span class="c1">// decoded: Stream[[x]Fallible[x], MyRow] = Stream(..)</span>
@@ -243,7 +260,6 @@
       </div>
     </footer>
 
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
     <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function() {
       var elems = document.querySelectorAll('.sidenav');
@@ -253,6 +269,9 @@
       var elems = document.querySelectorAll('.tooltipped');
       var instances = M.Tooltip.init(elems, {});
     });
+
+    stork.initialize("/js/stork.wasm")
+    stork.register("search", "/index.st", { showCloseButton: false })
     </script>
-  </body>
+
 </html>

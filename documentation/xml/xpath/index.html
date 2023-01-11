@@ -9,6 +9,12 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+
+    <!-- search index -->
+    <link rel="stylesheet" href="/css/stork.css" />
+    <script src="/js/stork.js"></script>
+
     <meta name="generator" content="Nanoc 4.12.14">
   </head>
   <body>
@@ -22,6 +28,14 @@
               <li><a href="/documentation/">Documentation</a></li>
               <li><a href="/api/">Scaladoc</a></li>
               <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
+              <li><i class="material-icons">search</i></li>
+              <li>
+                <form>
+                  <div class="input-field">
+                    <input data-stork="search" id="search" type="search" required placeholder="Search the website" autocomplete="off" />
+                  </div>
+                </form>
+              </li>
             </ul>
           </div>
           
@@ -45,6 +59,9 @@
           </div>
           
         </nav>
+        <div class="stork-wrapper-flat">
+          <div data-stork="search-output" class="stork-output"></div>
+        </div>
 
     </header>
 
@@ -247,15 +264,15 @@ This means that for nested matches, the first stream returned is the ancestor el
   <span class="o">.</span><span class="py">toList</span>
   <span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res2: List[collector.show.Out] = List(</span>
+<span class="c1">//   """&lt;a&gt;</span>
+<span class="c1">//       &lt;c&gt;&lt;![CDATA[some other text]]&gt;&lt;/c&gt;</span>
+<span class="c1">//     &lt;/a&gt;""",</span>
 <span class="c1">//   """&lt;a attr="value"&gt;</span>
 <span class="c1">//     &lt;b&gt;text&lt;/b&gt;</span>
 <span class="c1">//     &lt;a&gt;</span>
 <span class="c1">//       &lt;c&gt;&lt;![CDATA[some other text]]&gt;&lt;/c&gt;</span>
 <span class="c1">//     &lt;/a&gt;</span>
-<span class="c1">//   &lt;/a&gt;""",</span>
-<span class="c1">//   """&lt;a&gt;</span>
-<span class="c1">//       &lt;c&gt;&lt;![CDATA[some other text]]&gt;&lt;/c&gt;</span>
-<span class="c1">//     &lt;/a&gt;"""</span>
+<span class="c1">//   &lt;/a&gt;"""</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -275,7 +292,6 @@ This means that for nested matches, the first stream returned is the ancestor el
       </div>
     </footer>
 
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
     <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function() {
       var elems = document.querySelectorAll('.sidenav');
@@ -285,6 +301,9 @@ This means that for nested matches, the first stream returned is the ancestor el
       var elems = document.querySelectorAll('.tooltipped');
       var instances = M.Tooltip.init(elems, {});
     });
+
+    stork.initialize("/js/stork.wasm")
+    stork.register("search", "/index.st", { showCloseButton: false })
     </script>
-  </body>
+
 </html>

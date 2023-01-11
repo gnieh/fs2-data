@@ -9,6 +9,12 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+
+    <!-- search index -->
+    <link rel="stylesheet" href="/css/stork.css" />
+    <script src="/js/stork.js"></script>
+
     <meta name="generator" content="Nanoc 4.12.14">
   </head>
   <body>
@@ -22,6 +28,14 @@
               <li><a href="/documentation/">Documentation</a></li>
               <li><a href="/api/">Scaladoc</a></li>
               <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
+              <li><i class="material-icons">search</i></li>
+              <li>
+                <form>
+                  <div class="input-field">
+                    <input data-stork="search" id="search" type="search" required placeholder="Search the website" autocomplete="off" />
+                  </div>
+                </form>
+              </li>
             </ul>
           </div>
           
@@ -37,6 +51,9 @@
           </div>
           
         </nav>
+        <div class="stork-wrapper-flat">
+          <div data-stork="search-output" class="stork-output"></div>
+        </div>
 
     </header>
 
@@ -100,7 +117,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@6559c539,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@7d687bed,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -110,7 +127,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@73140195,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@3add1b07,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -119,7 +136,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@10a11b8c,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@4adac3eb,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -129,7 +146,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@68708a46,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@1e97f7d6,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -138,7 +155,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@43abfa7c,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@209e40fa,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -277,7 +294,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@10e05335,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@724962cd,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -287,7 +304,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@88547de,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@6e1022f4,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -296,7 +313,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@644bce32,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@4f1841a7,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -306,7 +323,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@78afa0dd,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@1d53412e,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -315,7 +332,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@6a443d06,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@24b50743,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -340,7 +357,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@485d3c27,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@4b5d86a3,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -350,7 +367,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@725d4140,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@46c5f316,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -359,7 +376,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@7771be9e,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@419890d1,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -369,7 +386,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@3c96117b,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@4d9b08be,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -378,7 +395,7 @@
 <span class="c1">//     PositiveInt(</span>
 <span class="c1">//       bytes = Chunk(</span>
 <span class="c1">//         bytes = View(</span>
-<span class="c1">//           at = scodec.bits.ByteVector$AtArray@1d0baeca,</span>
+<span class="c1">//           at = scodec.bits.ByteVector$AtArray@6ad4e730,</span>
 <span class="c1">//           offset = 0L,</span>
 <span class="c1">//           size = 1L</span>
 <span class="c1">//         )</span>
@@ -402,7 +419,6 @@
       </div>
     </footer>
 
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
     <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function() {
       var elems = document.querySelectorAll('.sidenav');
@@ -412,6 +428,9 @@
       var elems = document.querySelectorAll('.tooltipped');
       var instances = M.Tooltip.init(elems, {});
     });
+
+    stork.initialize("/js/stork.wasm")
+    stork.register("search", "/index.st", { showCloseButton: false })
     </script>
-  </body>
+
 </html>

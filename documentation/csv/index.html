@@ -9,6 +9,12 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+
+    <!-- search index -->
+    <link rel="stylesheet" href="/css/stork.css" />
+    <script src="/js/stork.js"></script>
+
     <meta name="generator" content="Nanoc 4.12.14">
   </head>
   <body>
@@ -22,6 +28,14 @@
               <li><a href="/documentation/">Documentation</a></li>
               <li><a href="/api/">Scaladoc</a></li>
               <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
+              <li><i class="material-icons">search</i></li>
+              <li>
+                <form>
+                  <div class="input-field">
+                    <input data-stork="search" id="search" type="search" required placeholder="Search the website" autocomplete="off" />
+                  </div>
+                </form>
+              </li>
             </ul>
           </div>
           
@@ -41,6 +55,9 @@
           </div>
           
         </nav>
+        <div class="stork-wrapper-flat">
+          <div data-stork="search-output" class="stork-output"></div>
+        </div>
 
     </header>
 
@@ -115,9 +132,9 @@
 <span class="k">val</span> <span class="nv">textStream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emit</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">covary</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">]</span>
 <span class="c1">// textStream: Stream[Fallible, String] = Stream(..)</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">myRowDecoder</span><span class="k">:</span> <span class="kt">CsvRowDecoder</span><span class="o">[</span><span class="kt">MyRow</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="n">deriveCsvRowDecoder</span>
-<span class="c1">// myRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@35c8666a</span>
+<span class="c1">// myRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@76ff57cb</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">myRowEncoder</span><span class="k">:</span> <span class="kt">CsvRowEncoder</span><span class="o">[</span><span class="kt">MyRow</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="n">deriveCsvRowEncoder</span>
-<span class="c1">// myRowEncoder: CsvRowEncoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowEncoder$$anonfun$productWriter$2@709d8fb7</span>
+<span class="c1">// myRowEncoder: CsvRowEncoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowEncoder$$anonfun$productWriter$2@1d37ed2f</span>
 
 <span class="c1">// decodeUsingHeaders can take a `Char` indicating the separator to use</span>
 <span class="c1">// for example `decodeUsingHeaders[MyRow](';') for a semi-colon separated csv</span>
@@ -317,7 +334,7 @@
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">parseableMyHeaders</span><span class="k">:</span> <span class="kt">ParseableHeader</span><span class="o">[</span><span class="kt">MyHeaders</span><span class="o">]</span> <span class="k">=</span> <span class="nv">ParseableHeader</span><span class="o">.</span><span class="py">instance</span><span class="o">[</span><span class="kt">MyHeaders</span><span class="o">]</span> <span class="o">{</span> <span class="n">name</span> <span class="k">=&gt;</span>
    <span class="nv">MyHeaders</span><span class="o">.</span><span class="py">withNameInsensitiveOption</span><span class="o">(</span><span class="n">name</span><span class="o">).</span><span class="py">toRight</span><span class="o">(</span><span class="k">new</span> <span class="nc">HeaderError</span><span class="o">(</span><span class="n">s</span><span class="s">"Unknown header $name"</span><span class="o">))</span>
 <span class="o">}</span>
-<span class="c1">// parseableMyHeaders: ParseableHeader[MyHeaders] = fs2.data.csv.ParseableHeader$$$Lambda$12158/1089055026@6d4acb48</span>
+<span class="c1">// parseableMyHeaders: ParseableHeader[MyHeaders] = fs2.data.csv.ParseableHeader$$$Lambda$12177/1168683401@64d58a23</span>
 
 <span class="k">val</span> <span class="nv">withMyHeaders</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">lowlevel</span><span class="o">.</span><span class="py">headers</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">MyHeaders</span><span class="o">])</span>
 <span class="c1">// withMyHeaders: Stream[[x]Fallible[x], CsvRow[MyHeaders]] = Stream(..)</span>
@@ -394,12 +411,12 @@
 <p>For <code>CellEncoder</code>, it is even easier to define your own as encoding can’t fail, so basically it’s just a function <code>A =&gt; String</code>. The easiest ways to roll your own are using Scala’s single abstract method sugar:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Wrapper</span><span class="o">(</span><span class="n">content</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">wrapperCellEncoder</span><span class="k">:</span> <span class="kt">CellEncoder</span><span class="o">[</span><span class="kt">Wrapper</span><span class="o">]</span> <span class="k">=</span> <span class="o">(</span><span class="n">w</span><span class="k">:</span> <span class="kt">Wrapper</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nv">w</span><span class="o">.</span><span class="py">content</span>
-<span class="c1">// wrapperCellEncoder: CellEncoder[Wrapper] = repl.MdocSession$MdocApp$$anonfun$8@48ca1dac</span>
+<span class="c1">// wrapperCellEncoder: CellEncoder[Wrapper] = repl.MdocSession$MdocApp$$anonfun$8@d643f3</span>
 </code></pre></div></div>
 
 <p>or using <code>contramap</code> on an existing encoder:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="nv">wrapperCellEncoder2</span><span class="k">:</span> <span class="kt">CellEncoder</span><span class="o">[</span><span class="kt">Wrapper</span><span class="o">]</span> <span class="k">=</span> <span class="nc">CellEncoder</span><span class="o">[</span><span class="kt">String</span><span class="o">].</span><span class="py">contramap</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">content</span><span class="o">)</span>
-<span class="c1">// wrapperCellEncoder2: CellEncoder[Wrapper] = fs2.data.csv.CellEncoder$$anonfun$contramap$2@7537075b</span>
+<span class="c1">// wrapperCellEncoder2: CellEncoder[Wrapper] = fs2.data.csv.CellEncoder$$anonfun$contramap$2@26bdc0b</span>
 </code></pre></div></div>
 
 <h4 id="rowdecoder--rowencoder"><code>RowDecoder</code> &amp; <code>RowEncoder</code></h4>
@@ -500,7 +517,6 @@
       </div>
     </footer>
 
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
     <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function() {
       var elems = document.querySelectorAll('.sidenav');
@@ -510,6 +526,9 @@
       var elems = document.querySelectorAll('.tooltipped');
       var instances = M.Tooltip.init(elems, {});
     });
+
+    stork.initialize("/js/stork.wasm")
+    stork.register("search", "/index.st", { showCloseButton: false })
     </script>
-  </body>
+
 </html>

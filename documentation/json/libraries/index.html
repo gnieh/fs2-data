@@ -9,6 +9,12 @@
     <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
     <style>body{font-family: overpass, sans-serif; }</style>
 
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+
+    <!-- search index -->
+    <link rel="stylesheet" href="/css/stork.css" />
+    <script src="/js/stork.js"></script>
+
     <meta name="generator" content="Nanoc 4.12.14">
   </head>
   <body>
@@ -22,6 +28,14 @@
               <li><a href="/documentation/">Documentation</a></li>
               <li><a href="/api/">Scaladoc</a></li>
               <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
+              <li><i class="material-icons">search</i></li>
+              <li>
+                <form>
+                  <div class="input-field">
+                    <input data-stork="search" id="search" type="search" required placeholder="Search the website" autocomplete="off" />
+                  </div>
+                </form>
+              </li>
             </ul>
           </div>
           
@@ -53,6 +67,9 @@
           </div>
           
         </nav>
+        <div class="stork-wrapper-flat">
+          <div data-stork="search-output" class="stork-output"></div>
+        </div>
 
     </header>
 
@@ -288,7 +305,6 @@ For instance both examples from the <a href="/documentation/json/">core module d
       </div>
     </footer>
 
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
     <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function() {
       var elems = document.querySelectorAll('.sidenav');
@@ -298,6 +314,9 @@ For instance both examples from the <a href="/documentation/json/">core module d
       var elems = document.querySelectorAll('.tooltipped');
       var instances = M.Tooltip.init(elems, {});
     });
+
+    stork.initialize("/js/stork.wasm")
+    stork.register("search", "/index.st", { showCloseButton: false })
     </script>
-  </body>
+
 </html>
