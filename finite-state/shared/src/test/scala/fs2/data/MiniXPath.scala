@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package fs2.data.mft
+package fs2.data
 
-case class Rules[Guard, InTag, OutTag](nparams: Int, tree: List[(EventSelector[Guard, InTag], Rhs[OutTag])]) {
-  def isWildcard: Boolean =
-    tree.map(_._1).toSet == Set(EventSelector.AnyLeaf(None),
-                                EventSelector.AnyNode(None),
-                                EventSelector.Epsilon()) && tree.map(_._2).toSet.size == 1
+import cats.data.NonEmptyList
+
+case class MiniXPath(steps: NonEmptyList[Step])
+
+sealed trait Step
+object Step {
+  case class Child(name: Option[String]) extends Step
+  case class Descendant(name: Option[String]) extends Step
 }
