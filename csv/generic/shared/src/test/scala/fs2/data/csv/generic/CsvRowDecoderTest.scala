@@ -25,6 +25,8 @@ import cats.effect.IO
 import cats.implicits.catsSyntaxEq
 import weaver._
 
+import scala.util.{Failure, Success, Try}
+
 object CsvRowDecoderTest extends SimpleIOSuite {
 
   val csvRow = CsvRow.unsafe(NonEmptyList.of("1", "test", "42"), NonEmptyList.of("i", "s", "j"))
@@ -244,4 +246,98 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       .toList
       .map(actual => expect.eql(expected, actual))
   }
+  test("decodeUsingHeaders should map data to case class matching the header name to the case class field name") {
+    implicit val decoder: CsvRowDecoder[Test, String] = testDecoder
+    implicit val testEq: Eq[Test] = (a, b) => a == b
+
+    val content =
+      """s,i,j
+        |a,12,3
+        |""".stripMargin
+
+    val expected: List[Test] = List(
+      Test(12, "a", Some(3))
+    )
+
+    Stream
+      .emit(content)
+      .covary[IO]
+      .through(decodeUsingHeaders[Test](','))
+      .compile
+      .toList
+      .map(actual => expect.eql(expected, actual))
+  }
+
+  test("decodeUsingHeaders should succeed if an optional field is missing") {
+    implicit val decoder: CsvRowDecoder[Test, String] = testDecoder
+    implicit val testEq: Eq[Test] = (a, b) => a == b
+
+    val content =
+      """s,i
+        |a,12
+        |""".stripMargin
+
+    val expected: List[Test] = List(
+      Test(12, "a", None)
+    )
+
+    Stream
+      .emit(content)
+      .covary[IO]
+      .through(decodeUsingHeaders[Test](','))
+      .compile
+      .toList
+      .map(actual => expect.eql(expected, actual))
+  }
+
+  test("decodeUsingHeaders should succeed if a required field with default value is missing") {
+    implicit val decoder: CsvRowDecoder[Test, String] = testDecoder
+    implicit val testEq: Eq[Test] = (a, b) => a == b
+
+    val content =
+      """s,j
+        |a,3
+        |""".stripMargin
+
+    val expected: List[Test] = List(
+      Test(0, "a", Some(3))
+    )
+
+    Stream
+      .emit(content)
+      .covary[IO]
+      .through(decodeUsingHeaders[Test](','))
+      .compile
+      .toList
+      .map(actual => expect.eql(expected, actual))
+
+    // FIXME: This test succeeds on Scala 2.x but fails on Scala 3 with the error:
+    // `DecoderError: unable to decode '' as an integer`, caused by a NumberFormatException on an empty String.
+  }
+
+  pureTest("decodeUsingHeaders should fail if a required string field is missing") {
+    implicit val decoder: CsvRowDecoder[Test, String] = testDecoder
+
+    val content =
+      """i,j
+        |12,3
+        |""".stripMargin
+
+    val stream = Stream
+      .emit(content)
+      .covary[IO]
+      .through(decodeUsingHeaders[Test](','))
+      .compile
+      .toList
+
+    import cats.effect.unsafe.implicits.global
+    Try(stream.unsafeRunSync()) match {
+      case Failure(exception) => expect(exception.getMessage == "unknown column name 's' in line 2")
+      case Success(x)         => failure(s"Stream succeeded with value $x")
+    }
+
+    // FIXME: This test succeeds on Scala 2.x but fails on Scala 3. The Stream will finish successfully with an empty string
+    // in Test.s.
+  }
+
 }
