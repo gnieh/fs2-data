@@ -59,6 +59,13 @@ val commonSettings = List(
   scalacOptions := scalacOptions.value.filterNot(_ == "-source:3.0-migration"),
   scalacOptions ++= PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
+      case Some((2, _)) => List("-Ypatmat-exhaust-depth", "40")
+      case _            => Nil
+    }
+    .toList
+    .flatten,
+  scalacOptions ++= PartialFunction
+    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
       case Some((2, 12)) =>
         List(
           "-Wconf:msg=it is not recommended to define classes/objects inside of package objects:s",
@@ -117,7 +124,7 @@ val root = tlCrossRootProject
     finiteState
   )
   .settings(commonSettings)
-  .enablePlugins(NoPublishPlugin, ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin, GhpagesPlugin)
+  .enablePlugins(NoPublishPlugin, ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin)
   .settings(
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
       cbor.jvm,
@@ -131,15 +138,11 @@ val root = tlCrossRootProject
       jsonInterpolators.jvm,
       text.jvm,
       xml.jvm,
-      scalaXml.jvm,
-      finiteState.jvm,
-      benchmarks.jvm
+      scalaXml.jvm
     ),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
-    Nanoc / sourceDirectory := file("site"),
-    git.remoteRepo := scmInfo.value.get.connection.replace("scm:git:", ""),
-    ghpagesNoJekyll := true
+    Nanoc / sourceDirectory := file("site")
   )
 
 lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -436,7 +439,36 @@ lazy val finiteState = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .settings(
     name := "fs2-data-finite-state",
     description := "Streaming finite state machines",
-    tlVersionIntroduced := Map("3" -> "1.6.0", "2.13" -> "1.6.0", "2.12" -> "1.6.0")
+    tlVersionIntroduced := Map("3" -> "1.6.0", "2.13" -> "1.6.0", "2.12" -> "1.6.0"),
+    mimaBinaryIssueFilters ++= List(
+      // all filters related to esp.Rhs.Captured* come from converting it from case class to case object
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.esp.Rhs$CapturedLeaf"),
+      ProblemFilters.exclude[MissingTypesProblem]("fs2.data.esp.Rhs$CapturedLeaf$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedLeaf.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedLeaf.unapply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.name"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.copy"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.esp.Rhs#CapturedTree.copy$default$1"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.copy$default$2"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.apply"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.esp.Rhs#CapturedLeaf.fromProduct"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.esp.Rhs#CapturedTree._1"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree._2"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "fs2.data.mft.MFTBuilder#Guardable.fs2$data$mft$MFTBuilder$Guardable$$$outer"),
+      // rules now only have number of parameters
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.mft.Rules.params"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.copy"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.mft.Rules.copy$default$1"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.this"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.apply"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.mft.Rules._1")
+    )
+  )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
   .nativeSettings(
     tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")

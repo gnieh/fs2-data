@@ -206,12 +206,12 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
             if (nonTrivialIdx >= 0) {
               // there are non trivially true guards after the first one
               specialize(col, Pat.trueTag, Nil, matrix.take(1 + nonTrivialIdx)).map { smat =>
-                (g, Map(Pat.trueTag -> ((false, Nil, smat))), (false, matrix.drop(1 + nonTrivialIdx)).some)
+                (g, Map(Pat.trueTag -> ((false, Nil, smat))), (true, matrix.drop(1 + nonTrivialIdx)).some)
               }
             } else {
               // only trivially false guard afterwards
               specialize(col, Pat.trueTag, Nil, matrix).map { smat =>
-                (g, Map(Pat.trueTag -> ((false, Nil, smat))), (false, defaultMatrix(col, matrix)).some)
+                (g, Map(Pat.trueTag -> ((false, Nil, smat))), (true, defaultMatrix(col, matrix)).some)
               }
             }
         }

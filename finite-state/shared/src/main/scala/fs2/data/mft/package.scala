@@ -79,4 +79,7 @@ package object mft {
   def copy: Rhs[Nothing] =
     Rhs.CopyLeaf
 
+  def applyToLeaf[OutTag](f: OutTag => Either[String, OutTag]) =
+    Rhs.ApplyToLeaf(f)
+
 }

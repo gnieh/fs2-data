@@ -16,6 +16,8 @@
 
 package fs2.data.pattern
 
+import cats.Show
+
 /** Describes the structure of an expression in term of constructor
   * trees that can be selected.
   */
@@ -42,6 +44,9 @@ object Evaluator {
   * To be used when a pattern language has no guards.
   */
 sealed trait NoGuard
+object NoGuard {
+  implicit val show: Show[NoGuard] = Show.show(_ => "")
+}
 
 object Selectable {
   def apply[Expr, Tag](implicit ev: Selectable[Expr, Tag]): Selectable[Expr, Tag] =

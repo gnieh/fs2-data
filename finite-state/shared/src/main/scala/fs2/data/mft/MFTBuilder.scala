@@ -37,6 +37,8 @@ class MFTBuilder[Guard, InTag, OutTag] private[mft] {
   sealed trait PatternBuilder
   sealed trait Guardable extends PatternBuilder {
     def when(guard: Guard): PatternBuilder
+    def when(guard: Option[Guard]): PatternBuilder =
+      guard.fold[PatternBuilder](this)(when(_))
   }
   private[mft] object PatternBuilder {
     case class Any(guard: Option[Guard]) extends Guardable {
@@ -76,6 +78,6 @@ class MFTBuilder[Guard, InTag, OutTag] private[mft] {
   }
 
   def build: MFT[Guard, InTag, OutTag] =
-    new MFT(initial, states.map { st => st.q -> Rules(List.range(0, st.nargs), st.rules.result()) }.toMap)
+    new MFT(initial, states.map { st => st.q -> Rules(st.nargs, st.rules.result()) }.toMap)
 
 }

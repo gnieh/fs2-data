@@ -24,6 +24,13 @@ jobs:
         run: "sbt 'set ThisBuild / tlFatalWarningsInCi := false' documentation/mdoc"
       - name: "Build site"
         run: "sbt 'set ThisBuild / tlFatalWarningsInCi := false' makeSite"
+      - name: "Install stork"
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: stork-search --locked
+      - name: "Build search index"
+        run: 'stork build --input target/site/index.toml --output target/site/index.st'
       - uses: actions/upload-artifact@v3
         with:
           name: site
@@ -33,3 +40,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./target/site
+          exclude_assets: '.github,**/index.toml'

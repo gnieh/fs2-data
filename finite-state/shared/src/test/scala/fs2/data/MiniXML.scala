@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package fs2.data.pattern
-
-import fs2.data.esp.Tag
-import fs2.data.esp.Conversion
+package fs2.data
 
 import cats.Eq
+import fs2.data.esp.{Conversion, Tag}
+import fs2.data.pattern.{ConstructorTree, Selectable}
+import cats.Show
 
 sealed trait MiniXML
 object MiniXML {
@@ -54,6 +54,15 @@ object MiniXML {
 
     override def makeLeaf(t: String): MiniXML = MiniXML.Text(t)
 
+  }
+
+  implicit object MiniXMLShow extends Show[MiniXML] {
+    def show(node: MiniXML): String =
+      node match {
+        case Open(name)  => s"<$name>"
+        case Close(name) => s"</$name>"
+        case Text(t)     => t
+      }
   }
 
 }
