@@ -1,0 +1,11 @@
+[input]
+<% @items.find_all('/documentation/**/*.md').each do |item| %>
+[[input.files]]
+path = "<%= item.reps[:default].raw_path %>"
+url = "<%= item.path %>"
+title = "<%= strip_html(item[:title]) %>"
+<% end %>
+
+[output]
+excerpts_per_result = 3
+displayed_results_count = 5
