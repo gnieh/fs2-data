@@ -18,9 +18,11 @@ package fs2
 package data.csv
 package generic
 
+import cats.Eq
 import semiauto._
 import cats.data.NonEmptyList
-
+import cats.effect.IO
+import cats.implicits.catsSyntaxEq
 import weaver._
 
 object CsvRowDecoderTest extends SimpleIOSuite {
@@ -40,6 +42,9 @@ object CsvRowDecoderTest extends SimpleIOSuite {
   case class TestRename(s: String, @CsvName("j") k: Int, i: Int)
   case class TestOptionRename(s: String, @CsvName("j") k: Option[Int], i: Int)
   case class TestOptionalString(i: Int, s: Option[String], j: Int)
+
+  implicit val testDataCsvRowDecoder = deriveCsvRowDecoder[TestData]
+  implicit val testDataRowDecoder = deriveRowDecoder[TestData]
 
   val testDecoder = deriveCsvRowDecoder[Test]
   val testOrderDecoder = deriveCsvRowDecoder[TestOrder]
@@ -82,4 +87,161 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       expect(testOptionalStringDecoder(csvRowEmptyCell) == Right(TestOptionalString(1, None, 42)))
   }
 
+  implicit val decoderErrorEq: Eq[Throwable] = (a, b) => a.toString === b.toString
+
+  implicit val decoderTestDataEq: Eq[TestData] = (a, b) => a == b
+
+  test("Parser should return all decoder results as values when using attemptDecodeUsingHeaders") {
+    val content =
+      """name,age,description
+        |John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected: List[Either[Throwable, TestData]] = List(
+      Right(TestData("John Doe", "47", "description 1")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 3", None)),
+      Right(TestData("Bob Smith", "80", "description 2")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
+    )
+
+    Stream
+      .emit(content)
+      .covary[IO]
+      .through(attemptDecodeUsingHeaders[TestData](','))
+      .compile
+      .toList
+      .map(actual => expect.eql(expected, actual))
+  }
+
+  test("Parser should return only errors as values when using attemptDecodeUsingHeaders with wrong header") {
+    val content =
+      """name1,age,description
+        |John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected: List[Either[Throwable, TestData]] = List(
+      Left(new DecoderError("unknown column name 'name' in line 2", None)),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 3", None)),
+      Left(new DecoderError("unknown column name 'name' in line 4", None)),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
+    )
+
+    Stream
+      .emit(content)
+      .covary[IO]
+      .through(attemptDecodeUsingHeaders[TestData](','))
+      .compile
+      .toList
+      .map(actual => expect.eql(expected, actual))
+  }
+
+  test("Parser should return all decoder results as values when using attemptDecodeGivenHeaders") {
+    val content =
+      """name-should-not-be-used,age-should-not-be-used,description-should-not-be-used
+        |John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected: List[Either[Throwable, TestData]] = List(
+      Right(TestData("John Doe", "47", "description 1")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 3", None)),
+      Right(TestData("Bob Smith", "80", "description 2")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
+    )
+
+    Stream
+      .emit(content)
+      .covary[IO]
+      .through(
+        attemptDecodeGivenHeaders[TestData](separator = ',',
+                                            skipHeaders = true,
+                                            headers = NonEmptyList.of("name", "age", "description")))
+      .compile
+      .toList
+      .map(actual => expect.eql(expected, actual))
+  }
+
+  test("Parser should return all decoder results when using attemptDecodeGivenHeaders with skipHeaders = false") {
+    val content =
+      """John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected: List[Either[Throwable, TestData]] = List(
+      Right(TestData("John Doe", "47", "description 1")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 2", None)),
+      Right(TestData("Bob Smith", "80", "description 2")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 4", None))
+    )
+
+    Stream
+      .emit(content)
+      .covary[IO]
+      .through(
+        attemptDecodeGivenHeaders[TestData](separator = ',',
+                                            skipHeaders = false,
+                                            headers = NonEmptyList.of("name", "age", "description")))
+      .compile
+      .toList
+      .map(actual => expect.eql(expected, actual))
+  }
+
+  test("Parser should return all decoder results when using attemptDecodeSkippingHeaders") {
+    val content =
+      """name-should-not-be-used,age-should-not-be-used,description-should-not-be-used
+        |John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected: List[Either[Throwable, TestData]] = List(
+      Right(TestData("John Doe", "47", "description 1")),
+      Left(new DecoderError("unexpect end of row", None)),
+      Right(TestData("Bob Smith", "80", "description 2")),
+      Left(new DecoderError("unexpect end of row", None))
+    )
+
+    Stream
+      .emit(content)
+      .covary[IO]
+      .through(attemptDecodeSkippingHeaders[TestData](separator = ','))
+      .compile
+      .toList
+      .map(actual => expect.eql(expected, actual))
+  }
+
+  test("Parser should return all decoder results when using attemptDecodeWithoutHeaders") {
+    val content =
+      """John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected: List[Either[Throwable, TestData]] = List(
+      Right(TestData("John Doe", "47", "description 1")),
+      Left(new DecoderError("unexpect end of row", None)),
+      Right(TestData("Bob Smith", "80", "description 2")),
+      Left(new DecoderError("unexpect end of row", None))
+    )
+
+    Stream
+      .emit(content)
+      .covary[IO]
+      .through(attemptDecodeWithoutHeaders[TestData](separator = ','))
+      .compile
+      .toList
+      .map(actual => expect.eql(expected, actual))
+  }
 }

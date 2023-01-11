@@ -37,3 +37,5 @@ case class IntResultWrapper(value: DecoderResult[Int])
 case class Thing(value: String, extra: Int)
 case class ThingWrapper(thing: Thing)
 case class Wrapper[T](value: T)
+
+case class TestData(name: String, age: String, description: String)
