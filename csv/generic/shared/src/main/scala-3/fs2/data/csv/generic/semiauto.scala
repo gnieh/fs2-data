@@ -44,7 +44,7 @@ object semiauto {
                 case (hd, idx) :: tail => cd(s"at index $idx", Some(hd)).tupleLeft(tail)
                 // do not fail immediately as optional decoding could succeed without input
                 case Nil => cd(s"at index -1", None).tupleLeft(Nil)
-            }
+              }.adaptErr { case d: DecoderError => d.withLine(row.line) }
         }(summon, summon, summon)
           .runA(row.values.toList.zipWithIndex)
       }
@@ -73,9 +73,9 @@ object semiauto {
               StateT[DecoderResult, List[(String, Option[String])], t] {
                 case (name, value) :: tail => cd(name, value).tupleLeft(tail)
                 case Nil                   => new DecoderError("Bug in derivation logic.").asLeft
-            }
+              }.adaptErr { case d: DecoderError => d.withLine(row.line) }
         }(summon, summon, summon)
-          .runA(names.map(name => name -> row.toMap.get(name)))
+          .runA(names.map(name => name -> row(name)))
       }
     }
   }
