@@ -8,8 +8,8 @@ val circeVersion = "0.14.3"
 val circeExtrasVersion = "0.14.2"
 val playVersion = "2.10.0-RC7"
 val shapeless2Version = "2.3.10"
-val shapeless3Version = "3.2.0"
-val scalaJavaTimeVersion = "2.4.0"
+val shapeless3Version = "3.3.0"
+val scalaJavaTimeVersion = "2.5.0"
 val diffsonVersion = "4.3.0"
 val literallyVersion = "1.1.0"
 val weaverVersion = "0.8.1"
@@ -38,7 +38,7 @@ val commonSettings = List(
   versionScheme := Some("early-semver"),
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
-    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.8.1",
+    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.9.0",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "io.circe" %%% "circe-jawn" % circeVersion % "test",
     "io.circe" %%% "circe-generic" % circeVersion % "test",
@@ -117,7 +117,7 @@ val root = tlCrossRootProject
     finiteState
   )
   .settings(commonSettings)
-  .enablePlugins(NoPublishPlugin, ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin, GhpagesPlugin)
+  .enablePlugins(NoPublishPlugin, ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin)
   .settings(
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
       cbor.jvm,
@@ -131,15 +131,11 @@ val root = tlCrossRootProject
       jsonInterpolators.jvm,
       text.jvm,
       xml.jvm,
-      scalaXml.jvm,
-      finiteState.jvm,
-      benchmarks.jvm
+      scalaXml.jvm
     ),
     ScalaUnidoc / siteSubdirName := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
-    Nanoc / sourceDirectory := file("site"),
-    git.remoteRepo := scmInfo.value.get.connection.replace("scm:git:", ""),
-    ghpagesNoJekyll := true
+    Nanoc / sourceDirectory := file("site")
   )
 
 lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
