@@ -20,7 +20,6 @@ package generic
 
 import semiauto._
 import cats.data.NonEmptyList
-
 import weaver._
 
 object CsvRowDecoderTest extends SimpleIOSuite {
@@ -80,6 +79,15 @@ object CsvRowDecoderTest extends SimpleIOSuite {
   pureTest("allow empty strings as string cell values") {
     expect(testDecoder(csvRowEmptyCell) == Right(Test(1, "", Some(42)))) and
       expect(testOptionalStringDecoder(csvRowEmptyCell) == Right(TestOptionalString(1, None, 42)))
+  }
+
+  pureTest("should fail if a required string field is missing") {
+    val row = CsvRow.unsafe(NonEmptyList.of("12", "3"), NonEmptyList.of("i", "j")).withLine(Some(2))
+
+    testDecoder(row) match {
+      case Left(error) => expect(error.getMessage == "unknown column name 's' in line 2")
+      case Right(x)    => failure(s"Stream succeeded with value $x")
+    }
   }
 
 }
