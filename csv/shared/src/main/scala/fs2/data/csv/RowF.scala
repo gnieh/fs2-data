@@ -38,6 +38,12 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
   /** Number of cells in the row. */
   def size: Int = values.size
 
+  /**
+    * Set the line number for this row.
+    */
+  def withLine(line: Option[Long]): RowF[H, Header] =
+    copy(line = line)
+
   /** Returns the content of the cell at `idx` if it exists.
     * Returns `None` if `idx` is out of row bounds.
     * An empty cell value results in `Some("")`.
