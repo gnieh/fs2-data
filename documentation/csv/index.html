@@ -132,9 +132,9 @@
 <span class="k">val</span> <span class="nv">textStream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emit</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">covary</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">]</span>
 <span class="c1">// textStream: Stream[Fallible, String] = Stream(..)</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">myRowDecoder</span><span class="k">:</span> <span class="kt">CsvRowDecoder</span><span class="o">[</span><span class="kt">MyRow</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="n">deriveCsvRowDecoder</span>
-<span class="c1">// myRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@76ff57cb</span>
+<span class="c1">// myRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@6dee2d16</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">myRowEncoder</span><span class="k">:</span> <span class="kt">CsvRowEncoder</span><span class="o">[</span><span class="kt">MyRow</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="n">deriveCsvRowEncoder</span>
-<span class="c1">// myRowEncoder: CsvRowEncoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowEncoder$$anonfun$productWriter$2@1d37ed2f</span>
+<span class="c1">// myRowEncoder: CsvRowEncoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowEncoder$$anonfun$productWriter$2@7cb0d8ea</span>
 
 <span class="c1">// decodeUsingHeaders can take a `Char` indicating the separator to use</span>
 <span class="c1">// for example `decodeUsingHeaders[MyRow](';') for a semi-colon separated csv</span>
@@ -331,10 +331,15 @@
   <span class="k">def</span> <span class="nf">values</span> <span class="k">=</span> <span class="n">findValues</span>
 <span class="o">}</span>
 
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">parseableMyHeaders</span><span class="k">:</span> <span class="kt">ParseableHeader</span><span class="o">[</span><span class="kt">MyHeaders</span><span class="o">]</span> <span class="k">=</span> <span class="nv">ParseableHeader</span><span class="o">.</span><span class="py">instance</span><span class="o">[</span><span class="kt">MyHeaders</span><span class="o">]</span> <span class="o">{</span> <span class="n">name</span> <span class="k">=&gt;</span>
-   <span class="nv">MyHeaders</span><span class="o">.</span><span class="py">withNameInsensitiveOption</span><span class="o">(</span><span class="n">name</span><span class="o">).</span><span class="py">toRight</span><span class="o">(</span><span class="k">new</span> <span class="nc">HeaderError</span><span class="o">(</span><span class="n">s</span><span class="s">"Unknown header $name"</span><span class="o">))</span>
+<span class="k">implicit</span> <span class="k">object</span> <span class="nc">ParseableMyHeaders</span> <span class="k">extends</span> <span class="nc">ParseableHeader</span><span class="o">[</span><span class="kt">MyHeaders</span><span class="o">]</span> <span class="o">{</span>
+  <span class="k">def</span> <span class="nf">apply</span><span class="o">(</span><span class="n">names</span><span class="k">:</span> <span class="kt">NonEmptyList</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span><span class="k">:</span> <span class="kt">HeaderResult</span><span class="o">[</span><span class="kt">MyHeaders</span><span class="o">]</span> <span class="k">=</span>
+    <span class="nv">names</span><span class="o">.</span><span class="py">traverse</span> <span class="o">{</span> <span class="n">name</span> <span class="k">=&gt;</span>
+      <span class="nv">MyHeaders</span><span class="o">.</span><span class="py">withNameInsensitiveOption</span><span class="o">(</span><span class="n">name</span><span class="o">)</span> <span class="k">match</span> <span class="o">{</span>
+        <span class="k">case</span> <span class="nc">Some</span><span class="o">(</span><span class="n">headers</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Right</span><span class="o">(</span><span class="n">headers</span><span class="o">)</span>
+        <span class="k">case</span> <span class="nc">None</span>          <span class="k">=&gt;</span> <span class="nc">Left</span><span class="o">(</span><span class="k">new</span> <span class="nc">HeaderError</span><span class="o">(</span><span class="n">s</span><span class="s">"Unknown header $name"</span><span class="o">))</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
 <span class="o">}</span>
-<span class="c1">// parseableMyHeaders: ParseableHeader[MyHeaders] = fs2.data.csv.ParseableHeader$$$Lambda$12177/1168683401@64d58a23</span>
 
 <span class="k">val</span> <span class="nv">withMyHeaders</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">lowlevel</span><span class="o">.</span><span class="py">headers</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">MyHeaders</span><span class="o">])</span>
 <span class="c1">// withMyHeaders: Stream[[x]Fallible[x], CsvRow[MyHeaders]] = Stream(..)</span>
@@ -411,12 +416,12 @@
 <p>For <code>CellEncoder</code>, it is even easier to define your own as encoding can’t fail, so basically it’s just a function <code>A =&gt; String</code>. The easiest ways to roll your own are using Scala’s single abstract method sugar:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Wrapper</span><span class="o">(</span><span class="n">content</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
 <span class="k">implicit</span> <span class="k">val</span> <span class="nv">wrapperCellEncoder</span><span class="k">:</span> <span class="kt">CellEncoder</span><span class="o">[</span><span class="kt">Wrapper</span><span class="o">]</span> <span class="k">=</span> <span class="o">(</span><span class="n">w</span><span class="k">:</span> <span class="kt">Wrapper</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nv">w</span><span class="o">.</span><span class="py">content</span>
-<span class="c1">// wrapperCellEncoder: CellEncoder[Wrapper] = repl.MdocSession$MdocApp$$anonfun$8@d643f3</span>
+<span class="c1">// wrapperCellEncoder: CellEncoder[Wrapper] = repl.MdocSession$MdocApp$$anonfun$7@5ed3c2fa</span>
 </code></pre></div></div>
 
 <p>or using <code>contramap</code> on an existing encoder:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="nv">wrapperCellEncoder2</span><span class="k">:</span> <span class="kt">CellEncoder</span><span class="o">[</span><span class="kt">Wrapper</span><span class="o">]</span> <span class="k">=</span> <span class="nc">CellEncoder</span><span class="o">[</span><span class="kt">String</span><span class="o">].</span><span class="py">contramap</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">content</span><span class="o">)</span>
-<span class="c1">// wrapperCellEncoder2: CellEncoder[Wrapper] = fs2.data.csv.CellEncoder$$anonfun$contramap$2@26bdc0b</span>
+<span class="c1">// wrapperCellEncoder2: CellEncoder[Wrapper] = fs2.data.csv.CellEncoder$$anonfun$contramap$2@2f328ff6</span>
 </code></pre></div></div>
 
 <h4 id="rowdecoder--rowencoder"><code>RowDecoder</code> &amp; <code>RowEncoder</code></h4>
