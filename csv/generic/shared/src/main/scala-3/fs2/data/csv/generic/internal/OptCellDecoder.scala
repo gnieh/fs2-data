@@ -26,6 +26,12 @@ sealed trait OptCellDecoder[T] {
 }
 
 object OptCellDecoder extends LowPrioOptCellDecoders {
+  // left here for bincompat
+  private[internal] def makeNonOpt[A: CellDecoder]: OptCellDecoder[A] = new OptCellDecoder[A] {
+    override def apply(name: String, value: Option[String]): DecoderResult[A] =
+      value.toRight(new DecoderError(s"unknown column name '$name'")).flatMap(CellDecoder[A].apply)
+  }
+
   given makeNonOpt[A: CellDecoder](using NotGiven[A <:< Option[_]]): OptCellDecoder[A] = new OptCellDecoder[A] {
     override def apply(name: String, value: Option[String]): DecoderResult[A] =
       value.toRight(new DecoderError(s"unknown column name '$name'")).flatMap(CellDecoder[A].apply)
