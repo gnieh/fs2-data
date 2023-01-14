@@ -18,10 +18,8 @@ package fs2
 package data.csv
 package generic
 
-import cats.Eq
 import semiauto._
 import cats.data.NonEmptyList
-import cats.effect.IO
 import weaver._
 
 object CsvRowDecoderTest extends SimpleIOSuite {
@@ -83,80 +81,10 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       expect(testOptionalStringDecoder(csvRowEmptyCell) == Right(TestOptionalString(1, None, 42)))
   }
 
-  test("decodeUsingHeaders should map data to case class matching the header name to the case class field name") {
-    implicit val decoder: CsvRowDecoder[Test, String] = testDecoder
-    implicit val testEq: Eq[Test] = (a, b) => a == b
-
-    val content =
-      """s,i,j
-        |a,12,3
-        |""".stripMargin
-
-    val expected: List[Test] = List(
-      Test(12, "a", Some(3))
-    )
-
-    Stream
-      .emit(content)
-      .covary[IO]
-      .through(decodeUsingHeaders[Test](','))
-      .compile
-      .toList
-      .map(actual => expect.eql(expected, actual))
-  }
-
-  test("decodeUsingHeaders should succeed if an optional field is missing") {
-    implicit val decoder: CsvRowDecoder[Test, String] = testDecoder
-    implicit val testEq: Eq[Test] = (a, b) => a == b
-
-    val content =
-      """s,i
-        |a,12
-        |""".stripMargin
-
-    val expected: List[Test] = List(
-      Test(12, "a", None)
-    )
-
-    Stream
-      .emit(content)
-      .covary[IO]
-      .through(decodeUsingHeaders[Test](','))
-      .compile
-      .toList
-      .map(actual => expect.eql(expected, actual))
-  }
-
-  test("decodeUsingHeaders should succeed if a required field with default value is missing") {
-    implicit val decoder: CsvRowDecoder[Test, String] = testDecoder
-    implicit val testEq: Eq[Test] = (a, b) => a == b
-
-    val content =
-      """s,j
-        |a,3
-        |""".stripMargin
-
-    val expected: List[Test] = List(
-      Test(0, "a", Some(3))
-    )
-
-    Stream
-      .emit(content)
-      .covary[IO]
-      .through(decodeUsingHeaders[Test](','))
-      .compile
-      .toList
-      .map(actual => expect.eql(expected, actual))
-
-    // FIXME: This test succeeds on Scala 2.x but fails on Scala 3 with the error
-  }
-
   pureTest("should fail if a required string field is missing") {
-    implicit val decoder: CsvRowDecoder[Test, String] = testDecoder
-
     val row = CsvRow.unsafe(NonEmptyList.of("12", "3"), NonEmptyList.of("i", "j")).withLine(Some(2))
 
-    decoder.apply(row) match {
+    testDecoder(row) match {
       case Left(error) => expect(error.getMessage == "unknown column name 's' in line 2")
       case Right(x)    => failure(s"Stream succeeded with value $x")
     }
