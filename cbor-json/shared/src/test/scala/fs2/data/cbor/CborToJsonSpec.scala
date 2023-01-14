@@ -25,7 +25,6 @@ import fs2.io.file.{Files, Path}
 
 import weaver._
 
-import cats.syntax.all._
 import cats.effect._
 
 import _root_.io.circe._

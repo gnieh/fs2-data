@@ -4,7 +4,7 @@ title: Home
 
 # Welcome to the fs2-data website
 
-[![Discord](https://img.shields.io/discord/632277896739946517.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2)](https://discord.gg/7qNAFsYkTn)
+[![Typelevel Affiliate Project](https://img.shields.io/badge/typelevel-affiliate%20project-FFB4B5.svg)](https://typelevel.org/projects/) [![Discord](https://img.shields.io/discord/632277896739946517.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2)](https://discord.gg/7qNAFsYkTn)
 
 `fs2-data` is a set of libraries that can be used to parse and transform data in a streaming manner. It aims at having as few dependencies as possible (usually, only [fs2][fs2]). For more details on supported format, refer to [the documentation][doc].
 

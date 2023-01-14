@@ -132,14 +132,8 @@ object MyHeaders extends Enum[MyHeaders] {
   def values = findValues
 }
 
-implicit object ParseableMyHeaders extends ParseableHeader[MyHeaders] {
-  def apply(names: NonEmptyList[String]): HeaderResult[MyHeaders] =
-    names.traverse { name =>
-      MyHeaders.withNameInsensitiveOption(name) match {
-        case Some(headers) => Right(headers)
-        case None          => Left(new HeaderError(s"Unknown header $name"))
-      }
-    }
+implicit val parseableMyHeaders: ParseableHeader[MyHeaders] = ParseableHeader.instance[MyHeaders] { name =>
+   MyHeaders.withNameInsensitiveOption(name).toRight(new HeaderError(s"Unknown header $name"))
 }
 
 val withMyHeaders = stream.through(lowlevel.headers[Fallible, MyHeaders])
