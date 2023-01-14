@@ -18,7 +18,6 @@ package fs2
 package data.csv
 package generic
 
-import cats.Eq
 import semiauto._
 import cats.data.NonEmptyList
 import cats.effect.IO
@@ -313,11 +312,9 @@ object CsvRowDecoderTest extends SimpleIOSuite {
   }
 
   pureTest("should fail if a required string field is missing") {
-    implicit val decoder: CsvRowDecoder[Test, String] = testDecoder
-
     val row = CsvRow.unsafe(NonEmptyList.of("12", "3"), NonEmptyList.of("i", "j")).withLine(Some(2))
 
-    decoder.apply(row) match {
+    testDecoder(row) match {
       case Left(error) => expect(error.getMessage == "unknown column name 's' in line 2")
       case Right(x)    => failure(s"Stream succeeded with value $x")
     }
