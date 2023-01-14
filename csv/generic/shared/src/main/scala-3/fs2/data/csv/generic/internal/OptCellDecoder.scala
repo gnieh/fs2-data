@@ -17,18 +17,25 @@
 package fs2.data.csv
 package generic.internal
 
-import cats.syntax.all._
+import cats.syntax.all.*
+
+import scala.util.NotGiven
 
 sealed trait OptCellDecoder[T] {
   def apply(name: String, value: Option[String]): DecoderResult[T]
 }
 
 object OptCellDecoder extends LowPrioOptCellDecoders {
-  given makeNonOpt[A: CellDecoder]: OptCellDecoder[A] = new OptCellDecoder[A] {
-    override def apply(name: String, value: Option[String]): DecoderResult[A] = {
-      CellDecoder[A].apply(value.orEmpty)
-    }
+  given makeNonOpt[A: CellDecoder](using NotGiven[A <:< Option[_]]): OptCellDecoder[A] = new OptCellDecoder[A] {
+    override def apply(name: String, value: Option[String]): DecoderResult[A] =
+      value.toRight(new DecoderError(s"unknown column name '$name'")).flatMap(CellDecoder[A].apply)
   }
+
+  given makeExplicitOpt[A](using cd: CellDecoder[Option[A]]): OptCellDecoder[Option[A]] =
+    new OptCellDecoder[Option[A]] {
+      override def apply(name: String, value: Option[String]): DecoderResult[Option[A]] =
+        value.flatTraverse(cd.apply)
+    }
 }
 
 trait LowPrioOptCellDecoders {
