@@ -274,9 +274,10 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       case Left(x)       => failure(s"Stream failed with value $x")
     }
   }
-  test("decodeUsingHeaders should map data to case class matching the header name to the case class field name") {
+
+  pureTest("decodeUsingHeaders should map data to case class matching the header name to the case class field name") {
     implicit val decoder: CsvRowDecoder[Test, String] = testDecoder
-    implicit val testEq: Eq[Test] = (a, b) => a == b
+    implicit val testEq: Eq[Test] = Eq.fromUniversalEquals
 
     val content =
       """s,i,j
@@ -287,16 +288,20 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       Test(12, "a", Some(3))
     )
 
-    Stream
+    val stream = Stream
       .emit(content)
-      .covary[IO]
+      .covary[Fallible]
       .through(decodeUsingHeaders[Test](','))
       .compile
       .toList
-      .map(actual => expect.eql(expected, actual))
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
   }
 
-  test("decodeUsingHeaders should succeed if an optional field is missing") {
+  pureTest("decodeUsingHeaders should succeed if an optional field is missing") {
     implicit val decoder: CsvRowDecoder[Test, String] = testDecoder
     implicit val testEq: Eq[Test] = (a, b) => a == b
 
@@ -309,16 +314,20 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       Test(12, "a", None)
     )
 
-    Stream
+    val stream = Stream
       .emit(content)
-      .covary[IO]
+      .covary[Fallible]
       .through(decodeUsingHeaders[Test](','))
       .compile
       .toList
-      .map(actual => expect.eql(expected, actual))
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
   }
 
-  test("decodeUsingHeaders should succeed if a required field with default value is missing") {
+  pureTest("decodeUsingHeaders should succeed if a required field with default value is missing") {
     implicit val decoder: CsvRowDecoder[Test, String] = testDecoder
     implicit val testEq: Eq[Test] = (a, b) => a == b
 
@@ -331,15 +340,17 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       Test(0, "a", Some(3))
     )
 
-    Stream
+    val stream = Stream
       .emit(content)
-      .covary[IO]
+      .covary[Fallible]
       .through(decodeUsingHeaders[Test](','))
       .compile
       .toList
-      .map(actual => expect.eql(expected, actual))
 
-    // FIXME: This test succeeds on Scala 2.x but fails on Scala 3 with the error
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
   }
 
   pureTest("should fail if a required string field is missing") {
