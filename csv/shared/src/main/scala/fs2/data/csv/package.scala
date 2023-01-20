@@ -116,22 +116,6 @@ package object csv {
       lowlevel.rows(separator, quoteHandling) andThen lowlevel.noHeaders andThen lowlevel.decode
   }
 
-  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type, with failures at the
-    * element level instead of failing the stream.
-    *
-    * This function assumes the file neither contains headers nor are they needed for decoding.
-    */
-  def attemptDecodeWithoutHeaders[T]: PartiallyAppliedDecodeAttemptWithoutHeaders[T] =
-    new PartiallyAppliedDecodeAttemptWithoutHeaders[T](dummy = true)
-
-  class PartiallyAppliedDecodeAttemptWithoutHeaders[T](val dummy: Boolean) extends AnyVal {
-    def apply[F[_], C](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
-        F: RaiseThrowable[F],
-        C: CharLikeChunks[F, C],
-        T: RowDecoder[T]): Pipe[F, C, Either[Throwable, T]] =
-      lowlevel.rows(separator, quoteHandling) andThen lowlevel.noHeaders andThen lowlevel.attemptDecode
-  }
-
   /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type,
     * assuming the file contains headers, but they shall be skipped for decoding.
     */
@@ -145,23 +129,6 @@ package object csv {
         T: RowDecoder[T]
     ): Pipe[F, C, T] =
       lowlevel.rows(separator, quoteHandling) andThen lowlevel.skipHeaders andThen lowlevel.decode
-  }
-
-  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type, with failures at the
-    * element level instead of failing the stream.
-    *
-    * This function assumes the file contains headers, but they shall be skipped for decoding.
-    */
-  def attemptDecodeSkippingHeaders[T]: PartiallyAppliedDecodeAttemptSkippingHeaders[T] =
-    new PartiallyAppliedDecodeAttemptSkippingHeaders[T](dummy = true)
-
-  class PartiallyAppliedDecodeAttemptSkippingHeaders[T](val dummy: Boolean) extends AnyVal {
-    def apply[F[_], C](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
-        F: RaiseThrowable[F],
-        C: CharLikeChunks[F, C],
-        T: RowDecoder[T]): Pipe[F, C, Either[Throwable, T]] = {
-      lowlevel.rows(separator, quoteHandling) andThen lowlevel.skipHeaders andThen lowlevel.attemptDecode
-    }
   }
 
   /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type,
@@ -178,26 +145,6 @@ package object csv {
         T: CsvRowDecoder[T, Header],
         H: ParseableHeader[Header]): Pipe[F, C, T] =
       lowlevel.rows(separator, quoteHandling) andThen lowlevel.headers andThen lowlevel.decodeRow
-  }
-
-  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type, with failures at the
-    * element level instead of failing the stream.
-    *
-    * This function assumes the file contains headers and they need to be taken into account for decoding.
-    */
-  def attemptDecodeUsingHeaders[T]: PartiallyAppliedDecodeAttemptUsingHeaders[T] =
-    new PartiallyAppliedDecodeAttemptUsingHeaders[T](dummy = true)
-
-  class PartiallyAppliedDecodeAttemptUsingHeaders[T](val dummy: Boolean) extends AnyVal {
-    def apply[F[_], C, Header](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(
-        implicit
-        F: RaiseThrowable[F],
-        C: CharLikeChunks[F, C],
-        T: CsvRowDecoder[T, Header],
-        H: ParseableHeader[Header]): Pipe[F, C, Either[Throwable, T]] = {
-      lowlevel.rows(separator, quoteHandling) andThen lowlevel.headersAttempt(
-        H) andThen lowlevel.attemptFlatMapDecodeRow
-    }
   }
 
   /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type.
@@ -224,35 +171,6 @@ package object csv {
           lowlevel.withHeaders(headers) andThen lowlevel.decodeRow
       else
         lowlevel.rows(separator, quoteHandling) andThen lowlevel.withHeaders(headers) andThen lowlevel.decodeRow
-    }
-  }
-
-  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type, with failures at the
-    * element level instead of failing the stream.
-    *
-    * Scenarios:
-    * - If skipHeaders is false, then the file contains no headers.
-    * - If skipHeaders is true, then the headers in the file will be skipped.
-    *
-    * For both scenarios the file is assumed to be compliant with the set of headers given.
-    */
-  def attemptDecodeGivenHeaders[T]: PartiallyAppliedDecodeAttemptGivenHeaders[T] =
-    new PartiallyAppliedDecodeAttemptGivenHeaders[T](dummy = true)
-
-  class PartiallyAppliedDecodeAttemptGivenHeaders[T](val dummy: Boolean) extends AnyVal {
-    def apply[F[_], C, Header](headers: NonEmptyList[Header],
-                               skipHeaders: Boolean = false,
-                               separator: Char = ',',
-                               quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
-        F: RaiseThrowable[F],
-        C: CharLikeChunks[F, C],
-        T: CsvRowDecoder[T, Header]): Pipe[F, C, Either[Throwable, T]] = {
-      if (skipHeaders)
-        lowlevel.rows(separator, quoteHandling) andThen lowlevel.skipHeaders andThen
-          lowlevel.attemptWithHeaders(headers) andThen lowlevel.attemptFlatMapDecodeRow
-      else
-        lowlevel.rows(separator, quoteHandling) andThen lowlevel.attemptWithHeaders(
-          headers) andThen lowlevel.attemptFlatMapDecodeRow
     }
   }
 
@@ -439,5 +357,90 @@ package object csv {
         }
         .stream
 
+  }
+
+  object lenient {
+
+    /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type, with failures at the
+      * element level instead of failing the stream.
+      *
+      * Scenarios:
+      * - If skipHeaders is false, then the file contains no headers.
+      * - If skipHeaders is true, then the headers in the file will be skipped.
+      *
+      * For both scenarios the file is assumed to be compliant with the set of headers given.
+      */
+    def attemptDecodeGivenHeaders[T]: PartiallyAppliedDecodeAttemptGivenHeaders[T] =
+      new PartiallyAppliedDecodeAttemptGivenHeaders[T](dummy = true)
+
+    class PartiallyAppliedDecodeAttemptGivenHeaders[T](val dummy: Boolean) extends AnyVal {
+      def apply[F[_], C, Header](headers: NonEmptyList[Header],
+                                 skipHeaders: Boolean = false,
+                                 separator: Char = ',',
+                                 quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
+          F: RaiseThrowable[F],
+          C: CharLikeChunks[F, C],
+          T: CsvRowDecoder[T, Header]): Pipe[F, C, Either[Throwable, T]] = {
+        if (skipHeaders)
+          lowlevel.rows(separator, quoteHandling) andThen lowlevel.skipHeaders andThen
+            lowlevel.attemptWithHeaders(headers) andThen lowlevel.attemptFlatMapDecodeRow
+        else
+          lowlevel.rows(separator, quoteHandling) andThen lowlevel.attemptWithHeaders(
+            headers) andThen lowlevel.attemptFlatMapDecodeRow
+      }
+    }
+
+    /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type, with failures at the
+      * element level instead of failing the stream.
+      *
+      * This function assumes the file contains headers and they need to be taken into account for decoding.
+      */
+    def attemptDecodeUsingHeaders[T]: PartiallyAppliedDecodeAttemptUsingHeaders[T] =
+      new PartiallyAppliedDecodeAttemptUsingHeaders[T](dummy = true)
+
+    class PartiallyAppliedDecodeAttemptUsingHeaders[T](val dummy: Boolean) extends AnyVal {
+      def apply[F[_], C, Header](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(
+          implicit
+          F: RaiseThrowable[F],
+          C: CharLikeChunks[F, C],
+          T: CsvRowDecoder[T, Header],
+          H: ParseableHeader[Header]): Pipe[F, C, Either[Throwable, T]] = {
+        lowlevel.rows(separator, quoteHandling) andThen lowlevel.headersAttempt(
+          H) andThen lowlevel.attemptFlatMapDecodeRow
+      }
+    }
+
+    /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type, with failures at the
+      * element level instead of failing the stream.
+      *
+      * This function assumes the file contains headers, but they shall be skipped for decoding.
+      */
+    def attemptDecodeSkippingHeaders[T]: PartiallyAppliedDecodeAttemptSkippingHeaders[T] =
+      new PartiallyAppliedDecodeAttemptSkippingHeaders[T](dummy = true)
+
+    class PartiallyAppliedDecodeAttemptSkippingHeaders[T](val dummy: Boolean) extends AnyVal {
+      def apply[F[_], C](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
+          F: RaiseThrowable[F],
+          C: CharLikeChunks[F, C],
+          T: RowDecoder[T]): Pipe[F, C, Either[Throwable, T]] = {
+        lowlevel.rows(separator, quoteHandling) andThen lowlevel.skipHeaders andThen lowlevel.attemptDecode
+      }
+    }
+
+    /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type, with failures at the
+      * element level instead of failing the stream.
+      *
+      * This function assumes the file neither contains headers nor are they needed for decoding.
+      */
+    def attemptDecodeWithoutHeaders[T]: PartiallyAppliedDecodeAttemptWithoutHeaders[T] =
+      new PartiallyAppliedDecodeAttemptWithoutHeaders[T](dummy = true)
+
+    class PartiallyAppliedDecodeAttemptWithoutHeaders[T](val dummy: Boolean) extends AnyVal {
+      def apply[F[_], C](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
+          F: RaiseThrowable[F],
+          C: CharLikeChunks[F, C],
+          T: RowDecoder[T]): Pipe[F, C, Either[Throwable, T]] =
+        lowlevel.rows(separator, quoteHandling) andThen lowlevel.noHeaders andThen lowlevel.attemptDecode
+    }
   }
 }

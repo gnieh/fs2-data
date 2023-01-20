@@ -21,7 +21,6 @@ package generic
 import cats.Eq
 import semiauto._
 import cats.data.NonEmptyList
-import cats.implicits.toTraverseOps
 import weaver._
 
 object CsvRowDecoderTest extends SimpleIOSuite {
@@ -342,7 +341,7 @@ object CsvRowDecoderTest extends SimpleIOSuite {
     val stream = Stream
       .emit(content)
       .covary[Fallible]
-      .through(attemptDecodeUsingHeaders[TestData](','))
+      .through(lenient.attemptDecodeUsingHeaders[TestData](','))
       .compile
       .toList
 
@@ -371,7 +370,7 @@ object CsvRowDecoderTest extends SimpleIOSuite {
     val stream = Stream
       .emit(content)
       .covary[Fallible]
-      .through(attemptDecodeUsingHeaders[TestData](','))
+      .through(lenient.attemptDecodeUsingHeaders[TestData](','))
       .compile
       .toList
 
@@ -401,9 +400,9 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       .emit(content)
       .covary[Fallible]
       .through(
-        attemptDecodeGivenHeaders[TestData](separator = ',',
-                                            skipHeaders = true,
-                                            headers = NonEmptyList.of("name", "age", "description")))
+        lenient.attemptDecodeGivenHeaders[TestData](separator = ',',
+                                                    skipHeaders = true,
+                                                    headers = NonEmptyList.of("name", "age", "description")))
       .compile
       .toList
 
@@ -432,9 +431,9 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       .emit(content)
       .covary[Fallible]
       .through(
-        attemptDecodeGivenHeaders[TestData](separator = ',',
-                                            skipHeaders = false,
-                                            headers = NonEmptyList.of("name", "age", "description")))
+        lenient.attemptDecodeGivenHeaders[TestData](separator = ',',
+                                                    skipHeaders = false,
+                                                    headers = NonEmptyList.of("name", "age", "description")))
       .compile
       .toList
 
@@ -463,7 +462,7 @@ object CsvRowDecoderTest extends SimpleIOSuite {
     val stream = Stream
       .emit(content)
       .covary[Fallible]
-      .through(attemptDecodeSkippingHeaders[TestData](separator = ','))
+      .through(lenient.attemptDecodeSkippingHeaders[TestData](separator = ','))
       .compile
       .toList
 
@@ -491,7 +490,7 @@ object CsvRowDecoderTest extends SimpleIOSuite {
     val stream = Stream
       .emit(content)
       .covary[Fallible]
-      .through(attemptDecodeWithoutHeaders[TestData](separator = ','))
+      .through(lenient.attemptDecodeWithoutHeaders[TestData](separator = ','))
       .compile
       .toList
 
