@@ -21,8 +21,7 @@ package generic
 import cats.Eq
 import semiauto._
 import cats.data.NonEmptyList
-import cats.effect.IO
-import cats.implicits.catsSyntaxEq
+import cats.implicits.toTraverseOps
 import weaver._
 
 object CsvRowDecoderTest extends SimpleIOSuite {
@@ -45,6 +44,9 @@ object CsvRowDecoderTest extends SimpleIOSuite {
 
   implicit val testDataCsvRowDecoder: CsvRowDecoder[TestData, String] = deriveCsvRowDecoder[TestData]
   implicit val testDataRowDecoder: RowDecoder[TestData] = deriveRowDecoder[TestData]
+
+  implicit val decoderErrorEq: Eq[Throwable] = Eq.by(_.toString)
+  implicit val decoderTestDataEq: Eq[TestData] = Eq.fromUniversalEquals
 
   val testDecoder = deriveCsvRowDecoder[Test]
   val testOrderDecoder = deriveCsvRowDecoder[TestOrder]
@@ -321,11 +323,7 @@ object CsvRowDecoderTest extends SimpleIOSuite {
     }
   }
 
-  implicit val decoderErrorEq: Eq[Throwable] = (a, b) => a.toString === b.toString
-
-  implicit val decoderTestDataEq: Eq[TestData] = (a, b) => a == b
-
-  test("Parser should return all decoder results as values when using attemptDecodeUsingHeaders") {
+  pureTest("Parser should return all decoder results as values when using attemptDecodeUsingHeaders") {
     val content =
       """name,age,description
         |John Doe,47,description 1
@@ -341,16 +339,20 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
     )
 
-    Stream
+    val stream = Stream
       .emit(content)
-      .covary[IO]
+      .covary[Fallible]
       .through(attemptDecodeUsingHeaders[TestData](','))
       .compile
       .toList
-      .map(actual => expect.eql(expected, actual))
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
   }
 
-  test("Parser should return only errors as values when using attemptDecodeUsingHeaders with wrong header") {
+  pureTest("Parser should return only errors as values when using attemptDecodeUsingHeaders with wrong header") {
     val content =
       """name1,age,description
         |John Doe,47,description 1
@@ -366,16 +368,20 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
     )
 
-    Stream
+    val stream = Stream
       .emit(content)
-      .covary[IO]
+      .covary[Fallible]
       .through(attemptDecodeUsingHeaders[TestData](','))
       .compile
       .toList
-      .map(actual => expect.eql(expected, actual))
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
   }
 
-  test("Parser should return all decoder results as values when using attemptDecodeGivenHeaders") {
+  pureTest("Parser should return all decoder results as values when using attemptDecodeGivenHeaders") {
     val content =
       """name-should-not-be-used,age-should-not-be-used,description-should-not-be-used
         |John Doe,47,description 1
@@ -391,19 +397,23 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
     )
 
-    Stream
+    val stream = Stream
       .emit(content)
-      .covary[IO]
+      .covary[Fallible]
       .through(
         attemptDecodeGivenHeaders[TestData](separator = ',',
                                             skipHeaders = true,
                                             headers = NonEmptyList.of("name", "age", "description")))
       .compile
       .toList
-      .map(actual => expect.eql(expected, actual))
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
   }
 
-  test("Parser should return all decoder results when using attemptDecodeGivenHeaders with skipHeaders = false") {
+  pureTest("Parser should return all decoder results when using attemptDecodeGivenHeaders with skipHeaders = false") {
     val content =
       """John Doe,47,description 1
         |Jane Doe,50
@@ -418,19 +428,23 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 4", None))
     )
 
-    Stream
+    val stream = Stream
       .emit(content)
-      .covary[IO]
+      .covary[Fallible]
       .through(
         attemptDecodeGivenHeaders[TestData](separator = ',',
                                             skipHeaders = false,
                                             headers = NonEmptyList.of("name", "age", "description")))
       .compile
       .toList
-      .map(actual => expect.eql(expected, actual))
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
   }
 
-  test("Parser should return all decoder results when using attemptDecodeSkippingHeaders") {
+  pureTest("Parser should return all decoder results when using attemptDecodeSkippingHeaders") {
     val content =
       """name-should-not-be-used,age-should-not-be-used,description-should-not-be-used
         |John Doe,47,description 1
@@ -446,16 +460,20 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       Left(new DecoderError("unexpect end of row", None))
     )
 
-    Stream
+    val stream = Stream
       .emit(content)
-      .covary[IO]
+      .covary[Fallible]
       .through(attemptDecodeSkippingHeaders[TestData](separator = ','))
       .compile
       .toList
-      .map(actual => expect.eql(expected, actual))
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
   }
 
-  test("Parser should return all decoder results when using attemptDecodeWithoutHeaders") {
+  pureTest("Parser should return all decoder results when using attemptDecodeWithoutHeaders") {
     val content =
       """John Doe,47,description 1
         |Jane Doe,50
@@ -470,12 +488,16 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       Left(new DecoderError("unexpect end of row", None))
     )
 
-    Stream
+    val stream = Stream
       .emit(content)
-      .covary[IO]
+      .covary[Fallible]
       .through(attemptDecodeWithoutHeaders[TestData](separator = ','))
       .compile
       .toList
-      .map(actual => expect.eql(expected, actual))
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
   }
 }
