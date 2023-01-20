@@ -88,6 +88,15 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       expect(testOptionalStringDecoder(csvRowEmptyCell) == Right(TestOptionalString(1, None, 42)))
   }
 
+  pureTest("should fail if a required string field is missing") {
+    val row = CsvRow.unsafe(NonEmptyList.of("12", "3"), NonEmptyList.of("i", "j")).withLine(Some(2))
+
+    testDecoder(row) match {
+      case Left(error) => expect(error.getMessage == "unknown column name 's' in line 2")
+      case Right(x)    => failure(s"Stream succeeded with value $x")
+    }
+  }
+
   implicit val decoderErrorEq: Eq[Throwable] = (a, b) => a.toString === b.toString
 
   implicit val decoderTestDataEq: Eq[TestData] = (a, b) => a == b
