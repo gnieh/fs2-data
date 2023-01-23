@@ -31,7 +31,7 @@ private[csv] object CsvRowParser {
 
   /** Like `pipe` except that instead of failing the stream on parse errors, it emits `Left` elements for bad rows */
   def pipeAttempt[F[_], Header](implicit
-      Header: ParseableHeader[Header]): Pipe[F, Row, Either[Throwable, CsvRow[Header]]] =
+      Header: ParseableHeader[Header]): Pipe[F, Row, Either[CsvException, CsvRow[Header]]] =
     _.pull.uncons1
       .flatMap {
         case Some((firstRow, tail)) =>

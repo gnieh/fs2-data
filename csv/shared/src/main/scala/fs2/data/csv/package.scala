@@ -255,13 +255,13 @@ package object csv {
 
     /** Transforms a stream of raw CSV rows into parsed CSV rows with headers, with failures at the element level instead of failing the stream */
     def headersAttempt[F[_], Header](implicit
-        Header: ParseableHeader[Header]): Pipe[F, Row, Either[Throwable, CsvRow[Header]]] =
+        Header: ParseableHeader[Header]): Pipe[F, Row, Either[CsvException, CsvRow[Header]]] =
       CsvRowParser.pipeAttempt[F, Header]
 
     // left here for bincompat
     private[csv] def headersAttempt[F[_], Header](implicit
         @unused F: RaiseThrowable[F],
-        Header: ParseableHeader[Header]): Pipe[F, Row, Either[Throwable, CsvRow[Header]]] =
+        Header: ParseableHeader[Header]): Pipe[F, Row, Either[CsvException, CsvRow[Header]]] =
       CsvRowParser.pipeAttempt[F, Header]
 
     /** Transforms a stream of raw CSV rows into parsed CSV rows with given headers. */
@@ -302,7 +302,7 @@ package object csv {
 
     /** Decodes [[CsvRow]]s (with headers) into a specified type using a suitable [[CsvRowDecoder]], but signal errors as values from both header as well as rows. */
     def attemptFlatMapDecodeRow[F[_], Header, R](implicit R: CsvRowDecoder[R, Header])
-        : Stream[F, Either[Throwable, CsvRow[Header]]] => Stream[F, Either[Throwable, R]] = {
+        : Stream[F, Either[CsvException, CsvRow[Header]]] => Stream[F, Either[CsvException, R]] = {
       _.map(_.flatMap(R(_)))
     }
 
@@ -380,7 +380,7 @@ package object csv {
                                  quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
           F: RaiseThrowable[F],
           C: CharLikeChunks[F, C],
-          T: CsvRowDecoder[T, Header]): Pipe[F, C, Either[Throwable, T]] = {
+          T: CsvRowDecoder[T, Header]): Pipe[F, C, Either[CsvException, T]] = {
         if (skipHeaders)
           lowlevel.rows(separator, quoteHandling) andThen lowlevel.skipHeaders andThen
             lowlevel.attemptWithHeaders(headers) andThen lowlevel.attemptFlatMapDecodeRow
@@ -404,7 +404,7 @@ package object csv {
           F: RaiseThrowable[F],
           C: CharLikeChunks[F, C],
           T: CsvRowDecoder[T, Header],
-          H: ParseableHeader[Header]): Pipe[F, C, Either[Throwable, T]] = {
+          H: ParseableHeader[Header]): Pipe[F, C, Either[CsvException, T]] = {
         lowlevel.rows(separator, quoteHandling) andThen lowlevel.headersAttempt(
           H) andThen lowlevel.attemptFlatMapDecodeRow
       }
@@ -422,7 +422,7 @@ package object csv {
       def apply[F[_], C](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
           F: RaiseThrowable[F],
           C: CharLikeChunks[F, C],
-          T: RowDecoder[T]): Pipe[F, C, Either[Throwable, T]] = {
+          T: RowDecoder[T]): Pipe[F, C, Either[CsvException, T]] = {
         lowlevel.rows(separator, quoteHandling) andThen lowlevel.skipHeaders andThen lowlevel.attemptDecode
       }
     }
@@ -439,7 +439,7 @@ package object csv {
       def apply[F[_], C](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
           F: RaiseThrowable[F],
           C: CharLikeChunks[F, C],
-          T: RowDecoder[T]): Pipe[F, C, Either[Throwable, T]] =
+          T: RowDecoder[T]): Pipe[F, C, Either[CsvException, T]] =
         lowlevel.rows(separator, quoteHandling) andThen lowlevel.noHeaders andThen lowlevel.attemptDecode
     }
   }
