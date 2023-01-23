@@ -85,7 +85,7 @@ Files[IO]
 
 The default behaviour when parsing CSV files, is to terminate the stream whenever the columns of a row do not match 
 with the columns of the header. If you're dealing with CSV files that could contain these kind of errors, you can make 
-use of the `lenient` package. You will get back a `List` of results, where each parsed row is represented by an 
+use of the `lenient` package. You will get back a `Stream` of results, where each parsed row is represented by an 
 `Either[Throwable, A]`.
 
 ```scala mdoc:silent
