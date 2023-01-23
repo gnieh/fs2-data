@@ -16,6 +16,8 @@
 
 package fs2.data.csv
 
+import cats.Eq
+import cats.data.NonEmptyList
 import io.circe.parser.parse
 import fs2._
 import fs2.io.file.{Files, Flags, Path}
@@ -27,6 +29,34 @@ import weaver._
 object CsvParserTest extends SimpleIOSuite {
 
   private val testFileDir: Path = Path("csv/shared/src/test/resources/csv-spectrum/csvs/")
+
+  case class Test(i: Int = 0, s: String, j: Option[Int])
+  case class TestData(name: String, age: Int, description: String)
+
+  implicit val testDataCsvRowDecoder: CsvRowDecoder[TestData, String] = (row: RowF[Some, String]) => {
+    (
+      row.as[String]("name"),
+      row.as[Int]("age"),
+      row.as[String]("description")
+    ).mapN { case (name, age, description) =>
+      TestData(name, age, description)
+    }
+  }
+
+  implicit val testDataRowDecoder: RowDecoder[TestData] = new RowDecoder[TestData] {
+    override def apply(row: RowF[NoneF, Nothing]): DecoderResult[TestData] = {
+      (
+        row.asAt[String](0),
+        row.asAt[Int](1),
+        row.asAt[String](2)
+      ).mapN { case (name, age, description) =>
+        TestData(name, age, description)
+      }
+    }
+  }
+
+  implicit val decoderErrorEq: Eq[CsvException] = Eq.by(_.toString)
+  implicit val decoderTestDataEq: Eq[TestData] = Eq.fromUniversalEquals
 
   lazy val allExpected: Stream[IO, (Path, List[Map[String, String]])] =
     Files[IO]
@@ -106,5 +136,375 @@ object CsvParserTest extends SimpleIOSuite {
       .toList
       .map(_.map(_.toMap))
       .map(actual => expect.eql(expected, actual))
+  }
+
+  pureTest("Parser should return all decoder results as values when using attemptDecodeUsingHeaders") {
+    val content =
+      """name,age,description
+        |John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected = List(
+      Right(TestData("John Doe", 47, "description 1")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 3", None)),
+      Right(TestData("Bob Smith", 80, "description 2")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
+    )
+
+    val stream = Stream
+      .emit(content)
+      .covary[Fallible]
+      .through(lenient.attemptDecodeUsingHeaders[TestData](','))
+      .compile
+      .toList
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
+  }
+
+  pureTest("Parser should return only errors as values when using attemptDecodeUsingHeaders with wrong header") {
+    val content =
+      """name1,age,description
+        |John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected = List(
+      Left(new DecoderError("unknown field name", None)),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 3", None)),
+      Left(new DecoderError("unknown field name", None)),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
+    )
+
+    val stream = Stream
+      .emit(content)
+      .covary[Fallible]
+      .through(lenient.attemptDecodeUsingHeaders[TestData](','))
+      .compile
+      .toList
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
+  }
+
+  pureTest("Parser should return all decoder results as values when using attemptDecodeGivenHeaders") {
+    val content =
+      """name-should-not-be-used,age-should-not-be-used,description-should-not-be-used
+        |John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected = List(
+      Right(TestData("John Doe", 47, "description 1")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 3", None)),
+      Right(TestData("Bob Smith", 80, "description 2")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
+    )
+
+    val stream = Stream
+      .emit(content)
+      .covary[Fallible]
+      .through(
+        lenient.attemptDecodeGivenHeaders[TestData](separator = ',',
+                                                    skipHeaders = true,
+                                                    headers = NonEmptyList.of("name", "age", "description")))
+      .compile
+      .toList
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
+  }
+
+  pureTest("Parser should return all decoder results when using attemptDecodeGivenHeaders with skipHeaders = false") {
+    val content =
+      """John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected = List(
+      Right(TestData("John Doe", 47, "description 1")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 2", None)),
+      Right(TestData("Bob Smith", 80, "description 2")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 4", None))
+    )
+
+    val stream = Stream
+      .emit(content)
+      .covary[Fallible]
+      .through(
+        lenient.attemptDecodeGivenHeaders[TestData](separator = ',',
+                                                    skipHeaders = false,
+                                                    headers = NonEmptyList.of("name", "age", "description")))
+      .compile
+      .toList
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
+  }
+
+  pureTest("Parser should return all decoder results when using attemptDecodeSkippingHeaders") {
+    val content =
+      """name-should-not-be-used,age-should-not-be-used,description-should-not-be-used
+        |John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected = List(
+      Right(TestData("John Doe", 47, "description 1")),
+      Left(new DecoderError("unknown index 2", None)),
+      Right(TestData("Bob Smith", 80, "description 2")),
+      Left(new DecoderError("unknown index 2", None))
+    )
+
+    val stream = Stream
+      .emit(content)
+      .covary[Fallible]
+      .through(lenient.attemptDecodeSkippingHeaders[TestData](separator = ','))
+      .compile
+      .toList
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
+  }
+
+  pureTest("Parser should return all decoder results when using attemptDecodeWithoutHeaders") {
+    val content =
+      """John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected = List(
+      Right(TestData("John Doe", 47, "description 1")),
+      Left(new DecoderError("unknown index 2", None)),
+      Right(TestData("Bob Smith", 80, "description 2")),
+      Left(new DecoderError("unknown index 2", None))
+    )
+
+    val stream = Stream
+      .emit(content)
+      .covary[Fallible]
+      .through(lenient.attemptDecodeWithoutHeaders[TestData](separator = ','))
+      .compile
+      .toList
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
+  }
+
+  pureTest("should fail if a required string field is missing") {
+    val row = CsvRow
+      .unsafe(
+        NonEmptyList.of("12", "3"),
+        NonEmptyList.of("i", "j")
+      )
+      .withLine(Some(2))
+
+    testDataCsvRowDecoder(row) match {
+      case Left(error) => expect.eql(error.getMessage, "unknown field name")
+      case Right(x)    => failure(s"Stream succeeded with value $x")
+    }
+  }
+
+  pureTest("Parser should return all decoder results as values when using attemptDecodeUsingHeaders") {
+    val content =
+      """name,age,description
+        |John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected = List(
+      Right(TestData("John Doe", 47, "description 1")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 3", None)),
+      Right(TestData("Bob Smith", 80, "description 2")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
+    )
+
+    val stream = Stream
+      .emit(content)
+      .covary[Fallible]
+      .through(lenient.attemptDecodeUsingHeaders[TestData](','))
+      .compile
+      .toList
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
+  }
+
+  pureTest("Parser should return only errors as values when using attemptDecodeUsingHeaders with wrong header") {
+    val content =
+      """name1,age,description
+        |John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected = List(
+      Left(new DecoderError("unknown field name", None)),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 3", None)),
+      Left(new DecoderError("unknown field name", None)),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
+    )
+
+    val stream = Stream
+      .emit(content)
+      .covary[Fallible]
+      .through(lenient.attemptDecodeUsingHeaders[TestData](','))
+      .compile
+      .toList
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
+  }
+
+  pureTest("Parser should return all decoder results as values when using attemptDecodeGivenHeaders") {
+    val content =
+      """name-should-not-be-used,age-should-not-be-used,description-should-not-be-used
+        |John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected = List(
+      Right(TestData("John Doe", 47, "description 1")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 3", None)),
+      Right(TestData("Bob Smith", 80, "description 2")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
+    )
+
+    val stream = Stream
+      .emit(content)
+      .covary[Fallible]
+      .through(
+        lenient.attemptDecodeGivenHeaders[TestData](separator = ',',
+                                                    skipHeaders = true,
+                                                    headers = NonEmptyList.of("name", "age", "description")))
+      .compile
+      .toList
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
+  }
+
+  pureTest("Parser should return all decoder results when using attemptDecodeGivenHeaders with skipHeaders = false") {
+    val content =
+      """John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected = List(
+      Right(TestData("John Doe", 47, "description 1")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 2", None)),
+      Right(TestData("Bob Smith", 80, "description 2")),
+      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 4", None))
+    )
+
+    val stream = Stream
+      .emit(content)
+      .covary[Fallible]
+      .through(
+        lenient.attemptDecodeGivenHeaders[TestData](separator = ',',
+                                                    skipHeaders = false,
+                                                    headers = NonEmptyList.of("name", "age", "description")))
+      .compile
+      .toList
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
+  }
+
+  pureTest("Parser should return all decoder results when using attemptDecodeSkippingHeaders") {
+    val content =
+      """name-should-not-be-used,age-should-not-be-used,description-should-not-be-used
+        |John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected = List(
+      Right(TestData("John Doe", 47, "description 1")),
+      Left(new DecoderError("unknown index 2", None)),
+      Right(TestData("Bob Smith", 80, "description 2")),
+      Left(new DecoderError("unknown index 2", None))
+    )
+
+    val stream = Stream
+      .emit(content)
+      .covary[Fallible]
+      .through(lenient.attemptDecodeSkippingHeaders[TestData](separator = ','))
+      .compile
+      .toList
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
+  }
+
+  pureTest("Parser should return all decoder results when using attemptDecodeWithoutHeaders") {
+    val content =
+      """John Doe,47,description 1
+        |Jane Doe,50
+        |Bob Smith,80,description 2
+        |Alice Grey,78
+        |""".stripMargin
+
+    val expected = List(
+      Right(TestData("John Doe", 47, "description 1")),
+      Left(new DecoderError("unknown index 2", None)),
+      Right(TestData("Bob Smith", 80, "description 2")),
+      Left(new DecoderError("unknown index 2", None))
+    )
+
+    val stream = Stream
+      .emit(content)
+      .covary[Fallible]
+      .through(lenient.attemptDecodeWithoutHeaders[TestData](separator = ','))
+      .compile
+      .toList
+
+    stream match {
+      case Right(actual) => expect.eql(expected, actual)
+      case Left(x)       => failure(s"Stream failed with value $x")
+    }
   }
 }
