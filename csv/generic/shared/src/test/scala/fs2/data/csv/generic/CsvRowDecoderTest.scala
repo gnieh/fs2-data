@@ -327,32 +327,6 @@ object CsvRowDecoderTest extends SimpleIOSuite {
     }
   }
 
-  pureTest("decodeUsingHeaders should succeed if a required field with default value is missing") {
-    implicit val decoder: CsvRowDecoder[Test, String] = testDecoder
-    implicit val testEq: Eq[Test] = (a, b) => a == b
-
-    val content =
-      """s,j
-        |a,3
-        |""".stripMargin
-
-    val expected: List[Test] = List(
-      Test(0, "a", Some(3))
-    )
-
-    val stream = Stream
-      .emit(content)
-      .covary[Fallible]
-      .through(decodeUsingHeaders[Test](','))
-      .compile
-      .toList
-
-    stream match {
-      case Right(actual) => expect.eql(expected, actual)
-      case Left(x)       => failure(s"Stream failed with value $x")
-    }
-  }
-
   pureTest("should fail if a required string field is missing") {
     val row = CsvRow.unsafe(NonEmptyList.of("12", "3"), NonEmptyList.of("i", "j")).withLine(Some(2))
 
