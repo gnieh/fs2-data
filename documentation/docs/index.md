@@ -81,33 +81,6 @@ Files[IO]
   .drain
 ```
 
-### Dealing with erroneous files
-
-The default behaviour when parsing CSV files, is to terminate the stream whenever the columns of a row do not match 
-with the columns of the header. If you're dealing with CSV files that could contain these kind of errors, you can make 
-use of the `lenient` package. You will get back a `Stream` of results, where each parsed row is represented by an 
-`Either[Throwable, A]`.
-
-```scala mdoc:silent
-val content =
-  """name,age,description
-    |John Doe,47,description 1
-    |Jane Doe,50
-    |Bob Smith,80,description 2
-    |Alice Grey,78
-    |""".stripMargin
-
-Stream
-      .emit(content)
-      .covary[Fallible]
-      .through(lenient.attemptDecodeGivenHeaders[TestData]())
-      .compile
-      .toList
-
-// returns Either[Throwable, List[Either[Throwable, TestData]]]
-```
-
-
 [pipe-doc]: https://fs2.io/guide.html#statefully-transforming-streams
 [sax]: https://en.wikipedia.org/wiki/Simple_API_for_XML
 [fs2-decoders]: https://javadoc.io/doc/co.fs2/fs2-core_2.13/latest/fs2/text$.html
