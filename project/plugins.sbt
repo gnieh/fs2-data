@@ -9,7 +9,7 @@ addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.5.0")
 
 addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.3.6")
 
-addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.3")
+addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.4")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.4.1")
 
