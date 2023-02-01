@@ -61,6 +61,40 @@ More high-level pipes are available for the following use cases:
 * `encodeGivenHeaders` for CSV encoding that works without headers, but they should be added to the output
 * `encodeUsingFirstHeaders` for CSV encoding that works with headers. Uses the headers of the first row for the output.
 
+#### Dealing with erroneous files
+The default behaviour when parsing CSV files, is to terminate the stream whenever the columns of a row do not match
+the columns of the header. If you're dealing with CSV files that could contain these kind of errors, you can make
+use of the `lenient` package. You will get back a `Stream` of results, where each parsed row is represented by an
+`Either[Throwable, A]`.
+
+The following high-level pipes are available for decoding erroneous CSV files:
+* `attemptDecodeWithoutHeaders` for CSV parsing that requires no headers and none are present in the input (Note: 
+  requires `RowDecoder` instead of `CsvRowDecoder`)
+* `attemptDecodeSkippingHeaders` for CSV parsing that requires no headers, but they are present in the input (Note: 
+  requires `RowDecoder` instead of `CsvRowDecoder`)
+* `attemptDecodeGivenHeaders` for CSV parsing that requires headers, but they aren't present in the input
+* `attemptDecodeUsingHeaders` for CSV parsing that requires headers and they're present in the input
+* `attemptDecodeWithoutHeaders` for CSV encoding that works entirely without headers (Note: requires `RowEncoder` 
+  instead of `CsvRowEncoder`)
+
+```scala mdoc
+// Note that not all columns are present for all CSV rows
+val content =
+  """name,age,description
+    |John Doe,47,description 1
+    |Jane Doe,50
+    |Bob Smith,80,description 2
+    |Alice Grey,78
+    |""".stripMargin
+
+Stream
+      .emit(content)
+      .covary[Fallible]
+      .through(lenient.attemptDecodeGivenHeaders[TestData]())
+      .compile
+      .toList
+```
+
 ### Low-level API
 
 This section takes a closer look on the low-level concepts the high-level API is built from.
