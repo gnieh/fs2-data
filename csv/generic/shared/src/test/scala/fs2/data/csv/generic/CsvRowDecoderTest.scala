@@ -18,7 +18,6 @@ package fs2
 package data.csv
 package generic
 
-import cats.Eq
 import semiauto._
 import cats.data.NonEmptyList
 import weaver._
@@ -41,20 +40,11 @@ object CsvRowDecoderTest extends SimpleIOSuite {
   case class TestOptionRename(s: String, @CsvName("j") k: Option[Int], i: Int)
   case class TestOptionalString(i: Int, s: Option[String], j: Int)
 
-  implicit val testDataCsvRowDecoder: CsvRowDecoder[TestData, String] = deriveCsvRowDecoder[TestData]
-  implicit val testDataRowDecoder: RowDecoder[TestData] = deriveRowDecoder[TestData]
-
-  implicit val decoderErrorEq: Eq[CsvException] = Eq.by(_.toString)
-  implicit val decoderTestDataEq: Eq[TestData] = Eq.fromUniversalEquals
-  implicit val testEq: Eq[Test] = Eq.fromUniversalEquals
-
   val testDecoder = deriveCsvRowDecoder[Test]
   val testOrderDecoder = deriveCsvRowDecoder[TestOrder]
   val testRenameDecoder = deriveCsvRowDecoder[TestRename]
   val testOptionRenameDecoder = deriveCsvRowDecoder[TestOptionRename]
   val testOptionalStringDecoder = deriveCsvRowDecoder[TestOptionalString]
-
-  implicit val decoderTest: CsvRowDecoder[Test, String] = testDecoder
 
   pureTest("case classes should be decoded properly by header name and not position") {
     expect(testDecoder(csvRow) == Right(Test(1, "test", Some(42)))) and
@@ -99,4 +89,5 @@ object CsvRowDecoderTest extends SimpleIOSuite {
       case Right(x)    => failure(s"Stream succeeded with value $x")
     }
   }
+
 }
