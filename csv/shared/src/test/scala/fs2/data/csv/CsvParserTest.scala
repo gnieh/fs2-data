@@ -149,9 +149,9 @@ object CsvParserTest extends SimpleIOSuite {
 
     val expected = List(
       Right(TestData("John Doe", 47, "description 1")),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 3", None)),
+      Left(new HeaderSizeError(3, 2, Some(3L))),
       Right(TestData("Bob Smith", 80, "description 2")),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
+      Left(new HeaderSizeError(3, 2, Some(5L)))
     )
 
     val stream = Stream
@@ -178,9 +178,9 @@ object CsvParserTest extends SimpleIOSuite {
 
     val expected = List(
       Left(new DecoderError("unknown field name", None)),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 3", None)),
+      Left(new HeaderSizeError(3, 2, Some(3L))),
       Left(new DecoderError("unknown field name", None)),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
+      Left(new HeaderSizeError(3, 2, Some(5L)))
     )
 
     val stream = Stream
@@ -207,9 +207,9 @@ object CsvParserTest extends SimpleIOSuite {
 
     val expected = List(
       Right(TestData("John Doe", 47, "description 1")),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 3", None)),
+      Left(new HeaderSizeError(3, 2, Some(3L))),
       Right(TestData("Bob Smith", 80, "description 2")),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
+      Left(new HeaderSizeError(3, 2, Some(5L)))
     )
 
     val stream = Stream
@@ -238,9 +238,9 @@ object CsvParserTest extends SimpleIOSuite {
 
     val expected = List(
       Right(TestData("John Doe", 47, "description 1")),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 2", None)),
+      Left(new HeaderSizeError(3, 2, Some(2L))),
       Right(TestData("Bob Smith", 80, "description 2")),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 4", None))
+      Left(new HeaderSizeError(3, 2, Some(4L)))
     )
 
     val stream = Stream
@@ -341,9 +341,9 @@ object CsvParserTest extends SimpleIOSuite {
 
     val expected = List(
       Right(TestData("John Doe", 47, "description 1")),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 3", None)),
+      Left(new HeaderSizeError(3, 2, Some(3L))),
       Right(TestData("Bob Smith", 80, "description 2")),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
+      Left(new HeaderSizeError(3, 2, Some(5L)))
     )
 
     val stream = Stream
@@ -370,9 +370,9 @@ object CsvParserTest extends SimpleIOSuite {
 
     val expected = List(
       Left(new DecoderError("unknown field name", None)),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 3", None)),
+      Left(new HeaderSizeError(3, 2, Some(3L))),
       Left(new DecoderError("unknown field name", None)),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
+      Left(new HeaderSizeError(3, 2, Some(5L)))
     )
 
     val stream = Stream
@@ -399,9 +399,9 @@ object CsvParserTest extends SimpleIOSuite {
 
     val expected = List(
       Right(TestData("John Doe", 47, "description 1")),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 3", None)),
+      Left(new HeaderSizeError(3, 2, Some(3L))),
       Right(TestData("Bob Smith", 80, "description 2")),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 5", None))
+      Left(new HeaderSizeError(3, 2, Some(5L)))
     )
 
     val stream = Stream
@@ -430,9 +430,9 @@ object CsvParserTest extends SimpleIOSuite {
 
     val expected = List(
       Right(TestData("John Doe", 47, "description 1")),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 2", None)),
+      Left(new HeaderSizeError(3, 2, Some(2L))),
       Right(TestData("Bob Smith", 80, "description 2")),
-      Left(new CsvException("Headers have size 3 but row has size 2. Both numbers must match! in line 4", None))
+      Left(new HeaderSizeError(3, 2, Some(4L)))
     )
 
     val stream = Stream
