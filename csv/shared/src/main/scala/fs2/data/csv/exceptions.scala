@@ -38,6 +38,12 @@ class HeaderSizeError(msg: String,
                       override val line: Option[Long] = None,
                       inner: Throwable = null)
     extends HeaderError(msg, line, inner) {
+  def this(expectedColumns: Int, actualColumns: Int, line: Option[Long]) =
+    this(s"Headers have size $expectedColumns but row has size $actualColumns. Both numbers must match!",
+         expectedColumns,
+         actualColumns,
+         line)
+
   override def withLine(line: Option[Long]): HeaderSizeError =
     new HeaderSizeError(msg, expectedColumns, actualColumns, line, inner)
 }

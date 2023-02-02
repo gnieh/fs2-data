@@ -26,10 +26,7 @@ object CsvRow {
                     headers: NonEmptyList[Header],
                     line: Option[Long] = None): Either[CsvException, CsvRow[Header]] =
     if (values.length =!= headers.length)
-      Left(
-        new CsvException(
-          s"Headers have size ${headers.length} but row has size ${values.length}. Both numbers must match!",
-          line))
+      Left(new HeaderSizeError(headers.length, values.length, line))
     else
       Right(new CsvRow(values, Some(headers), line))
 
