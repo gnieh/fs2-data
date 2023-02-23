@@ -34,11 +34,13 @@ private[json] object TokenParser {
     Option(System.getProperty("fs2.data.json.string-buffer-size")).flatMap(_.toIntOption).getOrElse(128)
 
   def pipe[F[_], T](implicit F: RaiseThrowable[F], T: CharLikeChunks[F, T]): Pipe[F, T, Token] = { s =>
+    def empty = (T.create(Stream.empty), new VectorBuilder[Token])
+
     // the opening quote has already been read
     def string_(context: T.Context,
                 key: Boolean,
                 acc: StringBuilder,
-                chunkAcc: VectorBuilder[Token]): Pull[F, Token, Option[(T.Context, VectorBuilder[Token])]] =
+                chunkAcc: VectorBuilder[Token]): Pull[F, Token, (T.Context, VectorBuilder[Token])] =
       if (T.needsPull(context)) {
         emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
           case Some(context) =>
@@ -50,9 +52,7 @@ private[json] object TokenParser {
         (T.current(context): @switch) match {
           case '"' =>
             Pull.pure(
-              Some(
-                (T.advance(context),
-                 chunkAcc += (if (key) Token.Key(acc.result()) else Token.StringValue(acc.result())))))
+              (T.advance(context), chunkAcc += (if (key) Token.Key(acc.result()) else Token.StringValue(acc.result()))))
           case '\\' =>
             slowString_(T.advance(context), key, StringState.SeenBackslash, 0, acc, chunkAcc)
           case c if c >= 0x20 && c <= 0x10ffff =>
@@ -67,7 +67,7 @@ private[json] object TokenParser {
                     state: Int,
                     unicode: Int,
                     acc: StringBuilder,
-                    chunkAcc: VectorBuilder[Token]): Pull[F, Token, Option[(T.Context, VectorBuilder[Token])]] = {
+                    chunkAcc: VectorBuilder[Token]): Pull[F, Token, (T.Context, VectorBuilder[Token])] = {
       if (T.needsPull(context)) {
         emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
           case Some(context) =>
@@ -94,9 +94,8 @@ private[json] object TokenParser {
           case StringState.Normal =>
             if (c == '"')
               Pull.pure(
-                Some(
-                  (T.advance(context),
-                   chunkAcc += (if (key) Token.Key(acc.result()) else Token.StringValue(acc.result())))))
+                (T.advance(context),
+                 chunkAcc += (if (key) Token.Key(acc.result()) else Token.StringValue(acc.result()))))
             else if (c == '\\')
               slowString_(T.advance(context), key, StringState.SeenBackslash, 0, acc, chunkAcc)
             else if (c >= 0x20 && c <= 0x10ffff)
@@ -127,7 +126,7 @@ private[json] object TokenParser {
     def number_(context: T.Context,
                 state: Int,
                 acc: StringBuilder,
-                chunkAcc: VectorBuilder[Token]): Pull[F, Token, Option[(T.Context, VectorBuilder[Token])]] = {
+                chunkAcc: VectorBuilder[Token]): Pull[F, Token, (T.Context, VectorBuilder[Token])] = {
       def step(c: Char, state: Int): Int =
         (c: @switch) match {
           case '-' =>
@@ -194,7 +193,7 @@ private[json] object TokenParser {
             number_(context, state, acc, chunkAcc)
           case None =>
             if (NumberState.isFinal(state))
-              Pull.output1(Token.NumberValue(acc.result())).as(None)
+              Pull.output1(Token.NumberValue(acc.result())).as(empty)
             else
               Pull.raiseError[F](new JsonException("unexpected end of input"))
         }
@@ -203,7 +202,7 @@ private[json] object TokenParser {
         (step(c, state): @switch) match {
           case NumberState.Invalid =>
             if (NumberState.isFinal(state))
-              Pull.pure(Some((context, chunkAcc += Token.NumberValue(acc.result()))))
+              Pull.pure((context, chunkAcc += Token.NumberValue(acc.result())))
             else
               emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid number character '$c'"))
           case state =>
@@ -217,7 +216,7 @@ private[json] object TokenParser {
                  eidx: Int,
                  elen: Int,
                  token: Token,
-                 chunkAcc: VectorBuilder[Token]): Pull[F, Token, Option[(T.Context, VectorBuilder[Token])]] = {
+                 chunkAcc: VectorBuilder[Token]): Pull[F, Token, (T.Context, VectorBuilder[Token])] = {
       if (T.needsPull(context)) {
         emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
           case Some(context) =>
@@ -229,7 +228,7 @@ private[json] object TokenParser {
         val c = T.current(context)
         if (c == expected.charAt(eidx)) {
           if (eidx == elen - 1)
-            Pull.pure(Some((T.advance(context), chunkAcc += token)))
+            Pull.pure((T.advance(context), chunkAcc += token))
           else
             keyword_(T.advance(context), expected, eidx + 1, elen, token, chunkAcc)
         } else {
@@ -240,7 +239,7 @@ private[json] object TokenParser {
     }
 
     def value_(context: T.Context, state: Int, chunkAcc: VectorBuilder[Token])(implicit
-        F: RaiseThrowable[F]): Pull[F, Token, Option[(T.Context, VectorBuilder[Token])]] =
+        F: RaiseThrowable[F]): Pull[F, Token, (T.Context, VectorBuilder[Token])] =
       if (T.needsPull(context)) {
         emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
           case Some(context) =>
@@ -265,24 +264,16 @@ private[json] object TokenParser {
         }
       }
 
-    def continue(state: Int)(result: Option[(T.Context, VectorBuilder[Token])]) =
-      result match {
-        case Some((context, chunkAcc)) =>
-          go_(context, state, chunkAcc)
-        case None =>
-          Pull.pure(None)
-      }
-
     def go_(context: T.Context,
             state: Int,
-            chunkAcc: VectorBuilder[Token]): Pull[F, Token, Option[(T.Context, VectorBuilder[Token])]] = {
+            chunkAcc: VectorBuilder[Token]): Pull[F, Token, (T.Context, VectorBuilder[Token])] = {
       if (T.needsPull(context)) {
         emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
           case Some(context) =>
             chunkAcc.clear()
             go_(context, state, chunkAcc)
           case None =>
-            Pull.pure(None)
+            Pull.pure(empty)
         }
       } else {
         val c = T.current(context)
@@ -291,14 +282,16 @@ private[json] object TokenParser {
           case _ =>
             (state: @switch) match {
               case State.BeforeValue =>
-                value_(context, state, chunkAcc).flatMap(res => continue(State.BeforeValue)(res))
+                value_(context, state, chunkAcc).flatMap { case (context, chunkAcc) =>
+                  go_(context, State.BeforeValue, chunkAcc)
+                }
               case State.BeforeObjectKey =>
                 (c: @switch) match {
                   case '"' =>
                     string_(T.advance(context), true, new StringBuilder(keyBufferLength), chunkAcc)
-                      .flatMap(res => continue(State.AfterObjectKey)(res))
+                      .flatMap { case (context, chunkAcc) => go_(context, State.AfterObjectKey, chunkAcc) }
                   case '}' =>
-                    Pull.pure(Some((T.advance(context), chunkAcc += Token.EndObject)))
+                    Pull.pure((T.advance(context), chunkAcc += Token.EndObject))
                   case _ =>
                     emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
                 }
@@ -306,7 +299,7 @@ private[json] object TokenParser {
                 (c: @switch) match {
                   case '"' =>
                     string_(T.advance(context), true, new StringBuilder(keyBufferLength), chunkAcc)
-                      .flatMap(res => continue(State.AfterObjectKey)(res))
+                      .flatMap { case (context, chunkAcc) => go_(context, State.AfterObjectKey, chunkAcc) }
                   case _ =>
                     emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
                 }
@@ -318,31 +311,31 @@ private[json] object TokenParser {
                 }
               case State.BeforeObjectValue =>
                 value_(context, State.AfterObjectValue, chunkAcc)
-                  .flatMap(res => continue(State.AfterObjectValue)(res))
+                  .flatMap { case (context, chunkAcc) => go_(context, State.AfterObjectValue, chunkAcc) }
               case State.AfterObjectValue =>
                 (c: @switch) match {
                   case ',' =>
                     go_(T.advance(context), State.ExpectObjectKey, chunkAcc)
                   case '}' =>
-                    Pull.pure(Some((T.advance(context), chunkAcc += Token.EndObject)))
+                    Pull.pure((T.advance(context), chunkAcc += Token.EndObject))
                   case c =>
                     emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object value"))
                 }
               case State.ExpectArrayValue =>
                 value_(context, State.AfterArrayValue, chunkAcc)
-                  .flatMap(res => continue(State.AfterArrayValue)(res))
+                  .flatMap { case (context, chunkAcc) => go_(context, State.AfterArrayValue, chunkAcc) }
               case State.BeforeArrayValue =>
                 (c: @switch) match {
                   case ']' =>
-                    Pull.pure(Some((T.advance(context), chunkAcc += Token.EndArray)))
+                    Pull.pure((T.advance(context), chunkAcc += Token.EndArray))
                   case _ =>
                     value_(context, State.AfterArrayValue, chunkAcc)
-                      .flatMap(res => continue(State.AfterArrayValue)(res))
+                      .flatMap { case (context, chunkAcc) => go_(context, State.AfterArrayValue, chunkAcc) }
                 }
               case State.AfterArrayValue =>
                 (c: @switch) match {
                   case ']' =>
-                    Pull.pure(Some((T.advance(context), chunkAcc += Token.EndArray)))
+                    Pull.pure((T.advance(context), chunkAcc += Token.EndArray))
                   case ',' =>
                     go_(T.advance(context), State.ExpectArrayValue, chunkAcc)
                   case c =>
