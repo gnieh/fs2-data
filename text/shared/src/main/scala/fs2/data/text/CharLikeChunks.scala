@@ -99,19 +99,20 @@ private class CharLikeCharChunks[F[_]] extends CharLikeChunks[F, Char] {
 }
 
 private class CharLikeStringChunks[F[_]] extends CharLikeChunks[F, String] {
-  class StringContext(var string: String, var sidx: Int, var rest: Stream[F, String])
+  class StringContext(var string: String, var slen: Int, var sidx: Int, var rest: Stream[F, String])
 
   type Context = StringContext
 
   def create(s: Stream[F, String]): Context =
-    new StringContext("", 0, s)
+    new StringContext("", 0, 0, s)
 
   def needsPull(ctx: StringContext): Boolean =
-    ctx.sidx >= ctx.string.size
+    ctx.sidx >= ctx.slen
 
   def pullNext(ctx: StringContext): Pull[F, Nothing, Option[StringContext]] =
     ctx.rest.pull.uncons1.map(_.map { case (hd, tl) =>
       ctx.string = hd
+      ctx.slen = hd.length()
       ctx.sidx = 0
       ctx.rest = tl
       ctx
@@ -123,28 +124,29 @@ private class CharLikeStringChunks[F[_]] extends CharLikeChunks[F, String] {
   }
 
   def current(ctx: StringContext): Char =
-    ctx.string(ctx.sidx)
+    ctx.string.charAt(ctx.sidx)
 
 }
 
 // BEWARE: this implementation only works for single-byte encodings, do not use this for utf-8 for instance
 private class CharLikeSingleByteChunks[F[_]](charset: Charset) extends CharLikeChunks[F, Byte] {
 
-  class ByteContext(var chunk: String, var idx: Int, var rest: Stream[F, Byte])
+  class ByteContext(var chunk: String, var slen: Int, var idx: Int, var rest: Stream[F, Byte])
 
   type Context = ByteContext
 
   def create(s: Stream[F, Byte]): Context =
-    new ByteContext("", 0, s)
+    new ByteContext("", 0, 0, s)
 
   def needsPull(ctx: Context): Boolean =
-    ctx.idx >= ctx.chunk.size
+    ctx.idx >= ctx.slen
 
   def pullNext(ctx: Context): Pull[F, Nothing, Option[Context]] =
     ctx.rest.pull.uncons.map(_.map { case (hd, tl) =>
       // This code is pure. The constructor replaces malformed input
       // with the charset default replacement string, so this never throws
       ctx.chunk = new String(hd.toArray[Byte], charset)
+      ctx.slen = ctx.chunk.length()
       ctx.idx = 0
       ctx.rest = tl
       ctx

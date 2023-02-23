@@ -41,9 +41,9 @@ abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends Sim
       .list(testFileDir)
       .evalMap { path =>
         val expectation =
-          if (path.fileName.startsWith("y_"))
+          if (path.fileName.toString.startsWith("y_"))
             Expectation.Valid
-          else if (path.fileName.startsWith("n_"))
+          else if (path.fileName.toString.startsWith("n_"))
             Expectation.Invalid
           else
             Expectation.ImplementationDefined
@@ -66,11 +66,12 @@ abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends Sim
               case Expectation.Valid | Expectation.ImplementationDefined =>
                 contentStream.compile.string.map { rawExpected =>
                   val expected = parse(rawExpected)
-                  expect(actual.isRight == expected.isRight) and (if (actual.isRight) expect(actual == expected)
+                  expect(actual.isRight == expected.isRight) and (if (actual.isRight)
+                                                                    expect(actual == expected)
                                                                   else success)
                 }
               case Expectation.Invalid =>
-                IO.pure(expect(actual.isLeft))
+                IO.pure(expect(actual.isLeft, path.toString))
             })
       }
       .compile
