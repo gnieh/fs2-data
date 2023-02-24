@@ -51,8 +51,9 @@ private[json] object TokenParser {
       } else {
         (T.current(context): @switch) match {
           case '"' =>
-            Pull.pure(
-              (T.advance(context), chunkAcc += (if (key) Token.Key(acc.result()) else Token.StringValue(acc.result()))))
+            val res = acc.result()
+            val token = if (key) Token.Key(res) else Token.StringValue(res)
+            Pull.pure((T.advance(context), chunkAcc += token))
           case '\\' =>
             slowString_(T.advance(context), key, StringState.SeenBackslash, 0, acc, chunkAcc)
           case c if c >= 0x20 && c <= 0x10ffff =>
@@ -89,7 +90,8 @@ private[json] object TokenParser {
               case 'r'  => slowString_(T.advance(context), key, StringState.Normal, 0, acc.append('\r'), chunkAcc)
               case 't'  => slowString_(T.advance(context), key, StringState.Normal, 0, acc.append('\t'), chunkAcc)
               case 'u'  => slowString_(T.advance(context), key, StringState.Expect4Unicode, 0, acc, chunkAcc)
-              case _ => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unknown escaped character '$c'"))
+              case _ =>
+                emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unknown escaped character '$c'"))
             }
           case StringState.Normal =>
             if (c == '"')
@@ -346,6 +348,8 @@ private[json] object TokenParser {
       }
     }
 
-    Stream.suspend(Stream.emit(T.create(s))).flatMap(go_(_, State.BeforeValue, new VectorBuilder).void.stream)
+    Stream
+      .suspend(Stream.emit(T.create(s)))
+      .flatMap(go_(_, State.BeforeValue, new VectorBuilder).void.stream)
   }
 }
