@@ -67,24 +67,29 @@ trait CharLikeChunks[F[_], In] {
     */
   def current(ctx: Context): Char
 
+  def mark(ctx: Context): Unit
+
+  def appendMarked(ctx: Context, acc: StringBuilder): Unit
+
 }
 
 private class CharLikeCharChunks[F[_]] extends CharLikeChunks[F, Char] {
 
-  class CharContext(var chunk: Chunk[Char], var idx: Int, var rest: Stream[F, Char])
+  class CharContext(var chunk: Array[Char], var idx: Int, var rest: Stream[F, Char], var mark: Int)
 
   type Context = CharContext
 
-  def create(s: Stream[F, Char]): CharContext = new CharContext(Chunk.empty, 0, s)
+  def create(s: Stream[F, Char]): CharContext = new CharContext(Array.empty, 0, s, 0)
 
   def needsPull(ctx: CharContext): Boolean =
-    ctx.idx >= ctx.chunk.size
+    ctx.idx >= ctx.chunk.length
 
   def pullNext(ctx: CharContext): Pull[F, Nothing, Option[CharContext]] =
     ctx.rest.pull.uncons.map(_.map { case (hd, tl) =>
-      ctx.chunk = hd
+      ctx.chunk = hd.toArray
       ctx.idx = 0
       ctx.rest = tl
+      ctx.mark = 0
       ctx
     })
 
@@ -96,15 +101,22 @@ private class CharLikeCharChunks[F[_]] extends CharLikeChunks[F, Char] {
   def current(ctx: CharContext): Char =
     ctx.chunk(ctx.idx)
 
+  override def mark(ctx: Context): Unit =
+    ctx.mark = ctx.idx
+
+  override def appendMarked(ctx: Context, acc: StringBuilder): Unit =
+    acc.appendAll(ctx.chunk, ctx.mark, ctx.idx - ctx.mark)
+
 }
 
 private class CharLikeStringChunks[F[_]] extends CharLikeChunks[F, String] {
-  class StringContext(var string: Array[Char], var sidx: Int, var rest: Stream[F, String])
+
+  class StringContext(var string: Array[Char], var sidx: Int, var rest: Stream[F, String], var mark: Int)
 
   type Context = StringContext
 
   def create(s: Stream[F, String]): Context =
-    new StringContext(Array.empty, 0, s)
+    new StringContext(Array.empty, 0, s, 0)
 
   def needsPull(ctx: StringContext): Boolean =
     ctx.sidx >= ctx.string.length
@@ -114,6 +126,7 @@ private class CharLikeStringChunks[F[_]] extends CharLikeChunks[F, String] {
       ctx.string = hd.toCharArray()
       ctx.sidx = 0
       ctx.rest = tl
+      ctx.mark = 0
       ctx
     })
 
@@ -125,17 +138,23 @@ private class CharLikeStringChunks[F[_]] extends CharLikeChunks[F, String] {
   def current(ctx: StringContext): Char =
     ctx.string(ctx.sidx)
 
+  override def mark(ctx: Context): Unit =
+    ctx.mark = ctx.sidx
+
+  override def appendMarked(ctx: Context, acc: StringBuilder): Unit =
+    acc.appendAll(ctx.string, ctx.mark, ctx.sidx - ctx.mark)
+
 }
 
 // BEWARE: this implementation only works for single-byte encodings, do not use this for utf-8 for instance
 private class CharLikeSingleByteChunks[F[_]](charset: Charset) extends CharLikeChunks[F, Byte] {
 
-  class ByteContext(var chunk: Array[Char], var idx: Int, var rest: Stream[F, Byte])
+  class ByteContext(var chunk: Array[Char], var idx: Int, var rest: Stream[F, Byte], var mark: Int)
 
   type Context = ByteContext
 
   def create(s: Stream[F, Byte]): Context =
-    new ByteContext(Array.empty, 0, s)
+    new ByteContext(Array.empty, 0, s, 0)
 
   def needsPull(ctx: Context): Boolean =
     ctx.idx >= ctx.chunk.length
@@ -147,6 +166,7 @@ private class CharLikeSingleByteChunks[F[_]](charset: Charset) extends CharLikeC
       ctx.chunk = new String(hd.toArray[Byte], charset).toCharArray()
       ctx.idx = 0
       ctx.rest = tl
+      ctx.mark = 0
       ctx
     })
 
@@ -157,6 +177,12 @@ private class CharLikeSingleByteChunks[F[_]](charset: Charset) extends CharLikeC
 
   def current(ctx: Context): Char =
     ctx.chunk(ctx.idx)
+
+  override def mark(ctx: Context): Unit =
+    ctx.mark = ctx.idx
+
+  override def appendMarked(ctx: Context, acc: StringBuilder): Unit =
+    acc.appendAll(ctx.chunk, ctx.mark, ctx.idx - ctx.mark)
 
 }
 

@@ -33,6 +33,8 @@ package object text {
         override def pullNext(ctx: Context): Pull[F, Nothing, Option[Context]] = stringsCharLike.pullNext(ctx)
         override def advance(ctx: Context): Context = stringsCharLike.advance(ctx)
         override def current(ctx: Context): Char = stringsCharLike.current(ctx)
+        override def mark(ctx: Context): Unit = stringsCharLike.mark(ctx)
+        override def appendMarked(ctx: Context, acc: StringBuilder): Unit = stringsCharLike.appendMarked(ctx, acc)
       }
     }
 

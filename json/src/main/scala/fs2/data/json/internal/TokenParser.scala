@@ -44,6 +44,7 @@ private[json] object TokenParser {
                   acc: StringBuilder,
                   chunkAcc: VectorBuilder[Token]): Pull[F, Token, (T.Context, VectorBuilder[Token])] =
         if (T.needsPull(context)) {
+          T.appendMarked(context, acc)
           emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
             case Some(context) =>
               chunkAcc.clear()
@@ -53,14 +54,16 @@ private[json] object TokenParser {
         } else {
           (T.current(context): @switch) match {
             case '"' =>
+              T.appendMarked(context, acc)
               val res = acc.result()
               acc.clear()
               val token = if (key) Token.Key(res) else Token.StringValue(res)
               Pull.pure((T.advance(context), chunkAcc += token))
             case '\\' =>
+              T.appendMarked(context, acc)
               slowString_(T.advance(context), key, StringState.SeenBackslash, 0, acc, chunkAcc)
             case c if c >= 0x20 && c <= 0x10ffff =>
-              string_(T.advance(context), key, acc.append(c), chunkAcc)
+              string_(T.advance(context), key, acc, chunkAcc)
             case c =>
               emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
           }
@@ -73,6 +76,7 @@ private[json] object TokenParser {
                       acc: StringBuilder,
                       chunkAcc: VectorBuilder[Token]): Pull[F, Token, (T.Context, VectorBuilder[Token])] = {
         if (T.needsPull(context)) {
+          T.appendMarked(context, acc)
           emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
             case Some(context) =>
               chunkAcc.clear()
@@ -83,29 +87,33 @@ private[json] object TokenParser {
           val c = T.current(context)
           (state: @switch) match {
             case StringState.SeenBackslash =>
+              val ctx = T.advance(context)
+              T.mark(ctx)
               (c: @switch) match {
-                case '"'  => slowString_(T.advance(context), key, StringState.Normal, 0, acc.append('"'), chunkAcc)
-                case '\\' => slowString_(T.advance(context), key, StringState.Normal, 0, acc.append('\\'), chunkAcc)
-                case '/'  => slowString_(T.advance(context), key, StringState.Normal, 0, acc.append('/'), chunkAcc)
-                case 'b'  => slowString_(T.advance(context), key, StringState.Normal, 0, acc.append('\b'), chunkAcc)
-                case 'f'  => slowString_(T.advance(context), key, StringState.Normal, 0, acc.append('\f'), chunkAcc)
-                case 'n'  => slowString_(T.advance(context), key, StringState.Normal, 0, acc.append('\n'), chunkAcc)
-                case 'r'  => slowString_(T.advance(context), key, StringState.Normal, 0, acc.append('\r'), chunkAcc)
-                case 't'  => slowString_(T.advance(context), key, StringState.Normal, 0, acc.append('\t'), chunkAcc)
-                case 'u'  => slowString_(T.advance(context), key, StringState.Expect4Unicode, 0, acc, chunkAcc)
+                case '"'  => slowString_(ctx, key, StringState.Normal, 0, acc.append('"'), chunkAcc)
+                case '\\' => slowString_(ctx, key, StringState.Normal, 0, acc.append('\\'), chunkAcc)
+                case '/'  => slowString_(ctx, key, StringState.Normal, 0, acc.append('/'), chunkAcc)
+                case 'b'  => slowString_(ctx, key, StringState.Normal, 0, acc.append('\b'), chunkAcc)
+                case 'f'  => slowString_(ctx, key, StringState.Normal, 0, acc.append('\f'), chunkAcc)
+                case 'n'  => slowString_(ctx, key, StringState.Normal, 0, acc.append('\n'), chunkAcc)
+                case 'r'  => slowString_(ctx, key, StringState.Normal, 0, acc.append('\r'), chunkAcc)
+                case 't'  => slowString_(ctx, key, StringState.Normal, 0, acc.append('\t'), chunkAcc)
+                case 'u'  => slowString_(ctx, key, StringState.Expect4Unicode, 0, acc, chunkAcc)
                 case _ =>
                   emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unknown escaped character '$c'"))
               }
             case StringState.Normal =>
               if (c == '"') {
+                T.appendMarked(context, acc)
                 val res = acc.result()
                 acc.clear()
                 val token = if (key) Token.Key(res) else Token.StringValue(res)
                 Pull.pure((T.advance(context), chunkAcc += token))
-              } else if (c == '\\')
+              } else if (c == '\\') {
+                T.appendMarked(context, acc)
                 slowString_(T.advance(context), key, StringState.SeenBackslash, 0, acc, chunkAcc)
-              else if (c >= 0x20 && c <= 0x10ffff)
-                slowString_(T.advance(context), key, StringState.Normal, 0, acc.append(c), chunkAcc)
+              } else if (c >= 0x20 && c <= 0x10ffff)
+                slowString_(T.advance(context), key, StringState.Normal, 0, acc, chunkAcc)
               else
                 emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
             case n /* StringState.ExpectNUnicode */ =>
@@ -113,12 +121,9 @@ private[json] object TokenParser {
               if (cidx >= 0) {
                 val unicode1 = (unicode << 4) | (0x0000000f & cidx)
                 if (n == 1) {
-                  slowString_(T.advance(context),
-                              key,
-                              StringState.Normal,
-                              0,
-                              acc.appendAll(Character.toChars(unicode1)),
-                              chunkAcc)
+                  val ctx = T.advance(context)
+                  T.mark(ctx)
+                  slowString_(ctx, key, StringState.Normal, 0, acc.appendAll(Character.toChars(unicode1)), chunkAcc)
                 } else {
                   slowString_(T.advance(context), key, n - 1, unicode1, acc, chunkAcc)
                 }
@@ -193,6 +198,7 @@ private[json] object TokenParser {
           }
 
         if (T.needsPull(context)) {
+          T.appendMarked(context, acc)
           emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
             case Some(context) =>
               chunkAcc.clear()
@@ -207,12 +213,13 @@ private[json] object TokenParser {
           val c = T.current(context)
           (step(c, state): @switch) match {
             case NumberState.Invalid =>
-              if (NumberState.isFinal(state))
+              if (NumberState.isFinal(state)) {
+                T.appendMarked(context, acc)
                 Pull.pure((context, chunkAcc += Token.NumberValue(acc.result())))
-              else
+              } else
                 emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid number character '$c'"))
             case state =>
-              number_(T.advance(context), state, acc.append(c), chunkAcc)
+              number_(T.advance(context), state, acc, chunkAcc)
           }
         }
       }
@@ -263,8 +270,12 @@ private[json] object TokenParser {
             case 't' => keyword_(context, "true", 0, 4, Token.TrueValue, chunkAcc)
             case 'f' => keyword_(context, "false", 0, 5, Token.FalseValue, chunkAcc)
             case 'n' => keyword_(context, "null", 0, 4, Token.NullValue, chunkAcc)
-            case '"' => string_(T.advance(context), false, new StringBuilder(stringBufferCapacity), chunkAcc)
+            case '"' =>
+              val ctx = T.advance(context)
+              T.mark(ctx)
+              string_(ctx, false, new StringBuilder(stringBufferCapacity), chunkAcc)
             case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
+              T.mark(context)
               number_(context, NumberState.NumberStart, new StringBuilder(numberBufferCapacity), chunkAcc)
             case _ => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c'"))
           }
@@ -294,7 +305,9 @@ private[json] object TokenParser {
                 case State.BeforeObjectKey =>
                   (c: @switch) match {
                     case '"' =>
-                      string_(T.advance(context), true, keyAcc, chunkAcc)
+                      val ctx = T.advance(context)
+                      T.mark(ctx)
+                      string_(ctx, true, keyAcc, chunkAcc)
                         .flatMap { case (context, chunkAcc) => go_(context, State.AfterObjectKey, chunkAcc) }
                     case '}' =>
                       Pull.pure((T.advance(context), chunkAcc += Token.EndObject))
@@ -304,7 +317,9 @@ private[json] object TokenParser {
                 case State.ExpectObjectKey =>
                   (c: @switch) match {
                     case '"' =>
-                      string_(T.advance(context), true, keyAcc, chunkAcc)
+                      val ctx = T.advance(context)
+                      T.mark(ctx)
+                      string_(ctx, true, keyAcc, chunkAcc)
                         .flatMap { case (context, chunkAcc) => go_(context, State.AfterObjectKey, chunkAcc) }
                     case _ =>
                       emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
@@ -355,7 +370,6 @@ private[json] object TokenParser {
     }
 
     Stream
-      .suspend(Stream.emit(T.create(s)))
-      .flatMap((new Parser).go_(_, State.BeforeValue, new VectorBuilder).void.stream)
+      .suspend((new Parser).go_(T.create(s), State.BeforeValue, new VectorBuilder).void.stream)
   }
 }
