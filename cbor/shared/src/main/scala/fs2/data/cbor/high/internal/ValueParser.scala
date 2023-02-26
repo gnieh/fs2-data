@@ -23,8 +23,7 @@ package internal
 import low.CborItem
 
 import scala.collection.mutable
-
-import java.lang.{Float => JFloat, Double => JDouble, Long => JLong}
+import java.lang.{Double => JDouble, Float => JFloat, Long => JLong}
 import scodec.bits.ByteVector
 
 object ValueParser {
@@ -209,9 +208,9 @@ object ValueParser {
   private def parseTags[F[_]](chunk: Chunk[CborItem],
                               idx: Int,
                               rest: Stream[F, CborItem],
-                              tags: CborValue => CborValue,
+                              tags: CborValue => Pull[F, Nothing, CborValue],
                               chunkAcc: List[CborValue])(implicit
-      F: RaiseThrowable[F]): Pull[F, CborValue, Result[F, CborValue => CborValue]] =
+      F: RaiseThrowable[F]): Pull[F, CborValue, Result[F, CborValue => Pull[F, Nothing, CborValue]]] =
     if (idx >= chunk.size) {
       Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => parseTags(hd, 0, tl, tags, Nil)
@@ -219,6 +218,21 @@ object ValueParser {
       }
     } else {
       chunk(idx) match {
+        case CborItem.Tag(Tags.PositiveBigNum) =>
+          def f: CborValue => Pull[F, Nothing, CborValue] = {
+            case CborValue.ByteString(bytes) => tags(CborValue.Integer(BigInt(bytes.toArrayUnsafe)))
+            case CborValue.Tagged(tag2, v)   => f(v).map(CborValue.Tagged(tag2, _))
+            case _ => Pull.raiseError(new CborTagDecodingException("A bignum must have a byte string as value"))
+          }
+          parseTags(chunk, idx + 1, rest, f, chunkAcc)
+        case CborItem.Tag(Tags.NegativeBigNum) =>
+          def f: CborValue => Pull[F, Nothing, CborValue] = {
+            case CborValue.ByteString(bytes) =>
+              tags(CborValue.Integer(minusOne + minusOne * BigInt(bytes.toArrayUnsafe)))
+            case CborValue.Tagged(tag2, v) => f(v).map(CborValue.Tagged(tag2, _))
+            case _ => Pull.raiseError(new CborTagDecodingException("A bignum must have a byte string as value"))
+          }
+          parseTags(chunk, idx + 1, rest, f, chunkAcc)
         case CborItem.Tag(tag) => parseTags(chunk, idx + 1, rest, v => tags(CborValue.Tagged(tag, v)), chunkAcc)
         case _                 => Pull.pure((chunk, idx, rest, chunkAcc, tags))
       }
@@ -228,7 +242,7 @@ object ValueParser {
 
   private def parseValue[F[_]](chunk: Chunk[CborItem], idx: Int, rest: Stream[F, CborItem], chunkAcc: List[CborValue])(
       implicit F: RaiseThrowable[F]): Pull[F, CborValue, Result[F, CborValue]] =
-    parseTags(chunk, idx, rest, identity, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, tags) =>
+    parseTags(chunk, idx, rest, Pull.pure, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, tags) =>
       if (idx >= chunk.size) {
         Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) => parseValue(hd, 0, tl, Nil)
@@ -236,68 +250,60 @@ object ValueParser {
         }
       } else {
         chunk(idx) match {
-          case CborItem.False     => Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.False)))
-          case CborItem.True      => Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.True)))
-          case CborItem.Null      => Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.Null)))
-          case CborItem.Undefined => Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.Undefined)))
+          case CborItem.False =>
+            tags(CborValue.False).map(v => (chunk, idx + 1, rest, chunkAcc, v))
+          case CborItem.True =>
+            tags(CborValue.True).map(v => (chunk, idx + 1, rest, chunkAcc, v))
+          case CborItem.Null =>
+            tags(CborValue.Null).map(v => (chunk, idx + 1, rest, chunkAcc, v))
+          case CborItem.Undefined =>
+            tags(CborValue.Undefined).map(v => (chunk, idx + 1, rest, chunkAcc, v))
           case CborItem.SimpleValue(value) =>
-            Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.SimpleValue(value))))
+            tags(CborValue.SimpleValue(value)).map(v => (chunk, idx + 1, rest, chunkAcc, v))
           case CborItem.PositiveInt(bytes) =>
-            val value = BigInt(bytes.toHex, 16)
-            Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.Integer(value))))
+            val value = BigInt(bytes.toArrayUnsafe)
+            tags(CborValue.Integer(value)).map(v => (chunk, idx + 1, rest, chunkAcc, v))
           case CborItem.NegativeInt(bytes) =>
-            val value = minusOne - BigInt(bytes.toHex, 16)
-            Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.Integer(value))))
+            val value = minusOne - BigInt(bytes.toArrayUnsafe)
+            tags(CborValue.Integer(value)).map(v => (chunk, idx + 1, rest, chunkAcc, v))
           case CborItem.Float16(raw) =>
-            Pull.pure(
-              (chunk,
-               idx + 1,
-               rest,
-               chunkAcc,
-               tags(CborValue.Float32(fs2.data.cbor.HalfFloat.toFloat(raw.toShort(signed = false))))))
+            tags(CborValue.Float32(fs2.data.cbor.HalfFloat.toFloat(raw.toShort(signed = false)))).map(v =>
+              (chunk, idx + 1, rest, chunkAcc, v))
           case CborItem.Float32(raw) =>
-            Pull.pure(
-              (chunk,
-               idx + 1,
-               rest,
-               chunkAcc,
-               tags(CborValue.Float32(JFloat.intBitsToFloat(raw.toInt(signed = false))))))
+            tags(CborValue.Float32(JFloat.intBitsToFloat(raw.toInt(signed = false)))).map(v =>
+              (chunk, idx + 1, rest, chunkAcc, v))
           case CborItem.Float64(raw) =>
-            Pull.pure(
-              (chunk,
-               idx + 1,
-               rest,
-               chunkAcc,
-               tags(CborValue.Float64(JDouble.longBitsToDouble(raw.toLong(signed = false))))))
+            tags(CborValue.Float64(JDouble.longBitsToDouble(raw.toLong(signed = false)))).map(v =>
+              (chunk, idx + 1, rest, chunkAcc, v))
           case CborItem.ByteString(bytes) =>
-            Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.ByteString(bytes))))
+            tags(CborValue.ByteString(bytes)).map(v => (chunk, idx + 1, rest, chunkAcc, v))
           case CborItem.StartIndefiniteByteString =>
-            parseByteStrings(chunk, idx + 1, rest, ByteVector.empty, chunkAcc).map {
+            parseByteStrings(chunk, idx + 1, rest, ByteVector.empty, chunkAcc).flatMap {
               case (chunk, idx, rest, chunkAcc, bs) =>
-                (chunk, idx, rest, chunkAcc, tags(bs))
+                tags(bs).map(v => (chunk, idx, rest, chunkAcc, v))
             }
           case CborItem.TextString(string) =>
-            Pull.pure((chunk, idx + 1, rest, chunkAcc, tags(CborValue.TextString(string))))
+            tags(CborValue.TextString(string)).map(v => (chunk, idx + 1, rest, chunkAcc, v))
           case CborItem.StartIndefiniteTextString =>
-            parseTextStrings(chunk, idx + 1, rest, new StringBuilder, chunkAcc).map {
+            parseTextStrings(chunk, idx + 1, rest, new StringBuilder, chunkAcc).flatMap {
               case (chunk, idx, rest, chunkAcc, ts) =>
-                (chunk, idx, rest, chunkAcc, tags(ts))
+                tags(ts).map(v => (chunk, idx, rest, chunkAcc, v))
             }
           case CborItem.StartArray(size) =>
-            parseArray(chunk, idx + 1, rest, size, new mutable.ListBuffer, chunkAcc).map {
-              case (chunk, idx, rest, chunkAcc, array) => (chunk, idx, rest, chunkAcc, tags(array))
+            parseArray(chunk, idx + 1, rest, size, new mutable.ListBuffer, chunkAcc).flatMap {
+              case (chunk, idx, rest, chunkAcc, array) => tags(array).map(v => (chunk, idx, rest, chunkAcc, v))
             }
           case CborItem.StartIndefiniteArray =>
-            parseIndefiniteArray(chunk, idx + 1, rest, new mutable.ListBuffer, chunkAcc).map {
-              case (chunk, idx, rest, chunkAcc, array) => (chunk, idx, rest, chunkAcc, tags(array))
+            parseIndefiniteArray(chunk, idx + 1, rest, new mutable.ListBuffer, chunkAcc).flatMap {
+              case (chunk, idx, rest, chunkAcc, array) => tags(array).map(v => (chunk, idx, rest, chunkAcc, v))
             }
           case CborItem.StartMap(size) =>
-            parseMap(chunk, idx + 1, rest, size, mutable.Map.empty, chunkAcc).map {
-              case (chunk, idx, rest, chunkAcc, array) => (chunk, idx, rest, chunkAcc, tags(array))
+            parseMap(chunk, idx + 1, rest, size, mutable.Map.empty, chunkAcc).flatMap {
+              case (chunk, idx, rest, chunkAcc, array) => tags(array).map(v => (chunk, idx, rest, chunkAcc, v))
             }
           case CborItem.StartIndefiniteMap =>
-            parseIndefiniteMap(chunk, idx + 1, rest, mutable.Map.empty, chunkAcc).map {
-              case (chunk, idx, rest, chunkAcc, array) => (chunk, idx, rest, chunkAcc, tags(array))
+            parseIndefiniteMap(chunk, idx + 1, rest, mutable.Map.empty, chunkAcc).flatMap {
+              case (chunk, idx, rest, chunkAcc, array) => tags(array).map(v => (chunk, idx, rest, chunkAcc, v))
             }
           case item =>
             raise(new CborParsingException(s"unknown item $item"), chunkAcc)

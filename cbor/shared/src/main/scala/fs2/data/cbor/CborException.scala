@@ -20,4 +20,6 @@ sealed abstract class CborException(msg: String, inner: Throwable) extends Excep
 
 class CborParsingException(msg: String, inner: Throwable = null) extends CborException(msg, inner)
 
+class CborTagDecodingException(msg: String, inner: Throwable = null) extends CborException(msg, inner)
+
 class CborValidationException(msg: String, inner: Throwable = null) extends CborException(msg, inner)
