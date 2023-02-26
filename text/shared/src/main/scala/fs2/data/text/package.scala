@@ -24,19 +24,8 @@ package object text {
   /** Import this if your byte stream is encoded in UTF-8 */
   object utf8 {
 
-    implicit def byteStreamCharLike[F[_]]: CharLikeChunks[F, Byte] = {
-      val stringsCharLike = CharLikeChunks.stringStreamCharLike[F]
-      new CharLikeChunks[F, Byte] {
-        override type Context = stringsCharLike.Context
-        override def create(s: Stream[F, Byte]): Context = stringsCharLike.create(s.through(fs2.text.utf8.decode))
-        override def needsPull(ctx: Context): Boolean = stringsCharLike.needsPull(ctx)
-        override def pullNext(ctx: Context): Pull[F, Nothing, Option[Context]] = stringsCharLike.pullNext(ctx)
-        override def advance(ctx: Context): Context = stringsCharLike.advance(ctx)
-        override def current(ctx: Context): Char = stringsCharLike.current(ctx)
-        override def mark(ctx: Context): Unit = stringsCharLike.mark(ctx)
-        override def appendMarked(ctx: Context, acc: StringBuilder): Unit = stringsCharLike.appendMarked(ctx, acc)
-      }
-    }
+    implicit def byteStreamCharLike[F[_]]: CharLikeChunks[F, Byte] =
+      new CharLikeUtf8ByteChunks[F]
 
   }
 
