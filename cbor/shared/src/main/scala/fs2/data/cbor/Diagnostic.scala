@@ -80,7 +80,7 @@ object Diagnostic {
               case _ =>
                 if (!start) acc.append(", ")
                 OptionT(value(s)).flatMapF { case (str, s) =>
-                  array(s, math.max(-1L, size - 1), false, acc.append(str))
+                  array(s, Math.max(-1L, size - 1), false, acc.append(str))
                 }.value
             }
           case None => Pull.pure(None)
@@ -106,7 +106,7 @@ object Diagnostic {
                 if (!start) acc.append(", ")
                 OptionT(value(s)).flatMap { case (k, s) =>
                   OptionT(value(s)).flatMapF { case (v, s) =>
-                    map(s, math.max(-1L, size - 1), false, acc.append(k).append(": ").append(v))
+                    map(s, Math.max(-1L, size - 1), false, acc.append(k).append(": ").append(v))
                   }
                 }.value
             }

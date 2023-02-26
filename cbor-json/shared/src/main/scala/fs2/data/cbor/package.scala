@@ -127,27 +127,27 @@ package object json {
           case CborItem.TextString(k) =>
             tokenizeValue(chunk, idx + 1, rest, tag, chunkAcc += Token.Key(k)).flatMap {
               case (chunk, idx, rest, chunkAcc) =>
-                tokenizeMap(chunk, idx, rest, tag, math.max(-1L, count - 1L), chunkAcc)
+                tokenizeMap(chunk, idx, rest, tag, Math.max(-1L, count - 1L), chunkAcc)
             }
           case CborItem.StartIndefiniteTextString =>
             tokenizeTextStrings(chunk, idx + 1, rest, new StringBuilder, chunkAcc).flatMap {
               case (chunk, idx, rest, chunkAcc, s) =>
                 tokenizeValue(chunk, idx, rest, None, chunkAcc += Token.Key(s)).flatMap {
                   case (chunk, idx, rest, chunkAcc) =>
-                    tokenizeMap(chunk, idx, rest, tag, math.max(-1L, count - 1L), chunkAcc)
+                    tokenizeMap(chunk, idx, rest, tag, Math.max(-1L, count - 1L), chunkAcc)
                 }
             }
           case CborItem.ByteString(bytes) =>
             tokenizeValue(chunk, idx + 1, rest, None, chunkAcc += Token.Key(decodeString(tag.getOrElse(-1), bytes)))
               .flatMap { case (chunk, idx, rest, chunkAcc) =>
-                tokenizeMap(chunk, idx, rest, tag, math.max(-1L, count - 1L), chunkAcc)
+                tokenizeMap(chunk, idx, rest, tag, Math.max(-1L, count - 1L), chunkAcc)
               }
           case CborItem.StartIndefiniteByteString =>
             tokenizeByteStrings(chunk, idx + 1, rest, tag.getOrElse(-1), new StringBuilder, chunkAcc).flatMap {
               case (chunk, idx, rest, chunkAcc, s) =>
                 tokenizeValue(chunk, idx, rest, None, chunkAcc += Token.Key(s)).flatMap {
                   case (chunk, idx, rest, chunkAcc) =>
-                    tokenizeMap(chunk, idx, rest, tag, math.max(-1L, count - 1L), chunkAcc)
+                    tokenizeMap(chunk, idx, rest, tag, Math.max(-1L, count - 1L), chunkAcc)
                 }
             }
           case t =>
@@ -177,7 +177,7 @@ package object json {
             Pull.pure((chunk, idx + 1, rest, chunkAcc += Token.EndArray))
           case _ =>
             tokenizeValue(chunk, idx, rest, tag, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc) =>
-              tokenizeArray(chunk, idx, rest, tag, math.max(-1L, count - 1L), chunkAcc)
+              tokenizeArray(chunk, idx, rest, tag, Math.max(-1L, count - 1L), chunkAcc)
             }
         }
       }
