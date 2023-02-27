@@ -21,14 +21,22 @@ package internals
 
 import text._
 
+import cats.syntax.either._
+
 private[json] object TokenParser {
 
   private[json] final val keyBufferCapacity =
-    Option(System.getProperty("fs2.data.json.key-buffer-capacity")).flatMap(_.toIntOption).getOrElse(64)
+    Option(System.getProperty("fs2.data.json.key-buffer-capacity"))
+      .flatMap(s => Either.catchNonFatal(s.toInt).toOption)
+      .getOrElse(64)
   private[json] final val numberBufferCapacity =
-    Option(System.getProperty("fs2.data.json.number-buffer-capacity")).flatMap(_.toIntOption).getOrElse(16)
+    Option(System.getProperty("fs2.data.json.number-buffer-capacity"))
+      .flatMap(s => Either.catchNonFatal(s.toInt).toOption)
+      .getOrElse(16)
   private[json] final val stringBufferCapacity =
-    Option(System.getProperty("fs2.data.json.string-buffer-capacity")).flatMap(_.toIntOption).getOrElse(128)
+    Option(System.getProperty("fs2.data.json.string-buffer-capacity"))
+      .flatMap(s => Either.catchNonFatal(s.toInt).toOption)
+      .getOrElse(128)
 
   def pipe[F[_], T](implicit F: RaiseThrowable[F], T: CharLikeChunks[F, T]): Pipe[F, T, Token] = { s =>
     T match {
