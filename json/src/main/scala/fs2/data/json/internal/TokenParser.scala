@@ -35,8 +35,7 @@ private[json] object TokenParser {
       case asCharBuffer: AsCharBuffer[F, T] =>
         Stream.suspend(new JsonTokenParser[F, T](s)(F, asCharBuffer).go_(State.BeforeValue).stream)
       case _ =>
-        ???
-        //Stream.suspend(new LegacyTokenParser[F, T](s).go_(State.BeforeValue).stream)
+        Stream.suspend(new LegacyTokenParser[F, T](s).parse.stream)
     }
 
   }

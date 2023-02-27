@@ -78,5 +78,47 @@ abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends Sim
       .foldMonoid
   }
 
+  test("Standard test suite files should be parsed correctly with legacy parser") {
+    Files[IO]
+      .list(testFileDir)
+      .evalMap { path =>
+        val expectation =
+          if (path.fileName.toString.startsWith("y_"))
+            Expectation.Valid
+          else if (path.fileName.toString.startsWith("n_"))
+            Expectation.Invalid
+          else
+            Expectation.ImplementationDefined
+
+        val contentStream =
+          Files[IO]
+            .readAll(path, 1024, Flags.Read)
+            .through(fs2.text.utf8.decode)
+
+        contentStream
+          .through(tokens(implicitly[RaiseThrowable[IO]], new LegacyStringCharLikeChunk[IO]))
+          .through(ast.values)
+          .compile
+          .toList
+          .flatMap(l =>
+            if (l.size == 1) IO.pure(l.head) else IO.raiseError(new Exception("a single value is expected")))
+          .attempt
+          .flatMap(actual =>
+            expectation match {
+              case Expectation.Valid | Expectation.ImplementationDefined =>
+                contentStream.compile.string.map { rawExpected =>
+                  val expected = parse(rawExpected)
+                  expect(actual.isRight == expected.isRight) and (if (actual.isRight)
+                                                                    expect(actual == expected)
+                                                                  else success)
+                }
+              case Expectation.Invalid =>
+                IO.pure(expect(actual.isLeft, path.toString))
+            })
+      }
+      .compile
+      .foldMonoid
+  }
+
   def parse(content: String): Either[Throwable, Json]
 }
