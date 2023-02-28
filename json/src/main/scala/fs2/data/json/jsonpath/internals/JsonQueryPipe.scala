@@ -36,7 +36,7 @@ private[jsonpath] object PathMatcher {
       this.high >= that.low && this.low <= that.high
 
     def intersection(that: Range): Range =
-      Range(math.max(this.low, that.low), math.min(this.high, that.high))
+      Range(Math.max(this.low, that.low), Math.min(this.high, that.high))
 
   }
 
