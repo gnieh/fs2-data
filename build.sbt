@@ -10,7 +10,7 @@ val playVersion = "2.10.0-RC7"
 val shapeless2Version = "2.3.10"
 val shapeless3Version = "3.3.0"
 val scalaJavaTimeVersion = "2.5.0"
-val diffsonVersion = "4.3.0"
+val diffsonVersion = "4.4.0"
 val literallyVersion = "1.1.0"
 val weaverVersion = "0.8.1"
 
