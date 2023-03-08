@@ -219,20 +219,20 @@ object ValueParser {
     } else {
       chunk(idx) match {
         case CborItem.Tag(Tags.PositiveBigNum) =>
-          def f: CborValue => Pull[F, Nothing, CborValue] = {
-            case CborValue.ByteString(bytes) => tags(CborValue.Integer(BigInt(bytes.toArrayUnsafe)))
-            case CborValue.Tagged(tag2, v)   => f(v).map(CborValue.Tagged(tag2, _))
+          def f(recurse: Boolean): CborValue => Pull[F, Nothing, CborValue] = {
+            case CborValue.ByteString(bytes)          => tags(CborValue.Integer(BigInt(bytes.toArrayUnsafe)))
+            case CborValue.Tagged(tag2, v) if recurse => tags(CborValue.Tagged(tag2, v)).flatMap(f(false))
             case _ => Pull.raiseError(new CborTagDecodingException("A bignum must have a byte string as value"))
           }
-          parseTags(chunk, idx + 1, rest, f, chunkAcc)
+          parseTags(chunk, idx + 1, rest, f(true), chunkAcc)
         case CborItem.Tag(Tags.NegativeBigNum) =>
-          def f: CborValue => Pull[F, Nothing, CborValue] = {
+          def f(recurse: Boolean): CborValue => Pull[F, Nothing, CborValue] = {
             case CborValue.ByteString(bytes) =>
               tags(CborValue.Integer(minusOne + minusOne * BigInt(bytes.toArrayUnsafe)))
-            case CborValue.Tagged(tag2, v) => f(v).map(CborValue.Tagged(tag2, _))
+            case CborValue.Tagged(tag2, v) if recurse => tags(CborValue.Tagged(tag2, v)).flatMap(f(false))
             case _ => Pull.raiseError(new CborTagDecodingException("A bignum must have a byte string as value"))
           }
-          parseTags(chunk, idx + 1, rest, f, chunkAcc)
+          parseTags(chunk, idx + 1, rest, f(true), chunkAcc)
         case CborItem.Tag(tag) => parseTags(chunk, idx + 1, rest, v => tags(CborValue.Tagged(tag, v)), chunkAcc)
         case _                 => Pull.pure((chunk, idx, rest, chunkAcc, tags))
       }
