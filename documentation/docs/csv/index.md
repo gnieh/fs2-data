@@ -78,6 +78,17 @@ The following high-level pipes are available for decoding erroneous CSV files:
   instead of `CsvRowEncoder`)
 
 ```scala mdoc
+case class TestData(name: String, age: Int, description: String)
+object TestData {
+  implicit val decoder: CsvRowDecoder[TestData, String] =
+    row =>
+      for {
+        name <- row.as[String]("name")
+        age <- row.as[Int]("age")
+        desc <- row.as[String]("description")
+      } yield TestData(name, age, desc)
+}
+
 // Note that not all columns are present for all CSV rows
 val content =
   """name,age,description
@@ -90,7 +101,7 @@ val content =
 Stream
       .emit(content)
       .covary[Fallible]
-      .through(lenient.attemptDecodeGivenHeaders[TestData]())
+      .through(lenient.attemptDecodeUsingHeaders[TestData]())
       .compile
       .toList
 ```
@@ -175,6 +186,29 @@ withMyHeaders.map(_.toMap).compile.toList
 ```
 
 If the parse method fails for a header, the entire stream fails.
+
+#### Dealing with optional data
+
+Optional values have no unified representation in CSV:
+ - a field can be missing on some of the CSV inputs you are processing
+ - a field can be an empty string on some rows when not set
+ - a fields can have a placeholder empty value on some rows, such as `N/A` or `null` for instance
+
+The `Row` and `Row[Header]` type provide the `asOptionalAt` and `asOptional` method respectively to implement the behavior for optional values that fits your application logic.
+By default, these methods will fail if the field is missing (header does not exist or index is out of bound) and return `None` if the field is the empty string.
+
+This can be tuned, for instance, if we want to treat the missing field as `None` and the `null` value as `None` as well, then you can do:
+
+```scala mdoc
+val testRow = CsvRow.fromNelHeaders(NonEmptyList.of("first" -> "value1", "second" -> "null"))
+
+def get(field: String) =
+  testRow.asOptional[String](field, missing = _ => Right(None), isEmpty = _ == "null")
+
+get("first")
+get("second")
+get("third")
+```
 
 #### Writing CSV
 There are also pipes for encoding rows to CSV, with or without headers. Simple example without headers:
