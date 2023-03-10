@@ -107,11 +107,6 @@ The DSL is typesafe, so that you cannot write invalid selectors. Any attempt to 
 root.index(1).!
 ```
 
-```scala mdoc:fail
-// you cannot use the same flag twice
-root.index(1).?.?
-```
-
 ### AST builder and tokenizer
 
 To handle Json ASTs, you can use the types and pipes available in the `fs2.data.json.ast` package.
