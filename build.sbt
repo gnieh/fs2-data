@@ -31,6 +31,14 @@ ThisBuild / apiURL := Some(new java.net.URL("https://fs2-data.gnieh.org/api/"))
 ThisBuild / crossScalaVersions := Seq(scala212, scala213, scala3)
 ThisBuild / scalaVersion := scala213
 
+ThisBuild / githubWorkflowBuildPostamble +=
+  WorkflowStep.Sbt(
+    List("set ThisBuild / tlFatalWarningsInCi := false", "documentation/mdoc"),
+    None,
+    Some("Compile documentation"),
+    Some(s"matrix.scala == '$scala213' && matrix.project == 'rootJVM'")
+  )
+
 val commonSettings = List(
   headerLicense := Some(HeaderLicense.ALv2("2022", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
