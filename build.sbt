@@ -4,13 +4,13 @@ val scala212 = "2.12.17"
 val scala213 = "2.13.10"
 val scala3 = "3.2.2"
 val fs2Version = "3.6.1"
-val circeVersion = "0.14.3"
+val circeVersion = "0.14.5"
 val circeExtrasVersion = "0.14.2"
 val playVersion = "2.10.0-RC7"
 val shapeless2Version = "2.3.10"
 val shapeless3Version = "3.3.0"
 val scalaJavaTimeVersion = "2.5.0"
-val diffsonVersion = "4.3.0"
+val diffsonVersion = "4.4.0"
 val literallyVersion = "1.1.0"
 val weaverVersion = "0.8.1"
 
@@ -30,6 +30,14 @@ ThisBuild / apiURL := Some(new java.net.URL("https://fs2-data.gnieh.org/api/"))
 
 ThisBuild / crossScalaVersions := Seq(scala212, scala213, scala3)
 ThisBuild / scalaVersion := scala213
+
+ThisBuild / githubWorkflowBuildPostamble +=
+  WorkflowStep.Sbt(
+    List("set ThisBuild / tlFatalWarningsInCi := false", "documentation/mdoc"),
+    None,
+    Some("Compile documentation"),
+    Some(s"matrix.scala == '$scala213' && matrix.project == 'rootJVM'")
+  )
 
 val commonSettings = List(
   headerLicense := Some(HeaderLicense.ALv2("2022", "Lucas Satabin")),

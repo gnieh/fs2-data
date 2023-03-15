@@ -65,11 +65,25 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     * Fails if the index doesn't exist or cannot be decoded
     * to the expected type.
     */
+  @deprecated(message =
+                "Use `RowF.asOptionalAt` instead, as it gives more flexibility and has the same default behavior.",
+              since = "fs2-data 2.7.0")
   def asNonEmptyAt[T](idx: Int)(implicit decoder: CellDecoder[T]): DecoderResult[Option[T]] =
+    asOptionalAt(idx)
+
+  /** Returns the decoded content of the cell at `idx` wrapped in Some if the cell is non-empty, `None` otherwise.
+    * The meaning of _empty_ can be tuned by setting providing a custom `isEmpty` predicate (by default, matches the empty string).
+    * In case the index does not exist, the `missing` parameter defines the behavior (by default, it faile)
+    * Fails if the index cannot be decoded to the expected type.
+    */
+  def asOptionalAt[T](
+      idx: Int,
+      missing: Int => DecoderResult[Option[T]] = (idx: Int) => Left(new DecoderError(s"unknown index $idx")),
+      isEmpty: String => Boolean = _.isEmpty)(implicit decoder: CellDecoder[T]): DecoderResult[Option[T]] =
     values.get(idx.toLong) match {
-      case Some(v) if v.isEmpty => Right(None)
-      case Some(v)              => decoder.apply(v).map(Some(_))
-      case None                 => Left(new DecoderError(s"unknown index $idx"))
+      case Some(v) if isEmpty(v) => Right(None)
+      case Some(v)               => decoder.apply(v).map(Some(_))
+      case None                  => missing(idx)
     }
 
   /** Modifies the cell content at the given `idx` using the function `f`.
@@ -164,13 +178,28 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     * Fails if the field doesn't exist or cannot be decoded
     * to the expected type.
     */
-  def asNonEmpty[T](header: Header)(implicit
+  @deprecated(message =
+                "Use `RowF.asOptional` instead, as it gives more flexibility and has the same default behavior.",
+              since = "fs2-data 2.7.0")
+  def asNonEmpty[T](
+      header: Header)(implicit hasHeaders: HasHeaders[H, Header], decoder: CellDecoder[T]): DecoderResult[Option[T]] =
+    asOptional(header)
+
+  /** Returns the decoded content of the cell at `header` wrapped in Some if the cell is non-empty, `None` otherwise.
+    * The meaning of _empty_ can be tuned by setting providing a custom `isEmpty` predicate (by default, matches the empty string).
+    * In case the field does not exist, the `missing` parameter defines the behavior (by default, it faile)
+    * Fails if the index cannot be decoded to the expected type.
+    */
+  def asOptional[T](header: Header,
+                    missing: Header => DecoderResult[Option[T]] = (header: Header) =>
+                      Left(new DecoderError(s"unknown field $header")),
+                    isEmpty: String => Boolean = _.isEmpty)(implicit
       @unused hasHeaders: HasHeaders[H, Header],
       decoder: CellDecoder[T]): DecoderResult[Option[T]] =
     (byHeader: @nowarn("msg=HasHeaders")).get(header) match {
-      case Some(v) if v.isEmpty => Right(None)
-      case Some(v)              => decoder(v).map(Some(_))
-      case None                 => Left(new DecoderError(s"unknown field $header"))
+      case Some(v) if isEmpty(v) => Right(None)
+      case Some(v)               => decoder(v).map(Some(_))
+      case None                  => missing(header)
     }
 
   /** Returns a representation of this row as Map from headers to corresponding cell values.
