@@ -127,7 +127,7 @@ private[csv] object RowParser {
                      line + 1,
                      chunkAcc += Row(NonEmptyList("", tail).reverse, Some(line)))
               } else {
-                rows(T.advance(context), currentField, Nil, State.BeginningOfField, line, chunkAcc)
+                rows(T.advance(context), currentField, Nil, State.BeginningOfField, line + 1, chunkAcc)
               }
             } else if (c == '\r') {
               rows(T.advance(context), currentField, tail, State.InUnquotedSeenCr, line, chunkAcc)
