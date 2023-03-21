@@ -85,9 +85,9 @@ private[cbor] object ValueSerializer {
             go(Chunk.singleton(value), 0, Stream.empty, CborItem.Tag(tag) :: acc) >>
               go(chunk, idx + 1, rest, Nil)
           case CborValue.Float32(value) =>
-            go(chunk, idx + 1, rest, CborItem.Float32(ByteVector.fromInt(JFloat.floatToRawIntBits(value))) :: acc)
+            go(chunk, idx + 1, rest, CborItem.Float32(ByteVector.fromInt(JFloat.floatToIntBits(value))) :: acc)
           case CborValue.Float64(value) =>
-            go(chunk, idx + 1, rest, CborItem.Float64(ByteVector.fromLong(JDouble.doubleToRawLongBits(value))) :: acc)
+            go(chunk, idx + 1, rest, CborItem.Float64(ByteVector.fromLong(JDouble.doubleToLongBits(value))) :: acc)
           case CborValue.False =>
             go(chunk, idx + 1, rest, CborItem.False :: acc)
           case CborValue.True =>
