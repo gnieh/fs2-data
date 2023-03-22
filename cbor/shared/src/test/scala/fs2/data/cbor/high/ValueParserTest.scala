@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-package fs2.data.cbor
+package fs2.data.cbor.high
 
-sealed abstract class CborException(msg: String, inner: Throwable) extends Exception(msg, inner)
+import cats.effect.IO
+import fs2._
+import weaver.SimpleIOSuite
 
-class CborParsingException(msg: String, inner: Throwable = null) extends CborException(msg, inner)
+object ValueParserTest extends SimpleIOSuite {
 
-class CborTagDecodingException(msg: String, inner: Throwable = null) extends CborException(msg, inner)
+  test("roundtrips bignums") {
+    val in = CborValue.Integer(BigInt("-739421513997118914047232662242593364"))
+    Stream(in).covary[IO].through(toBinary).through(values).compile.onlyOrError.map { out =>
+      expect.same(in, out)
+    }
+  }
 
-class CborValidationException(msg: String, inner: Throwable = null) extends CborException(msg, inner)
+}
