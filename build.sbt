@@ -19,7 +19,8 @@ val copyrightYears = "2019-2023"
 ThisBuild / tlBaseVersion := "1.7"
 
 ThisBuild / organization := "org.gnieh"
-ThisBuild / organizationName := "Gnieh"
+ThisBuild / organizationName := "Lucas Satabin"
+ThisBuild / startYear := Some(2023)
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / developers := List(
   // your GitHub handle and name
@@ -40,8 +41,6 @@ ThisBuild / githubWorkflowBuildPostamble +=
   )
 
 val commonSettings = List(
-  headerLicense := Some(HeaderLicense.ALv2("2023", "Lucas Satabin")),
-  licenses += ("The Apache Software License, Version 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
   versionScheme := Some("early-semver"),
   libraryDependencies ++= List(
