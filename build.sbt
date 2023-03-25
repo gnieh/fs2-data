@@ -14,7 +14,7 @@ val diffsonVersion = "4.4.0"
 val literallyVersion = "1.1.0"
 val weaverVersion = "0.8.1"
 
-val copyrightYears = "2019-2022"
+val copyrightYears = "2019-2023"
 
 ThisBuild / tlBaseVersion := "1.7"
 
@@ -40,7 +40,7 @@ ThisBuild / githubWorkflowBuildPostamble +=
   )
 
 val commonSettings = List(
-  headerLicense := Some(HeaderLicense.ALv2("2022", "Lucas Satabin")),
+  headerLicense := Some(HeaderLicense.ALv2("2023", "Lucas Satabin")),
   licenses += ("The Apache Software License, Version 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   homepage := Some(url("https://github.com/satabin/fs2-data")),
   versionScheme := Some("early-semver"),
