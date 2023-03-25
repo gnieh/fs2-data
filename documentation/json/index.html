@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="/css/stork.css" />
     <script src="/js/stork.js"></script>
 
-    <meta name="generator" content="Nanoc 4.12.14">
+    <meta name="generator" content="Nanoc 4.12.15">
   </head>
   <body>
     <header>
@@ -271,13 +271,6 @@ The selector above can be written like this with the DSL:</p>
 <span class="c1">// ^^^^^^^^^^^^^^^</span>
 </code></pre></div></div>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// you cannot use the same flag twice</span>
-<span class="nv">root</span><span class="o">.</span><span class="py">index</span><span class="o">(</span><span class="mi">1</span><span class="o">).?.?</span>
-<span class="c1">// error: There seems to be no way to make this selector lenient. Is it already?</span>
-<span class="c1">// root.index(1).!</span>
-<span class="c1">// ^^^^^</span>
-</code></pre></div></div>
-
 <h3 id="ast-builder-and-tokenizer">AST builder and tokenizer</h3>
 
 <p>To handle Json ASTs, you can use the types and pipes available in the <code>fs2.data.json.ast</code> package.</p>
@@ -358,13 +351,13 @@ The selector above can be written like this with the DSL:</p>
 <p>If you are interested in the String rendering as a value, the library also provides <a href="https://oss.sonatype.org/service/local/repositories/releases/archive/co/fs2/fs2-core_2.13/2.3.0/fs2-core_2.13-2.3.0-javadoc.jar/!/fs2/Collector.html"><code>Collector</code>s</a>:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">compact</span><span class="o">)</span>
-<span class="c1">// res8: Either[Throwable, collector.compact.Out] = Right(</span>
+<span class="c1">// res7: Either[Throwable, collector.compact.Out] = Right(</span>
 <span class="c1">//   value = "{\"field1\":0,\"field2\":\"test\",\"field3\":[1,2,3]}{\"field1\":2,\"field3\":[]}"</span>
 <span class="c1">// )</span>
 
 <span class="c1">// default indentation is 2 spaces</span>
 <span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">())</span>
-<span class="c1">// res9: Either[Throwable, String] = Right(</span>
+<span class="c1">// res8: Either[Throwable, String] = Right(</span>
 <span class="c1">//   value = """{</span>
 <span class="c1">//   "field1": 0,</span>
 <span class="c1">//   "field2": "test",</span>
@@ -381,7 +374,7 @@ The selector above can be written like this with the DSL:</p>
 <span class="c1">// )</span>
 <span class="c1">// if you are more into tabs (or any other indentation size) you can change the indentation string</span>
 <span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">(</span><span class="s">"\t"</span><span class="o">))</span>
-<span class="c1">// res10: Either[Throwable, String] = Right(</span>
+<span class="c1">// res9: Either[Throwable, String] = Right(</span>
 <span class="c1">//   value = """{</span>
 <span class="c1">// 	"field1": 0,</span>
 <span class="c1">// 	"field2": "test",</span>
@@ -441,7 +434,7 @@ The selector above can be written like this with the DSL:</p>
 <p>You can use the renderers described above to generate the rendered chunks to send to the client.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">wrappedTokens</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">render</span><span class="o">.</span><span class="py">compact</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res11: cats.package.Id[List[String]] = List(</span>
+<span class="c1">// res10: cats.package.Id[List[String]] = List(</span>
 <span class="c1">//   "{",</span>
 <span class="c1">//   "\"events\":",</span>
 <span class="c1">//   "[",</span>
@@ -464,7 +457,7 @@ The selector above can be written like this with the DSL:</p>
   <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">render</span><span class="o">.</span><span class="py">compact</span><span class="o">)</span>
   <span class="o">.</span><span class="py">compile</span>
   <span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res12: cats.package.Id[List[String]] = List(</span>
+<span class="c1">// res11: cats.package.Id[List[String]] = List(</span>
 <span class="c1">//   "{",</span>
 <span class="c1">//   "\"size\":4",</span>
 <span class="c1">//   ",\"events\":",</span>
