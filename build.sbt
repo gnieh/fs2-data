@@ -16,7 +16,7 @@ val weaverVersion = "0.8.1"
 
 val copyrightYears = "2019-2022"
 
-ThisBuild / tlBaseVersion := "1.6"
+ThisBuild / tlBaseVersion := "1.7"
 
 ThisBuild / organization := "org.gnieh"
 ThisBuild / organizationName := "Gnieh"
