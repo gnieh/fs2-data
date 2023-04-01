@@ -45,13 +45,13 @@ private[cbor] object ValueSerializer {
           case CborValue.Integer(i) =>
             // if representation is too big, use the tags specified in the RFC
             if (i >= 0) {
-              val bytes = ByteVector(i.toByteArray)
+              val bytes = padIfNecessary(ByteVector(i.toByteArray))
               if (bytes.size <= 8)
                 go(chunk, idx + 1, rest, CborItem.PositiveInt(bytes) :: acc)
               else
                 go(chunk, idx + 1, rest, CborItem.ByteString(bytes) :: CborItem.Tag(Tags.PositiveBigNum) :: acc)
             } else {
-              val bytes = ByteVector((-i - one).toByteArray)
+              val bytes = padIfNecessary(ByteVector((-i - one).toByteArray))
               if (bytes.size <= 8)
                 go(chunk, idx + 1, rest, CborItem.NegativeInt(bytes) :: acc)
               else
@@ -102,6 +102,12 @@ private[cbor] object ValueSerializer {
       }
 
     go(Chunk.empty, 0, _, Nil).stream
+  }
+
+  private def padIfNecessary(vector: ByteVector): ByteVector = vector.size match {
+    case 3         => vector.padLeft(4)
+    case 5 | 6 | 7 => vector.padLeft(8)
+    case _         => vector
   }
 
 }
