@@ -1,84 +1,126 @@
 package fs2.data.json.jq
 
-import cats.MonadError
-import cats.data.StateT
+import cats.MonadThrow
+import cats.parse.{Parser => P}
 import cats.syntax.all._
-import scala.annotation.tailrec
+import cats.parse.Parser0
+import cats.data.NonEmptyList
+import cats.parse.Numbers
+import cats.parse.Accumulator
+import cats.parse.Appender
 
-case class JqParserException(expected: String, got: String, idx: Int)
-    extends Exception(s"unexpected '$got' at index $idx, $expected was expected")
+case class JqParserException(error: P.Error) extends Exception(error.show)
 
-class JqParser[F[_]](val input: String)(implicit F: MonadError[F, Throwable]) {
+object JqParser {
 
-  private type Parser[T] = StateT[F, Int, T]
+  private implicit object filterAcc extends Accumulator[Filter, Filter] {
 
-  private def idx: Parser[Int] =
-    StateT.get
+    override def newAppender(first: Filter): Appender[Filter, Filter] =
+      new Appender[Filter, Filter] {
+        val bldr = List.newBuilder[Filter]
+        def append(item: Filter) = {
+          bldr += item
+          this
+        }
 
-  private def modify(f: Int => Int): Parser[Unit] =
-    StateT.modify(f)
+        def finish() = {
+          val tail = bldr.result()
+          if (tail.isEmpty)
+            first
+          else
+            Jq.Sequence(NonEmptyList(first, tail))
+        }
+      }
 
-  private def pure[T](v: T): Parser[T] =
-    StateT.pure(v)
+  }
 
-  private def tailRecM[A, B](init: A)(f: A => Parser[Either[A, B]]): Parser[B] =
-    init.tailRecM(f)
+  private val whitespace: P[Char] = P.charIn(" \t\r\n")
+  private val whitespace0: Parser0[Unit] = whitespace.rep0.void
 
-  private def raiseSyntaxError[T](expected: String, got: String): Parser[T] =
-    idx.flatMapF(JqParserException(expected, got, _).raiseError)
+  private val identifier: P[String] =
+    (P.charIn(('a' to 'z') ++ ('A' to 'Z')) ~ P.charIn(('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9') ++ "-_"))
+      .withContext("identifier '[a-zA-Z][a-zA-Z0-9_-]'")
+      .string <* whitespace0
 
-  private def accept(c: Char): Parser[Unit] =
-    peek.flatMap {
-      case Some(`c`)   => consume
-      case Some(other) => raiseSyntaxError(c.toString(), other.toString())
-      case None        => raiseSyntaxError(c.toString(), "<eos>")
-    }
+  private def kw(kw: String): P[Unit] =
+    identifier.filter(_ == kw).void
 
-  private val peek: Parser[Option[Char]] =
-    idx.map(idx =>
-      if (idx >= input.size)
-        none
-      else
-        input.charAt(idx).some)
+  private def ch(c: Char): P[Unit] =
+    P.char(c) <* whitespace0
 
-  private val consume: Parser[Unit] =
-    modify(_ + 1)
+  private def str(s: String): P[Unit] =
+    P.string(s) <* whitespace0
 
-  def readWhile(pred: Char => Boolean): Parser[String] =
-    idx.flatMap { idx =>
-      @tailrec
-      def loop(idx: Int, builder: StringBuilder): Parser[String] =
-        if (idx >= input.size || !pred(input.charAt(idx)))
-          modify(_ => idx).as(builder.result())
-        else
-          loop(idx + 1, builder.append(input.charAt(idx)))
-      loop(idx, new StringBuilder)
-    }
+  private val string: P[String] =
+    P.char('"') *> P
+      .oneOf(
+        P.charsWhile(c => c != '"' && c != '\\') ::
+          (P.char('\\') *> P.fromCharMap(Map('"' -> "\"", '\\' -> "\\"))) ::
+          Nil)
+      .repAs0[String] <* ch('"')
 
-  def parse(): F[Jq] =
-    F.raiseError(JqParserException("something", "nothing", 0))
+  private val index: P[Int] =
+    Numbers.nonNegativeIntString.mapFilter(_.toIntOption) <* whitespace0
 
-}
+  private val filter: P[Filter] = {
+    val access: P[Filter] =
+      P.oneOf(
+        string.map(Jq.Field(_)) ::
+          (index ~ (ch(':') *> index.?).?)
+            .collect {
+              case (idx, None) =>
+                Jq.Index(idx)
+              case (idx1, Some(Some(idx2))) if idx1 == idx2 =>
+                Jq.Index(idx1)
+              case (min, Some(max)) if max.forall(min < _) =>
+                Jq.Slice(min, max)
+            } ::
+          (ch(':') *> index.map(max => Jq.Slice(0, Some(max)))) ::
+          Nil)
+        .withContext("string, index, slice 'min:max' (with min <= max), slice 'idx:', or slice ':idx'")
 
-private sealed trait JqToken
-private object JqToken {
-  case object Dot extends JqToken
-  case object Pipe extends JqToken
-  case object RecursiveDescent extends JqToken
-  case object Del extends JqToken
-  case object LParen extends JqToken
-  case object RParen extends JqToken
-  case object LBracket extends JqToken
-  case object RBracket extends JqToken
-  case object LBrace extends JqToken
-  case object RBrace extends JqToken
-  case object Comma extends JqToken
+    val step: P[Filter] =
+      (P.char('.') *> P.oneOf(
+        identifier.map(Jq.Field(_)) ::
+          access.between(ch('['), ch(']')) ::
+          Nil)).repAs[Filter]
 
-  case class Str(s: String) extends JqToken
-  case class Ident(id: String) extends JqToken
-  case class Integer(i: Int) extends JqToken
-  case class Number(n: BigDecimal) extends JqToken
-  case object True extends JqToken
-  case object False extends JqToken
-  case object Null extends JqToken
+    P.oneOf(
+      str("..").as(Jq.RecursiveDescent) ::
+        step ::
+        ch('.').as(Jq.Identity) ::
+        Nil)
+      // repSepAs would be great here
+      .repSep(ch('|'))
+      .map {
+        case NonEmptyList(filter, Nil) => filter
+        case steps                     => Jq.Sequence(steps)
+      }
+  }
+
+  private val query: P[Jq] = P.recursive[Jq] { query =>
+    val constructor: P[Constructor] =
+      P.oneOf(
+        query.repSep0(ch(',')).with1.between(ch('['), ch(']')).map(Jq.Arr(_)) ::
+          (string ~ query).repSep0(ch(',')).with1.between(ch('{'), ch('}')).map(Jq.Obj(_)) ::
+          string.map(Jq.Str(_)) ::
+          kw("true").as(Jq.Bool(true)) ::
+          kw("false").as(Jq.Bool(false)) ::
+          kw("null").as(Jq.Null) ::
+          Numbers.jsonNumber.map(s => Jq.Num(BigDecimal(s))) ::
+          Nil)
+
+    whitespace0.with1 *>
+      P.oneOf(
+        (filter ~ (ch('|') *> constructor).?).map {
+          case (filter, Some(cst)) => Jq.Iterator(filter, cst)
+          case (filter, None)      => filter
+        } ::
+          constructor ::
+          Nil)
+  }
+
+  def parse[F[_]](input: String)(implicit F: MonadThrow[F]): F[Jq] =
+    query.parseAll(input).leftMap(JqParserException(_)).liftTo[F]
+
 }

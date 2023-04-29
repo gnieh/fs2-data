@@ -33,40 +33,24 @@ import pattern.ConstructorTree
 
 class CompiledJq[F[_]: RaiseThrowable](esp: ESP[F, NonEmptyList[GuardTaggedMatcher], TaggedJson, TaggedJson]) {
 
-  private implicit object selected extends Selectable[TaggedJson, Tag[JsonTag]] {
+  private implicit object selected extends Selectable[TaggedJson, Tag[TaggedJson]] {
 
-    override def tree(e: TaggedJson): ConstructorTree[Tag[JsonTag]] =
+    override def tree(e: TaggedJson): ConstructorTree[Tag[TaggedJson]] =
       e match {
         case TaggedJson.EndObjectValue =>
-          ConstructorTree(Tag.Close, List(ConstructorTree.noArgConstructor(Tag.Name(JsonTag.ObjectKey(None)))))
+          ConstructorTree(Tag.Close, List(ConstructorTree.noArgConstructor(Tag.Name(TaggedJson.EndObjectValue))))
         case TaggedJson.StartArrayElement(idx) =>
-          ConstructorTree(Tag.Open, List(ConstructorTree.noArgConstructor(Tag.Name(JsonTag.ArrayElement(Some(idx))))))
+          ConstructorTree(Tag.Open, List(ConstructorTree.noArgConstructor(Tag.Name(TaggedJson.StartArrayElement(idx)))))
         case TaggedJson.StartObjectValue(key) =>
-          ConstructorTree(Tag.Open, List(ConstructorTree.noArgConstructor(Tag.Name(JsonTag.ObjectKey(Some(key))))))
+          ConstructorTree(Tag.Open, List(ConstructorTree.noArgConstructor(Tag.Name(TaggedJson.StartObjectValue(key)))))
         case TaggedJson.EndArrayElement =>
-          ConstructorTree(Tag.Close, List(ConstructorTree.noArgConstructor(Tag.Name(JsonTag.ArrayElement(None)))))
+          ConstructorTree(Tag.Close, List(ConstructorTree.noArgConstructor(Tag.Name(TaggedJson.EndArrayElement))))
         case TaggedJson.Raw(token) =>
           token match {
-            case Token.TrueValue =>
-              ConstructorTree(Tag.Leaf, List(ConstructorTree.noArgConstructor(Tag.Value(JsonTag.Bool(Some(true))))))
-            case Token.FalseValue =>
-              ConstructorTree(Tag.Leaf, List(ConstructorTree.noArgConstructor(Tag.Value(JsonTag.Bool(Some(false))))))
-            case Token.StringValue(s) =>
-              ConstructorTree(Tag.Leaf, List(ConstructorTree.noArgConstructor(Tag.Value(JsonTag.Str(Some(s))))))
-            case Token.StartArray =>
-              ConstructorTree(Tag.Open, List(ConstructorTree.noArgConstructor(Tag.Name(JsonTag.Array))))
-            case Token.EndArray =>
-              ConstructorTree(Tag.Close, List(ConstructorTree.noArgConstructor(Tag.Name(JsonTag.Array))))
-            case Token.StartObject =>
-              ConstructorTree(Tag.Open, List(ConstructorTree.noArgConstructor(Tag.Name(JsonTag.Object))))
-            case Token.EndObject =>
-              ConstructorTree(Tag.Close, List(ConstructorTree.noArgConstructor(Tag.Name(JsonTag.Object))))
-            case Token.NumberValue(n) =>
-              ConstructorTree(Tag.Leaf, List(ConstructorTree.noArgConstructor(Tag.Value(JsonTag.Num(Some(n))))))
             case Token.Key(_) =>
               throw new Exception("this case should never occur, this is a bug")
-            case Token.NullValue =>
-              ConstructorTree(Tag.Leaf, List(ConstructorTree.noArgConstructor(Tag.Value(JsonTag.Null))))
+            case _ =>
+              ConstructorTree(Tag.Leaf, List(ConstructorTree.noArgConstructor(Tag.Value(e))))
           }
       }
 
@@ -124,7 +108,6 @@ class CompiledJq[F[_]: RaiseThrowable](esp: ESP[F, NonEmptyList[GuardTaggedMatch
   }
 
   def pipe(in: Stream[F, Token]): Stream[F, Token] =
-    ???
-    //in.through(JsonTagger.pipe).through(esp.pipe).map(untag(_)).unNone
+    in.through(JsonTagger.pipe).through(esp.pipe).map(untag(_)).unNone
 
 }

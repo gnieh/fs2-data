@@ -230,7 +230,8 @@ lazy val json = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     name := "fs2-data-json",
     description := "Streaming JSON manipulation library",
     libraryDependencies ++= List(
-      "org.typelevel" %%% "literally" % literallyVersion
+      "org.typelevel" %%% "literally" % literallyVersion,
+      "org.typelevel" %%% "cats-parse" % "0.3.9"
     ) ++ PartialFunction
       .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
