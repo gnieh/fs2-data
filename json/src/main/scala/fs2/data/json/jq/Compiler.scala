@@ -30,7 +30,7 @@ import pfsa._
 case class JqException(msg: String) extends Exception(msg)
 
 private class Compiler[F[_]](implicit F: MonadError[F, Throwable], defer: Defer[F])
-    extends QueryCompiler[JsonTag, TaggedJson, Filter] {
+    extends QueryCompiler[TaggedJson, TaggedJson, Filter] {
 
   private type State[T] = StateT[F, Int, T]
 
@@ -57,7 +57,13 @@ private class Compiler[F[_]](implicit F: MonadError[F, Throwable], defer: Defer[
 
   override implicit def charsEq: Eq[TaggedMatcher] = TaggedMatcher.eq
 
-  override def tagOf(pattern: PatternTaggedMatcher): Option[JsonTag] = ???
+  override def tagOf(pattern: PatternTaggedMatcher): Option[TaggedJson] = pattern match {
+    case TaggedMatcher.StartObject => Some(TaggedJson.Raw(Token.StartObject))
+    case TaggedMatcher.StartArray  => Some(TaggedJson.Raw(Token.StartArray))
+    case TaggedMatcher.Field(name) => Some(TaggedJson.StartObjectValue(name))
+    case TaggedMatcher.Index(idx)  => Some(TaggedJson.StartArrayElement(idx))
+    case TaggedMatcher.Any         => None
+  }
 
   def path2regular(f: Filter): Regular[TaggedMatcher] =
     f match {

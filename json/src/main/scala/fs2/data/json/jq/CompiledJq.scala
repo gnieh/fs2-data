@@ -31,7 +31,7 @@ import esp.Conversion
 import pattern.Evaluator
 import pattern.ConstructorTree
 
-class CompiledJq[F[_]: RaiseThrowable](esp: ESP[F, NonEmptyList[GuardTaggedMatcher], JsonTag, TaggedJson]) {
+class CompiledJq[F[_]: RaiseThrowable](esp: ESP[F, NonEmptyList[GuardTaggedMatcher], TaggedJson, TaggedJson]) {
 
   private implicit object selected extends Selectable[TaggedJson, Tag[JsonTag]] {
 
