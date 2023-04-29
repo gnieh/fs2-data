@@ -19,12 +19,11 @@ package data
 package json
 package jq
 
-import cats.data.NonEmptyList
-import cats.kernel.Eq
+import cats.data.{NonEmptyList, StateT}
 import cats.syntax.all._
-import cats.{Defer, MonadError}
-import fs2.data.mft.query.{Query, QueryCompiler}
+import cats.{Defer, Eq, MonadError}
 
+import mft.query.{Query, QueryCompiler}
 import tagged.TaggedJson
 import pfsa._
 
@@ -32,6 +31,20 @@ case class JqException(msg: String) extends Exception(msg)
 
 private class Compiler[F[_]](implicit F: MonadError[F, Throwable], defer: Defer[F])
     extends QueryCompiler[JsonTag, TaggedJson, Filter] {
+
+  private type State[T] = StateT[F, Int, T]
+
+  private def nextIdent: State[String] =
+    for {
+      id <- StateT.get
+      _ <- StateT.set(id + 1)
+    } yield s"v$id"
+
+  private def pure[T](v: T): State[T] =
+    StateT.pure(v)
+
+  private def raiseError[T](exn: Throwable): State[T] =
+    exn.raiseError[State, T]
 
   type Matcher = TaggedMatcher
   type Guard = GuardTaggedMatcher
@@ -170,50 +183,115 @@ private class Compiler[F[_]](implicit F: MonadError[F, Throwable], defer: Defer[
       }
   }
 
-  private def isForClause(q: Query[TaggedJson, Filter]): Boolean =
-    q match {
-      case Query.ForClause(_, _, _) => true
-      case _                        => false
-    }
-
-  private def preprocess(jq: Jq): F[Query[TaggedJson, Filter]] =
+  private def preprocess(jq: Jq): State[Query[TaggedJson, Filter]] =
     jq match {
       case Jq.Null =>
-        F.pure(Query.Leaf(TaggedJson.Raw(Token.NullValue)))
+        pure(Query.Leaf(TaggedJson.Raw(Token.NullValue)))
       case Jq.Bool(b) =>
-        F.pure(Query.Leaf(TaggedJson.Raw(if (b) Token.TrueValue else Token.FalseValue)))
+        pure(Query.Leaf(TaggedJson.Raw(if (b) Token.TrueValue else Token.FalseValue)))
       case Jq.Arr(values) =>
-        values.traverse(preprocess(_)).flatMap { values =>
-          val count = values.count(isForClause(_))
-          if (count > 1) {
-            F.raiseError(JqException(s"array constructors may have only one iterator elements, but got $count"))
-          } else if (count == 0) {
-            F.pure(
-              Query.Node(
-                TaggedJson.Raw(Token.StartArray),
-                NonEmptyList
-                  .fromList(values.mapWithIndex((elt, idx) => Query.Node(TaggedJson.StartArrayElement(idx), elt)))
-                  .fold(Query.empty[TaggedJson, Filter])(Query.Sequence(_))
-              ))
-          } else {
-            ???
+        val (iterators, vs) =
+          values.zipWithIndex.partitionEither {
+            case (it @ Jq.Iterator(_, _), idx) => Left((it, idx))
+            case q                             => Right(q)
           }
+        iterators match {
+          case Nil =>
+            vs.traverse { case (elt, idx) =>
+              preprocess(elt).map(q => Query.Node(TaggedJson.StartArrayElement(idx), q))
+            }.map { elts =>
+              Query.Node(TaggedJson.Raw(Token.StartArray),
+                         NonEmptyList.fromList(elts).fold(Query.empty[TaggedJson, Filter])(Query.Sequence(_)))
+            }
+          case (Jq.Iterator(filter, inner), idx) :: Nil =>
+            for {
+              values <- vs.traverse { case (elt, idx) =>
+                for {
+                  v <- nextIdent
+                  q <- preprocess(elt)
+                } yield (v, Query.Node(TaggedJson.StartArrayElement(idx), q))
+              }
+              v <- nextIdent
+              inner <- preprocess(inner)
+            } yield {
+              val (before, after) = values.splitAt(idx)
+              val forClause: Query[TaggedJson, Filter] =
+                Query.ForClause(
+                  v,
+                  filter,
+                  Query.Node(
+                    TaggedJson.Raw(Token.StartArray),
+                    Query.Sequence(
+                      NonEmptyList[Query[TaggedJson, Filter]](Query.Node(TaggedJson.StartArrayElement(idx), inner),
+                                                              after.map(kv => Query.Variable(kv._1)))
+                        .prependList(before.map(kv => Query.Variable(kv._1))))
+                  )
+                )
+              values.foldLeft(forClause) { case (inner, (v, q)) => Query.LetClause(v, q, inner) }
+            }
+          case _ =>
+            raiseError(JqException(s"array constructors may have only one iterator element, but got ${iterators.size}"))
         }
       case Jq.Num(n) =>
-        F.pure(Query.Leaf(TaggedJson.Raw(Token.NumberValue(n.toString()))))
+        pure(Query.Leaf(TaggedJson.Raw(Token.NumberValue(n.toString()))))
       case Jq.Str(s) =>
-        F.pure(Query.Leaf(TaggedJson.Raw(Token.StringValue(s))))
+        pure(Query.Leaf(TaggedJson.Raw(Token.StringValue(s))))
       case Jq.Obj(fields) =>
-        ???
+        val (iterators, vs) =
+          fields.zipWithIndex.partitionEither {
+            case ((name, it @ Jq.Iterator(_, _)), idx) => Left((name, it, idx))
+            case (kv, _)                               => Right(kv)
+          }
+        iterators match {
+          case Nil =>
+            vs.traverse { case (name, elt) =>
+              preprocess(elt).map(q => Query.Node(TaggedJson.StartObjectValue(name), q))
+            }.map { elts =>
+              Query.Node(TaggedJson.Raw(Token.StartObject),
+                         NonEmptyList.fromList(elts).fold(Query.empty[TaggedJson, Filter])(Query.Sequence(_)))
+            }
+          case (name, Jq.Iterator(filter, inner), idx) :: Nil =>
+            for {
+              values <- vs.traverse { case (name, elt) =>
+                for {
+                  v <- nextIdent
+                  q <- preprocess(elt)
+                } yield (v, Query.Node(TaggedJson.StartObjectValue(name), q))
+              }
+              v <- nextIdent
+              inner <- preprocess(inner)
+            } yield {
+              val (before, after) = values.splitAt(idx)
+              val forClause: Query[TaggedJson, Filter] =
+                Query.ForClause(
+                  v,
+                  filter,
+                  Query.Node(
+                    TaggedJson.Raw(Token.StartObject),
+                    Query.Sequence(
+                      NonEmptyList[Query[TaggedJson, Filter]](Query.Node(TaggedJson.StartObjectValue(name), inner),
+                                                              after.map(kv => Query.Variable(kv._1)))
+                        .prependList(before.map(kv => Query.Variable(kv._1))))
+                  )
+                )
+              values.foldLeft(forClause) { case (inner, (v, q)) => Query.LetClause(v, q, inner) }
+            }
+          case _ =>
+            raiseError(
+              JqException(s"object constructors may have only one iterator element, but got ${iterators.size}"))
+        }
       case Jq.Iterator(filter, inner) =>
-        ???
+        for {
+          v <- nextIdent
+          inner <- preprocess(inner)
+        } yield Query.ForClause(v, filter, inner)
       case filter: Filter =>
-        ???
+        pure(Query.Ordpath(filter))
     }
 
   def compile(jq: Jq): F[CompiledJq[F]] =
     for {
-      query <- preprocess(jq)
+      query <- preprocess(jq).runA(0)
       esp <- compile(query).esp
     } yield new CompiledJq[F](esp)
 
