@@ -1,13 +1,9 @@
 package fs2.data.json.jq
 
 import cats.MonadThrow
-import cats.parse.{Parser => P}
-import cats.syntax.all._
-import cats.parse.Parser0
 import cats.data.NonEmptyList
-import cats.parse.Numbers
-import cats.parse.Accumulator
-import cats.parse.Appender
+import cats.parse.{Accumulator, Appender, Numbers, Parser => P, Parser0}
+import cats.syntax.all._
 
 case class JqParserException(error: P.Error) extends Exception(error.show)
 
@@ -38,8 +34,8 @@ object JqParser {
   private val whitespace0: Parser0[Unit] = whitespace.rep0.void
 
   private val identifier: P[String] =
-    (P.charIn(('a' to 'z') ++ ('A' to 'Z')) ~ P.charIn(('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9') ++ "-_"))
-      .withContext("identifier '[a-zA-Z][a-zA-Z0-9_-]'")
+    (P.charIn(('a' to 'z') ++ ('A' to 'Z')) ~ P.charIn(('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9') ++ "-_").rep0)
+      .withContext("identifier")
       .string <* whitespace0
 
   private def kw(kw: String): P[Unit] =
@@ -83,7 +79,7 @@ object JqParser {
       (P.char('.') *> P.oneOf(
         identifier.map(Jq.Field(_)) ::
           access.between(ch('['), ch(']')) ::
-          Nil)).repAs[Filter]
+          Nil)).repAs[Filter].backtrack
 
     P.oneOf(
       str("..").as(Jq.RecursiveDescent) ::
@@ -102,18 +98,19 @@ object JqParser {
     val constructor: P[Constructor] =
       P.oneOf(
         query.repSep0(ch(',')).with1.between(ch('['), ch(']')).map(Jq.Arr(_)) ::
-          (string ~ query).repSep0(ch(',')).with1.between(ch('{'), ch('}')).map(Jq.Obj(_)) ::
+        (string ~ (ch(':') *> query)).repSep0(ch(',')).with1.between(ch('{'), ch('}')).map(Jq.Obj(_)) ::
           string.map(Jq.Str(_)) ::
           kw("true").as(Jq.Bool(true)) ::
           kw("false").as(Jq.Bool(false)) ::
           kw("null").as(Jq.Null) ::
-          Numbers.jsonNumber.map(s => Jq.Num(BigDecimal(s))) ::
+          Numbers.jsonNumber.map(Jq.Num(_)) ::
           Nil)
 
     whitespace0.with1 *>
       P.oneOf(
         (filter ~ (ch('|') *> constructor).?).map {
-          case (filter, Some(cst)) => Jq.Iterator(filter, cst)
+          case (filter, Some(cst)) =>
+            Jq.Iterator(filter, cst)
           case (filter, None)      => filter
         } ::
           constructor ::
@@ -121,6 +118,9 @@ object JqParser {
   }
 
   def parse[F[_]](input: String)(implicit F: MonadThrow[F]): F[Jq] =
-    query.parseAll(input).leftMap(JqParserException(_)).liftTo[F]
+    either(input).liftTo[F]
+
+  def either(input: String): Either[Throwable, Jq] =
+    (query <* P.end).parseAll(input).leftMap(JqParserException(_))
 
 }

@@ -35,7 +35,7 @@ object Jq {
   // constructors
   final case class Arr(values: List[Jq]) extends Constructor
   final case class Obj(fields: List[(String, Jq)]) extends Constructor
-  final case class Num(n: BigDecimal) extends Constructor
+  final case class Num(n: String) extends Constructor
   final case class Str(s: String) extends Constructor
   final case class Bool(b: Boolean) extends Constructor
   final case object Null extends Constructor
