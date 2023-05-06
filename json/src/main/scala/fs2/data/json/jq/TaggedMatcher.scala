@@ -25,6 +25,7 @@ import cats.syntax.all._
 import pfsa._
 import tagged._
 import Pred.syntax._
+import cats.Show
 
 private sealed trait TaggedMatcher {
   def dnf: NonEmptyList[NonEmptyList[AtomTaggedMatcher]] =
@@ -70,16 +71,20 @@ private object TaggedMatcher {
 
     override def pick(set: TaggedMatcher): Option[TaggedJson] =
       set match {
-        case StartObject     => Some(TaggedJson.Raw(Token.StartObject))
-        case StartArray      => Some(TaggedJson.Raw(Token.StartArray))
-        case Field(name)     => Some(TaggedJson.StartObjectValue(name))
-        case Index(idx)      => Some(TaggedJson.StartArrayElement(idx))
-        case Slice(start, _) => Some(TaggedJson.StartArrayElement(start))
-        case Any             => Some(TaggedJson.Raw(Token.StartObject))
-        case Fail            => None
-        case AnyOf(m)        => m.headOption.flatMap(pick(_))
-        case AllOf(m)        => m.headOption.flatMap(pick(_))
-        case Not(p)          => pick(p)
+        case StartObject          => Some(TaggedJson.Raw(Token.StartObject))
+        case StartArray           => Some(TaggedJson.Raw(Token.StartArray))
+        case Field(name)          => Some(TaggedJson.StartObjectValue(name))
+        case Index(idx)           => Some(TaggedJson.StartArrayElement(idx))
+        case Slice(start, _)      => Some(TaggedJson.StartArrayElement(start))
+        case Any                  => Some(TaggedJson.Raw(Token.StartObject))
+        case Fail                 => None
+        case AnyOf(m)             => m.headOption.flatMap(pick(_))
+        case AllOf(m)             => m.headOption.flatMap(pick(_))
+        case Not(StartObject)     => Some(TaggedJson.Raw(Token.StartArray))
+        case Not(StartArray)      => Some(TaggedJson.Raw(Token.StartObject))
+        case Not(Field(name))     => Some(TaggedJson.StartObjectValue(s"!$name"))
+        case Not(Index(idx))      => Some(TaggedJson.StartArrayElement(idx + 1))
+        case Not(Slice(start, _)) => Some(TaggedJson.StartArrayElement(start - 1))
       }
 
     override def satsifies(p: TaggedMatcher)(e: TaggedJson): Boolean =
@@ -161,4 +166,25 @@ private object TaggedMatcher {
 
   implicit val eq: Eq[TaggedMatcher] = Eq.fromUniversalEquals
 
+}
+
+private object NegatableTaggedMatcher {
+
+  implicit val show: Show[NegatableTaggedMatcher] = {
+    case TaggedMatcher.StartObject             => ". != {"
+    case TaggedMatcher.StartArray              => ". != ["
+    case TaggedMatcher.Field(name)             => show". != {$name}"
+    case TaggedMatcher.Index(idx)              => show". != [$idx]"
+    case TaggedMatcher.Slice(start, Some(end)) => show". not in [$start..$end]"
+    case TaggedMatcher.Slice(start, None)      => show". != [$start]"
+  }
+
+}
+
+private object GuardTaggedMatcher {
+  implicit val show: Show[GuardTaggedMatcher] = {
+    case TaggedMatcher.Not(p)                  => show"$p"
+    case TaggedMatcher.Slice(start, Some(end)) => show". in [$start..$end]"
+    case TaggedMatcher.Slice(start, None)      => show". == [$start]"
+  }
 }

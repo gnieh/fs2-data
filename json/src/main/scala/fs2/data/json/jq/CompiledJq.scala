@@ -19,95 +19,13 @@ package data
 package json
 package jq
 
-import cats.data.NonEmptyList
-import cats.syntax.all._
+  /** A pipe running the compiled jq query on the input stream of JSON tokens. */
+trait CompiledJq[F[_]] extends Pipe[F, Token, Token] {
 
-import esp.ESP
-import tagged._
-import pattern.Selectable
-import tagged.TaggedJson
-import esp.Tag
-import esp.Conversion
-import pattern.Evaluator
-import pattern.ConstructorTree
+  /** Allows for piping `this` compiled jq query feeding its result to `that` compiled jq query. */
+  def andThen(that: CompiledJq[F]): CompiledJq[F]
 
-class CompiledJq[F[_]: RaiseThrowable](esp: ESP[F, NonEmptyList[GuardTaggedMatcher], TaggedJson, TaggedJson]) {
-
-  private implicit object selected extends Selectable[TaggedJson, Tag[TaggedJson]] {
-
-    override def tree(e: TaggedJson): ConstructorTree[Tag[TaggedJson]] =
-      e match {
-        case TaggedJson.EndObjectValue =>
-          ConstructorTree(Tag.Close, List(ConstructorTree.noArgConstructor(Tag.Name(TaggedJson.EndObjectValue))))
-        case TaggedJson.StartArrayElement(idx) =>
-          ConstructorTree(Tag.Open, List(ConstructorTree.noArgConstructor(Tag.Name(TaggedJson.StartArrayElement(idx)))))
-        case TaggedJson.StartObjectValue(key) =>
-          ConstructorTree(Tag.Open, List(ConstructorTree.noArgConstructor(Tag.Name(TaggedJson.StartObjectValue(key)))))
-        case TaggedJson.EndArrayElement =>
-          ConstructorTree(Tag.Close, List(ConstructorTree.noArgConstructor(Tag.Name(TaggedJson.EndArrayElement))))
-        case TaggedJson.Raw(token) =>
-          token match {
-            case Token.Key(_) =>
-              throw new Exception("this case should never occur, this is a bug")
-            case _ =>
-              ConstructorTree(Tag.Leaf, List(ConstructorTree.noArgConstructor(Tag.Value(e))))
-          }
-      }
-
-  }
-
-  private implicit object conversion extends Conversion[TaggedJson, TaggedJson] {
-
-    override def makeOpen(t: TaggedJson): TaggedJson = t
-
-    override def makeClose(t: TaggedJson): TaggedJson =
-      t match {
-        case TaggedJson.StartArrayElement(_)   => TaggedJson.EndArrayElement
-        case TaggedJson.StartObjectValue(_)    => TaggedJson.EndObjectValue
-        case TaggedJson.Raw(Token.StartArray)  => TaggedJson.Raw(Token.EndArray)
-        case TaggedJson.Raw(Token.StartObject) => TaggedJson.Raw(Token.EndObject)
-        case _                                 => t
-      }
-
-    override def makeLeaf(t: TaggedJson): TaggedJson = t
-
-  }
-
-  private implicit object evaluator extends Evaluator[NonEmptyList[GuardTaggedMatcher], Tag[TaggedJson]] {
-
-    private def eval(guard: GuardTaggedMatcher, tree: ConstructorTree[Tag[TaggedJson]]): Boolean =
-      (guard, tree) match {
-        case (TaggedMatcher.Slice(start, end),
-              ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(TaggedJson.StartArrayElement(idx)), Nil)))) =>
-          idx >= start && end.forall(idx < _)
-        case (TaggedMatcher.Slice(_, _), _) =>
-          false
-        case (TaggedMatcher.Not(TaggedMatcher.StartObject),
-              ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(TaggedJson.Raw(Token.StartObject)), Nil)))) =>
-          false
-        case (TaggedMatcher.Not(TaggedMatcher.StartArray),
-              ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(TaggedJson.Raw(Token.StartArray)), Nil)))) =>
-          false
-        case (TaggedMatcher.Not(TaggedMatcher.Index(idx1)),
-              ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(TaggedJson.StartArrayElement(idx2)), Nil)))) =>
-          idx1 =!= idx2
-        case (TaggedMatcher.Not(TaggedMatcher.Slice(start, end)),
-              ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(TaggedJson.StartArrayElement(idx)), Nil)))) =>
-          idx < start || end.exists(idx >= _)
-        case (TaggedMatcher.Not(TaggedMatcher.Field(name1)),
-              ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(TaggedJson.StartObjectValue(name2)), Nil)))) =>
-          name1 =!= name2
-        case (TaggedMatcher.Not(_), _) =>
-          true
-      }
-
-    override def eval(guard: NonEmptyList[GuardTaggedMatcher],
-                      tree: ConstructorTree[Tag[TaggedJson]]): Option[Tag[TaggedJson]] =
-      guard.forall(eval(_, tree)).guard[Option].as(Tag.Open)
-
-  }
-
-  def pipe(in: Stream[F, Token]): Stream[F, Token] =
-    in.through(JsonTagger.pipe).through(esp.pipe).map(untag(_)).unNone
+  /** Alias for `andThen`. */
+  def |(that: CompiledJq[F]): CompiledJq[F] = andThen(that)
 
 }

@@ -1,17 +1,19 @@
 package fs2.data.json.jq
 
 import cats.MonadThrow
-import cats.data.NonEmptyList
-import cats.parse.{Accumulator, Appender, Numbers, Parser => P, Parser0}
+import cats.data.NonEmptyChain
+import cats.parse.{Accumulator0, Appender, Numbers, Parser => P, Parser0}
 import cats.syntax.all._
+import cats.data.Chain
+import cats.data.NonEmptyList
 
 case class JqParserException(error: P.Error) extends Exception(error.show)
 
 object JqParser {
 
-  private implicit object filterAcc extends Accumulator[Filter, Filter] {
+  private implicit object filterAcc extends Accumulator0[Filter, Filter] {
 
-    override def newAppender(first: Filter): Appender[Filter, Filter] =
+    override def newAppender(): Appender[Filter, Filter] =
       new Appender[Filter, Filter] {
         val bldr = List.newBuilder[Filter]
         def append(item: Filter) = {
@@ -19,13 +21,12 @@ object JqParser {
           this
         }
 
-        def finish() = {
-          val tail = bldr.result()
-          if (tail.isEmpty)
-            first
-          else
-            Jq.Sequence(NonEmptyList(first, tail))
-        }
+        def finish() =
+          bldr.result().filterNot(_ == Jq.Identity) match {
+            case Nil      => Jq.Identity
+            case f :: Nil => f
+            case f :: fs  => Jq.Sequence(NonEmptyChain.fromChainPrepend(f, Chain.fromSeq(fs)))
+          }
       }
 
   }
@@ -73,47 +74,74 @@ object JqParser {
             } ::
           (ch(':') *> index.map(max => Jq.Slice(0, Some(max)))) ::
           Nil)
+        .between(ch('['), ch(']'))
         .withContext("string, index, slice 'min:max' (with min <= max), slice 'idx:', or slice ':idx'")
 
     val step: P[Filter] =
-      (P.char('.') *> P.oneOf(
-        identifier.map(Jq.Field(_)) ::
-          access.between(ch('['), ch(']')) ::
-          Nil)).repAs[Filter].backtrack
+      (P.char('.') *> P
+        .oneOf(
+          identifier.map(Jq.Field(_)) ::
+            access.backtrack ::
+            Nil) ~ access.backtrack.repAs0[Filter])
+        .map { case (fst, snd) =>
+          fst ~ snd
+        }
+        .repAs[Filter]
 
     P.oneOf(
-      str("..").as(Jq.RecursiveDescent) ::
+      (str("..") *> (access.backtrack ~ step.repAs0[Filter]).?).map {
+        case Some((access, rest)) => Jq.Sequence(NonEmptyChain(Jq.RecursiveDescent, access, rest))
+        case None                 => Jq.RecursiveDescent
+      } ::
         step ::
-        ch('.').as(Jq.Identity) ::
         Nil)
       // repSepAs would be great here
       .repSep(ch('|'))
       .map {
         case NonEmptyList(filter, Nil) => filter
-        case steps                     => Jq.Sequence(steps)
+        case steps                     => Jq.Sequence(NonEmptyChain.fromNonEmptyList(steps))
       }
   }
 
+  private val selector: P[(Filter, Jq => Jq)] = P.recursive[(Filter, Jq => Jq)] { selector =>
+    (filter ~ (str("[]") *> selector.?).?).map {
+      case (prefix, None) =>
+        (prefix, identity)
+      case (prefix, Some(None)) =>
+        (Jq.Identity, Jq.Iterator(prefix, _))
+      case (prefix1, Some(Some((prefix2, f)))) =>
+        (prefix2, inner => Jq.Iterator(prefix1, f(inner)))
+    }
+  }
+
   private val query: P[Jq] = P.recursive[Jq] { query =>
-    val constructor: P[Constructor] =
+    val constructor: P[Filter => Constructor] =
       P.oneOf(
-        query.repSep0(ch(',')).with1.between(ch('['), ch(']')).map(Jq.Arr(_)) ::
-        (string ~ (ch(':') *> query)).repSep0(ch(',')).with1.between(ch('{'), ch('}')).map(Jq.Obj(_)) ::
-          string.map(Jq.Str(_)) ::
-          kw("true").as(Jq.Bool(true)) ::
-          kw("false").as(Jq.Bool(false)) ::
-          kw("null").as(Jq.Null) ::
-          Numbers.jsonNumber.map(Jq.Num(_)) ::
+        query
+          .repSep0(ch(','))
+          .with1
+          .between(ch('['), ch(']'))
+          .map[Filter => Constructor](fs => prefix => Jq.Arr(prefix, fs)) ::
+          (string ~ (ch(':') *> query))
+            .repSep0(ch(','))
+            .with1
+            .between(ch('{'), ch('}'))
+            .map[Filter => Constructor](fs => prefix => Jq.Obj(prefix, fs)) ::
+          string.map[Filter => Constructor](s => _ => Jq.Str(s)) ::
+          kw("true").as[Filter => Constructor](_ => Jq.Bool(true)) ::
+          kw("false").as[Filter => Constructor](_ => Jq.Bool(false)) ::
+          kw("null").as[Filter => Constructor](_ => Jq.Null) ::
+          Numbers.jsonNumber.map[Filter => Constructor](n => _ => Jq.Num(n)) ::
           Nil)
 
     whitespace0.with1 *>
       P.oneOf(
-        (filter ~ (ch('|') *> constructor).?).map {
-          case (filter, Some(cst)) =>
-            Jq.Iterator(filter, cst)
-          case (filter, None)      => filter
+        (selector ~ (ch('|') *> constructor).?).map {
+          case ((filter, f), Some(cst)) =>
+            f(cst(filter))
+          case ((filter, f), None) => f(filter)
         } ::
-          constructor ::
+          constructor.map(cst => cst(Jq.Identity)) ::
           Nil)
   }
 

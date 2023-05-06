@@ -19,13 +19,12 @@ package data
 package json
 package jq
 
+import cats.data.NonEmptyList
+import cats.syntax.all._
 import org.typelevel.literally.Literally
 
-import cats.syntax.all._
-import cats.data.NonEmptyList
-
-import scala.reflect.macros.blackbox.Context
 import scala.annotation.unused
+import scala.reflect.macros.blackbox.Context
 
 object literals {
 
@@ -43,15 +42,16 @@ object literals {
     }
 
     implicit lazy val jqLiftable: Liftable[Jq] = Liftable[Jq] {
-      case Jq.Identity                => q"_root_.fs2.data.json.jq.Jq.Identity"
-      case Jq.Field(name)             => q"_root_.fs2.data.json.jq.Jq.Field($name)"
-      case Jq.Index(idx)              => q"_root_.fs2.data.json.jq.Jq.Index($idx)"
-      case Jq.Slice(idx1, idx2)       => q"_root_.fs2.data.json.jq.Jq.Slice($idx1, $idx2)"
-      case Jq.RecursiveDescent        => q"_root_.fs2.data.json.jq.Jq.RecursiveDescent"
-      case Jq.Sequence(qs)            => q"_root_.fs2.data.json.jq.Jq.Sequence(${qs.widen[Jq]})"
+      case Jq.Identity          => q"_root_.fs2.data.json.jq.Jq.Identity"
+      case Jq.Field(name)       => q"_root_.fs2.data.json.jq.Jq.Field($name)"
+      case Jq.Index(idx)        => q"_root_.fs2.data.json.jq.Jq.Index($idx)"
+      case Jq.Slice(idx1, idx2) => q"_root_.fs2.data.json.jq.Jq.Slice($idx1, $idx2)"
+      case Jq.RecursiveDescent  => q"_root_.fs2.data.json.jq.Jq.RecursiveDescent"
+      case Jq.Sequence(qs) =>
+        q"_root_.fs2.data.json.jq.Jq.Sequence(_root_.cats.data.NonEmptyChain.fromNonEmptyList(${qs.toNonEmptyList.widen[Jq]}))"
       case Jq.Iterator(filter, inner) => q"_root_.fs2.data.json.jq.Jq.Iterator(${filter: Jq}, $inner)"
-      case Jq.Arr(qs)                 => q"_root_.fs2.data.json.jq.Jq.Arr($qs)"
-      case Jq.Obj(qs)                 => q"_root_.fs2.data.json.jq.Jq.Obj($qs)"
+      case Jq.Arr(pfx, qs)            => q"_root_.fs2.data.json.jq.Jq.Arr(${pfx: Jq}, $qs)"
+      case Jq.Obj(pfx, qs)            => q"_root_.fs2.data.json.jq.Jq.Obj(${pfx: Jq}, $qs)"
       case Jq.Num(n)                  => q"_root_.fs2.data.json.jq.Jq.Num($n)"
       case Jq.Str(s)                  => q"_root_.fs2.data.json.jq.Jq.Str($s)"
       case Jq.Bool(b)                 => q"_root_.fs2.data.json.jq.Jq.Bool($b)"

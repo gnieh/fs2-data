@@ -157,6 +157,7 @@ sealed abstract class Regular[CharSet] {
       candidate: Candidate[CharSet, C],
       eq: Eq[CharSet]): PDFA[CharSet, C] = {
 
+
     def goto(re: Regular[CharSet],
              q: Int,
              cs: CharSet,
@@ -184,7 +185,8 @@ sealed abstract class Regular[CharSet] {
                 transitions: Map[Int, List[(CharSet, Int)]],
                 re: Regular[CharSet]): (Chain[Regular[CharSet]], Map[Int, List[(CharSet, Int)]]) = {
       val q = qs.size.toInt - 1
-      re.classes.foldLeft((qs, transitions)) { case ((qs, transitions), cs) =>
+      val cls = re.classes
+      cls.foldLeft((qs, transitions)) { case ((qs, transitions), cs) =>
         goto(re, q, cs, qs, transitions)
       }
     }

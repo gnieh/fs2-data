@@ -20,6 +20,8 @@ package json
 package tagged
 
 import scala.collection.mutable.ListBuffer
+import cats.Show
+import cats.syntax.all._
 
 sealed trait TaggedJson
 object TaggedJson {
@@ -28,6 +30,19 @@ object TaggedJson {
   case object EndArrayElement extends TaggedJson
   case class StartObjectValue(name: String) extends TaggedJson
   case object EndObjectValue extends TaggedJson
+
+  implicit object show extends Show[TaggedJson] {
+
+    override def show(t: TaggedJson): String =
+      t match {
+        case Raw(token)             => token.jsonRepr
+        case StartArrayElement(idx) => show".[$idx]"
+        case EndArrayElement        => ".[/]"
+        case StartObjectValue(name) => show".{$name}"
+        case EndObjectValue         => ".{/}"
+      }
+
+  }
 
 }
 

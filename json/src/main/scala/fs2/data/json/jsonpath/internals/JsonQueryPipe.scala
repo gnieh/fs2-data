@@ -100,7 +100,7 @@ private[json] object PathMatcher {
           case (_, True)                                                 => True
           case (False, _)                                                => p2
           case (_, False)                                                => p1
-          case (r1 @ Range(_, _), r2 @ Range(_, _)) if r1.intersects(r2) => r1.intersection(r2)
+          case (r1 @ Range(_, _), r2 @ Range(_, _)) if r1.intersects(r2) => r1.union(r2)
           case (Key(_) | AnyKey, AnyKey)                                 => AnyKey
           case (AnyKey, Key(_) | AnyKey)                                 => AnyKey
           case (_, _)                                                    => Or(p1, p2)
