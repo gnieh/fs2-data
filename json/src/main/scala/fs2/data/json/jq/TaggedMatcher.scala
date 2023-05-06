@@ -18,14 +18,13 @@ package fs2.data
 package json
 package jq
 
-import cats.Eq
 import cats.data.NonEmptyList
 import cats.syntax.all._
+import cats.{Eq, Show}
 
 import pfsa._
 import tagged._
 import Pred.syntax._
-import cats.Show
 
 private sealed trait TaggedMatcher {
   def dnf: NonEmptyList[NonEmptyList[AtomTaggedMatcher]] =

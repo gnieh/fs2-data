@@ -6,13 +6,9 @@ package jq
 import cats.data.NonEmptyList
 import cats.syntax.all._
 
-import pattern.Selectable
 import tagged.TaggedJson
-import esp.Tag
-import esp.Conversion
-import pattern.Evaluator
-import pattern.ConstructorTree
-import esp.ESP
+import esp.{Conversion, ESP, Tag}
+import pattern.{ConstructorTree, Evaluator, Selectable}
 
 package object internal {
 

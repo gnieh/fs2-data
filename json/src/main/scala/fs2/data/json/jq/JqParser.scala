@@ -1,11 +1,9 @@
 package fs2.data.json.jq
 
 import cats.MonadThrow
-import cats.data.NonEmptyChain
+import cats.data.{Chain, NonEmptyChain, NonEmptyList}
 import cats.parse.{Accumulator0, Appender, Numbers, Parser => P, Parser0}
 import cats.syntax.all._
-import cats.data.Chain
-import cats.data.NonEmptyList
 
 case class JqParserException(error: P.Error) extends Exception(error.show)
 
