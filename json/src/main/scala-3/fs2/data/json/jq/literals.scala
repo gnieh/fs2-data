@@ -57,7 +57,7 @@ package object literals {
   given ToExpr[Jq] with {
     def apply(q: Jq)(using Quotes) =
       q match {
-        case f: Filter                  => '{ ${ Expr(f) } }
+        case f: Filter                  => Expr(f)
         case Jq.Iterator(filter, inner) => '{ Jq.Iterator(${ Expr(filter) }, ${ Expr(inner) }) }
         case Jq.Arr(pfx, qs)            => '{ Jq.Arr(${ Expr(pfx) }, ${ Expr(qs) }) }
         case Jq.Obj(pfx, qs)            => '{ Jq.Obj(${ Expr(pfx) }, ${ Expr(qs) }) }

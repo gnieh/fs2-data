@@ -33,11 +33,11 @@ sealed trait Filter extends Jq {
 sealed trait Constructor extends Jq
 object Jq {
   // filters
-  final case object Identity extends Filter
+  case object Identity extends Filter
   final case class Field(name: String) extends Filter
   final case class Index(idx: Int) extends Filter
   final case class Slice(start: Int, end: Option[Int]) extends Filter
-  final case object RecursiveDescent extends Filter
+  case object RecursiveDescent extends Filter
   final case class Sequence(jqs: NonEmptyChain[Filter]) extends Filter
 
   final case class Iterator(filter: Filter, inner: Jq) extends Jq
@@ -48,6 +48,6 @@ object Jq {
   final case class Num(n: String) extends Constructor
   final case class Str(s: String) extends Constructor
   final case class Bool(b: Boolean) extends Constructor
-  final case object Null extends Constructor
+  case object Null extends Constructor
 
 }
