@@ -53,6 +53,7 @@ private sealed trait GuardTaggedMatcher extends AtomTaggedMatcher
 private sealed trait NegatableTaggedMatcher extends AtomTaggedMatcher
 private object TaggedMatcher {
 
+  case object StartJson extends PatternTaggedMatcher with NegatableTaggedMatcher
   case object StartObject extends PatternTaggedMatcher with NegatableTaggedMatcher
   case object StartArray extends PatternTaggedMatcher with NegatableTaggedMatcher
 
@@ -70,6 +71,7 @@ private object TaggedMatcher {
 
     override def pick(set: TaggedMatcher): Option[TaggedJson] =
       set match {
+        case StartJson            => Some(TaggedJson.StartJson)
         case StartObject          => Some(TaggedJson.Raw(Token.StartObject))
         case StartArray           => Some(TaggedJson.Raw(Token.StartArray))
         case Field(name)          => Some(TaggedJson.StartObjectValue(name))
@@ -79,6 +81,7 @@ private object TaggedMatcher {
         case Fail                 => None
         case AnyOf(m)             => m.headOption.flatMap(pick(_))
         case AllOf(m)             => m.headOption.flatMap(pick(_))
+        case Not(StartJson)       => Some(TaggedJson.Raw(Token.StartArray))
         case Not(StartObject)     => Some(TaggedJson.Raw(Token.StartArray))
         case Not(StartArray)      => Some(TaggedJson.Raw(Token.StartObject))
         case Not(Field(name))     => Some(TaggedJson.StartObjectValue(s"!$name"))
@@ -88,6 +91,7 @@ private object TaggedMatcher {
 
     override def satsifies(p: TaggedMatcher)(e: TaggedJson): Boolean =
       (p, e) match {
+        case (StartJson, TaggedJson.StartJson)                      => true
         case (StartObject, TaggedJson.Raw(Token.StartObject))       => true
         case (StartArray, TaggedJson.Raw(Token.StartArray))         => true
         case (Field(name1), TaggedJson.StartObjectValue(name2))     => name1 === name2
@@ -170,6 +174,7 @@ private object TaggedMatcher {
 private object NegatableTaggedMatcher {
 
   implicit val show: Show[NegatableTaggedMatcher] = {
+    case TaggedMatcher.StartJson               => ". != $"
     case TaggedMatcher.StartObject             => ". != {"
     case TaggedMatcher.StartArray              => ". != ["
     case TaggedMatcher.Field(name)             => show". != {$name}"

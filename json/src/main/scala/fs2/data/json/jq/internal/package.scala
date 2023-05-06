@@ -46,9 +46,17 @@ package object internal {
           token match {
             case Token.Key(_) =>
               throw new Exception("this case should never occur, this is a bug")
+            case Token.StartArray | Token.StartObject =>
+              ConstructorTree(Tag.Open, List(ConstructorTree.noArgConstructor(Tag.Name(e))))
+            case Token.EndArray | Token.EndObject =>
+              ConstructorTree(Tag.Close, List(ConstructorTree.noArgConstructor(Tag.Name(e))))
             case _ =>
               ConstructorTree(Tag.Leaf, List(ConstructorTree.noArgConstructor(Tag.Value(e))))
           }
+        case TaggedJson.StartJson =>
+          ConstructorTree(Tag.Open, List(ConstructorTree.noArgConstructor(Tag.Name(e))))
+        case TaggedJson.EndJson =>
+          ConstructorTree(Tag.Close, List(ConstructorTree.noArgConstructor(Tag.Name(e))))
       }
 
   }
@@ -63,6 +71,7 @@ package object internal {
         case TaggedJson.StartObjectValue(_)    => TaggedJson.EndObjectValue
         case TaggedJson.Raw(Token.StartArray)  => TaggedJson.Raw(Token.EndArray)
         case TaggedJson.Raw(Token.StartObject) => TaggedJson.Raw(Token.EndObject)
+        case TaggedJson.StartJson              => TaggedJson.EndJson
         case _                                 => t
       }
 
@@ -72,7 +81,7 @@ package object internal {
 
   private[internal] implicit object evaluator extends Evaluator[NonEmptyList[GuardTaggedMatcher], Tag[TaggedJson]] {
 
-    private def eval(guard: GuardTaggedMatcher, tree: ConstructorTree[Tag[TaggedJson]]): Boolean =
+    private def eval(guard: GuardTaggedMatcher, tree: ConstructorTree[Tag[TaggedJson]]): Boolean = {
       (guard, tree) match {
         case (TaggedMatcher.Slice(start, end),
               ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(TaggedJson.StartArrayElement(idx)), Nil)))) =>
@@ -97,6 +106,7 @@ package object internal {
         case (TaggedMatcher.Not(_), _) =>
           true
       }
+    }
 
     override def eval(guard: NonEmptyList[GuardTaggedMatcher],
                       tree: ConstructorTree[Tag[TaggedJson]]): Option[Tag[TaggedJson]] =

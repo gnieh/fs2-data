@@ -58,6 +58,7 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
   override implicit def charsEq: Eq[TaggedMatcher] = TaggedMatcher.eq
 
   override def tagOf(pattern: PatternTaggedMatcher): Option[TaggedJson] = pattern match {
+    case TaggedMatcher.StartJson   => Some(TaggedJson.StartJson)
     case TaggedMatcher.StartObject => Some(TaggedJson.Raw(Token.StartObject))
     case TaggedMatcher.StartArray  => Some(TaggedJson.Raw(Token.StartArray))
     case TaggedMatcher.Field(name) => Some(TaggedJson.StartObjectValue(name))
@@ -65,21 +66,27 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
     case TaggedMatcher.Any         => None
   }
 
-  def path2regular(f: Filter): Regular[TaggedMatcher] =
-    f match {
-      case Jq.Slice(start, end) =>
-        Regular.chars[TaggedMatcher](TaggedMatcher.StartArray) ~ Regular.chars(TaggedMatcher.Slice(start, end))
-      case Jq.Index(idx) =>
-        Regular.chars[TaggedMatcher](TaggedMatcher.StartArray) ~ Regular.chars(TaggedMatcher.Index(idx))
-      case Jq.RecursiveDescent =>
-        ((Regular.chars[TaggedMatcher](TaggedMatcher.StartArray) ~ Regular.any) || (Regular
-          .chars[TaggedMatcher](TaggedMatcher.StartObject) ~ Regular.any)).rep
-      case Jq.Field(name) =>
-        Regular.chars[TaggedMatcher](TaggedMatcher.StartObject) ~ Regular.chars(TaggedMatcher.Field(name))
-      case Jq.Identity => Regular.epsilon
-      case Jq.Sequence(jqs) =>
-        jqs.foldLeft(Regular.epsilon[TaggedMatcher])(_ ~ path2regular(_))
-    }
+  def path2regular(f: Filter): Regular[TaggedMatcher] = {
+    def loop(f: Filter): Regular[TaggedMatcher] =
+      f match {
+        case Jq.Root =>
+          Regular.chars[TaggedMatcher](TaggedMatcher.StartJson)
+        case Jq.Slice(start, end) =>
+          Regular.chars[TaggedMatcher](TaggedMatcher.StartArray) ~ Regular.chars(TaggedMatcher.Slice(start, end))
+        case Jq.Index(idx) =>
+          Regular.chars[TaggedMatcher](TaggedMatcher.StartArray) ~ Regular.chars(TaggedMatcher.Index(idx))
+        case Jq.RecursiveDescent =>
+          ((Regular.chars[TaggedMatcher](TaggedMatcher.StartArray) ||
+            Regular.chars[TaggedMatcher](TaggedMatcher.StartObject)) ~ Regular.any).rep
+        case Jq.Field(name) =>
+          Regular.chars[TaggedMatcher](TaggedMatcher.StartObject) ~ Regular.chars(TaggedMatcher.Field(name))
+        case Jq.Identity =>
+          Regular.epsilon
+        case Jq.Sequence(jqs) =>
+          jqs.foldLeft(Regular.epsilon[TaggedMatcher])(_ ~ loop(_))
+      }
+    loop(f)
+  }
 
   def cases(m: TaggedMatcher) = {
     // first transform the matcher into DNF
@@ -118,13 +125,13 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
                 none
             case ((TaggedMatcher.Field(_), _),
                   TaggedMatcher.Index(_) | TaggedMatcher.Slice(_, _) | TaggedMatcher.StartObject |
-                  TaggedMatcher.StartArray) =>
+                  TaggedMatcher.StartArray | TaggedMatcher.StartJson) =>
               // incompatible
               none
             case (acc @ (TaggedMatcher.Field(_), _),
                   TaggedMatcher.Not(
                     TaggedMatcher.Index(_) | TaggedMatcher.Slice(_, _) | TaggedMatcher.StartObject |
-                    TaggedMatcher.StartArray)) =>
+                    TaggedMatcher.StartArray | TaggedMatcher.StartJson)) =>
               // guard is redundant
               acc.some
             case ((pat1 @ TaggedMatcher.Index(idx1), guard), TaggedMatcher.Index(idx2)) =>
@@ -155,11 +162,14 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
                 // incompatible
                 none
             case (acc @ (TaggedMatcher.Index(_), _),
-                  TaggedMatcher.Not(TaggedMatcher.Field(_) | TaggedMatcher.StartObject | TaggedMatcher.StartArray)) =>
+                  TaggedMatcher.Not(
+                    TaggedMatcher.Field(_) | TaggedMatcher.StartObject | TaggedMatcher.StartArray |
+                    TaggedMatcher.StartJson)) =>
               // redundant
               acc.some
             case ((TaggedMatcher.Index(_), _),
-                  TaggedMatcher.Field(_) | TaggedMatcher.StartObject | TaggedMatcher.StartArray) =>
+                  TaggedMatcher.Field(_) | TaggedMatcher.StartObject | TaggedMatcher.StartArray |
+                  TaggedMatcher.StartJson) =>
               // incompatible
               none
             case (acc @ (TaggedMatcher.StartObject, _), TaggedMatcher.StartObject) =>
@@ -184,6 +194,18 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
               // redundant
               acc.some
             case ((TaggedMatcher.StartArray, _), _) =>
+              // incompatible
+              none
+            case (acc @ (TaggedMatcher.StartJson, _), TaggedMatcher.StartJson) =>
+              // redundant
+              acc.some
+            case ((TaggedMatcher.StartJson, _), TaggedMatcher.Not(TaggedMatcher.StartJson)) =>
+              // incompatible
+              none
+            case (acc @ (TaggedMatcher.StartJson, _), TaggedMatcher.Not(_)) =>
+              // redundant
+              acc.some
+            case ((TaggedMatcher.StartJson, _), _) =>
               // incompatible
               none
           }
@@ -300,7 +322,7 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
 
   def compile(jq: Jq): F[CompiledJq[F]] =
     for {
-      query <- preprocess(Jq.Identity, jq).runA(0)
+      query <- preprocess(Jq.Root, jq).runA(0)
       mft = compile(query)
       esp <- mft.esp
     } yield new ESPCompiledJq[F](esp)

@@ -16,32 +16,24 @@
 
 package fs2.data.json.jq
 
-import cats.MonadThrow
-import cats.data.{Chain, NonEmptyChain, NonEmptyList}
+import cats.data.NonEmptyList
 import cats.parse.{Accumulator0, Appender, Numbers, Parser => P, Parser0}
 import cats.syntax.all._
+import cats.{MonadThrow, Monoid}
 
 case class JqParserException(error: P.Error) extends Exception(error.show)
 
 object JqParser {
 
-  private implicit object filterAcc extends Accumulator0[Filter, Filter] {
-
-    override def newAppender(): Appender[Filter, Filter] =
-      new Appender[Filter, Filter] {
-        val bldr = List.newBuilder[Filter]
-        def append(item: Filter) = {
-          bldr += item
-          this
-        }
-
-        def finish() =
-          bldr.result().filterNot(_ == Jq.Identity) match {
-            case Nil      => Jq.Identity
-            case f :: Nil => f
-            case f :: fs  => Jq.Sequence(NonEmptyChain.fromChainPrepend(f, Chain.fromSeq(fs)))
-          }
+  implicit def accForMonoid[T: Monoid]: Accumulator0[T, T] = new Accumulator0[T, T] {
+    override def newAppender(): Appender[T, T] = new Appender[T, T] {
+      private[this] var res = Monoid[T].empty
+      override def append(item: T) = {
+        res = res.combine(item)
+        this
       }
+      override def finish(): T = res
+    }
 
   }
 
@@ -104,7 +96,7 @@ object JqParser {
 
     P.oneOf(
       (str("..") *> (access.backtrack ~ step.repAs0[Filter]).?).map {
-        case Some((access, rest)) => Jq.Sequence(NonEmptyChain(Jq.RecursiveDescent, access, rest))
+        case Some((access, rest)) => Jq.RecursiveDescent ~ access ~ rest
         case None                 => Jq.RecursiveDescent
       } ::
         step ::
@@ -113,7 +105,7 @@ object JqParser {
       .repSep(ch('|'))
       .map {
         case NonEmptyList(filter, Nil) => filter
-        case steps                     => Jq.Sequence(NonEmptyChain.fromNonEmptyList(steps))
+        case steps                     => steps.reduceLeft(_ ~ _)
       }
   }
 

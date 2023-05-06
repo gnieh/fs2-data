@@ -40,6 +40,9 @@ sealed abstract class Regular[CharSet] {
           Regular.empty
     }
 
+  def ?(implicit CharSet: Pred[CharSet, _], eq: Eq[CharSet]): Regular[CharSet] =
+    this || Regular.empty
+
   def &&(that: Regular[CharSet])(implicit CharSet: Pred[CharSet, _], eq: Eq[CharSet]): Regular[CharSet] =
     (this, that) match {
       case (Regular.And(re1, re2), _) => re1 && (re2 && that)

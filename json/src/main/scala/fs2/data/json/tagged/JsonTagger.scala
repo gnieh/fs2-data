@@ -25,6 +25,8 @@ import cats.syntax.all._
 
 private[json] sealed trait TaggedJson
 private[json] object TaggedJson {
+  case object StartJson extends TaggedJson
+  case object EndJson extends TaggedJson
   case class Raw(token: Token) extends TaggedJson
   case class StartArrayElement(idx: Int) extends TaggedJson
   case object EndArrayElement extends TaggedJson
@@ -40,6 +42,7 @@ private[json] object TaggedJson {
         case EndArrayElement        => ".[/]"
         case StartObjectValue(name) => show".{$name}"
         case EndObjectValue         => ".{/}"
+        case _                      => ""
       }
 
   }
@@ -132,8 +135,8 @@ private[json] object JsonTagger {
             Pull.done
         }
       } else {
-        value_(chunk, idx, rest, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc) =>
-          go_(chunk, idx, rest, chunkAcc)
+        value_(chunk, idx, rest, chunkAcc += TaggedJson.StartJson).flatMap { case (chunk, idx, rest, chunkAcc) =>
+          go_(chunk, idx, rest, chunkAcc += TaggedJson.EndJson)
         }
       }
 

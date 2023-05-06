@@ -44,6 +44,7 @@ package object literals {
   given ToExpr[Filter] with {
     def apply(f: Filter)(using Quotes) =
       f match {
+        case Jq.Root              => '{ Jq.Root }
         case Jq.Identity          => '{ Jq.Identity }
         case Jq.Field(name)       => '{ Jq.Field(${ Expr(name) }) }
         case Jq.Index(idx)        => '{ Jq.Index(${ Expr(idx) }) }

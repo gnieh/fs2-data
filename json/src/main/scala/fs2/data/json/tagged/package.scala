@@ -25,6 +25,8 @@ package object tagged {
       case TaggedJson.EndArrayElement        => None
       case TaggedJson.StartObjectValue(name) => Some(Token.Key(name))
       case TaggedJson.EndObjectValue         => None
+      case TaggedJson.StartJson              => None
+      case TaggedJson.EndJson                => None
     }
 
 }

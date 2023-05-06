@@ -42,6 +42,7 @@ object literals {
     }
 
     implicit lazy val jqLiftable: Liftable[Jq] = Liftable[Jq] {
+      case Jq.Root              => q"_root_.fs2.data.json.jq.Jq.Root"
       case Jq.Identity          => q"_root_.fs2.data.json.jq.Jq.Identity"
       case Jq.Field(name)       => q"_root_.fs2.data.json.jq.Jq.Field($name)"
       case Jq.Index(idx)        => q"_root_.fs2.data.json.jq.Jq.Index($idx)"

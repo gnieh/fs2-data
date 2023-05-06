@@ -27,7 +27,32 @@ import tagged._
 private[jq] class ESPCompiledJq[F[_]: RaiseThrowable](val esp: JqESP[F]) extends CompiledJq[F] {
 
   def apply(in: Stream[F, Token]): Stream[F, Token] =
-    in.through(JsonTagger.pipe).through(esp.pipe).map(untag(_)).unNone
+    in.through(JsonTagger.pipe)
+      .through(esp.pipe)
+      .mapAccumulate(0) {
+        case (0, TaggedJson.StartObjectValue(_)) =>
+          (0, None)
+        case (depth, TaggedJson.Raw(Token.StartObject)) =>
+          (depth + 1, Some(Token.StartObject))
+        case (depth, TaggedJson.Raw(Token.EndObject)) =>
+          (depth - 1, Some(Token.EndObject))
+        case (depth, TaggedJson.Raw(t)) =>
+          (depth, Some(t))
+        case (depth, TaggedJson.StartArrayElement(_)) =>
+          (depth, None)
+        case (depth, TaggedJson.EndArrayElement) =>
+          (depth, None)
+        case (depth, TaggedJson.StartObjectValue(name)) =>
+          (depth, Some(Token.Key(name)))
+        case (depth, TaggedJson.EndObjectValue) =>
+          (depth, None)
+        case (depth, TaggedJson.StartJson) =>
+          (depth, None)
+        case (depth, TaggedJson.EndJson) =>
+          (depth, None)
+      }
+      .map(_._2)
+      .unNone
 
   def andThen(that: CompiledJq[F]): CompiledJq[F] =
     that match {
