@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Lucas Satabin
+ * Copyright 2023 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,12 @@ sealed trait Jq
 sealed trait Filter extends Jq {
   def ~(that: Filter): Filter =
     (this, that) match {
-      case (Jq.Identity, _) => that
-      case (_, Jq.Identity) => this
+      case (Jq.Identity, _)                   => that
+      case (_, Jq.Identity)                   => this
       case (Jq.Sequence(s1), Jq.Sequence(s2)) => Jq.Sequence(s1 ++ s2)
-      case (Jq.Sequence(s1), _) => Jq.Sequence(s1 :+ that)
-      case (_, Jq.Sequence(s2)) => Jq.Sequence(this +: s2)
-      case (_, _) => Jq.Sequence(NonEmptyChain(this, that))
+      case (Jq.Sequence(s1), _)               => Jq.Sequence(s1 :+ that)
+      case (_, Jq.Sequence(s2))               => Jq.Sequence(this +: s2)
+      case (_, _)                             => Jq.Sequence(NonEmptyChain(this, that))
     }
 }
 sealed trait Constructor extends Jq

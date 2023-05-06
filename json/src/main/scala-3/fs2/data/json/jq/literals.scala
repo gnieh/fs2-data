@@ -41,19 +41,26 @@ package object literals {
     }
   }
 
-  given ToExpr[Jq] with {
-    def apply(q: Jq)(using Quotes) =
-      q match {
+  given ToExpr[Filter] with {
+    def apply(f: Filter)(using Quotes) =
+      f match {
         case Jq.Identity          => '{ Jq.Identity }
         case Jq.Field(name)       => '{ Jq.Field(${ Expr(name) }) }
         case Jq.Index(idx)        => '{ Jq.Index(${ Expr(idx) }) }
         case Jq.Slice(idx1, idx2) => '{ Jq.Slice(${ Expr(idx1) }, ${ Expr(idx2) }) }
         case Jq.RecursiveDescent  => '{ Jq.RecursiveDescent }
         case Jq.Sequence(qs) =>
-          '{ Jq.Sequence(NonEmptyChain.fromNonEmptyList(${ Expr(qs.toNonEmptyList.widen[Jq]) })) }
-        case Jq.Iterator(filter, inner) => '{ Jq.Iterator(${ Expr(filter: Jq) }, $Expr(inner)) }
-        case Jq.Arr(pfx, qs)            => '{ Jq.Arr(${ Expr(pfx: Jq) }, ${ Expr(qs) }) }
-        case Jq.Obj(pfx, qs)            => '{ Jq.Obj(${ Expr(pfx: Jq) }, ${ Expr(qs) }) }
+          '{ Jq.Sequence(NonEmptyChain.fromNonEmptyList(${ Expr(qs.toNonEmptyList) })) }
+      }
+  }
+
+  given ToExpr[Jq] with {
+    def apply(q: Jq)(using Quotes) =
+      q match {
+        case f: Filter                  => '{ ${ Expr(f) } }
+        case Jq.Iterator(filter, inner) => '{ Jq.Iterator(${ Expr(filter) }, ${ Expr(inner) }) }
+        case Jq.Arr(pfx, qs)            => '{ Jq.Arr(${ Expr(pfx) }, ${ Expr(qs) }) }
+        case Jq.Obj(pfx, qs)            => '{ Jq.Obj(${ Expr(pfx) }, ${ Expr(qs) }) }
         case Jq.Num(n)                  => '{ Jq.Num(${ Expr(n) }) }
         case Jq.Str(s)                  => '{ Jq.Str(${ Expr(s) }) }
         case Jq.Bool(b)                 => '{ Jq.Bool(${ Expr(b) }) }
@@ -61,7 +68,7 @@ package object literals {
       }
   }
 
-  object JsonPathInterpolator extends Literally[JsonPath] {
+  object JqInterpolator extends Literally[Jq] {
 
     def validate(string: String)(using Quotes) = {
       JqParser

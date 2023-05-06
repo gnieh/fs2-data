@@ -157,7 +157,6 @@ sealed abstract class Regular[CharSet] {
       candidate: Candidate[CharSet, C],
       eq: Eq[CharSet]): PDFA[CharSet, C] = {
 
-
     def goto(re: Regular[CharSet],
              q: Int,
              cs: CharSet,

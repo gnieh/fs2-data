@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023 Lucas Satabin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package fs2
 package data
 package json
@@ -83,9 +99,9 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
             case ((TaggedMatcher.Any, guard), pattern: PatternTaggedMatcher) =>
               // this is a finer pattern, save it
               (pattern, guard).some
-            case ((pat @ TaggedMatcher.Any, guard), g: GuardTaggedMatcher) =>
+            case ((TaggedMatcher.Any, guard), g: GuardTaggedMatcher) =>
               // some guard for sure (almost)
-              (pat, g :: guard).some
+              (TaggedMatcher.Any, g :: guard).some
             case ((pat1 @ TaggedMatcher.Field(fld1), guard), TaggedMatcher.Field(fld2)) =>
               // check whether both are compatible, and if yes, keep the most restrictive one
               (fld1, fld2) match {
@@ -214,8 +230,9 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
                     TaggedJson.Raw(Token.StartArray),
                     Query.Sequence(
                       NonEmptyList[Query[TaggedJson, Filter]](Query.Node(TaggedJson.StartArrayElement(idx), inner),
-                                                              after.map(kv => Query.Variable(kv._1)))
-                        .prependList(before.map(kv => Query.Variable(kv._1))))
+                                                              after.map(kv =>
+                                                                Query.Variable[TaggedJson, Filter](kv._1)))
+                        .prependList(before.map(kv => Query.Variable[TaggedJson, Filter](kv._1))))
                   )
                 )
               values.foldLeft(forClause) { case (inner, (v, q)) => Query.LetClause(v, q, inner) }
@@ -261,8 +278,9 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
                     TaggedJson.Raw(Token.StartObject),
                     Query.Sequence(
                       NonEmptyList[Query[TaggedJson, Filter]](Query.Node(TaggedJson.StartObjectValue(name), inner),
-                                                              after.map(kv => Query.Variable(kv._1)))
-                        .prependList(before.map(kv => Query.Variable(kv._1))))
+                                                              after.map(kv =>
+                                                                Query.Variable[TaggedJson, Filter](kv._1)))
+                        .prependList(before.map(kv => Query.Variable[TaggedJson, Filter](kv._1))))
                   )
                 )
               values.foldLeft(forClause) { case (inner, (v, q)) => Query.LetClause(v, q, inner) }

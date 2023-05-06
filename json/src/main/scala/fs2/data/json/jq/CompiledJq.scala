@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Lucas Satabin
+ * Copyright 2023 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package data
 package json
 package jq
 
-  /** A pipe running the compiled jq query on the input stream of JSON tokens. */
+/** A pipe running the compiled jq query on the input stream of JSON tokens. */
 trait CompiledJq[F[_]] extends Pipe[F, Token, Token] {
 
   /** Allows for piping `this` compiled jq query feeding its result to `that` compiled jq query. */
