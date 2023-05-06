@@ -32,6 +32,8 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
     extends QueryCompiler[TaggedJson, TaggedJson, Filter]
     with Compiler[F] {
 
+  override protected val emitSelected: Boolean = false
+
   private type State[T] = StateT[F, Int, T]
 
   private def nextIdent: State[String] =
@@ -75,6 +77,9 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
           Regular.chars[TaggedMatcher](TaggedMatcher.StartArray) ~ Regular.chars(TaggedMatcher.Slice(start, end))
         case Jq.Index(idx) =>
           Regular.chars[TaggedMatcher](TaggedMatcher.StartArray) ~ Regular.chars(TaggedMatcher.Index(idx))
+        case Jq.Child =>
+          (Regular.chars[TaggedMatcher](TaggedMatcher.StartArray) ||
+            Regular.chars[TaggedMatcher](TaggedMatcher.StartObject)) ~ Regular.any
         case Jq.RecursiveDescent =>
           ((Regular.chars[TaggedMatcher](TaggedMatcher.StartArray) ||
             Regular.chars[TaggedMatcher](TaggedMatcher.StartObject)) ~ Regular.any).rep
@@ -247,7 +252,7 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
               val forClause: Query[TaggedJson, Filter] =
                 Query.ForClause(
                   v,
-                  prefix ~ prefix1 ~ filter,
+                  prefix ~ prefix1 ~ filter ~ Jq.Child,
                   Query.Node(
                     TaggedJson.Raw(Token.StartArray),
                     Query.Sequence(
@@ -295,7 +300,7 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
               val forClause: Query[TaggedJson, Filter] =
                 Query.ForClause(
                   v,
-                  prefix ~ prefix1 ~ filter,
+                  prefix ~ prefix1 ~ filter ~ Jq.Child,
                   Query.Node(
                     TaggedJson.Raw(Token.StartObject),
                     Query.Sequence(
@@ -311,10 +316,15 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
             raiseError(
               JqException(s"object constructors may have only one iterator element, but got ${iterators.size}"))
         }
-      case Jq.Iterator(filter, inner) =>
+      case Jq.Iterator(filter, inner: Constructor) =>
         for {
           v <- nextIdent
           inner <- preprocess(Jq.Identity, inner)
+        } yield Query.ForClause(v, prefix ~ filter ~ Jq.Child, inner)
+      case Jq.Iterator(filter, inner) =>
+        for {
+          v <- nextIdent
+          inner <- preprocess(Jq.Child, inner)
         } yield Query.ForClause(v, prefix ~ filter, inner)
       case filter: Filter =>
         pure(Query.Ordpath(prefix ~ filter))

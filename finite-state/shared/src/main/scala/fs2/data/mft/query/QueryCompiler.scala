@@ -34,6 +34,8 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
   type Pattern
   type Guard
 
+  protected val emitSelected: Boolean = true
+
   /** A single char to be matched in a path */
   type Char
 
@@ -122,8 +124,11 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
                 val pat: builder.Guardable = tagOf(pattern).fold(anyNode)(aNode(_))
                 if (!finalTgt) {
                   q1(pat.when(guard)) -> q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
-                } else {
+                } else if (emitSelected) {
                   q1(pat.when(guard)) -> end(x1, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*) ~
+                    q1(x2, copyArgs: _*)
+                } else {
+                  q1(pat.when(guard)) -> end(x1, (copyArgs :+ qcopy(x1)): _*) ~ q2(x1, copyArgs: _*) ~
                     q1(x2, copyArgs: _*)
                 }
                 states1

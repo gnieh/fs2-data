@@ -47,6 +47,7 @@ object literals {
       case Jq.Field(name)       => q"_root_.fs2.data.json.jq.Jq.Field($name)"
       case Jq.Index(idx)        => q"_root_.fs2.data.json.jq.Jq.Index($idx)"
       case Jq.Slice(idx1, idx2) => q"_root_.fs2.data.json.jq.Jq.Slice($idx1, $idx2)"
+      case Jq.Child             => q"_root_.fs2.data.json.jq.Jq.Child"
       case Jq.RecursiveDescent  => q"_root_.fs2.data.json.jq.Jq.RecursiveDescent"
       case Jq.Sequence(qs) =>
         q"_root_.fs2.data.json.jq.Jq.Sequence(_root_.cats.data.NonEmptyChain.fromNonEmptyList(${qs.toNonEmptyList.widen[Jq]}))"

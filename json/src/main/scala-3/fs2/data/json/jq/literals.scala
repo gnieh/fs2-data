@@ -49,6 +49,7 @@ package object literals {
         case Jq.Field(name)       => '{ Jq.Field(${ Expr(name) }) }
         case Jq.Index(idx)        => '{ Jq.Index(${ Expr(idx) }) }
         case Jq.Slice(idx1, idx2) => '{ Jq.Slice(${ Expr(idx1) }, ${ Expr(idx2) }) }
+        case Jq.Child             => '{ Jq.Child }
         case Jq.RecursiveDescent  => '{ Jq.RecursiveDescent }
         case Jq.Sequence(qs) =>
           '{ Jq.Sequence(NonEmptyChain.fromNonEmptyList(${ Expr(qs.toNonEmptyList) })) }

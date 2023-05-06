@@ -84,13 +84,15 @@ object JqParser {
         .withContext("string, index, slice 'min:max' (with min <= max), slice 'idx:', or slice ':idx'")
 
     val step: P[Filter] =
-      (P.char('.') *> P
+      (ch('.') *> P
         .oneOf(
           identifier.map(Jq.Field(_)) ::
             access.backtrack ::
-            Nil) ~ access.backtrack.repAs0[Filter])
-        .map { case (fst, snd) =>
-          fst ~ snd
+            Nil)
+        .? ~ access.backtrack.repAs0[Filter])
+        .map {
+          case (Some(fst), snd) => fst ~ snd
+          case (None, access)   => Jq.Identity ~ access
         }
         .repAs[Filter]
 

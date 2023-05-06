@@ -49,7 +49,8 @@ object Jq {
   final case class Field(name: String) extends SimpleFilter
   final case class Index(idx: Int) extends SimpleFilter
   final case class Slice(start: Int, end: Option[Int]) extends SimpleFilter
-  final case object RecursiveDescent extends SimpleFilter
+  case object RecursiveDescent extends SimpleFilter
+  private[jq] final case object Child extends SimpleFilter
   final case class Sequence(jqs: NonEmptyChain[SimpleFilter]) extends Filter
 
   final case class Iterator(filter: Filter, inner: Jq) extends Jq
