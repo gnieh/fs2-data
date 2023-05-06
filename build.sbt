@@ -236,7 +236,22 @@ lazy val json = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
       }
-      .toList
+      .toList,
+    mimaBinaryIssueFilters ++= List(
+      // all these experimental classes have been made internal
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.JsonTagger"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.JsonTagger$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$EndArrayElement$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$EndObjectValue$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$Raw"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$Raw$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartArrayElement"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartArrayElement$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartObjectValue"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartObjectValue$")
+    )
   )
   .nativeSettings(
     tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
