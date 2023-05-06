@@ -250,7 +250,8 @@ lazy val json = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartArrayElement"),
       ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartArrayElement$"),
       ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartObjectValue"),
-      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartObjectValue$")
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartObjectValue$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.json.jsonpath.package.untag")
     )
   )
   .nativeSettings(
