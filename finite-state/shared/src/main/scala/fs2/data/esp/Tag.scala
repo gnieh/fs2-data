@@ -16,6 +16,8 @@
 
 package fs2.data.esp
 
+import cats.syntax.all._
+import cats.{Order, Show}
 import fs2.data.pattern.IsTag
 
 sealed trait Tag[+T]
@@ -53,6 +55,36 @@ object Tag {
         case _     => Iterator.empty
       }
 
+  }
+
+  implicit def show[T: Show]: Show[Tag[T]] = {
+    case Input      => "$input"
+    case State(q)   => show"q$q"
+    case Depth(d)   => show"[$d]"
+    case Name(name) => show"<$name>"
+    case Open       => "<%>"
+    case Close      => "</%>"
+    case End        => "$"
+    case Leaf       => "%"
+    case Value(v)   => show"$v"
+    case True       => "true"
+  }
+
+  implicit def order[T: Order]: Order[Tag[T]] = Order.from {
+    case (Name(n1), Name(n2))                      => n1.compare(n2)
+    case (Name(_), _)                              => -1
+    case (Open, Name(_))                           => 1
+    case (Open, _)                                 => -1
+    case (Close, Name(_) | Open)                   => 1
+    case (Close, _)                                => -1
+    case (Value(_), Name(_) | Open | Close)        => 1
+    case (Value(v1), Value(v2))                    => v1.compare(v2)
+    case (Value(_), Leaf)                          => -1
+    case (Leaf, Value(_) | Name(_) | Open | Close) => 1
+    case (Leaf, _)                                 => -1
+    case (_, True)                                 => -1
+    case (True, _)                                 => 1
+    case (_, _)                                    => 1
   }
 
 }

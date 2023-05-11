@@ -18,18 +18,19 @@ package fs2
 package data
 package esp
 
-import pattern._
-
 import cats.syntax.all._
+import cats.{Order, Show}
 
-import scala.collection.mutable.ListBuffer
 import scala.annotation.tailrec
+import scala.collection.mutable.ListBuffer
+
+import pattern._
 
 /** An Event Stream Processor is a generalization of the one defined in _Streamlining Functional XML Processing_.
   * It encodes its recognized patterns into a [[fs2.data.matching.DecisionTree Decision Tree]], including the state and depth. This flexibility allows for easily implementing
   * catch all rules, no matter what the state or depth is.
   */
-private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
+private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
                                                     val params: Map[Int, Int],
                                                     val rules: DecisionTree[Guard, Tag[InTag], Rhs[OutTag]])(implicit
     F: RaiseThrowable[F]) {
@@ -206,5 +207,64 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
       TT: Tag2Tag[InTag, OutTag],
       G: Evaluator[Guard, Tag[InTag]]): Pipe[F, In, Out] =
     transform[In, Out](Chunk.empty, 0, _, Map.empty, Expr.Call(init, 0, Nil), new ListBuffer).stream
+
+}
+
+object ESP {
+
+  private case class Case[I](q: Option[Int], depth: Option[Int], pat: Option[Tag[I]], rhs: String)
+
+  private object Case {
+    // None is bigger than anything else (wildcard case)
+    implicit def optionOrder[T: Order]: Order[Option[T]] = new Order[Option[T]] {
+      def compare(x: Option[T], y: Option[T]): Int =
+        x match {
+          case None =>
+            if (y.isEmpty) 0 else 1
+          case Some(a) =>
+            y match {
+              case None    => -1
+              case Some(b) => a.compare(b)
+            }
+        }
+    }
+
+    implicit def ord[I: Order]: Order[Case[I]] = Order.by { case Case(q, d, p, _) =>
+      (q, d, p)
+    }
+  }
+
+  implicit def show[F[_], G, I: Show: Order, O: Show]: Show[ESP[F, G, I, O]] = { esp =>
+    type TreeStack = (Option[Int], Option[Int], Option[Tag[I]], DecisionTree[G, Tag[I], Rhs[O]])
+    def makeCases(trees: List[TreeStack], acc: List[Case[I]]): List[Case[I]] =
+      trees match {
+        case Nil                                          => acc.sortWith(_ < _)
+        case (q, d, pat, DecisionTree.Fail()) :: trees    => makeCases(trees, Case(q, d, pat, "FAIL") :: acc)
+        case (q, d, pat, DecisionTree.Leaf(out)) :: trees => makeCases(trees, Case(q, d, pat, out.show) :: acc)
+        case (q, d, pat, DecisionTree.Switch(_, branches, default)) :: trees =>
+          val cases = branches.toList.map {
+            case (Tag.State(q), t) => (Some(q), d, pat, t)
+            case (Tag.Depth(d), t) => (q, Some(d), pat, t)
+            case (pat, t)          => (q, d, Some(pat), t)
+          }
+          makeCases(cases ++ default.fold(List.empty[TreeStack])((q, d, None, _) :: Nil) ++ trees, acc)
+      }
+
+    Stream
+      .emits(makeCases((None, None, None, esp.rules) :: Nil, Nil))
+      .groupAdjacentBy(_.q)
+      .map { case (_, qcases) =>
+        qcases
+          .map { case Case(q, d, p, r) =>
+            val params = List.tabulate(esp.params.getOrElse(q.getOrElse(-1), 0))(i => show"y$i").mkString_(", ")
+            show"${q.fold("_")(q => show"q$q")}[${d.fold("$d")(_.show)}]($params) --[ ${p.fold("_")(_.show)} ]--> $r"
+          }
+          .mkString_("\n")
+      }
+      .intersperse("\n\n")
+      .compile
+      .string
+
+  }
 
 }
