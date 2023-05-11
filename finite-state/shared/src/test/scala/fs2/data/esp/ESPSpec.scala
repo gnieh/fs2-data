@@ -32,9 +32,9 @@ object NodeGuard {
 
     override def eval(guard: NodeGuard, tree: ConstructorTree[Tag[String]]): Option[Tag[String]] =
       tree match {
-        case ConstructorTree(Tag.Name(n), _) => (guard.names.contains(n) == guard.positive).guard[Option].as(Tag.True)
+        case ConstructorTree(Tag.Name(n), _) => (guard.names.contains(n) == guard.positive).guard[Option].as(Tag.Open)
         case ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(n), _))) =>
-          (guard.names.contains(n) == guard.positive).guard[Option].as(Tag.True)
+          (guard.names.contains(n) == guard.positive).guard[Option].as(Tag.Open)
         case _ => None
       }
 
@@ -69,7 +69,7 @@ object ESPSpec extends IOSuite {
 
   type Res = ESP[IO, NodeGuard, String, String]
 
-  override def sharedResource: Resource[IO, Res] = Resource.eval(mft.esp).evalTap(IO.println(_))
+  override def sharedResource: Resource[IO, Res] = Resource.eval(mft.esp)
 
   test("reverse tree") { esp =>
     Stream
