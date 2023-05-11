@@ -16,6 +16,9 @@
 
 package fs2.data.esp
 
+import cats.Show
+import cats.syntax.all._
+
 /** This is thre right-hand side of an ESP rule processor.
   * It can access the context, meaning:
   *  - the rule parameters
@@ -57,6 +60,21 @@ object Rhs {
 
   def epsilon[OutTag]: Rhs[OutTag] = Epsilon
 
+  implicit def show[O: Show]: Show[Rhs[O]] = _ match {
+    case Call(q, d, Nil)     => show"q$q[$d]()"
+    case Call(q, d, params)  => show"q$q[$d](${params.mkString_(", ")})"
+    case SelfCall(q, Nil)    => show"q$q[0](x0)"
+    case SelfCall(q, params) => show"q$q[0](x0, ${params.mkString_(", ")})"
+    case Param(n)            => show"y$n"
+    case Tree(tag, inner)    => show"<$tag> { $inner }"
+    case CapturedTree(inner) => show"<%> { $inner }"
+    case Leaf(value)         => show"$value"
+    case CapturedLeaf        => "%"
+    case ApplyToLeaf(_)      => "$f(%)"
+    case Concat(fst, snd)    => show"$fst $snd"
+    case Epsilon             => ""
+  }
+
 }
 
 sealed trait Depth {
@@ -73,4 +91,11 @@ object Depth {
   case object Copy extends Depth
   case object Increment extends Depth
   case object Decrement extends Depth
+
+  implicit val show: Show[Depth] = _ match {
+    case Value(d)  => d.toString()
+    case Copy      => "$d"
+    case Increment => "$d + 1"
+    case Decrement => "$d - 1"
+  }
 }

@@ -16,7 +16,8 @@
 
 package fs2.data.pattern
 
-import cats.syntax.either._
+import cats.Show
+import cats.syntax.all._
 
 import scala.annotation.tailrec
 
@@ -39,4 +40,10 @@ object Selector {
   case class Root[Expr, Tag]() extends Selector[Expr, Tag]
   case class Cons[Expr, Tag](sel: Selector[Expr, Tag], tag: Tag, n: Int) extends Selector[Expr, Tag]
   case class Guard[Expr, Tag](sel: Selector[Expr, Tag], expr: Expr) extends Selector[Expr, Tag]
+
+  implicit def show[E: Show, T: Show]: Show[Selector[E, T]] = _ match {
+    case Root()            => "$"
+    case Cons(sel, tag, n) => show"$sel.$tag.$n"
+    case Guard(sel, expr)  => show"$sel if $expr"
+  }
 }
