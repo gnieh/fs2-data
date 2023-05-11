@@ -47,8 +47,8 @@ object QuerySpec extends SimpleIOSuite {
     override def eval(guard: NonEmptyList[Set[String]], tree: ConstructorTree[Tag[String]]): Option[Tag[String]] =
       tree match {
         case ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(n), _))) if guard.forall(_.contains(n)) =>
-          Some(Tag.True)
-        case ConstructorTree(Tag.Name(n), _) if guard.forall(_.contains(n)) => Some(Tag.True)
+          Some(Tag.Open)
+        case ConstructorTree(Tag.Name(n), _) if guard.forall(_.contains(n)) => Some(Tag.Open)
         case _                                                              => None
       }
 
