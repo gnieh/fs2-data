@@ -18,12 +18,12 @@ package fs2
 package data
 package mft
 
-import esp.{Depth, ESP, Rhs => ERhs, Pattern, PatternDsl, Tag => ETag}
-
-import cats.{Defer, MonadError}
 import cats.syntax.all._
-import cats.Show
+import cats.{Defer, MonadError, Show}
+
 import scala.annotation.tailrec
+
+import esp.{Depth, ESP, Rhs => ERhs, Pattern, PatternDsl, Tag => ETag}
 
 sealed trait Forest
 object Forest {
@@ -220,6 +220,7 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
     * that are never called from the initial state.
     */
   def removeUnreachableStates: MFT[Guard, InTag, OutTag] = {
+    @tailrec
     def reachable(toProcess: List[Int], processed: Set[Int]): Set[Int] =
       toProcess match {
         case q :: qs =>
