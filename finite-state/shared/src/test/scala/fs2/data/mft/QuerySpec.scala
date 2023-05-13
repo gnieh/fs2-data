@@ -19,15 +19,14 @@ package data
 package mft
 package query
 
-import esp.{Conversion, Tag}
-import pattern.{ConstructorTree, Evaluator}
-
 import cats.Eq
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
 import weaver._
 
+import esp.{Conversion, Tag}
+import pattern.{ConstructorTree, Evaluator}
 import pfsa.{Candidate, Pred, Regular}
 
 object QuerySpec extends SimpleIOSuite {
@@ -112,7 +111,6 @@ object QuerySpec extends SimpleIOSuite {
   }
 
   test("child path") {
-    ignore("debugging")
     MiniXQueryCompiler
       .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(Some("a"))))))
       .esp[IO]
@@ -639,26 +637,29 @@ object QuerySpec extends SimpleIOSuite {
   }
 
   test("more nested") {
-    MiniXQueryCompiler
-      .compile(
-        Query.ForClause(
-          "v1",
-          MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))),
+    val mft =
+      MiniXQueryCompiler
+        .compile(
           Query.ForClause(
-            "v2",
-            MiniXPath(NonEmptyList.one(Step.Descendant(Some("b")))),
-            Query.LetClause(
-              "v3",
-              Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("c"))))),
+            "v1",
+            MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))),
+            Query.ForClause(
+              "v2",
+              MiniXPath(NonEmptyList.one(Step.Descendant(Some("b")))),
               Query.LetClause(
-                "v4",
-                Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("d"))))),
-                Query.Sequence(NonEmptyList
-                  .of(Query.Variable("v1"), Query.Variable("v2"), Query.Variable("v3"), Query.Variable("v4")))
+                "v3",
+                Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("c"))))),
+                Query.LetClause(
+                  "v4",
+                  Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("d"))))),
+                  Query.Sequence(NonEmptyList
+                    .of(Query.Variable("v1"), Query.Variable("v2"), Query.Variable("v3"), Query.Variable("v4")))
+                )
               )
             )
-          )
-        ))
+          ))
+
+    mft
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -751,6 +752,71 @@ object QuerySpec extends SimpleIOSuite {
                 MiniXML.Close("b"),
                 MiniXML.Open("d"),
                 MiniXML.Close("d"),
+                // format: on
+              ),
+              events
+            ))
+      }
+  }
+
+  test("let-for") {
+    val mft =
+      MiniXQueryCompiler
+        .compile(
+          Query.LetClause(
+            "a",
+            Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))),
+            Query.ForClause(
+              "b",
+              MiniXPath(NonEmptyList.one(Step.Descendant(Some("b")))),
+              Query.Node("res", Query.Sequence(NonEmptyList.of(Query.Variable("a"), Query.Variable("b"))))
+            )
+          ))
+
+    mft
+      .esp[IO]
+      .flatMap { esp =>
+        Stream
+          .emits(
+            List[MiniXML](
+              // format: off
+              MiniXML.Open("doc"),
+                MiniXML.Open("b"),
+                  MiniXML.Text("some b"),
+                MiniXML.Close("b"),
+                MiniXML.Open("b"),
+                  MiniXML.Text("another b"),
+                MiniXML.Close("b"),
+              MiniXML.Close("doc"),
+                MiniXML.Open("a"),
+                  MiniXML.Text("some a"),
+                MiniXML.Close("a"),
+              // format: on
+            )
+          )
+          .through(esp.pipe)
+          .compile
+          .toList
+          .map(events =>
+            expect.same(
+              List[MiniXML](
+                // format: off
+                MiniXML.Open("res"),
+                  MiniXML.Open("a"),
+                    MiniXML.Text("some a"),
+                  MiniXML.Close("a"),
+                  MiniXML.Open("b"),
+                    MiniXML.Text("some b"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("res"),
+                MiniXML.Open("res"),
+                  MiniXML.Open("a"),
+                    MiniXML.Text("some a"),
+                  MiniXML.Close("a"),
+                  MiniXML.Open("b"),
+                    MiniXML.Text("another b"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("res"),
                 // format: on
               ),
               events
