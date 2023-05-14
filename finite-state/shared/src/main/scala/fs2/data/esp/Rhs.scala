@@ -72,7 +72,7 @@ object Rhs {
     case CapturedLeaf        => "%"
     case ApplyToLeaf(_)      => "$f(%)"
     case Concat(fst, snd)    => show"$fst $snd"
-    case Epsilon             => ""
+    case Epsilon             => "ε"
   }
 
 }
