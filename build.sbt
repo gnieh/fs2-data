@@ -537,7 +537,7 @@ lazy val benchmarks = crossProject(JVMPlatform)
       "co.fs2" %%% "fs2-io" % fs2Version
     )
   )
-  .dependsOn(csv, scalaXml)
+  .dependsOn(csv, scalaXml, finiteState)
 
 // Utils
 
