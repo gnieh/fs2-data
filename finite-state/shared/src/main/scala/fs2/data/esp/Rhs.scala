@@ -31,9 +31,6 @@ object Rhs {
   /** Calls a new rule at a given depth with the given parameters. */
   case class Call[Tag](q: Int, depth: Depth, params: List[Rhs[Tag]]) extends Rhs[Tag]
 
-  /** Calls a new rule at a given depth with the given parameters on the current input. */
-  case class SelfCall[Tag](q: Int, params: List[Rhs[Tag]]) extends Rhs[Tag]
-
   /** Reads the rule parameter. */
   case class Param(n: Int) extends Rhs[Nothing]
 
@@ -63,8 +60,6 @@ object Rhs {
   implicit def show[O: Show]: Show[Rhs[O]] = _ match {
     case Call(q, d, Nil)     => show"q$q[$d]()"
     case Call(q, d, params)  => show"q$q[$d](${params.mkString_(", ")})"
-    case SelfCall(q, Nil)    => show"q$q[0](x0)"
-    case SelfCall(q, params) => show"q$q[0](x0, ${params.mkString_(", ")})"
     case Param(n)            => show"y$n"
     case Tree(tag, inner)    => show"<$tag> { $inner }"
     case CapturedTree(inner) => show"<%> { $inner }"

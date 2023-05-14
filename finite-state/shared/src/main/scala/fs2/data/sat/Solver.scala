@@ -87,7 +87,7 @@ class Solver[Formula, Literal](implicit cnf: CNF[Formula, Literal]) {
     }).recover { case Res.Unsat(deps) => (deps, Set.empty) }
 
   def isSatisfiable(f: Formula): Boolean =
-    bcp(emptyEnv, cnf.make(f).map(_ -> Set.empty))
+    bcp(emptyEnv, cnf.make(f).map((_, Set.empty)))
       .flatMap(unsat(_)) match {
       case Right(_)           => false
       case Left(Res.Sat)      => true

@@ -17,24 +17,73 @@
 package fs2.data
 package esp
 
-import pattern._
-
 import cats.data.NonEmptyChain
 import cats.syntax.all._
+import cats.{Eq, Monoid}
+
+import pattern._
 
 /** A pattern to be matched.
-  * A pattern can capture a submatch, that is then usable in the RHS.
   */
 sealed trait Pattern[Guard, Tag] {
+  import Pattern._
+
   def |(that: Pattern[Guard, Tag]): Pattern[Guard, Tag] =
     (this, that) match {
-      case (Pattern.Wildcard(), _) | (_, Pattern.Wildcard()) => Pattern.Wildcard()
-      case (Pattern.Or(alts1), Pattern.Or(alts2))            => Pattern.Or(alts1 ++ alts2)
-      case (_, _)                                            => Pattern.Or(NonEmptyChain(this, that))
+      case (Wildcard(), _) | (_, Wildcard()) => Wildcard()
+      case (Or(alts1), Or(alts2))            => Or(alts1 ++ alts2)
+      case (_, _)                            => Or(NonEmptyChain(this, that))
     }
 
   def when(guard: Guard): Pattern[Guard, Tag] =
-    Pattern.Guarded(this, guard)
+    Guarded(this, guard)
+
+  private def compatible[T: Eq](o1: Option[T], o2: Option[T]): Boolean =
+    (o1, o2).mapN(_ === _).getOrElse(true)
+
+  def and(
+      that: Pattern[Guard, Tag])(implicit eqTag: Eq[Tag], combineGuard: Monoid[Guard]): Option[Pattern[Guard, Tag]] =
+    (this, that) match {
+      case (Input(q1, d1, inner1), Input(q2, d2, inner2)) if compatible(q1, q2) && compatible(d1, d2) =>
+        inner1.and(inner2).map(Input(q1.orElse(q2), d1.orElse(d2), _))
+      case (Open(t1), Open(t2)) if compatible(t1, t2) =>
+        Open(t1.orElse(t2)).some
+      case (Close(t1), Close(t2)) if compatible(t1, t2) =>
+        Close(t1.orElse(t2)).some
+      case (Leaf(t1), Leaf(t2)) if compatible(t1, t2) =>
+        Leaf(t1.orElse(t2)).some
+      case (Or(alts1), Or(alts2)) =>
+        NonEmptyChain
+          .fromSeq(alts1.toList.flatMap { p1 =>
+            alts2.toList.flatMap { p2 =>
+              p1.and(p2)
+            }
+          })
+          .map(alts => if (alts.size === 1) alts.head else Or(alts))
+      case (Or(alts), _) =>
+        NonEmptyChain
+          .fromSeq(alts.toList.flatMap(p => p.and(that)))
+          .map(alts => if (alts.size === 1) alts.head else Or(alts))
+      case (_, Or(alts)) =>
+        NonEmptyChain
+          .fromSeq(alts.toList.flatMap(p => p.and(this)))
+          .map(alts => if (alts.size === 1) alts.head else Or(alts))
+      case (Guarded(inner1, g1), Guarded(inner2, g2)) =>
+        inner1.and(inner2).map(Guarded(_, g1.combine(g2)))
+      case (Guarded(inner, g), _) =>
+        inner.and(that).map(Guarded(_, g))
+      case (_, Guarded(inner, g)) =>
+        inner.and(this).map(Guarded(_, g))
+      case (Wildcard(), _) =>
+        that.some
+      case (_, Wildcard()) =>
+        this.some
+      case (EOS(), EOS()) =>
+        this.some
+      case (_, _) =>
+        none
+    }
+
 }
 
 object Pattern {

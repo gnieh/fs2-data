@@ -257,7 +257,7 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
 
     def translateRhs(rhs: Rhs[OutTag]): ERhs[OutTag] =
       rhs match {
-        case Rhs.Call(q, Forest.Self, params)   => ERhs.SelfCall(q, params.map(translateRhs(_)))
+        case Rhs.Call(q, Forest.Self, params)   => ??? // TODO inline
         case Rhs.Call(q, Forest.First, params)  => ERhs.Call(q, Depth.Value(0), params.map(translateRhs(_)))
         case Rhs.Call(q, Forest.Second, params) => ERhs.Call(q, Depth.Value(1), params.map(translateRhs(_)))
         case Rhs.Param(i)                       => ERhs.Param(i)
@@ -270,10 +270,35 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
         case Rhs.Concat(rhs1, rhs2)             => ERhs.Concat(translateRhs(rhs1), translateRhs(rhs2))
       }
 
+    // precompute the patterns for each state in the MFT
+    val patterns = rules.map { case (q, Rules(_, tree)) =>
+      tree.flatMap {
+        case (EventSelector.Node(tag, None), _) =>
+          List(state(q, 0)(open(tag)))
+        case (EventSelector.AnyNode(None), _) =>
+          List(state(q, 0)(open))
+        case (EventSelector.Node(tag, Some(guard)), _) =>
+          List(state(q, 0)(open(tag).when(guard)))
+        case (EventSelector.AnyNode(Some(guard)), _) =>
+          List(state(q, 0)(open.when(guard)))
+        case (EventSelector.Leaf(in, None), _) =>
+          List(state(q, 0)(value(in)))
+        case (EventSelector.AnyLeaf(None), _) =>
+          List(state(q, 0)(value))
+        case (EventSelector.Leaf(in, Some(guard)), _) =>
+          List(state(q, 0)(value(in).when(guard)))
+        case (EventSelector.AnyLeaf(Some(guard)), _) =>
+          List(state(q, 0)(value.when(guard)))
+        case (EventSelector.Epsilon(), _) =>
+          List(state(q, 0)(close), state(q)(eos))
+      }
+    }
+
     val cases = rules.toList.flatMap { case (q, Rules(params, tree)) =>
       tree.flatMap {
         case (EventSelector.Node(tag, None), rhs) =>
-          List(state(q, 0)(open(tag)) -> translateRhs(rhs))
+          val pat = state(q, 0)(open(tag))
+          List(pat -> translateRhs(rhs))
         case (EventSelector.AnyNode(None), rhs) =>
           List(state(q, 0)(open) -> translateRhs(rhs))
         case (EventSelector.Node(tag, Some(guard)), rhs) =>
