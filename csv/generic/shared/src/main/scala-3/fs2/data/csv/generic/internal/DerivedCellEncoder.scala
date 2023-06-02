@@ -33,8 +33,13 @@ object DerivedCellEncoder {
   }
 
   inline given deriveCoproduct[T](using g: K0.CoproductInstances[DerivedCellEncoder, T]): DerivedCellEncoder[T] =
-    (elem: T) => g.fold(elem)([t <: T] => (dce: DerivedCellEncoder[t], te: t) => dce(te))
+    new DerivedCellEncoder[T] {
+      def apply(elem: T) = g.fold(elem)([t <: T] => (dce: DerivedCellEncoder[t], te: t) => dce(te))
+    }
 
-  inline given deriveSingleton[T](using cv: CellValue[T]): DerivedCellEncoder[T] = (t: T) => cv.value
+  inline given deriveSingleton[T](using cv: CellValue[T]): DerivedCellEncoder[T] =
+    new DerivedCellEncoder[T] {
+      def apply(t: T) = cv.value
+    }
 
 }

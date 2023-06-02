@@ -39,7 +39,9 @@ object DerivedCellDecoder {
   inline given deriveCoproduct[T](using m: Mirror.SumOf[T]): DerivedCellDecoder[T] = {
     val decoders: List[DerivedCellDecoder[T]] =
       summonAsArray[K0.LiftP[DerivedCellDecoder, m.MirroredElemTypes]].toList.asInstanceOf
-    (in: String) => decoders.foldRight(new DecoderError("Didn't match any value").asLeft)(_.apply(in).orElse(_))
+    new DerivedCellDecoder[T] {
+     def apply(in: String) = decoders.foldRight(new DecoderError("Didn't match any value").asLeft)(_.apply(in).orElse(_))
+    }
   }
 
   inline given deriveSingleton[T](using cv: CellValue[T], m: Mirror.ProductOf[T]): DerivedCellDecoder[T] =
