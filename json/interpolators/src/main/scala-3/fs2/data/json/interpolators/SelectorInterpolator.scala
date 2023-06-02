@@ -19,8 +19,6 @@ package data
 package json
 package interpolators
 
-import cats.syntax.all._
-
 import org.typelevel.literally.Literally
 
 object SelectorInterpolator extends Literally[Selector] {

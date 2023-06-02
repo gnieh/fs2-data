@@ -20,7 +20,6 @@ package internal
 
 import shapeless3.deriving._
 
-import scala.compiletime._
 import scala.deriving.Mirror
 
 trait DerivedCellEncoder[T] extends CellEncoder[T]

@@ -21,7 +21,6 @@ package internal
 import cats.syntax.all._
 import shapeless3.deriving._
 
-import scala.compiletime._
 import scala.deriving.Mirror
 
 trait DerivedCellDecoder[T] extends CellDecoder[T]
