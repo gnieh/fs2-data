@@ -39,7 +39,8 @@ object DerivedCellDecoder {
     val decoders: List[DerivedCellDecoder[T]] =
       summonAsArray[K0.LiftP[DerivedCellDecoder, m.MirroredElemTypes]].toList.asInstanceOf
     new DerivedCellDecoder[T] {
-     def apply(in: String) = decoders.foldRight(new DecoderError("Didn't match any value").asLeft)(_.apply(in).orElse(_))
+      def apply(in: String) =
+        decoders.foldRight(new DecoderError("Didn't match any value").asLeft)(_.apply(in).orElse(_))
     }
   }
 
