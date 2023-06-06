@@ -32,10 +32,11 @@ private class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrow
           Pull.pure((T.advance(context), chunkAcc += token))
         case '\\' =>
           slowString_(T.advance(context), key, StringState.SeenBackslash, 0, acc, chunkAcc)
-        case c if c >= 0x20 && c <= 0x10ffff =>
-          string_(T.advance(context), key, acc.append(c), chunkAcc)
         case c =>
-          emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
+          if (c >= 0x20 && c <= 0x10ffff)
+            string_(T.advance(context), key, acc.append(c), chunkAcc)
+          else
+            emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
       }
     }
 

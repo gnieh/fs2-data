@@ -38,11 +38,13 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
           T.appendMarked(context, acc)
           T.advance(context)
           slowString_(key, StringState.SeenBackslash, 0, acc)
-        case c if c >= 0x20 && c <= 0x10ffff =>
-          T.advance(context)
-          string_(key, acc)
         case c =>
-          emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
+          if (c >= 0x20 && c <= 0x10ffff) {
+            T.advance(context)
+            string_(key, acc)
+          } else {
+            emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
+          }
       }
     }
 
