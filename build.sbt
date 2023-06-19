@@ -45,7 +45,7 @@ val commonSettings = List(
   versionScheme := Some("early-semver"),
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
-    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.10.0",
+    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.11.0",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "io.circe" %%% "circe-jawn" % circeVersion % "test",
     "io.circe" %%% "circe-generic" % circeVersion % "test",
