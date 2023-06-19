@@ -96,7 +96,7 @@ abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends Sim
             .through(fs2.text.utf8.decode)
 
         contentStream
-          .through(tokens(implicitly[RaiseThrowable[IO]], new LegacyStringCharLikeChunk[IO]))
+          .through(new json.internals.LegacyTokenParser(_).parse.stream)
           .through(ast.values)
           .compile
           .toList

@@ -23,7 +23,9 @@ import fs2.data.text.CharLikeChunks
 import scala.collection.immutable.VectorBuilder
 import scala.annotation.switch
 
-private class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowable[F], val T: CharLikeChunks[F, T]) {
+private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
+    F: RaiseThrowable[F],
+    val T: CharLikeChunks[F, T]) {
   private[this] final def empty = (T.create(Stream.empty), new VectorBuilder[Token])
   private[this] final val keyAcc = new StringBuilder(TokenParser.keyBufferCapacity)
 
