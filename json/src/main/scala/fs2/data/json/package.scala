@@ -51,7 +51,7 @@ package object json {
     * This operator locally creates Json AST values using the [[fs2.data.json.ast.Builder]], and
     * returns tokens as emitted by the [[fs2.data.json.ast.Tokenizer]] on the resulting value.
     */
-  @deprecated(message = "Use `fs2.data.json.ast.transform` instead", since = "1.3.0")
+  @deprecated(message = "Use `fs2.data.json.ast.transform` instead", since = "fs2-data 1.3.0")
   def transform[F[_], Json](selector: Selector, f: Json => Json)(implicit
       F: RaiseThrowable[F],
       builder: Builder[Json],
@@ -67,7 +67,7 @@ package object json {
     * This operator locally creates Json AST values using the [[fs2.data.json.ast.Builder]], and
     * returns tokens as emitted by the [[fs2.data.json.ast.Tokenizer]] on the resulting value.
     */
-  @deprecated(message = "Use `fs2.data.json.ast.transformOpt` instead", since = "1.3.0")
+  @deprecated(message = "Use `fs2.data.json.ast.transformOpt` instead", since = "fs2-data 1.3.0")
   def transformOpt[F[_], Json](selector: Selector, f: Json => Option[Json])(implicit
       F: RaiseThrowable[F],
       builder: Builder[Json],
@@ -82,7 +82,7 @@ package object json {
     * This operator locally creates Json AST values using the [[fs2.data.json.ast.Builder]], and
     * returns tokens as emitted by the [[fs2.data.json.ast.Tokenizer]] on the resulting value.
     */
-  @deprecated(message = "Use `fs2.data.json.ast.transformF` instead", since = "1.3.0")
+  @deprecated(message = "Use `fs2.data.json.ast.transformF` instead", since = "fs2-data 1.3.0")
   def transformF[F[_], Json](selector: Selector, f: Json => F[Json])(implicit
       F: RaiseThrowable[F],
       builder: Builder[Json],
@@ -91,7 +91,7 @@ package object json {
 
   /** Transforms a stream of Json tokens into a stream of json values.
     */
-  @deprecated(message = "Use `fs2.data.json.ast.values` instead", since = "1.3.0")
+  @deprecated(message = "Use `fs2.data.json.ast.values` instead", since = "fs2-data 1.3.0")
   def values[F[_], Json](implicit F: RaiseThrowable[F], builder: Builder[Json]): Pipe[F, Token, Json] =
     ast.values[F, Json]
 
@@ -99,7 +99,7 @@ package object json {
     *
     * This operation is the opposite of `values`.
     */
-  @deprecated(message = "Use `fs2.data.json.ast.tokenize` instead", since = "1.3.0")
+  @deprecated(message = "Use `fs2.data.json.ast.tokenize` instead", since = "fs2-data 1.3.0")
   def tokenize[F[_], Json](implicit tokenizer: Tokenizer[Json]): Pipe[F, Json, Token] =
     ast.tokenize[F, Json]
 

@@ -224,7 +224,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
   // instance is provided, meaning that the `Option` is `Some`
   // of course using a lazy val prevents us to make this constraint statistically checked, but
   // the gain is significant enough to allow for this local unsafety
-  @deprecated("Have you checked that you have a `HasHeaders` instance in scope?", "1.5.0")
+  @deprecated("Have you checked that you have a `HasHeaders` instance in scope?", "fs2-data 1.5.0")
   private lazy val byHeader: Map[Header, String] =
     headers.get.toList.zip(values.toList).toMap
 
