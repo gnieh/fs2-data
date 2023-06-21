@@ -2,8 +2,7 @@ package fs2
 package data
 package json
 
-import cats.effect.unsafe.implicits._
-import cats.effect.{IO, SyncIO}
+import cats.effect.SyncIO
 import org.openjdk.jmh.annotations._
 
 import java.util.concurrent.TimeUnit
@@ -20,16 +19,15 @@ import circe._
 class JsonParserBenchmarks {
 
   // make sure I/Os are not accounted for in the benchmark
-  val jsonStream: Stream[SyncIO, String] =
+  val jsonString: String =
     fs2.io
-      .readClassLoaderResource[IO]("twitter.json", 4096)
+      .readClassLoaderResource[SyncIO]("twitter.json", 4096)
       .through(fs2.text.utf8.decode)
       .compile
-      .toList
-      .map(Stream.emits(_))
+      .string
       .unsafeRunSync()
 
-  val jsonString = jsonStream.compile.string.unsafeRunSync()
+  val jsonStream = Stream.emit[SyncIO, String](jsonString)
 
   @Benchmark
   def parseJsonFs2DataTokens() =
