@@ -20,24 +20,27 @@ package json
 package internals
 
 import fs2.data.text.CharLikeChunks
-import scala.collection.immutable.VectorBuilder
+
 import scala.annotation.switch
 
-private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
+private[json] class LegacyTokenParser[F[_], T, Res](s: Stream[F, T])(implicit
     F: RaiseThrowable[F],
     val T: CharLikeChunks[F, T]) {
-  private[this] final def empty = (T.create(Stream.empty), new VectorBuilder[Token])
+  private[this] final def empty = (T.create(Stream.empty), ChunkAccumulator.empty[Res])
   private[this] final val keyAcc = new StringBuilder(TokenParser.keyBufferCapacity)
+
+  private[this] def emitChunk(chunkAcc: ChunkAccumulator[Res]) =
+    Pull.output(chunkAcc.chunk())
 
   // the opening quote has already been read
   private final def string_(context: T.Context,
                             key: Boolean,
                             acc: StringBuilder,
-                            chunkAcc: VectorBuilder[Token]): Pull[F, Token, (T.Context, VectorBuilder[Token])] =
+                            chunkAcc: ChunkAccumulator[Res]): Pull[F, Res, (T.Context, ChunkAccumulator[Res])] =
     if (T.needsPull(context)) {
       emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
         case Some(context) =>
-          chunkAcc.clear()
+          chunkAcc.flush()
           string_(context, key, acc, chunkAcc)
         case None => Pull.raiseError[F](new JsonException("unexpected end of input"))
       }
@@ -46,8 +49,8 @@ private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
         case '"' =>
           val res = acc.result()
           acc.clear()
-          val token = if (key) Token.Key(res) else Token.StringValue(res)
-          Pull.pure((T.advance(context), chunkAcc += token))
+          if (key) chunkAcc.key(res) else chunkAcc.stringValue(res)
+          Pull.pure((T.advance(context), chunkAcc))
         case '\\' =>
           slowString_(T.advance(context), key, StringState.SeenBackslash, 0, acc, chunkAcc)
         case c =>
@@ -63,11 +66,11 @@ private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
                                 state: Int,
                                 unicode: Int,
                                 acc: StringBuilder,
-                                chunkAcc: VectorBuilder[Token]): Pull[F, Token, (T.Context, VectorBuilder[Token])] = {
+                                chunkAcc: ChunkAccumulator[Res]): Pull[F, Res, (T.Context, ChunkAccumulator[Res])] = {
     if (T.needsPull(context)) {
       emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
         case Some(context) =>
-          chunkAcc.clear()
+          chunkAcc.flush()
           slowString_(context, key, state, unicode, acc, chunkAcc)
         case None => Pull.raiseError[F](new JsonException("unexpected end of input"))
       }
@@ -92,8 +95,8 @@ private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
           if (c == '"') {
             val res = acc.result()
             acc.clear()
-            val token = if (key) Token.Key(res) else Token.StringValue(res)
-            Pull.pure((T.advance(context), chunkAcc += token))
+            if (key) chunkAcc.key(res) else chunkAcc.stringValue(res)
+            Pull.pure((T.advance(context), chunkAcc))
           } else if (c == '\\')
             slowString_(T.advance(context), key, StringState.SeenBackslash, 0, acc, chunkAcc)
           else if (c >= 0x20 && c <= 0x10ffff)
@@ -124,7 +127,7 @@ private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
   private final def number_(context: T.Context,
                             state: Int,
                             acc: StringBuilder,
-                            chunkAcc: VectorBuilder[Token]): Pull[F, Token, (T.Context, VectorBuilder[Token])] = {
+                            chunkAcc: ChunkAccumulator[Res]): Pull[F, Res, (T.Context, ChunkAccumulator[Res])] = {
     def step(c: Char, state: Int): Int =
       (c: @switch) match {
         case '-' =>
@@ -187,11 +190,11 @@ private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
     if (T.needsPull(context)) {
       emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
         case Some(context) =>
-          chunkAcc.clear()
+          chunkAcc.flush()
           number_(context, state, acc, chunkAcc)
         case None =>
           if (NumberState.isFinal(state))
-            Pull.output1(Token.NumberValue(acc.result())).as(empty)
+            Pull.pure(T.create(Stream.empty), chunkAcc.numberValue(acc.result()))
           else
             Pull.raiseError[F](new JsonException("unexpected end of input"))
       }
@@ -200,7 +203,7 @@ private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
       (step(c, state): @switch) match {
         case NumberState.Invalid =>
           if (NumberState.isFinal(state))
-            Pull.pure((context, chunkAcc += Token.NumberValue(acc.result())))
+            Pull.pure((context, chunkAcc.numberValue(acc.result())))
           else
             emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid number character '$c'"))
         case state =>
@@ -213,34 +216,34 @@ private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
                              expected: String,
                              eidx: Int,
                              elen: Int,
-                             token: Token,
-                             chunkAcc: VectorBuilder[Token]): Pull[F, Token, (T.Context, VectorBuilder[Token])] = {
+                             accumulate: ChunkAccumulator[Res] => ChunkAccumulator[Res],
+                             chunkAcc: ChunkAccumulator[Res]): Pull[F, Res, (T.Context, ChunkAccumulator[Res])] = {
     if (T.needsPull(context)) {
       emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
         case Some(context) =>
-          chunkAcc.clear()
-          keyword_(context, expected, eidx, elen, token, chunkAcc)
+          chunkAcc.flush()
+          keyword_(context, expected, eidx, elen, accumulate, chunkAcc)
         case None => Pull.raiseError[F](new JsonException("unexpected end of input"))
       }
     } else {
       val c = T.current(context)
       if (c == expected.charAt(eidx)) {
         if (eidx == elen - 1)
-          Pull.pure((T.advance(context), chunkAcc += token))
+          Pull.pure((T.advance(context), accumulate(chunkAcc)))
         else
-          keyword_(T.advance(context), expected, eidx + 1, elen, token, chunkAcc)
+          keyword_(T.advance(context), expected, eidx + 1, elen, accumulate, chunkAcc)
       } else {
         emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected character '$c' (expected $expected)"))
       }
     }
   }
 
-  private final def value_(context: T.Context, state: Int, chunkAcc: VectorBuilder[Token])(implicit
-      F: RaiseThrowable[F]): Pull[F, Token, (T.Context, VectorBuilder[Token])] =
+  private final def value_(context: T.Context, state: Int, chunkAcc: ChunkAccumulator[Res])(implicit
+      F: RaiseThrowable[F]): Pull[F, Res, (T.Context, ChunkAccumulator[Res])] =
     if (T.needsPull(context)) {
       emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
         case Some(context) =>
-          chunkAcc.clear()
+          chunkAcc.flush()
           value_(context, state, chunkAcc)
         case None => Pull.raiseError[F](new JsonException("unexpected end of input"))
       }
@@ -248,12 +251,12 @@ private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
       val c = T.current(context)
       (c: @switch) match {
         case '{' =>
-          Pull.suspend(go_(T.advance(context), State.BeforeObjectKey, chunkAcc += Token.StartObject))
+          Pull.suspend(go_(T.advance(context), State.BeforeObjectKey, chunkAcc.startObject()))
         case '[' =>
-          Pull.suspend(go_(T.advance(context), State.BeforeArrayValue, chunkAcc += Token.StartArray))
-        case 't' => keyword_(context, "true", 0, 4, Token.TrueValue, chunkAcc)
-        case 'f' => keyword_(context, "false", 0, 5, Token.FalseValue, chunkAcc)
-        case 'n' => keyword_(context, "null", 0, 4, Token.NullValue, chunkAcc)
+          Pull.suspend(go_(T.advance(context), State.BeforeArrayValue, chunkAcc.startArray()))
+        case 't' => keyword_(context, "true", 0, 4, _.trueValue(), chunkAcc)
+        case 'f' => keyword_(context, "false", 0, 5, _.falseValue(), chunkAcc)
+        case 'n' => keyword_(context, "null", 0, 4, _.nullValue(), chunkAcc)
         case '"' => string_(T.advance(context), false, new StringBuilder(TokenParser.stringBufferCapacity), chunkAcc)
         case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
           number_(context, NumberState.NumberStart, new StringBuilder(TokenParser.numberBufferCapacity), chunkAcc)
@@ -263,11 +266,11 @@ private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
 
   private final def go_(context: T.Context,
                         state: Int,
-                        chunkAcc: VectorBuilder[Token]): Pull[F, Token, (T.Context, VectorBuilder[Token])] = {
+                        chunkAcc: ChunkAccumulator[Res]): Pull[F, Res, (T.Context, ChunkAccumulator[Res])] = {
     if (T.needsPull(context)) {
       emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
         case Some(context) =>
-          chunkAcc.clear()
+          chunkAcc.flush()
           go_(context, state, chunkAcc)
         case None =>
           Pull.pure(empty)
@@ -288,7 +291,7 @@ private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
                   string_(T.advance(context), true, keyAcc, chunkAcc)
                     .flatMap { case (context, chunkAcc) => go_(context, State.AfterObjectKey, chunkAcc) }
                 case '}' =>
-                  Pull.pure((T.advance(context), chunkAcc += Token.EndObject))
+                  Pull.pure((T.advance(context), chunkAcc.endObject()))
                 case _ =>
                   emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
               }
@@ -314,7 +317,7 @@ private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
                 case ',' =>
                   go_(T.advance(context), State.ExpectObjectKey, chunkAcc)
                 case '}' =>
-                  Pull.pure((T.advance(context), chunkAcc += Token.EndObject))
+                  Pull.pure((T.advance(context), chunkAcc.endObject()))
                 case c =>
                   emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object value"))
               }
@@ -324,7 +327,7 @@ private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
             case State.BeforeArrayValue =>
               (c: @switch) match {
                 case ']' =>
-                  Pull.pure((T.advance(context), chunkAcc += Token.EndArray))
+                  Pull.pure((T.advance(context), chunkAcc.endArray()))
                 case _ =>
                   value_(context, State.AfterArrayValue, chunkAcc)
                     .flatMap { case (context, chunkAcc) => go_(context, State.AfterArrayValue, chunkAcc) }
@@ -332,7 +335,7 @@ private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
             case State.AfterArrayValue =>
               (c: @switch) match {
                 case ']' =>
-                  Pull.pure((T.advance(context), chunkAcc += Token.EndArray))
+                  Pull.pure((T.advance(context), chunkAcc.endArray()))
                 case ',' =>
                   go_(T.advance(context), State.ExpectArrayValue, chunkAcc)
                 case c =>
@@ -343,7 +346,7 @@ private[json] class LegacyTokenParser[F[_], T](s: Stream[F, T])(implicit
     }
   }
 
-  def parse: Pull[F, Token, Unit] =
-    go_(T.create(s), State.BeforeValue, new VectorBuilder).void
+  def parse(chunkAcc: ChunkAccumulator[Res]): Pull[F, Res, Unit] =
+    go_(T.create(s), State.BeforeValue, chunkAcc).void
 
 }

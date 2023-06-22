@@ -22,22 +22,26 @@ package internals
 import fs2.data.text.AsCharBuffer
 
 import scala.annotation.switch
-import scala.collection.immutable.VectorBuilder
 
 import TokenParser._
 
-private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowable[F], T: AsCharBuffer[F, T]) {
+private class JsonTokenParser[F[_], T, Res](s: Stream[F, T], private[this] final val chunkAcc: ChunkAccumulator[Res])(
+    implicit
+    F: RaiseThrowable[F],
+    T: AsCharBuffer[F, T]) {
   private[this] var context = T.create(s)
-  private[this] final val chunkAcc = new VectorBuilder[Token]
+
+  private[this] def emitChunk[T]() =
+    Pull.output(chunkAcc.chunk())
 
   // the opening quote has already been read
-  private final def string_(key: Boolean, acc: StringBuilder): Pull[F, Token, Unit] =
+  private final def string_(key: Boolean, acc: StringBuilder): Pull[F, Res, Unit] =
     if (T.needsPull(context)) {
       T.appendMarked(context, acc)
-      emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
+      emitChunk() >> T.pullNext(context).flatMap {
         case Some(context) =>
           this.context = context
-          chunkAcc.clear()
+          chunkAcc.flush()
           string_(key, acc)
         case None => Pull.raiseError[F](new JsonException("unexpected end of input"))
       }
@@ -46,9 +50,8 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
         case '"' =>
           T.appendMarked(context, acc)
           val res = acc.result()
-          val token = if (key) Token.Key(res) else Token.StringValue(res)
+          if (key) chunkAcc.key(res) else chunkAcc.stringValue(res)
           T.advance(context)
-          chunkAcc += token
           Pull.done
         case '\\' =>
           T.appendMarked(context, acc)
@@ -59,18 +62,18 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
             T.advance(context)
             string_(key, acc)
           } else {
-            emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
+            emitChunk() >> Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
           }
       }
     }
 
-  private final def slowString_(key: Boolean, state: Int, unicode: Int, acc: StringBuilder): Pull[F, Token, Unit] = {
+  private final def slowString_(key: Boolean, state: Int, unicode: Int, acc: StringBuilder): Pull[F, Res, Unit] = {
     if (T.needsPull(context)) {
       T.appendMarked(context, acc)
-      emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
+      emitChunk() >> T.pullNext(context).flatMap {
         case Some(context) =>
           this.context = context
-          chunkAcc.clear()
+          chunkAcc.flush()
           slowString_(key, state, unicode, acc)
         case None => Pull.raiseError[F](new JsonException("unexpected end of input"))
       }
@@ -91,15 +94,14 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
             case 't'  => slowString_(key, StringState.Normal, 0, acc.append('\t'))
             case 'u'  => slowString_(key, StringState.Expect4Unicode, 0, acc)
             case _ =>
-              emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unknown escaped character '$c'"))
+              emitChunk() >> Pull.raiseError[F](new JsonException(s"unknown escaped character '$c'"))
           }
         case StringState.Normal =>
           if (c == '"') {
             T.appendMarked(context, acc)
             val res = acc.result()
-            val token = if (key) Token.Key(res) else Token.StringValue(res)
+            if (key) chunkAcc.key(res) else chunkAcc.stringValue(res)
             T.advance(context)
-            chunkAcc += token
             Pull.done
           } else if (c == '\\') {
             T.appendMarked(context, acc)
@@ -109,7 +111,7 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
             T.advance(context)
             slowString_(key, StringState.Normal, 0, acc)
           } else
-            emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
+            emitChunk() >> Pull.raiseError[F](new JsonException(s"invalid string character '$c'"))
         case n /* StringState.ExpectNUnicode */ =>
           val cidx = hexa.indexOf(c.toLower.toInt)
           if (cidx >= 0) {
@@ -123,13 +125,13 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
               slowString_(key, n - 1, unicode1, acc)
             }
           } else {
-            emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException("malformed escaped unicode sequence"))
+            emitChunk() >> Pull.raiseError[F](new JsonException("malformed escaped unicode sequence"))
           }
       }
     }
   }
 
-  private final def number_(state: Int, acc: StringBuilder): Pull[F, Token, Unit] = {
+  private final def number_(state: Int, acc: StringBuilder): Pull[F, Res, Unit] = {
     def step(c: Char, state: Int): Int =
       (c: @switch) match {
         case '-' =>
@@ -191,17 +193,18 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
 
     if (T.needsPull(context)) {
       T.appendMarked(context, acc)
-      emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
+      emitChunk() >> T.pullNext(context).flatMap {
         case Some(context) =>
           this.context = context
-          chunkAcc.clear()
+          chunkAcc.flush()
           number_(state, acc)
         case None =>
           this.context = T.create(Stream.empty)
-          chunkAcc.clear()
-          if (NumberState.isFinal(state))
-            Pull.output1(Token.NumberValue(acc.result()))
-          else
+          chunkAcc.flush()
+          if (NumberState.isFinal(state)) {
+            chunkAcc.numberValue(acc.result())
+            Pull.done
+          } else
             Pull.raiseError[F](new JsonException("unexpected end of input"))
       }
     } else {
@@ -210,10 +213,10 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
         case NumberState.Invalid =>
           if (NumberState.isFinal(state)) {
             T.appendMarked(context, acc)
-            chunkAcc += Token.NumberValue(acc.result())
+            chunkAcc.numberValue(acc.result())
             Pull.done
           } else
-            emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"invalid number character '$c'"))
+            emitChunk() >> Pull.raiseError[F](new JsonException(s"invalid number character '$c'"))
         case state =>
           T.advance(context)
           number_(state, acc)
@@ -221,13 +224,13 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
     }
   }
 
-  private final def keyword_(expected: String, eidx: Int, elen: Int, token: Token): Pull[F, Token, Unit] = {
+  private final def keyword_(expected: String, eidx: Int, elen: Int, accumulate: () => ChunkAccumulator[Res]): Pull[F, Res, Unit] = {
     if (T.needsPull(context)) {
-      emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
+      emitChunk() >> T.pullNext(context).flatMap {
         case Some(context) =>
           this.context = context
-          chunkAcc.clear()
-          keyword_(expected, eidx, elen, token)
+          chunkAcc.flush()
+          keyword_(expected, eidx, elen, accumulate)
         case None => Pull.raiseError[F](new JsonException("unexpected end of input"))
       }
     } else {
@@ -235,24 +238,24 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
       if (c == expected.charAt(eidx)) {
         if (eidx == elen - 1) {
           T.advance(context)
-          chunkAcc += token
+          accumulate()
           Pull.done
         } else {
           T.advance(context)
-          keyword_(expected, eidx + 1, elen, token)
+          keyword_(expected, eidx + 1, elen, accumulate)
         }
       } else {
-        emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected character '$c' (expected $expected)"))
+        emitChunk() >> Pull.raiseError[F](new JsonException(s"unexpected character '$c' (expected $expected)"))
       }
     }
   }
 
-  private final def value_(state: Int)(implicit F: RaiseThrowable[F]): Pull[F, Token, Unit] =
+  private final def value_(state: Int)(implicit F: RaiseThrowable[F]): Pull[F, Res, Unit] =
     if (T.needsPull(context)) {
-      emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
+      emitChunk() >> T.pullNext(context).flatMap {
         case Some(context) =>
           this.context = context
-          chunkAcc.clear()
+          chunkAcc.flush()
           value_(state)
         case None => Pull.raiseError[F](new JsonException("unexpected end of input"))
       }
@@ -261,15 +264,15 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
       (c: @switch) match {
         case '{' =>
           T.advance(context)
-          chunkAcc += Token.StartObject
+          chunkAcc.startObject()
           Pull.suspend(go_(State.BeforeObjectKey))
         case '[' =>
           T.advance(context)
-          chunkAcc += Token.StartArray
+          chunkAcc.startArray()
           Pull.suspend(go_(State.BeforeArrayValue))
-        case 't' => keyword_("true", 0, 4, Token.TrueValue)
-        case 'f' => keyword_("false", 0, 5, Token.FalseValue)
-        case 'n' => keyword_("null", 0, 4, Token.NullValue)
+        case 't' => keyword_("true", 0, 4, chunkAcc.trueValue)
+        case 'f' => keyword_("false", 0, 5, chunkAcc.falseValue)
+        case 'n' => keyword_("null", 0, 4, chunkAcc.nullValue)
         case '"' =>
           T.advance(context)
           T.mark(context)
@@ -277,20 +280,20 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
         case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
           T.mark(context)
           number_(NumberState.NumberStart, new StringBuilder(numberBufferCapacity))
-        case _ => emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c'"))
+        case _ => emitChunk() >> Pull.raiseError[F](new JsonException(s"unexpected '$c'"))
       }
     }
 
-  final def go_(state: Int): Pull[F, Token, Unit] = {
+  final def go_(state: Int): Pull[F, Res, Unit] = {
     if (T.needsPull(context)) {
-      emitChunk(chunkAcc) >> T.pullNext(context).flatMap {
+      emitChunk() >> T.pullNext(context).flatMap {
         case Some(context) =>
           this.context = context
-          chunkAcc.clear()
+          chunkAcc.flush()
           go_(state)
         case None =>
           this.context = T.create(Stream.empty)
-          chunkAcc.clear()
+          chunkAcc.flush()
           Pull.done
       }
     } else {
@@ -311,10 +314,10 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
                   string_(true, new StringBuilder(keyBufferCapacity)) >> go_(State.AfterObjectKey)
                 case '}' =>
                   T.advance(context)
-                  chunkAcc += Token.EndObject
+                  chunkAcc.endObject()
                   Pull.done
                 case _ =>
-                  emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
+                  emitChunk() >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
               }
             case State.ExpectObjectKey =>
               (c: @switch) match {
@@ -323,7 +326,7 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
                   T.mark(context)
                   string_(true, new StringBuilder(keyBufferCapacity)) >> go_(State.AfterObjectKey)
                 case _ =>
-                  emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
+                  emitChunk() >> Pull.raiseError[F](new JsonException(s"unexpected '$c' before object key"))
               }
             case State.AfterObjectKey =>
               (c: @switch) match {
@@ -331,7 +334,7 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
                   T.advance(context)
                   go_(State.BeforeObjectValue)
                 case c =>
-                  emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object key"))
+                  emitChunk() >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object key"))
               }
             case State.BeforeObjectValue =>
               value_(State.AfterObjectValue) >> go_(State.AfterObjectValue)
@@ -342,10 +345,10 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
                   go_(State.ExpectObjectKey)
                 case '}' =>
                   T.advance(context)
-                  chunkAcc += Token.EndObject
+                  chunkAcc.endObject()
                   Pull.done
                 case c =>
-                  emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object value"))
+                  emitChunk() >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object value"))
               }
             case State.ExpectArrayValue =>
               value_(State.AfterArrayValue) >> go_(State.AfterArrayValue)
@@ -353,7 +356,7 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
               (c: @switch) match {
                 case ']' =>
                   T.advance(context)
-                  chunkAcc += Token.EndArray
+                  chunkAcc.endArray()
                   Pull.done
                 case _ =>
                   value_(State.AfterArrayValue) >> go_(State.AfterArrayValue)
@@ -362,13 +365,13 @@ private class JsonTokenParser[F[_], T](s: Stream[F, T])(implicit F: RaiseThrowab
               (c: @switch) match {
                 case ']' =>
                   T.advance(context)
-                  chunkAcc += Token.EndArray
+                  chunkAcc.endArray()
                   Pull.done
                 case ',' =>
                   T.advance(context)
                   go_(State.ExpectArrayValue)
                 case c =>
-                  emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after array value"))
+                  emitChunk() >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after array value"))
               }
           }
       }

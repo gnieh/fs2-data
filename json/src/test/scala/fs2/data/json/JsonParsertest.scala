@@ -24,6 +24,7 @@ import io.file.{Files, Flags, Path}
 import cats.effect._
 
 import weaver._
+import fs2.data.json.internals.TokenChunkAccumulator
 
 sealed trait Expectation
 object Expectation {
@@ -96,7 +97,7 @@ abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends Sim
             .through(fs2.text.utf8.decode)
 
         contentStream
-          .through(new json.internals.LegacyTokenParser(_).parse.stream)
+          .through(new json.internals.LegacyTokenParser(_).parse(new TokenChunkAccumulator).stream)
           .through(ast.values)
           .compile
           .toList
