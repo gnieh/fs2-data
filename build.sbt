@@ -534,10 +534,12 @@ lazy val benchmarks = crossProject(JVMPlatform)
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "co.fs2" %%% "fs2-io" % fs2Version
+      "co.fs2" %%% "fs2-io" % fs2Version,
+      "io.circe" %%% "circe-jawn" % circeVersion,
+      "io.circe" %%% "circe-fs2" % "0.14.1"
     )
   )
-  .dependsOn(csv, scalaXml)
+  .dependsOn(csv, scalaXml, jsonCirce)
 
 // Utils
 
