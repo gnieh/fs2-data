@@ -1,13 +1,29 @@
+/*
+ * Copyright 2023 Lucas Satabin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package fs2
 package data
 package json
 package internals
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.immutable.VectorBuilder
 
 private[json] final class TokenChunkAccumulator extends ChunkAccumulator[Token] {
 
-  private[this] final val chunkAcc: ListBuffer[Token] = new ListBuffer
+  private[this] final val chunkAcc: VectorBuilder[Token] = new VectorBuilder
 
   override def startObject(): this.type = {
     chunkAcc.addOne(Token.StartObject)
@@ -60,7 +76,7 @@ private[json] final class TokenChunkAccumulator extends ChunkAccumulator[Token] 
   }
 
   override def chunk(): Chunk[Token] =
-    Chunk.seq(chunkAcc.result())
+    Chunk.vector(chunkAcc.result())
 
   override def flush(): this.type = {
     chunkAcc.clear()

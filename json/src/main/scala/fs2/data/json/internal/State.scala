@@ -16,7 +16,7 @@
 
 package fs2.data.json.internals
 
-private[internals] object State {
+private[json] object State {
   final val BeforeValue = 0
   final val BeforeObjectKey = 1
   final val ExpectObjectKey = 2

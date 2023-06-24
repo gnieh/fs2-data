@@ -25,10 +25,9 @@ import scala.annotation.switch
 
 import TokenParser._
 
-private class JsonTokenParser[F[_], T, Res](s: Stream[F, T], private[this] final val chunkAcc: ChunkAccumulator[Res])(
-    implicit
-    F: RaiseThrowable[F],
-    T: AsCharBuffer[F, T]) {
+private[json] class JsonTokenParser[F[_], T, Res](
+    s: Stream[F, T],
+    private[this] final val chunkAcc: ChunkAccumulator[Res])(implicit F: RaiseThrowable[F], T: AsCharBuffer[F, T]) {
   private[this] var context = T.create(s)
 
   private[this] def emitChunk[T]() =
@@ -224,7 +223,10 @@ private class JsonTokenParser[F[_], T, Res](s: Stream[F, T], private[this] final
     }
   }
 
-  private final def keyword_(expected: String, eidx: Int, elen: Int, accumulate: () => ChunkAccumulator[Res]): Pull[F, Res, Unit] = {
+  private final def keyword_(expected: String,
+                             eidx: Int,
+                             elen: Int,
+                             accumulate: () => ChunkAccumulator[Res]): Pull[F, Res, Unit] = {
     if (T.needsPull(context)) {
       emitChunk() >> T.pullNext(context).flatMap {
         case Some(context) =>
@@ -250,13 +252,13 @@ private class JsonTokenParser[F[_], T, Res](s: Stream[F, T], private[this] final
     }
   }
 
-  private final def value_(state: Int)(implicit F: RaiseThrowable[F]): Pull[F, Res, Unit] =
+  private final def value_()(implicit F: RaiseThrowable[F]): Pull[F, Res, Unit] =
     if (T.needsPull(context)) {
       emitChunk() >> T.pullNext(context).flatMap {
         case Some(context) =>
           this.context = context
           chunkAcc.flush()
-          value_(state)
+          value_()
         case None => Pull.raiseError[F](new JsonException("unexpected end of input"))
       }
     } else {
@@ -292,9 +294,13 @@ private class JsonTokenParser[F[_], T, Res](s: Stream[F, T], private[this] final
           chunkAcc.flush()
           go_(state)
         case None =>
-          this.context = T.create(Stream.empty)
-          chunkAcc.flush()
-          Pull.done
+          if (state == State.BeforeValue) {
+            this.context = T.create(Stream.empty)
+            chunkAcc.flush()
+            Pull.done
+          } else {
+            Pull.raiseError(JsonException("unexpected end of input"))
+          }
       }
     } else {
       val c = T.current(context)
@@ -305,7 +311,7 @@ private class JsonTokenParser[F[_], T, Res](s: Stream[F, T], private[this] final
         case _ =>
           (state: @switch) match {
             case State.BeforeValue =>
-              value_(state) >> go_(State.BeforeValue)
+              value_() >> go_(State.BeforeValue)
             case State.BeforeObjectKey =>
               (c: @switch) match {
                 case '"' =>
@@ -337,7 +343,7 @@ private class JsonTokenParser[F[_], T, Res](s: Stream[F, T], private[this] final
                   emitChunk() >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object key"))
               }
             case State.BeforeObjectValue =>
-              value_(State.AfterObjectValue) >> go_(State.AfterObjectValue)
+              value_() >> go_(State.AfterObjectValue)
             case State.AfterObjectValue =>
               (c: @switch) match {
                 case ',' =>
@@ -351,7 +357,7 @@ private class JsonTokenParser[F[_], T, Res](s: Stream[F, T], private[this] final
                   emitChunk() >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object value"))
               }
             case State.ExpectArrayValue =>
-              value_(State.AfterArrayValue) >> go_(State.AfterArrayValue)
+              value_() >> go_(State.AfterArrayValue)
             case State.BeforeArrayValue =>
               (c: @switch) match {
                 case ']' =>
@@ -359,7 +365,7 @@ private class JsonTokenParser[F[_], T, Res](s: Stream[F, T], private[this] final
                   chunkAcc.endArray()
                   Pull.done
                 case _ =>
-                  value_(State.AfterArrayValue) >> go_(State.AfterArrayValue)
+                  value_() >> go_(State.AfterArrayValue)
               }
             case State.AfterArrayValue =>
               (c: @switch) match {
