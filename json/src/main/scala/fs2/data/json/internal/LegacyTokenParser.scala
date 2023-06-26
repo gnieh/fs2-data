@@ -194,7 +194,7 @@ private[json] class LegacyTokenParser[F[_], T, Res](s: Stream[F, T])(implicit
           number_(context, state, acc, chunkAcc)
         case None =>
           if (NumberState.isFinal(state))
-            Pull.pure(T.create(Stream.empty), chunkAcc.numberValue(acc.result()))
+            Pull.pure((T.create(Stream.empty), chunkAcc.numberValue(acc.result())))
           else
             Pull.raiseError[F](new JsonException("unexpected end of input"))
       }

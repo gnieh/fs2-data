@@ -27,7 +27,7 @@ package internals
   * chunk under construction, but results still being built are kept.
   * This allows to accumulate values acros upstream chunk boundaries.
   */
-private[internals] trait ChunkAccumulator[Res] {
+private[json] trait ChunkAccumulator[Res] {
 
   def startObject(): this.type
 
