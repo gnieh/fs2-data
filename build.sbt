@@ -18,6 +18,8 @@ val copyrightYears = "2019-2023"
 
 ThisBuild / tlBaseVersion := "1.7"
 
+ThisBuild / tlSonatypeUseLegacyHost := false
+
 ThisBuild / organization := "org.gnieh"
 ThisBuild / organizationName := "Lucas Satabin"
 ThisBuild / startYear := Some(2023)
