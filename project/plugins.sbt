@@ -13,7 +13,7 @@ addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.5")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.4.1")
 
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.13.1")
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.13.2")
 
 addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.3.1")
 

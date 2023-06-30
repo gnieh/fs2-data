@@ -41,9 +41,9 @@ abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends Sim
       .list(testFileDir)
       .evalMap { path =>
         val expectation =
-          if (path.fileName.startsWith("y_"))
+          if (path.fileName.toString.startsWith("y_"))
             Expectation.Valid
-          else if (path.fileName.startsWith("n_"))
+          else if (path.fileName.toString.startsWith("n_"))
             Expectation.Invalid
           else
             Expectation.ImplementationDefined
@@ -66,11 +66,54 @@ abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends Sim
               case Expectation.Valid | Expectation.ImplementationDefined =>
                 contentStream.compile.string.map { rawExpected =>
                   val expected = parse(rawExpected)
-                  expect(actual.isRight == expected.isRight) and (if (actual.isRight) expect(actual == expected)
+                  expect(actual.isRight == expected.isRight) and (if (actual.isRight)
+                                                                    expect(actual == expected)
                                                                   else success)
                 }
               case Expectation.Invalid =>
-                IO.pure(expect(actual.isLeft))
+                IO.pure(expect(actual.isLeft, path.toString))
+            })
+      }
+      .compile
+      .foldMonoid
+  }
+
+  test("Standard test suite files should be parsed correctly with legacy parser") {
+    Files[IO]
+      .list(testFileDir)
+      .evalMap { path =>
+        val expectation =
+          if (path.fileName.toString.startsWith("y_"))
+            Expectation.Valid
+          else if (path.fileName.toString.startsWith("n_"))
+            Expectation.Invalid
+          else
+            Expectation.ImplementationDefined
+
+        val contentStream =
+          Files[IO]
+            .readAll(path, 1024, Flags.Read)
+            .through(fs2.text.utf8.decode)
+
+        contentStream
+          .through(new json.internals.LegacyTokenParser(_).parse.stream)
+          .through(ast.values)
+          .compile
+          .toList
+          .flatMap(l =>
+            if (l.size == 1) IO.pure(l.head) else IO.raiseError(new Exception("a single value is expected")))
+          .attempt
+          .flatMap(actual =>
+            expectation match {
+              case Expectation.Valid | Expectation.ImplementationDefined =>
+                contentStream.compile.string.map { rawExpected =>
+                  val expected = parse(rawExpected)
+                  expect(actual.isRight == expected.isRight) and (if (actual.isRight)
+                                                                    expect(actual == expected)
+                                                                  else success)
+                }
+              case Expectation.Invalid =>
+                IO.pure(expect(actual.isLeft, path.toString))
             })
       }
       .compile

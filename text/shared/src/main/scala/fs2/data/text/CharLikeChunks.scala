@@ -26,6 +26,11 @@ import java.nio.charset.Charset
   * that can be iterated over to get characters.
   */
 @implicitNotFound("Cannot prove that stream of type ${In} has chunks that can be iterated over to get characters")
+@deprecatedInheritance(
+  message =
+    "Custom implementations may lead to performance issues. This trait will be made sealed in the future. Use the fs2-data provided instances instead",
+  since = "fs2-data 1.8.0"
+)
 trait CharLikeChunks[F[_], In] {
 
   /** The context used to pull chunks and iterate over characters.
@@ -69,86 +74,27 @@ trait CharLikeChunks[F[_], In] {
 
 }
 
-private class CharLikeCharChunks[F[_]] extends CharLikeChunks[F, Char] {
+sealed trait AsCharBuffer[F[_], T] extends CharLikeChunks[F, T] {
 
-  class CharContext(var chunk: Chunk[Char], var idx: Int, var rest: Stream[F, Char])
+  def mark(ctx: Context): Unit
 
-  type Context = CharContext
-
-  def create(s: Stream[F, Char]): CharContext = new CharContext(Chunk.empty, 0, s)
-
-  def needsPull(ctx: CharContext): Boolean =
-    ctx.idx >= ctx.chunk.size
-
-  def pullNext(ctx: CharContext): Pull[F, Nothing, Option[CharContext]] =
-    ctx.rest.pull.uncons.map(_.map { case (hd, tl) =>
-      ctx.chunk = hd
-      ctx.idx = 0
-      ctx.rest = tl
-      ctx
-    })
-
-  def advance(ctx: Context): Context = {
-    ctx.idx += 1
-    ctx
-  }
-
-  def current(ctx: CharContext): Char =
-    ctx.chunk(ctx.idx)
+  def appendMarked(ctx: Context, acc: StringBuilder): Unit
 
 }
 
-private class CharLikeStringChunks[F[_]] extends CharLikeChunks[F, String] {
-  class StringContext(var string: String, var sidx: Int, var rest: Stream[F, String])
+private[text] class CharArrayContext[F[_], T](var chunk: Array[Char],
+                                              var idx: Int,
+                                              var rest: Stream[F, T],
+                                              var mark: Int)
 
-  type Context = StringContext
+private[text] abstract class CharArrayBuffer[F[_], T] extends AsCharBuffer[F, T] {
 
-  def create(s: Stream[F, String]): Context =
-    new StringContext("", 0, s)
+  type Context = CharArrayContext[F, T]
 
-  def needsPull(ctx: StringContext): Boolean =
-    ctx.sidx >= ctx.string.size
-
-  def pullNext(ctx: StringContext): Pull[F, Nothing, Option[StringContext]] =
-    ctx.rest.pull.uncons1.map(_.map { case (hd, tl) =>
-      ctx.string = hd
-      ctx.sidx = 0
-      ctx.rest = tl
-      ctx
-    })
-
-  def advance(ctx: Context): Context = {
-    ctx.sidx += 1
-    ctx
-  }
-
-  def current(ctx: StringContext): Char =
-    ctx.string(ctx.sidx)
-
-}
-
-// BEWARE: this implementation only works for single-byte encodings, do not use this for utf-8 for instance
-private class CharLikeSingleByteChunks[F[_]](charset: Charset) extends CharLikeChunks[F, Byte] {
-
-  class ByteContext(var chunk: String, var idx: Int, var rest: Stream[F, Byte])
-
-  type Context = ByteContext
-
-  def create(s: Stream[F, Byte]): Context =
-    new ByteContext("", 0, s)
+  def create(s: Stream[F, T]): Context = new Context(Array.empty, 0, s, 0)
 
   def needsPull(ctx: Context): Boolean =
-    ctx.idx >= ctx.chunk.size
-
-  def pullNext(ctx: Context): Pull[F, Nothing, Option[Context]] =
-    ctx.rest.pull.uncons.map(_.map { case (hd, tl) =>
-      // This code is pure. The constructor replaces malformed input
-      // with the charset default replacement string, so this never throws
-      ctx.chunk = new String(hd.toArray[Byte], charset)
-      ctx.idx = 0
-      ctx.rest = tl
-      ctx
-    })
+    ctx.idx >= ctx.chunk.length
 
   def advance(ctx: Context): Context = {
     ctx.idx += 1
@@ -158,14 +104,82 @@ private class CharLikeSingleByteChunks[F[_]](charset: Charset) extends CharLikeC
   def current(ctx: Context): Char =
     ctx.chunk(ctx.idx)
 
+  override def mark(ctx: Context): Unit =
+    ctx.mark = ctx.idx
+
+  override def appendMarked(ctx: Context, acc: StringBuilder): Unit =
+    acc.appendAll(ctx.chunk, ctx.mark, ctx.idx - ctx.mark)
+
+}
+
+private[text] class CharLikeCharChunks[F[_]] extends CharArrayBuffer[F, Char] {
+
+  def pullNext(ctx: Context): Pull[F, Nothing, Option[Context]] =
+    ctx.rest.pull.uncons.map(_.map { case (hd, tl) =>
+      ctx.chunk = hd.toArray
+      ctx.idx = 0
+      ctx.rest = tl
+      ctx.mark = 0
+      ctx
+    })
+
+}
+
+private[text] class CharLikeStringChunks[F[_]] extends CharArrayBuffer[F, String] {
+
+  def pullNext(ctx: Context): Pull[F, Nothing, Option[Context]] =
+    ctx.rest.pull.uncons1.map(_.map { case (hd, tl) =>
+      ctx.chunk = hd.toCharArray()
+      ctx.idx = 0
+      ctx.rest = tl
+      ctx.mark = 0
+      ctx
+    })
+
+}
+
+// BEWARE: this implementation only works for single-byte encodings, do not use this for utf-8 for instance
+private[text] class CharLikeSingleByteChunks[F[_]](charset: Charset) extends CharArrayBuffer[F, Byte] {
+
+  def pullNext(ctx: Context): Pull[F, Nothing, Option[Context]] =
+    ctx.rest.pull.uncons.map(_.map { case (hd, tl) =>
+      // This code is pure. The constructor replaces malformed input
+      // with the charset default replacement string, so this never throws
+      ctx.chunk = new String(hd.toArray[Byte], charset).toCharArray()
+      ctx.idx = 0
+      ctx.rest = tl
+      ctx.mark = 0
+      ctx
+    })
+
+}
+
+private[text] class CharLikeUtf8ByteChunks[F[_]] extends AsCharBuffer[F, Byte] {
+  val stringsCharBuffer = CharLikeChunks.stringStreamCharBuffer[F]
+  override type Context = stringsCharBuffer.Context
+  override def create(s: Stream[F, Byte]): Context = stringsCharBuffer.create(s.through(fs2.text.utf8.decode))
+  override def needsPull(ctx: Context): Boolean = stringsCharBuffer.needsPull(ctx)
+  override def pullNext(ctx: Context): Pull[F, Nothing, Option[Context]] = stringsCharBuffer.pullNext(ctx)
+  override def advance(ctx: Context): Context = stringsCharBuffer.advance(ctx)
+  override def current(ctx: Context): Char = stringsCharBuffer.current(ctx)
+  override def mark(ctx: Context): Unit = stringsCharBuffer.mark(ctx)
+  override def appendMarked(ctx: Context, acc: StringBuilder): Unit = stringsCharBuffer.appendMarked(ctx, acc)
 }
 
 object CharLikeChunks {
 
-  implicit def charStreamCharLike[F[_]]: CharLikeChunks[F, Char] =
+  @deprecated(message = "use `CharLikeChunks.charStreamCharBuffer` instead", since = "fs2-data 1.8.0")
+  def charStreamCharLike[F[_]]: CharLikeChunks[F, Char] =
+    charStreamCharBuffer[F]
+
+  implicit def charStreamCharBuffer[F[_]]: AsCharBuffer[F, Char] =
     new CharLikeCharChunks[F]
 
-  implicit def stringStreamCharLike[F[_]]: CharLikeChunks[F, String] =
+  @deprecated(message = "use `CharLikeChunks.charStreamCharBuffer` instead", since = "fs2-data 1.8.0")
+  def stringStreamCharLike[F[_]]: CharLikeChunks[F, String] =
+    stringStreamCharBuffer
+
+  implicit def stringStreamCharBuffer[F[_]]: AsCharBuffer[F, String] =
     new CharLikeStringChunks[F]
 
 }

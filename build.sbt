@@ -159,7 +159,28 @@ lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .settings(publishSettings)
   .settings(
     name := "fs2-data-text",
-    description := "Utilities for textual data format"
+    description := "Utilities for textual data format",
+    mimaBinaryIssueFilters ++= List(
+      // private class
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.text.CharLikeCharChunks.create"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.text.CharLikeCharChunks.needsPull"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.text.CharLikeCharChunks.pullNext"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.text.CharLikeCharChunks.advance"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.text.CharLikeCharChunks.current"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.text.CharLikeCharChunks$CharContext"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.text.CharLikeSingleByteChunks.create"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.text.CharLikeSingleByteChunks.needsPull"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.text.CharLikeSingleByteChunks.pullNext"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.text.CharLikeSingleByteChunks.advance"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.text.CharLikeSingleByteChunks.current"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.text.CharLikeSingleByteChunks$ByteContext"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.text.CharLikeStringChunks.create"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.text.CharLikeStringChunks.needsPull"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.text.CharLikeStringChunks.pullNext"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.text.CharLikeStringChunks.advance"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.text.CharLikeStringChunks.current"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.text.CharLikeStringChunks$StringContext")
+    )
   )
   .nativeSettings(
     tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")

@@ -67,7 +67,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     */
   @deprecated(message =
                 "Use `RowF.asOptionalAt` instead, as it gives more flexibility and has the same default behavior.",
-              since = "fs2-data 2.7.0")
+              since = "fs2-data 1.7.0")
   def asNonEmptyAt[T](idx: Int)(implicit decoder: CellDecoder[T]): DecoderResult[Option[T]] =
     asOptionalAt(idx)
 
@@ -180,7 +180,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     */
   @deprecated(message =
                 "Use `RowF.asOptional` instead, as it gives more flexibility and has the same default behavior.",
-              since = "fs2-data 2.7.0")
+              since = "fs2-data 1.7.0")
   def asNonEmpty[T](
       header: Header)(implicit hasHeaders: HasHeaders[H, Header], decoder: CellDecoder[T]): DecoderResult[Option[T]] =
     asOptional(header)
@@ -224,7 +224,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
   // instance is provided, meaning that the `Option` is `Some`
   // of course using a lazy val prevents us to make this constraint statistically checked, but
   // the gain is significant enough to allow for this local unsafety
-  @deprecated("Have you checked that you have a `HasHeaders` instance in scope?", "1.5.0")
+  @deprecated("Have you checked that you have a `HasHeaders` instance in scope?", "fs2-data 1.5.0")
   private lazy val byHeader: Map[Header, String] =
     headers.get.toList.zip(values.toList).toMap
 
