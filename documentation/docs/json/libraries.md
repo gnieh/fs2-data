@@ -15,11 +15,10 @@ Examples on this page use the following input:
 ```scala mdoc
 import fs2.{Fallible, Stream}
 import fs2.data.json._
-import fs2.data.json.literals._
 import fs2.data.json.jsonpath._
 import fs2.data.json.jsonpath.literals._
 
-val stream = json"""{
+val input = Stream.emit("""{
   "field1": 0,
   "field2": "test",
   "field3": [1, 2, 3]
@@ -27,7 +26,9 @@ val stream = json"""{
   {
   "field1": 2,
   "field3": []
-}"""
+}""").covary[Fallible]
+
+val stream = input.through(tokens)
 
 val sel = jsonpath"$$.field3[*]"
 ```
@@ -43,8 +44,8 @@ For instance both examples from the [core module documentation][json-doc] with c
 import fs2.data.json.circe._
 import io.circe._
 
-val asts = stream.through(ast.values[Fallible, Json])
-asts.compile.toList
+val asts = input.through(ast.parse)
+asts.map(_.spaces2).compile.toList
 ```
 
 You can use `filter.values` to selects only the values matching the JSONPath and deserialize them using the builder.
