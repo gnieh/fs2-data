@@ -533,7 +533,8 @@ lazy val documentation = project
       "com.beachape" %% "enumeratum" % "1.7.0",
       "org.gnieh" %% "diffson-circe" % diffsonVersion,
       "io.circe" %% "circe-generic-extras" % circeExtrasVersion,
-      "co.fs2" %% "fs2-io" % fs2Version
+      "co.fs2" %% "fs2-io" % fs2Version,
+      "io.circe" %% "circe-fs2" % "0.14.1"
     ),
     scalacOptions += "-Ymacro-annotations"
   )
