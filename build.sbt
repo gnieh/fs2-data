@@ -562,6 +562,39 @@ lazy val benchmarks = crossProject(JVMPlatform)
   )
   .dependsOn(csv, scalaXml, jsonCirce)
 
+lazy val scalafixInput = (project in file("scalafix/input"))
+  .disablePlugins(ScalafixPlugin)
+  .dependsOn(jsonCirce.jvm)
+
+lazy val scalafixOutput = (project in file("scalafix/output"))
+  .disablePlugins(ScalafixPlugin)
+  .dependsOn(jsonCirce.jvm)
+
+lazy val scalafixRules = (project in file("scalafix/rules"))
+  .disablePlugins(ScalafixPlugin)
+  .settings(
+    libraryDependencies +=
+      "ch.epfl.scala" %%
+        "scalafix-core" %
+        _root_.scalafix.sbt.BuildInfo.scalafixVersion
+  )
+
+lazy val scalafixTests = (project in file("scalafix/tests"))
+  .settings(
+    scalafixTestkitOutputSourceDirectories :=
+      (scalafixOutput / Compile / sourceDirectories).value,
+    scalafixTestkitInputSourceDirectories :=
+      (scalafixInput / Compile / sourceDirectories).value,
+    scalafixTestkitInputClasspath :=
+      (scalafixInput / Compile / fullClasspath).value,
+    scalafixTestkitInputScalacOptions :=
+      (scalafixInput / Compile / scalacOptions).value,
+    scalafixTestkitInputScalaVersion :=
+      (scalafixInput / Compile / scalaVersion).value
+  )
+  .dependsOn(scalafixInput, scalafixRules)
+  .enablePlugins(ScalafixTestkitPlugin)
+
 // Utils
 
 def onScala2[T](version: String)(values: => List[T]): List[T] = PartialFunction
