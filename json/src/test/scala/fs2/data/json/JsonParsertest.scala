@@ -18,12 +18,12 @@ package fs2
 package data
 package json
 
+import cats.effect._
+import fs2.data.json.internals.{BuilderChunkAccumulator, TokenChunkAccumulator}
+import weaver._
+
 import ast._
 import io.file.{Files, Flags, Path}
-
-import cats.effect._
-
-import weaver._
 
 sealed trait Expectation
 object Expectation {
@@ -36,7 +36,7 @@ abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends Sim
 
   private val testFileDir = Path("json/src/test/resources/test-parsing/")
 
-  test("Standard test suite files should be parsed correctly") {
+  private def standardTests(parsingPipe: Pipe[IO, String, Json]): IO[Expectations] =
     Files[IO]
       .list(testFileDir)
       .evalMap { path =>
@@ -54,12 +54,9 @@ abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends Sim
             .through(fs2.text.utf8.decode)
 
         contentStream
-          .through(tokens)
-          .through(ast.values)
+          .through(parsingPipe)
           .compile
-          .toList
-          .flatMap(l =>
-            if (l.size == 1) IO.pure(l.head) else IO.raiseError(new Exception("a single value is expected")))
+          .onlyOrError
           .attempt
           .flatMap(actual =>
             expectation match {
@@ -76,48 +73,25 @@ abstract class JsonParserTest[Json](implicit builder: Builder[Json]) extends Sim
       }
       .compile
       .foldMonoid
+
+  test("Standard test suite files should be parsed correctly") {
+    standardTests(
+      _.through(tokens)
+        .through(ast.values))
+  }
+
+  test("Standard test suite files should be parsed directly correctly") {
+    standardTests(_.through(ast.parse))
   }
 
   test("Standard test suite files should be parsed correctly with legacy parser") {
-    Files[IO]
-      .list(testFileDir)
-      .evalMap { path =>
-        val expectation =
-          if (path.fileName.toString.startsWith("y_"))
-            Expectation.Valid
-          else if (path.fileName.toString.startsWith("n_"))
-            Expectation.Invalid
-          else
-            Expectation.ImplementationDefined
+    standardTests(
+      _.through(new json.internals.LegacyTokenParser(_).parse(new TokenChunkAccumulator).stream)
+        .through(ast.values))
+  }
 
-        val contentStream =
-          Files[IO]
-            .readAll(path, 1024, Flags.Read)
-            .through(fs2.text.utf8.decode)
-
-        contentStream
-          .through(new json.internals.LegacyTokenParser(_).parse.stream)
-          .through(ast.values)
-          .compile
-          .toList
-          .flatMap(l =>
-            if (l.size == 1) IO.pure(l.head) else IO.raiseError(new Exception("a single value is expected")))
-          .attempt
-          .flatMap(actual =>
-            expectation match {
-              case Expectation.Valid | Expectation.ImplementationDefined =>
-                contentStream.compile.string.map { rawExpected =>
-                  val expected = parse(rawExpected)
-                  expect(actual.isRight == expected.isRight) and (if (actual.isRight)
-                                                                    expect(actual == expected)
-                                                                  else success)
-                }
-              case Expectation.Invalid =>
-                IO.pure(expect(actual.isLeft, path.toString))
-            })
-      }
-      .compile
-      .foldMonoid
+  test("Standard test suite files should be parsed directly correctly with legacy parser") {
+    standardTests(_.through(new json.internals.LegacyTokenParser(_).parse(new BuilderChunkAccumulator(builder)).stream))
   }
 
   def parse(content: String): Either[Throwable, Json]

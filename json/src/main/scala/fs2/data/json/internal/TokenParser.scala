@@ -41,9 +41,10 @@ private[json] object TokenParser {
   def pipe[F[_], T](implicit F: RaiseThrowable[F], T: CharLikeChunks[F, T]): Pipe[F, T, Token] = { s =>
     T match {
       case asCharBuffer: AsCharBuffer[F, T] =>
-        Stream.suspend(new JsonTokenParser[F, T](s)(F, asCharBuffer).go_(State.BeforeValue).stream)
+        Stream.suspend(
+          new JsonTokenParser[F, T, Token](s, new TokenChunkAccumulator)(F, asCharBuffer).go_(State.BeforeValue).stream)
       case _ =>
-        Stream.suspend(new LegacyTokenParser[F, T](s).parse.stream)
+        Stream.suspend(new LegacyTokenParser[F, T, Token](s).parse(new TokenChunkAccumulator).stream)
     }
 
   }

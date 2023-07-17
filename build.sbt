@@ -535,7 +535,8 @@ lazy val documentation = project
       "com.beachape" %% "enumeratum" % "1.7.0",
       "org.gnieh" %% "diffson-circe" % diffsonVersion,
       "io.circe" %% "circe-generic-extras" % circeExtrasVersion,
-      "co.fs2" %% "fs2-io" % fs2Version
+      "co.fs2" %% "fs2-io" % fs2Version,
+      "io.circe" %% "circe-fs2" % "0.14.1"
     ),
     scalacOptions += "-Ymacro-annotations"
   )
@@ -563,6 +564,39 @@ lazy val benchmarks = crossProject(JVMPlatform)
     )
   )
   .dependsOn(csv, scalaXml, jsonCirce)
+
+lazy val scalafixInput = (project in file("scalafix/input"))
+  .disablePlugins(ScalafixPlugin)
+  .dependsOn(jsonCirce.jvm)
+
+lazy val scalafixOutput = (project in file("scalafix/output"))
+  .disablePlugins(ScalafixPlugin)
+  .dependsOn(jsonCirce.jvm)
+
+lazy val scalafixRules = (project in file("scalafix/rules"))
+  .disablePlugins(ScalafixPlugin)
+  .settings(
+    libraryDependencies +=
+      "ch.epfl.scala" %%
+        "scalafix-core" %
+        _root_.scalafix.sbt.BuildInfo.scalafixVersion
+  )
+
+lazy val scalafixTests = (project in file("scalafix/tests"))
+  .settings(
+    scalafixTestkitOutputSourceDirectories :=
+      (scalafixOutput / Compile / sourceDirectories).value,
+    scalafixTestkitInputSourceDirectories :=
+      (scalafixInput / Compile / sourceDirectories).value,
+    scalafixTestkitInputClasspath :=
+      (scalafixInput / Compile / fullClasspath).value,
+    scalafixTestkitInputScalacOptions :=
+      (scalafixInput / Compile / scalacOptions).value,
+    scalafixTestkitInputScalaVersion :=
+      (scalafixInput / Compile / scalaVersion).value
+  )
+  .dependsOn(scalafixInput, scalafixRules)
+  .enablePlugins(ScalafixTestkitPlugin)
 
 // Utils
 
