@@ -223,16 +223,13 @@ private[json] class JsonTokenParser[F[_], T, Res](
     }
   }
 
-  private final def keyword_(expected: String,
-                             eidx: Int,
-                             elen: Int,
-                             accumulate: () => ChunkAccumulator[Res]): Pull[F, Res, Unit] = {
+  private final def keyword_(expected: String, eidx: Int, elen: Int, processToken: () => Unit): Pull[F, Res, Unit] = {
     if (T.needsPull(context)) {
       emitChunk() >> T.pullNext(context).flatMap {
         case Some(context) =>
           this.context = context
           chunkAcc.flush()
-          keyword_(expected, eidx, elen, accumulate)
+          keyword_(expected, eidx, elen, processToken)
         case None => Pull.raiseError[F](new JsonException("unexpected end of input"))
       }
     } else {
@@ -240,11 +237,11 @@ private[json] class JsonTokenParser[F[_], T, Res](
       if (c == expected.charAt(eidx)) {
         if (eidx == elen - 1) {
           T.advance(context)
-          accumulate()
+          processToken()
           Pull.done
         } else {
           T.advance(context)
-          keyword_(expected, eidx + 1, elen, accumulate)
+          keyword_(expected, eidx + 1, elen, processToken)
         }
       } else {
         emitChunk() >> Pull.raiseError[F](new JsonException(s"unexpected character '$c' (expected $expected)"))
@@ -272,9 +269,9 @@ private[json] class JsonTokenParser[F[_], T, Res](
           T.advance(context)
           chunkAcc.startArray()
           Pull.suspend(go_(State.BeforeArrayValue))
-        case 't' => keyword_("true", 0, 4, chunkAcc.trueValue)
-        case 'f' => keyword_("false", 0, 5, chunkAcc.falseValue)
-        case 'n' => keyword_("null", 0, 4, chunkAcc.nullValue)
+        case 't' => keyword_("true", 0, 4, chunkAcc.trueValue _)
+        case 'f' => keyword_("false", 0, 5, chunkAcc.falseValue _)
+        case 'n' => keyword_("null", 0, 4, chunkAcc.nullValue _)
         case '"' =>
           T.advance(context)
           T.mark(context)
