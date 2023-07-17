@@ -18,6 +18,8 @@ val copyrightYears = "2019-2023"
 
 ThisBuild / tlBaseVersion := "1.7"
 
+ThisBuild / tlSonatypeUseLegacyHost := false
+
 ThisBuild / organization := "org.gnieh"
 ThisBuild / organizationName := "Lucas Satabin"
 ThisBuild / startYear := Some(2023)
@@ -421,7 +423,7 @@ lazy val scalaXml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .settings(
     name := "fs2-data-xml-scala",
     description := "Support for Scala XML ASTs",
-    libraryDependencies += "org.scala-lang.modules" %%% "scala-xml" % "2.1.0",
+    libraryDependencies += "org.scala-lang.modules" %%% "scala-xml" % "2.2.0",
     tlVersionIntroduced := Map("3" -> "1.4.0", "2.13" -> "1.4.0", "2.12" -> "1.4.0"),
     mimaBinaryIssueFilters ++= List(
       // Changed from implicit object to implicit val, seems impossible to stub. Second is Scala 3 only
