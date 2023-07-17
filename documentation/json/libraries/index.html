@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="/css/stork.css" />
     <script src="/js/stork.js"></script>
 
-    <meta name="generator" content="Nanoc 4.12.15">
+    <meta name="generator" content="Nanoc 4.12.16">
   </head>
   <body>
     <header>
@@ -94,7 +94,10 @@
 
 <p>This page covers the following libraries:</p>
 <ul id="markdown-toc">
-  <li><a href="#circe" id="markdown-toc-circe">Circe</a></li>
+  <li><a href="#circe" id="markdown-toc-circe">Circe</a>    <ul>
+      <li><a href="#migrating-from-circe-fs2" id="markdown-toc-migrating-from-circe-fs2">Migrating from <code>circe-fs2</code></a></li>
+    </ul>
+  </li>
   <li><a href="#play-json" id="markdown-toc-play-json">Play! JSON</a></li>
 </ul>
 
@@ -102,11 +105,10 @@
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.</span><span class="o">{</span><span class="nc">Fallible</span><span class="o">,</span> <span class="nc">Stream</span><span class="o">}</span>
 <span class="k">import</span> <span class="nn">fs2.data.json._</span>
-<span class="k">import</span> <span class="nn">fs2.data.json.literals._</span>
 <span class="k">import</span> <span class="nn">fs2.data.json.jsonpath._</span>
 <span class="k">import</span> <span class="nn">fs2.data.json.jsonpath.literals._</span>
 
-<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="n">json</span><span class="s">"""{
+<span class="k">def</span> <span class="nf">input</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]]</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emit</span><span class="o">(</span><span class="s">"""{
   "field1": 0,
   "field2": "test",
   "field3": [1, 2, 3]
@@ -114,8 +116,10 @@
   {
   "field1": 2,
   "field3": []
-}"""</span>
-<span class="c1">// stream: Stream[Fallible, Token] = Stream(..)</span>
+}"""</span><span class="o">).</span><span class="py">covary</span><span class="o">[</span><span class="kt">F</span><span class="o">]</span>
+
+<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="n">input</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">].</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">)</span>
+<span class="c1">// stream: Stream[[x]Fallible[x], Token] = Stream(..)</span>
 
 <span class="k">val</span> <span class="nv">sel</span> <span class="k">=</span> <span class="n">jsonpath</span><span class="s">"$$.field3[*]"</span>
 <span class="c1">// sel: JsonPath = JsonPath(</span>
@@ -134,24 +138,26 @@
 For instance both examples from the <a href="/documentation/json/">core module documentation</a> with circe can be written that way:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
-<span class="k">import</span> <span class="nn">io.circe._</span>
 
-<span class="k">val</span> <span class="nv">asts</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">ast</span><span class="o">.</span><span class="py">values</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Json</span><span class="o">])</span>
-<span class="c1">// asts: Stream[[x]Fallible[x], Json] = Stream(..)</span>
-<span class="nv">asts</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res0: Either[Throwable, List[Json]] = Right(</span>
+<span class="k">val</span> <span class="nv">asts</span> <span class="k">=</span> <span class="n">input</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">].</span><span class="py">through</span><span class="o">(</span><span class="nv">ast</span><span class="o">.</span><span class="py">parse</span><span class="o">)</span>
+<span class="c1">// asts: Stream[[x]Fallible[x], io.circe.Json] = Stream(..)</span>
+<span class="nv">asts</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">spaces2</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res0: Either[Throwable, List[String]] = Right(</span>
 <span class="c1">//   value = List(</span>
-<span class="c1">//     JObject(</span>
-<span class="c1">//       value = object[field1 -&gt; 0,field2 -&gt; "test",field3 -&gt; [</span>
-<span class="c1">//   1,</span>
-<span class="c1">//   2,</span>
-<span class="c1">//   3</span>
-<span class="c1">// ]]</span>
-<span class="c1">//     ),</span>
-<span class="c1">//     JObject(</span>
-<span class="c1">//       value = object[field1 -&gt; 2,field3 -&gt; [</span>
-<span class="c1">// ]]</span>
-<span class="c1">//     )</span>
+<span class="c1">//     """{</span>
+<span class="c1">//   "field1" : 0,</span>
+<span class="c1">//   "field2" : "test",</span>
+<span class="c1">//   "field3" : [</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     2,</span>
+<span class="c1">//     3</span>
+<span class="c1">//   ]</span>
+<span class="c1">// }""",</span>
+<span class="c1">//     """{</span>
+<span class="c1">//   "field1" : 2,</span>
+<span class="c1">//   "field3" : [</span>
+<span class="c1">//   ]</span>
+<span class="c1">// }"""</span>
 <span class="c1">//   )</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
@@ -159,8 +165,6 @@ For instance both examples from the <a href="/documentation/json/">core module d
 <p>You can use <code>filter.values</code> to selects only the values matching the JSONPath and deserialize them using the builder.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
-
-<span class="k">import</span> <span class="nn">io.circe._</span>
 
 <span class="k">import</span> <span class="nn">cats.effect._</span>
 <span class="k">import</span> <span class="nn">cats.syntax.all._</span>
@@ -172,7 +176,7 @@ For instance both examples from the <a href="/documentation/json/">core module d
   <span class="o">.</span><span class="py">compile</span>
   <span class="o">.</span><span class="py">toList</span>
   <span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
-<span class="c1">// res1: List[Json] = List(</span>
+<span class="c1">// res1: List[io.circe.Json] = List(</span>
 <span class="c1">//   JNumber(value = JsonDecimal(input = "1")),</span>
 <span class="c1">//   JNumber(value = JsonDecimal(input = "2")),</span>
 <span class="c1">//   JNumber(value = JsonDecimal(input = "3"))</span>
@@ -197,7 +201,6 @@ For instance both examples from the <a href="/documentation/json/">core module d
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.selector._</span>
 <span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
-<span class="k">import</span> <span class="nn">io.circe._</span>
 
 <span class="k">val</span> <span class="nv">values</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">codec</span><span class="o">.</span><span class="py">deserialize</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Data</span><span class="o">])</span>
 <span class="c1">// values: Stream[[x]Fallible[x], Data] = Stream(..)</span>
@@ -252,7 +255,6 @@ For instance both examples from the <a href="/documentation/json/">core module d
 <p>Dropping values can be done similarly.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
-<span class="k">import</span> <span class="nn">io.circe._</span>
 <span class="k">import</span> <span class="nn">cats.syntax.all._</span>
 
 <span class="k">val</span> <span class="nv">f1</span> <span class="k">=</span> <span class="nv">root</span><span class="o">.</span><span class="py">field</span><span class="o">(</span><span class="s">"field1"</span><span class="o">).</span><span class="py">compile</span>
@@ -280,6 +282,72 @@ For instance both examples from the <a href="/documentation/json/">core module d
 <span class="c1">// }"""</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
+
+<h4 id="migrating-from-circe-fs2">Migrating from <code>circe-fs2</code></h4>
+
+<p>If you were using <a href="https://github.com/circe/circe-fs2"><code>circe-fs2</code></a> to emit streams of <code>Json</code> values, you can easily switch to <code>fs2-data-json-circe</code>. Just replace your usages of <code>stringStreamParser</code> or <code>byteStreamParser</code> by usage of <code>fs2.data.json.ast.parse</code>.</p>
+
+<p>For instance if you had this code:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">io.circe.fs2._</span>
+
+<span class="k">import</span> <span class="nn">cats.effect._</span>
+
+<span class="n">input</span><span class="o">[</span><span class="kt">SyncIO</span><span class="o">]</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">stringStreamParser</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">spaces2</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">toList</span>
+  <span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
+<span class="c1">// res5: List[String] = List(</span>
+<span class="c1">//   """{</span>
+<span class="c1">//   "field1" : 0,</span>
+<span class="c1">//   "field2" : "test",</span>
+<span class="c1">//   "field3" : [</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     2,</span>
+<span class="c1">//     3</span>
+<span class="c1">//   ]</span>
+<span class="c1">// }""",</span>
+<span class="c1">//   """{</span>
+<span class="c1">//   "field1" : 2,</span>
+<span class="c1">//   "field3" : [</span>
+<span class="c1">//   ]</span>
+<span class="c1">// }"""</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>You can replace it by</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json._</span>
+<span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
+
+<span class="n">input</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">]</span>
+  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">ast</span><span class="o">.</span><span class="py">parse</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">spaces2</span><span class="o">)</span>
+  <span class="o">.</span><span class="py">compile</span>
+  <span class="o">.</span><span class="py">toList</span>
+<span class="c1">// res6: Either[Throwable, List[String]] = Right(</span>
+<span class="c1">//   value = List(</span>
+<span class="c1">//     """{</span>
+<span class="c1">//   "field1" : 0,</span>
+<span class="c1">//   "field2" : "test",</span>
+<span class="c1">//   "field3" : [</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     2,</span>
+<span class="c1">//     3</span>
+<span class="c1">//   ]</span>
+<span class="c1">// }""",</span>
+<span class="c1">//     """{</span>
+<span class="c1">//   "field1" : 2,</span>
+<span class="c1">//   "field3" : [</span>
+<span class="c1">//   ]</span>
+<span class="c1">// }"""</span>
+<span class="c1">//   )</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>If you were using <code>byteStreamParser</code>, please refer to the the <a href="/documentation/#decoding-textual-inputs"><code>fs2.data.text</code> package documentation</a> to indicate how to decode the byte stream.</p>
 
 <h3 id="play-json">Play! JSON</h3>
 
