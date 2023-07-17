@@ -141,6 +141,8 @@ input[Fallible]
   .toList
 ```
 
+If you were using `byteStreamParser`, please refer to the the [`fs2.data.text` package documentation][text] to indicate how to decode the byte stream.
+
 ### Play! JSON
 
 Module: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-play_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-play_2.13)
@@ -153,3 +155,4 @@ It also provides `Deserializer` for types with a `Reads` instance and `Serialize
 [circe]: https://circe.github.io/circe/
 [play-json]: https://www.playframework.com/
 [circe-fs2]: https://github.com/circe/circe-fs2
+[text]: /documentation/#decoding-textual-inputs
