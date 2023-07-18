@@ -15,11 +15,13 @@
  */
 
 package fs2
-package data.json
-
-import internals.{TokenSelector, ValueParser}
+package data
+package json
 
 import cats.syntax.all._
+
+import text.{AsCharBuffer, CharLikeChunks}
+import internals.{TokenSelector, ValueParser, JsonTokenParser, LegacyTokenParser, BuilderChunkAccumulator, State}
 
 package object ast {
 
@@ -83,6 +85,22 @@ package object ast {
     */
   def values[F[_], Json](implicit F: RaiseThrowable[F], builder: Builder[Json]): Pipe[F, Token, Json] =
     ValueParser.pipe[F, Json]
+
+  /** Parses a stream of characters into a stream of Json values. */
+  def parse[F[_], T, Json](implicit
+      F: RaiseThrowable[F],
+      T: CharLikeChunks[F, T],
+      builder: Builder[Json]): Pipe[F, T, Json] = { s =>
+    T match {
+      case asCharBuffer: AsCharBuffer[F, T] =>
+        Stream.suspend(
+          new JsonTokenParser[F, T, Json](s, new BuilderChunkAccumulator(builder))(F, asCharBuffer)
+            .go_(State.BeforeValue)
+            .stream)
+      case _ =>
+        Stream.suspend(new LegacyTokenParser[F, T, Json](s).parse(new BuilderChunkAccumulator(builder)).stream)
+    }
+  }
 
   /** Transforms a stream of Json values into a stream of Json tokens.
     *

@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package fs2.data.json.internals
+package fs2
 
-private[json] object State {
-  final val BeforeValue = 0
-  final val BeforeObjectKey = 1
-  final val ExpectObjectKey = 2
-  final val AfterObjectKey = 3
-  final val BeforeObjectValue = 4
-  final val AfterObjectValue = 5
-  final val BeforeArrayValue = 6
-  final val ExpectArrayValue = 7
-  final val AfterArrayValue = 8
+import scala.collection.immutable.VectorBuilder
+import scala.collection.mutable.ListBuffer
+
+package object data {
+
+  implicit class VectorBuilderOps[T](val builder: VectorBuilder[T]) extends AnyVal {
+    def addOne(t: T) = builder += t
+  }
+
+  implicit class ListBufferOps[T](val buffer: ListBuffer[T]) extends AnyVal {
+    def addOne(t: T) = buffer += t
+  }
+
 }
