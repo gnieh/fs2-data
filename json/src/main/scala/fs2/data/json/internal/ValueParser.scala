@@ -19,13 +19,13 @@ package data
 package json
 package internals
 
-import ast._
+import scala.collection.mutable.ListBuffer
 
-import scala.collection.immutable.VectorBuilder
+import ast._
 
 private[json] object ValueParser {
 
-  private def pullArray[F[_], Json](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], acc: VectorBuilder[Json])(
+  private def pullArray[F[_], Json](chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], acc: ListBuffer[Json])(
       implicit
       F: RaiseThrowable[F],
       builder: Builder[Json]): Pull[F, Nothing, Result[F, Json]] =
@@ -37,7 +37,7 @@ private[json] object ValueParser {
     } else {
       chunk(idx) match {
         case Token.EndArray =>
-          Pull.pure(Some((chunk, idx + 1, rest, builder.makeArray(acc.result()))))
+          Pull.pure(Some((chunk, idx + 1, rest, builder.makeArray(acc))))
         case _ =>
           Pull.suspend(pullValue(chunk, idx, rest).flatMap {
             case Some((chunk, idx, rest, json)) => pullArray(chunk, idx, rest, acc += json)
@@ -49,7 +49,7 @@ private[json] object ValueParser {
   private def pullObject[F[_], Json](chunk: Chunk[Token],
                                      idx: Int,
                                      rest: Stream[F, Token],
-                                     acc: VectorBuilder[(String, Json)])(implicit
+                                     acc: ListBuffer[(String, Json)])(implicit
       F: RaiseThrowable[F],
       builder: Builder[Json]): Pull[F, Nothing, Result[F, Json]] =
     if (idx >= chunk.size) {
@@ -60,7 +60,7 @@ private[json] object ValueParser {
     } else {
       chunk(idx) match {
         case Token.EndObject =>
-          Pull.pure(Some((chunk, idx + 1, rest, builder.makeObject(acc.result()))))
+          Pull.pure(Some((chunk, idx + 1, rest, builder.makeObject(acc))))
         case Token.Key(key) =>
           pullValue(chunk, idx + 1, rest).flatMap {
             case Some((chunk, idx, rest, json)) => pullObject(chunk, idx, rest, acc += (key -> json))
@@ -86,8 +86,8 @@ private[json] object ValueParser {
         case Token.NullValue      => Pull.pure(Some((chunk, idx + 1, rest, builder.makeNull)))
         case Token.StringValue(s) => Pull.pure(Some((chunk, idx + 1, rest, builder.makeString(s))))
         case Token.NumberValue(s) => Pull.pure(Some((chunk, idx + 1, rest, builder.makeNumber(s))))
-        case Token.StartArray     => pullArray(chunk, idx + 1, rest, new VectorBuilder)
-        case Token.StartObject    => pullObject(chunk, idx + 1, rest, new VectorBuilder)
+        case Token.StartArray     => pullArray(chunk, idx + 1, rest, new ListBuffer)
+        case Token.StartObject    => pullObject(chunk, idx + 1, rest, new ListBuffer)
         case token                => Pull.raiseError[F](new JsonException(s"malformed json (unexpected $token)"))
       }
     }

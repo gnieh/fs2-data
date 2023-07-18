@@ -15,11 +15,10 @@ Examples on this page use the following input:
 ```scala mdoc
 import fs2.{Fallible, Stream}
 import fs2.data.json._
-import fs2.data.json.literals._
 import fs2.data.json.jsonpath._
 import fs2.data.json.jsonpath.literals._
 
-val stream = json"""{
+def input[F[_]] = Stream.emit("""{
   "field1": 0,
   "field2": "test",
   "field3": [1, 2, 3]
@@ -27,7 +26,9 @@ val stream = json"""{
   {
   "field1": 2,
   "field3": []
-}"""
+}""").covary[F]
+
+val stream = input[Fallible].through(tokens)
 
 val sel = jsonpath"$$.field3[*]"
 ```
@@ -41,18 +42,15 @@ For instance both examples from the [core module documentation][json-doc] with c
 
 ```scala mdoc:nest
 import fs2.data.json.circe._
-import io.circe._
 
-val asts = stream.through(ast.values[Fallible, Json])
-asts.compile.toList
+val asts = input[Fallible].through(ast.parse)
+asts.map(_.spaces2).compile.toList
 ```
 
 You can use `filter.values` to selects only the values matching the JSONPath and deserialize them using the builder.
 
 ```scala mdoc:nest
 import fs2.data.json.circe._
-
-import io.circe._
 
 import cats.effect._
 import cats.syntax.all._
@@ -86,7 +84,6 @@ case class Wrapped(test: Int)
 ```scala mdoc:nest
 import fs2.data.json.selector._
 import fs2.data.json.circe._
-import io.circe._
 
 val values = stream.through(codec.deserialize[Fallible, Data])
 values.compile.toList
@@ -104,7 +101,6 @@ Dropping values can be done similarly.
 
 ```scala mdoc:nest
 import fs2.data.json.circe._
-import io.circe._
 import cats.syntax.all._
 
 val f1 = root.field("field1").compile
@@ -112,6 +108,40 @@ val f1 = root.field("field1").compile
 val transformed = stream.through(codec.transformOpt(f1, (i: Int) => (i > 0).guard[Option].as(i)))
 transformed.compile.to(collector.pretty())
 ```
+
+#### Migrating from `circe-fs2`
+
+If you were using [`circe-fs2`][circe-fs2] to emit streams of `Json` values, you can easily switch to `fs2-data-json-circe`. Just replace your usages of `stringStreamParser` or `byteStreamParser` by usage of `fs2.data.json.ast.parse`.
+
+For instance if you had this code:
+
+```scala mdoc:nest
+import io.circe.fs2._
+
+import cats.effect._
+
+input[SyncIO]
+  .through(stringStreamParser)
+  .map(_.spaces2)
+  .compile
+  .toList
+  .unsafeRunSync()
+```
+
+You can replace it by
+
+```scala mdoc:nest
+import fs2.data.json._
+import fs2.data.json.circe._
+
+input[Fallible]
+  .through(ast.parse)
+  .map(_.spaces2)
+  .compile
+  .toList
+```
+
+If you were using `byteStreamParser`, please refer to the the [`fs2.data.text` package documentation][text] to indicate how to decode the byte stream.
 
 ### Play! JSON
 
@@ -124,3 +154,5 @@ It also provides `Deserializer` for types with a `Reads` instance and `Serialize
 [json-doc]: /documentation/json/
 [circe]: https://circe.github.io/circe/
 [play-json]: https://www.playframework.com/
+[circe-fs2]: https://github.com/circe/circe-fs2
+[text]: /documentation/#decoding-textual-inputs

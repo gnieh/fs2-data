@@ -38,7 +38,15 @@ class JsonParserBenchmarks {
       .unsafeRunSync()
 
   @Benchmark
-  def parseJsonFs2DataValues() =
+  def parseJsonFs2DataParse() =
+    jsonStream
+      .through(ast.parse)
+      .compile
+      .drain
+      .unsafeRunSync()
+
+  @Benchmark
+  def parseJsonFs2DataTokensValues() =
     jsonStream
       .through(tokens)
       .through(ast.values)
