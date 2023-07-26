@@ -16,7 +16,7 @@ val weaverVersion = "0.8.3"
 
 val copyrightYears = "2019-2023"
 
-ThisBuild / tlBaseVersion := "1.7"
+ThisBuild / tlBaseVersion := "1.8"
 
 ThisBuild / tlSonatypeUseLegacyHost := false
 
