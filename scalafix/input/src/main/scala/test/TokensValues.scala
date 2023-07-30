@@ -1,6 +1,6 @@
 /*
 rule = json-parse
-*/
+ */
 package test
 
 import fs2._
