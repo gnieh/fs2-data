@@ -2,3 +2,6 @@
 f8f011c7fd60926b3c65096c5e17ffe1b078a9ab
 a7f21b9aacc545fb38615fab6ea7853d86fc78c1
 # Formatting commits
+
+# Scala Steward: Reformat with scalafmt 3.7.11
+23264a5ad4595b7e88beec3e86dd327acc945f85
