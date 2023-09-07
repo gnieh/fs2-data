@@ -3,7 +3,7 @@ import com.typesafe.tools.mima.core._
 val scala212 = "2.12.18"
 val scala213 = "2.13.11"
 val scala3 = "3.3.0"
-val fs2Version = "3.8.0"
+val fs2Version = "3.9.1"
 val circeVersion = "0.14.5"
 val circeExtrasVersion = "0.14.2"
 val playVersion = "2.10.0-RC7"
