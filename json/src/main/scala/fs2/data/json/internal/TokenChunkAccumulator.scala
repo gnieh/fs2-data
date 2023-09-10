@@ -76,7 +76,7 @@ private[json] final class TokenChunkAccumulator extends ChunkAccumulator[Token] 
   }
 
   override def chunk(): Chunk[Token] =
-    Chunk.vector(chunkAcc.result())
+    Chunk.from(chunkAcc.result())
 
   override def flush(): this.type = {
     chunkAcc.clear()

@@ -181,7 +181,7 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
       TT: Tag2Tag[InTag, OutTag],
       G: Evaluator[Guard, Tag[InTag]]): Pull[F, Out, Unit] =
     if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.result())) >> rest.pull.uncons.flatMap {
+      Pull.output(Chunk.from(chunkAcc.result())) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) =>
           chunkAcc.clear()
           transform(hd, 0, tl, env, e, chunkAcc)
@@ -189,7 +189,7 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
           step(env, e, none).map(squeezeAll(_)).flatMap { case (e, s) =>
             e match {
               case Expr.Epsilon =>
-                Pull.output(Chunk.seq(s))
+                Pull.output(Chunk.from(s))
               case _ => Pull.raiseError(new ESPException(s"unexpected end of input $e"))
             }
           }

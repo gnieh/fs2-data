@@ -27,7 +27,7 @@ package object internals {
   private[json] type Result[F[_], Out] = Option[(Chunk[Token], Int, Stream[F, Token], Out)]
 
   private[json] def emitChunk[T](chunkAcc: VectorBuilder[T]) =
-    Pull.output(Chunk.vector(chunkAcc.result()))
+    Pull.output(Chunk.from(chunkAcc.result()))
 
   private[json] def skipValue[F[_]](chunk: Chunk[Token],
                                     idx: Int,

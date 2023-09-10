@@ -38,7 +38,7 @@ private[csv] object RowParser {
              line: Long,
              chunkAcc: VectorBuilder[Row]): Pull[F, Row, Unit] =
       if (T.needsPull(context)) {
-        Pull.output(Chunk.vector(chunkAcc.result())) >> T.pullNext(context).flatMap {
+        Pull.output(Chunk.from(chunkAcc.result())) >> T.pullNext(context).flatMap {
           case Some(context) =>
             chunkAcc.clear()
             rows(context, currentField, tail, state, line, chunkAcc)
@@ -92,7 +92,7 @@ private[csv] object RowParser {
               rows(T.advance(context), currentField, tail, State.ExpectNewLine, line, chunkAcc)
             } else {
               // this is an error
-              Pull.output(Chunk.vector(chunkAcc.result())) >> Pull.raiseError[F](
+              Pull.output(Chunk.from(chunkAcc.result())) >> Pull.raiseError[F](
                 new CsvException(s"unexpected character '$c'", Some(line)))
             }
           case State.ExpectNewLine =>
@@ -107,7 +107,7 @@ private[csv] object RowParser {
                    chunkAcc += Row(NonEmptyList(field, tail).reverse, Some(line)))
             } else {
               // this is an error
-              Pull.output(Chunk.vector(chunkAcc.result())) >> Pull.raiseError[F](
+              Pull.output(Chunk.from(chunkAcc.result())) >> Pull.raiseError[F](
                 new CsvException(s"unexpected character '$c'", Some(line)))
             }
           case State.BeginningOfField =>
