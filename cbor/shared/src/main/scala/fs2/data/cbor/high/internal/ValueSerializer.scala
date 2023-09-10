@@ -36,7 +36,7 @@ private[cbor] object ValueSerializer {
            rest: Stream[F, CborValue],
            acc: List[CborItem]): Pull[F, CborItem, Unit] =
       if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(acc.reverse)) >> rest.pull.uncons.flatMap {
+        Pull.output(Chunk.from(acc.reverse)) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) => go(hd, 0, tl, Nil)
           case None           => Pull.done
         }
@@ -59,20 +59,20 @@ private[cbor] object ValueSerializer {
             }
           case CborValue.Array(values, indefinite) =>
             if (indefinite)
-              go(Chunk.seq(values), 0, Stream.empty, CborItem.StartIndefiniteArray :: acc) >>
+              go(Chunk.from(values), 0, Stream.empty, CborItem.StartIndefiniteArray :: acc) >>
                 go(chunk, idx + 1, rest, List(CborItem.Break))
             else
-              go(Chunk.seq(values), 0, Stream.empty, CborItem.StartArray(values.size.toLong) :: acc) >>
+              go(Chunk.from(values), 0, Stream.empty, CborItem.StartArray(values.size.toLong) :: acc) >>
                 go(chunk, idx + 1, rest, Nil)
           case CborValue.Map(values, indefinite) =>
             if (indefinite)
-              go(Chunk.iterable(values.flatMap(p => List(p._1, p._2))),
+              go(Chunk.from(values.flatMap(p => List(p._1, p._2))),
                  0,
                  Stream.empty,
                  CborItem.StartIndefiniteMap :: acc) >>
                 go(chunk, idx + 1, rest, List(CborItem.Break))
             else
-              go(Chunk.iterable(values.flatMap(p => List(p._1, p._2))),
+              go(Chunk.from(values.flatMap(p => List(p._1, p._2))),
                  0,
                  Stream.empty,
                  CborItem.StartMap(values.size.toLong) :: acc) >>

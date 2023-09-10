@@ -41,7 +41,7 @@ object JsonTagger {
     def object_(chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], chunkAcc: ListBuffer[TaggedJson])
         : Pull[F, TaggedJson, (Chunk[Token], Int, Stream[F, Token], ListBuffer[TaggedJson])] =
       if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.result())) >> rest.pull.uncons.flatMap {
+        Pull.output(Chunk.from(chunkAcc.result())) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) =>
             chunkAcc.clear()
             object_(hd, 0, tl, chunkAcc)
@@ -58,7 +58,7 @@ object JsonTagger {
           case Token.EndObject =>
             Pull.pure((chunk, idx + 1, rest, chunkAcc += TaggedJson.Raw(Token.EndObject)))
           case tok =>
-            Pull.output(Chunk.seq(chunkAcc.result())) >> Pull.raiseError(JsonException(s"unexpected JSON token $tok"))
+            Pull.output(Chunk.from(chunkAcc.result())) >> Pull.raiseError(JsonException(s"unexpected JSON token $tok"))
 
         }
       }
@@ -66,7 +66,7 @@ object JsonTagger {
     def array_(chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], arrayIdx: Int, chunkAcc: ListBuffer[TaggedJson])
         : Pull[F, TaggedJson, (Chunk[Token], Int, Stream[F, Token], ListBuffer[TaggedJson])] =
       if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.result())) >> rest.pull.uncons.flatMap {
+        Pull.output(Chunk.from(chunkAcc.result())) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) =>
             chunkAcc.clear()
             array_(hd, 0, tl, arrayIdx, chunkAcc)
@@ -88,7 +88,7 @@ object JsonTagger {
     def value_(chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], chunkAcc: ListBuffer[TaggedJson])
         : Pull[F, TaggedJson, (Chunk[Token], Int, Stream[F, Token], ListBuffer[TaggedJson])] =
       if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.result())) >> rest.pull.uncons.flatMap {
+        Pull.output(Chunk.from(chunkAcc.result())) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) =>
             chunkAcc.clear()
             value_(hd, 0, tl, chunkAcc)
@@ -110,7 +110,7 @@ object JsonTagger {
             rest: Stream[F, Token],
             chunkAcc: ListBuffer[TaggedJson]): Pull[F, TaggedJson, Unit] =
       if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.result())) >> rest.pull.uncons.flatMap {
+        Pull.output(Chunk.from(chunkAcc.result())) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) =>
             chunkAcc.clear()
             go_(hd, 0, tl, chunkAcc)

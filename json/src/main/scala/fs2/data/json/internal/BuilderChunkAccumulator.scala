@@ -137,7 +137,7 @@ private[json] final class BuilderChunkAccumulator[Json](builder: Builder[Json]) 
   }
 
   override def chunk(): Chunk[Json] =
-    Chunk.vector(chunkAcc.result())
+    Chunk.from(chunkAcc.result())
 
   override def flush(): this.type = {
     chunkAcc.clear()
