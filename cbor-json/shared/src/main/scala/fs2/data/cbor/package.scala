@@ -67,7 +67,7 @@ package object json {
                             chunkAcc: ListBuffer[Token])
         : Pull[F, Token, (Chunk[CborItem], Int, Stream[F, CborItem], ListBuffer[Token], String)] =
       if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.result())) >> rest.pull.uncons.flatMap {
+        Pull.output(Chunk.from(chunkAcc.result())) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) =>
             chunkAcc.clear()
             tokenizeTextStrings(hd, 0, tl, acc, chunkAcc)
@@ -89,7 +89,7 @@ package object json {
                             chunkAcc: ListBuffer[Token])
         : Pull[F, Token, (Chunk[CborItem], Int, Stream[F, CborItem], ListBuffer[Token], String)] =
       if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.result())) >> rest.pull.uncons.flatMap {
+        Pull.output(Chunk.from(chunkAcc.result())) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) =>
             chunkAcc.clear()
             tokenizeByteStrings(hd, 0, tl, tag, acc, chunkAcc)
@@ -114,7 +114,7 @@ package object json {
       if (count == 0L) {
         Pull.pure((chunk, idx, rest, chunkAcc += Token.EndObject))
       } else if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.result())) >> rest.pull.uncons.flatMap {
+        Pull.output(Chunk.from(chunkAcc.result())) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) =>
             chunkAcc.clear()
             tokenizeMap(hd, 0, tl, tag, count, chunkAcc)
@@ -165,7 +165,7 @@ package object json {
       if (count == 0L) {
         Pull.pure((chunk, idx, rest, chunkAcc += Token.EndArray))
       } else if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.result())) >> rest.pull.uncons.flatMap {
+        Pull.output(Chunk.from(chunkAcc.result())) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) =>
             chunkAcc.clear()
             tokenizeArray(hd, 0, tl, tag, count, chunkAcc)
@@ -189,7 +189,7 @@ package object json {
         tag: Option[Long],
         chunkAcc: ListBuffer[Token]): Pull[F, Token, (Chunk[CborItem], Int, Stream[F, CborItem], ListBuffer[Token])] = {
       if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.result())) >> rest.pull.uncons.flatMap {
+        Pull.output(Chunk.from(chunkAcc.result())) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) =>
             chunkAcc.clear()
             tokenizeValue(hd, 0, tl, tag, chunkAcc)
@@ -275,7 +275,7 @@ package object json {
            rest: Stream[F, CborItem],
            chunkAcc: ListBuffer[Token]): Pull[F, Token, Unit] =
       if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.result())) >> rest.pull.uncons.flatMap {
+        Pull.output(Chunk.from(chunkAcc.result())) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) =>
             chunkAcc.clear()
             go(hd, 0, tl, chunkAcc)

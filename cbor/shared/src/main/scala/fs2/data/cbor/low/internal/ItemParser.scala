@@ -41,7 +41,7 @@ private[low] object ItemParser {
       cont: (Chunk[Byte], Int, Stream[F, Byte], List[CborItem]) => Pull[F, CborItem, T])(
       onEos: => Pull[F, CborItem, T]): Pull[F, CborItem, T] =
     if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+      Pull.output(Chunk.from(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => ensureChunk(hd, 0, tl, Nil)(cont)(onEos)
         case None           => onEos
       }
