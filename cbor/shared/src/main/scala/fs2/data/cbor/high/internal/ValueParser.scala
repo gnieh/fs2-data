@@ -32,7 +32,7 @@ object ValueParser {
 
   private def raise[F[_]](e: CborParsingException, chunkAcc: List[CborValue])(implicit
       F: RaiseThrowable[F]): Pull[F, CborValue, Nothing] =
-    Pull.output(Chunk.seq(chunkAcc.reverse)) >> Pull.raiseError(e)
+    Pull.output(Chunk.from(chunkAcc.reverse)) >> Pull.raiseError(e)
 
   private def parseArray[F[_]](chunk: Chunk[CborItem],
                                idx: Int,
@@ -45,7 +45,7 @@ object ValueParser {
       Pull.pure((chunk, idx, rest, chunkAcc, CborValue.Array(acc.result(), false)))
     } else {
       if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+        Pull.output(Chunk.from(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) => parseArray(hd, 0, tl, size, acc, Nil)
           case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
         }
@@ -71,7 +71,7 @@ object ValueParser {
                                          chunkAcc: List[CborValue])(implicit
       F: RaiseThrowable[F]): Pull[F, CborValue, Result[F, CborValue]] =
     if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+      Pull.output(Chunk.from(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => parseIndefiniteArray(hd, 0, tl, acc, Nil)
         case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
       }
@@ -102,7 +102,7 @@ object ValueParser {
       Pull.pure((chunk, idx, rest, chunkAcc, CborValue.Map(acc.result(), false)))
     } else {
       if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+        Pull.output(Chunk.from(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) => parseMap(hd, 0, tl, size, acc, Nil)
           case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
         }
@@ -129,7 +129,7 @@ object ValueParser {
                                        chunkAcc: List[CborValue])(implicit
       F: RaiseThrowable[F]): Pull[F, CborValue, Result[F, CborValue]] =
     if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+      Pull.output(Chunk.from(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => parseIndefiniteMap(hd, 0, tl, acc, Nil)
         case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
       }
@@ -158,7 +158,7 @@ object ValueParser {
                                      chunkAcc: List[CborValue])(implicit
       F: RaiseThrowable[F]): Pull[F, CborValue, Result[F, CborValue]] =
     if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+      Pull.output(Chunk.from(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => parseByteStrings(hd, 0, tl, acc, Nil)
         case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
       }
@@ -185,7 +185,7 @@ object ValueParser {
                                      chunkAcc: List[CborValue])(implicit
       F: RaiseThrowable[F]): Pull[F, CborValue, Result[F, CborValue]] =
     if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+      Pull.output(Chunk.from(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => parseTextStrings(hd, 0, tl, acc, Nil)
         case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
       }
@@ -212,7 +212,7 @@ object ValueParser {
                               chunkAcc: List[CborValue])(implicit
       F: RaiseThrowable[F]): Pull[F, CborValue, Result[F, CborValue => Pull[F, Nothing, CborValue]]] =
     if (idx >= chunk.size) {
-      Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+      Pull.output(Chunk.from(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) => parseTags(hd, 0, tl, tags, Nil)
         case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
       }
@@ -244,7 +244,7 @@ object ValueParser {
       implicit F: RaiseThrowable[F]): Pull[F, CborValue, Result[F, CborValue]] =
     parseTags(chunk, idx, rest, Pull.pure, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc, tags) =>
       if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+        Pull.output(Chunk.from(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) => parseValue(hd, 0, tl, Nil)
           case None           => Pull.raiseError(new CborParsingException("unexpected end of input"))
         }
@@ -317,7 +317,7 @@ object ValueParser {
            rest: Stream[F, CborItem],
            chunkAcc: List[CborValue]): Pull[F, CborValue, Unit] =
       if (idx >= chunk.size) {
-        Pull.output(Chunk.seq(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
+        Pull.output(Chunk.from(chunkAcc.reverse)) >> rest.pull.uncons.flatMap {
           case Some((hd, tl)) => go(hd, 0, tl, Nil)
           case None           => Pull.done
         }

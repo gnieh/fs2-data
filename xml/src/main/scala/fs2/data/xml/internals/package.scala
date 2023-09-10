@@ -23,6 +23,6 @@ import scala.collection.immutable.VectorBuilder
 package object internals {
 
   private[internals] def emitChunk[T](chunkAcc: Option[VectorBuilder[T]]) =
-    chunkAcc.fold(Pull.done.covaryOutput[T])(vb => Pull.output(Chunk.vector(vb.result())))
+    chunkAcc.fold(Pull.done.covaryOutput[T])(vb => Pull.output(Chunk.from(vb.result())))
 
 }
