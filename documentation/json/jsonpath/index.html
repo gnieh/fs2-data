@@ -295,7 +295,6 @@ This means that for nested matches, the first stream returned is the ancestor el
   <span class="o">.</span><span class="py">toList</span>
   <span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
 <span class="c1">// res3: List[List[Token]] = List(</span>
-<span class="c1">//   List(StartObject, Key(value = "c"), NumberValue(value = "1"), EndObject),</span>
 <span class="c1">//   List(</span>
 <span class="c1">//     StartObject,</span>
 <span class="c1">//     Key(value = "a"),</span>
@@ -308,7 +307,8 @@ This means that for nested matches, the first stream returned is the ancestor el
 <span class="c1">//     Key(value = "c"),</span>
 <span class="c1">//     NumberValue(value = "3"),</span>
 <span class="c1">//     EndObject</span>
-<span class="c1">//   )</span>
+<span class="c1">//   ),</span>
+<span class="c1">//   List(StartObject, Key(value = "c"), NumberValue(value = "1"), EndObject)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
