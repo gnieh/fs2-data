@@ -105,6 +105,7 @@ private[json] class JsonTokenParser[F[_], T, Res](
           } else if (c == '\\') {
             T.appendMarked(context, acc)
             T.advance(context)
+            T.mark(context)
             slowString_(key, StringState.SeenBackslash, 0, acc)
           } else if (c >= 0x20 && c <= 0x10ffff) {
             T.advance(context)
