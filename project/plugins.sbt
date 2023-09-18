@@ -23,4 +23,4 @@ addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.4.15")
 
 addSbtPlugin("org.portable-scala" % "sbt-scala-native-crossproject" % "1.3.2")
 
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.11.1")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.11.0")
