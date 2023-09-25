@@ -68,14 +68,14 @@ object Tag {
   }
 
   implicit def order[T: Order]: Order[Tag[T]] = Order.from {
-    case (Name(n1), Name(n2))                      => n1.compare(n2)
+    case (Name(n1), Name(n2))                      => Order[T].compare(n1, n2)
     case (Name(_), _)                              => -1
     case (Open, Name(_))                           => 1
     case (Open, _)                                 => -1
     case (Close, Name(_) | Open)                   => 1
     case (Close, _)                                => -1
     case (Value(_), Name(_) | Open | Close)        => 1
-    case (Value(v1), Value(v2))                    => v1.compare(v2)
+    case (Value(v1), Value(v2))                    => Order[T].compare(v1, v2)
     case (Value(_), Leaf)                          => -1
     case (Leaf, Value(_) | Name(_) | Open | Close) => 1
     case (Leaf, _)                                 => -1
