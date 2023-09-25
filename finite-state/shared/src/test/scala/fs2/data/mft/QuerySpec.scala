@@ -29,7 +29,11 @@ import esp.{Conversion, Tag}
 import pattern.{ConstructorTree, Evaluator}
 import pfsa.{Candidate, Pred, Regular}
 
-object QuerySpec extends SimpleIOSuite {
+object OptimizedQuerySpec extends QuerySpec(50)
+
+object NonOptimizedQuerySpec extends QuerySpec(0)
+
+abstract class QuerySpec(credit: Int) extends SimpleIOSuite {
 
   implicit object StringConversions extends Conversion[String, MiniXML] {
 
@@ -112,7 +116,7 @@ object QuerySpec extends SimpleIOSuite {
 
   test("child path") {
     MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(Some("a"))))))
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(Some("a"))))), credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -159,7 +163,7 @@ object QuerySpec extends SimpleIOSuite {
 
   test("any child path") {
     MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(None)))))
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(None)))), credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -206,7 +210,7 @@ object QuerySpec extends SimpleIOSuite {
 
   test("descendant path") {
     MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))))
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))), credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -263,7 +267,7 @@ object QuerySpec extends SimpleIOSuite {
 
   test("any descendant path") {
     MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(None)))))
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(None)))), credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -324,7 +328,8 @@ object QuerySpec extends SimpleIOSuite {
     MiniXQueryCompiler
       .compile(
         Query
-          .LetClause("v", Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))), Query.Variable("v")))
+          .LetClause("v", Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))), Query.Variable("v")),
+        credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -383,7 +388,8 @@ object QuerySpec extends SimpleIOSuite {
     IO(
       MiniXQueryCompiler
         .compile(Query
-          .ForClause("v", MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))), Query.Variable("v"))))
+                   .ForClause("v", MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))), Query.Variable("v")),
+                 credit))
       .flatMap(_.esp[IO])
       .flatMap { esp =>
         Stream
@@ -441,13 +447,16 @@ object QuerySpec extends SimpleIOSuite {
   test("nested for") {
     IO(
       MiniXQueryCompiler
-        .compile(Query.ForClause(
-          "a",
-          MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))),
-          Query.ForClause("b",
-                          MiniXPath(NonEmptyList.one(Step.Child(None))),
-                          Query.Sequence(NonEmptyList.of(Query.Variable("a"), Query.Variable("b"))))
-        )))
+        .compile(
+          Query.ForClause(
+            "a",
+            MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))),
+            Query.ForClause("b",
+                            MiniXPath(NonEmptyList.one(Step.Child(None))),
+                            Query.Sequence(NonEmptyList.of(Query.Variable("a"), Query.Variable("b"))))
+          ),
+          credit
+        ))
       .flatMap(_.esp[IO])
       .flatMap { esp =>
         Stream
@@ -498,7 +507,8 @@ object QuerySpec extends SimpleIOSuite {
   test("leaves") {
     MiniXQueryCompiler
       .compile(
-        Query.ForClause("a", MiniXPath(NonEmptyList.of(Step.Child(Some("a")), Step.Child(None))), Query.Variable("a")))
+        Query.ForClause("a", MiniXPath(NonEmptyList.of(Step.Child(Some("a")), Step.Child(None))), Query.Variable("a")),
+        credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -531,7 +541,8 @@ object QuerySpec extends SimpleIOSuite {
 
   test("leaf function") {
     MiniXQueryCompiler
-      .compile(Query.ForClause("a", MiniXPath(NonEmptyList.of(Step.Descendant(None))), Query.LeafFunction(_.asRight)))
+      .compile(Query.ForClause("a", MiniXPath(NonEmptyList.of(Step.Descendant(None))), Query.LeafFunction(_.asRight)),
+               credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -563,10 +574,10 @@ object QuerySpec extends SimpleIOSuite {
 
   test("leaf function failure") {
     MiniXQueryCompiler
-      .compile(
-        Query.ForClause("a",
-                        MiniXPath(NonEmptyList.of(Step.Descendant(None))),
-                        Query.LeafFunction(t => s"No text expected but got $t".asLeft)))
+      .compile(Query.ForClause("a",
+                               MiniXPath(NonEmptyList.of(Step.Descendant(None))),
+                               Query.LeafFunction(t => s"No text expected but got $t".asLeft)),
+               credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -593,7 +604,10 @@ object QuerySpec extends SimpleIOSuite {
   test("wrap") {
     MiniXQueryCompiler
       .compile(Query
-        .ForClause("a", MiniXPath(NonEmptyList.of(Step.Descendant(None))), Query.Node("wrapped", Query.Variable("a"))))
+                 .ForClause("a",
+                            MiniXPath(NonEmptyList.of(Step.Descendant(None))),
+                            Query.Node("wrapped", Query.Variable("a"))),
+               credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -657,7 +671,9 @@ object QuerySpec extends SimpleIOSuite {
                 )
               )
             )
-          ))
+          ),
+          credit
+        )
 
     mft
       .esp[IO]
@@ -771,7 +787,9 @@ object QuerySpec extends SimpleIOSuite {
               MiniXPath(NonEmptyList.one(Step.Descendant(Some("b")))),
               Query.Node("res", Query.Sequence(NonEmptyList.of(Query.Variable("a"), Query.Variable("b"))))
             )
-          ))
+          ),
+          credit
+        )
 
     mft
       .esp[IO]
