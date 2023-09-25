@@ -35,28 +35,30 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
                                                     val rules: DecisionTree[Guard, Tag[InTag], Rhs[OutTag]])(implicit
     F: RaiseThrowable[F]) {
 
-  def call[In, Out](env: Map[Int, Expr[Out]], q: Int, d: Int, args: List[Expr[Out]], in: Option[In])(implicit
+  def call[In, Out](env: Vector[Expr[Out]], q: Int, d: Int, args: List[Expr[Out]], in: Option[In], inline: Boolean)(
+      implicit
       In: Selectable[In, Tag[InTag]],
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
       G: Evaluator[Guard, Tag[InTag]]) =
     params.get(q).liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown state $q")).flatMap { params =>
       if (params === args.size) {
-        args.zipWithIndex
-          .foldLeftM(env) { case (env, (arg, param)) =>
-            step(env, arg, in).map { rhs =>
-              env.updated(param, rhs)
-            }
+        args
+          .traverse { arg =>
+            if (inline)
+              Pull.pure(arg)
+            else
+              step(env, arg, in)
           }
           .flatMap { env =>
             rules
               .get(Input(q, d, in))
               .liftTo[Pull[F, Nothing, *]](new ESPException(s"no rule found for state $q at depth $d for input $in"))
-              .flatMap(eval(env, d, in, _))
+              .flatMap(eval(env.toVector, d, in, _))
           }
       } else {
         Pull.raiseError(new ESPException(
-          s"wrong number of argument given in state $q reading input $in (expected $params but got ${args.size})"))
+          s"wrong number of arguments given in state $q reading input $in (expected $params but got ${args.size})"))
       }
     }
 
@@ -68,14 +70,14 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
       case Tag.Value(tag) => tag
     }
 
-  def step[In, Out](env: Map[Int, Expr[Out]], e: Expr[Out], in: Option[In])(implicit
+  def step[In, Out](env: Vector[Expr[Out]], e: Expr[Out], in: Option[In])(implicit
       In: Selectable[In, Tag[InTag]],
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
       G: Evaluator[Guard, Tag[InTag]]): Pull[F, Nothing, Expr[Out]] =
     e match {
       case Expr.Call(q, d, args) =>
-        call(env, q, d, args, in)
+        call(env, q, d, args, in, false)
       case Expr.Epsilon =>
         Pull.pure(Expr.Epsilon)
       case Expr.Open(o, next) =>
@@ -88,7 +90,7 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
         (step(env, e1, in), step(env, e2, in)).mapN(Expr.concat(_, _))
     }
 
-  def eval[In, Out](env: Map[Int, Expr[Out]], depth: Int, in: Option[In], rhs: Rhs[OutTag])(implicit
+  def eval[In, Out](env: Vector[Expr[Out]], depth: Int, in: Option[In], rhs: Rhs[OutTag])(implicit
       In: Selectable[In, Tag[InTag]],
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
@@ -101,10 +103,10 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
       case Rhs.SelfCall(q, params) =>
         params
           .traverse(eval(env, depth, in, _))
-          .flatMap(call(env, q, 0, _, in))
+          .flatMap(call(env, q, 0, _, in, true))
       case Rhs.Param(i) =>
         env
-          .get(i)
+          .lift(i)
           .liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown parameter $i"))
       case Rhs.Epsilon =>
         Pull.pure(Expr.Epsilon)
@@ -171,12 +173,8 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
     loop(e, new ListBuffer)
   }
 
-  def transform[In, Out](chunk: Chunk[In],
-                         idx: Int,
-                         rest: Stream[F, In],
-                         env: Map[Int, Expr[Out]],
-                         e: Expr[Out],
-                         chunkAcc: ListBuffer[Out])(implicit
+  def transform[In, Out](chunk: Chunk[In], idx: Int, rest: Stream[F, In], e: Expr[Out], chunkAcc: ListBuffer[Out])(
+      implicit
       In: Selectable[In, Tag[InTag]],
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
@@ -185,9 +183,9 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
       Pull.output(Chunk.from(chunkAcc.result())) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) =>
           chunkAcc.clear()
-          transform(hd, 0, tl, env, e, chunkAcc)
+          transform(hd, 0, tl, e, chunkAcc)
         case None =>
-          step(env, e, none).map(squeezeAll(_)).flatMap { case (e, s) =>
+          step(Vector.empty, e, none).map(squeezeAll(_)).flatMap { case (e, s) =>
             e match {
               case Expr.Epsilon =>
                 Pull.output(Chunk.from(s))
@@ -196,8 +194,8 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
           }
       }
     } else {
-      step(env, e, chunk(idx).some).map(squeeze(_)).flatMap { case (e, s) =>
-        transform(chunk, idx + 1, rest, env, e, chunkAcc ++= s)
+      step(Vector.empty, e, chunk(idx).some).map(squeeze(_)).flatMap { case (e, s) =>
+        transform(chunk, idx + 1, rest, e, chunkAcc ++= s)
       }
     }
 
@@ -206,7 +204,7 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
       G: Evaluator[Guard, Tag[InTag]]): Pipe[F, In, Out] =
-    transform[In, Out](Chunk.empty, 0, _, Map.empty, Expr.Call(init, 0, Nil), new ListBuffer).stream
+    transform[In, Out](Chunk.empty, 0, _, Expr.Call(init, 0, Nil), new ListBuffer).stream
 
 }
 
