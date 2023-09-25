@@ -165,19 +165,19 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
   def inlineStayMoves: MFT[Guard, InTag, OutTag] = {
     // first we gather all the stay states, for which the RHS is only calling other states on self
     // and is the same for all cases.
-    def hasOnlySelfCalls(rhs: Rhs[OutTag]): Boolean =
+    def hasSelfCalls(rhs: Rhs[OutTag]): Boolean =
       rhs match {
         case Rhs.Call(_, Forest.Self, _) => true
-        case Rhs.Call(_, _, _)           => false
-        case Rhs.Node(_, children)       => hasOnlySelfCalls(children)
-        case Rhs.CopyNode(children)      => hasOnlySelfCalls(children)
-        case Rhs.Concat(rhs1, rhs2)      => hasOnlySelfCalls(rhs1) && hasOnlySelfCalls(rhs2)
+        case Rhs.Call(_, _, args)        => args.exists(hasSelfCalls(_))
+        case Rhs.Node(_, children)       => hasSelfCalls(children)
+        case Rhs.CopyNode(children)      => hasSelfCalls(children)
+        case Rhs.Concat(rhs1, rhs2)      => hasSelfCalls(rhs1) && hasSelfCalls(rhs2)
         case _                           => true
       }
 
     val stayStates = rules.mapFilter { rules =>
       if (rules.isWildcard)
-        rules.tree.headOption.collect { case (_, rhs) if hasOnlySelfCalls(rhs) => rhs }
+        rules.tree.headOption.collect { case (_, rhs) if hasSelfCalls(rhs) => rhs }
       else
         none
     }
