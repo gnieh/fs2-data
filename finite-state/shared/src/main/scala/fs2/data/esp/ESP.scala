@@ -255,7 +255,7 @@ object ESP {
         qcases
           .map { case Case(q, d, p, r) =>
             val params = List.tabulate(esp.params.getOrElse(q.getOrElse(-1), 0))(i => show"y$i").mkString_(", ")
-            show"${q.fold("_")(q => show"q$q")}[${d.fold("$d")(_.show)}]($params) --[ ${p.fold("_")(_.show)} ]--> $r"
+            show"${q.fold("_")(q => show"q$q")}[${d.fold(raw"$d")(_.show)}]($params) --[ ${p.fold("_")(_.show)} ]--> $r"
           }
           .mkString_("\n")
       }
