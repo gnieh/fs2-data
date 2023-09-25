@@ -58,7 +58,7 @@ private[fs2] abstract class QueryCompiler[Tag, Path] {
   /** Return the constructor tag of this pattern, or `None` if it is a wildcard. */
   def tagOf(pattern: Pattern): Option[Tag]
 
-  def compile(query: Query[Tag, Path]): MFT[NonEmptyList[Guard], Tag, Tag] = {
+  def compile(query: Query[Tag, Path], credit: Int = 50): MFT[NonEmptyList[Guard], Tag, Tag] = {
     val mft = dsl[NonEmptyList[Guard], Tag, Tag] { implicit builder =>
       val q0 = state(args = 0, initial = true)
       val qinit = state(args = 1)
@@ -211,7 +211,7 @@ private[fs2] abstract class QueryCompiler[Tag, Path] {
       } else {
         mft
       }
-    optimize(mft, 50)
+    optimize(mft, credit)
   }
 
 }
