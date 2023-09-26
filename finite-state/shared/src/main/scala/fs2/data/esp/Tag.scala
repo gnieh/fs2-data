@@ -67,7 +67,8 @@ object Tag {
     case Value(v)   => show"$v"
   }
 
-  implicit def order[T: Order]: Order[Tag[T]] = Order.from {
+  // this is an arbitrary order used for pretty printing only for now
+  private[esp] implicit def order[T: Order]: Order[Tag[T]] = Order.from {
     case (Name(n1), Name(n2))                      => Order[T].compare(n1, n2)
     case (Name(_), _)                              => -1
     case (Open, Name(_))                           => 1
