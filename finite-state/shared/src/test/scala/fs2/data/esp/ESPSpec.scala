@@ -32,9 +32,9 @@ object NodeGuard {
 
     override def eval(guard: NodeGuard, tree: ConstructorTree[Tag[String]]): Option[Tag[String]] =
       tree match {
-        case ConstructorTree(Tag.Name(n), _) => (guard.names.contains(n) == guard.positive).guard[Option].as(Tag.True)
+        case ConstructorTree(Tag.Name(n), _) => (guard.names.contains(n) == guard.positive).guard[Option].as(Tag.Open)
         case ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(n), _))) =>
-          (guard.names.contains(n) == guard.positive).guard[Option].as(Tag.True)
+          (guard.names.contains(n) == guard.positive).guard[Option].as(Tag.Open)
         case _ => None
       }
 

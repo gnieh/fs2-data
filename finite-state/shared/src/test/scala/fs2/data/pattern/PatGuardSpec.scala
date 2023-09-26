@@ -30,8 +30,8 @@ object PatGuardSpec extends IOSuite {
   implicit object evaluator extends Evaluator[Set[String], Tag[String]] {
     def eval(guard: Set[String], tree: ConstructorTree[Tag[String]]): Option[Tag[String]] =
       tree match {
-        case ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(n), _))) if guard.contains(n) => Some(Tag.True)
-        case ConstructorTree(Tag.Name(n), _) if guard.contains(n)                                  => Some(Tag.True)
+        case ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(n), _))) if guard.contains(n) => Some(Tag.Open)
+        case ConstructorTree(Tag.Name(n), _) if guard.contains(n)                                  => Some(Tag.Open)
         case _                                                                                     => None
       }
   }
