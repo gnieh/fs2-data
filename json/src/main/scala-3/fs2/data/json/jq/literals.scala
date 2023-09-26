@@ -41,8 +41,8 @@ package object literals {
     }
   }
 
-  given ToExpr[Filter] with {
-    def apply(f: Filter)(using Quotes) =
+  given ToExpr[SimpleFilter] with {
+    def apply(f: SimpleFilter)(using Quotes) =
       f match {
         case Jq.Root              => '{ Jq.Root }
         case Jq.Identity          => '{ Jq.Identity }
@@ -51,8 +51,15 @@ package object literals {
         case Jq.Slice(idx1, idx2) => '{ Jq.Slice(${ Expr(idx1) }, ${ Expr(idx2) }) }
         case Jq.Child             => '{ Jq.Child }
         case Jq.RecursiveDescent  => '{ Jq.RecursiveDescent }
+      }
+  }
+
+  given ToExpr[Filter] with {
+    def apply(f: Filter)(using Quotes) =
+      f match {
         case Jq.Sequence(qs) =>
           '{ Jq.Sequence(NonEmptyChain.fromNonEmptyList(${ Expr(qs.toNonEmptyList) })) }
+        case simple: SimpleFilter => Expr(simple)
       }
   }
 
