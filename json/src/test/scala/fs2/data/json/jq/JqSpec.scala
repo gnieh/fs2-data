@@ -210,8 +210,7 @@ object JqSpec extends SimpleIOSuite {
   test("object iterator") {
     for {
       compiled <- compiler.compile(jq""".a | {"before": true, "value": .[].b, "after": .[0].b}""")
-      (time, result) <- input.through(compiled).compile.toList.timed
-      _ <- IO.println(s"took ${time.toMillis}ms")
+      result <- input.through(compiled).compile.toList
     } yield expect.same(
       List(
         Token.StartObject,
