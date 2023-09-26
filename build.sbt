@@ -494,7 +494,10 @@ lazy val finiteState = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.mft.Rules.copy$default$1"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.this"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.apply"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.mft.Rules._1")
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.mft.Rules._1"),
+      // Removal of experimental class
+      ProblemFilters.exclude[MissingFieldProblem]("fs2.data.esp.Tag.True"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.esp.Tag$True$")
     )
   )
   .jsSettings(

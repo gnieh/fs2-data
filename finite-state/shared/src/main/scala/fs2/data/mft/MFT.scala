@@ -18,12 +18,12 @@ package fs2
 package data
 package mft
 
-import esp.{Depth, ESP, Rhs => ERhs, Pattern, PatternDsl, Tag => ETag}
-
-import cats.{Defer, MonadError}
 import cats.syntax.all._
-import cats.Show
+import cats.{Defer, MonadError, Show}
+
 import scala.annotation.tailrec
+
+import esp.{Depth, ESP, Rhs => ERhs, Pattern, PatternDsl, Tag => ETag}
 
 sealed trait Forest
 object Forest {
@@ -165,19 +165,19 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
   def inlineStayMoves: MFT[Guard, InTag, OutTag] = {
     // first we gather all the stay states, for which the RHS is only calling other states on self
     // and is the same for all cases.
-    def hasOnlySelfCalls(rhs: Rhs[OutTag]): Boolean =
+    def hasSelfCalls(rhs: Rhs[OutTag]): Boolean =
       rhs match {
         case Rhs.Call(_, Forest.Self, _) => true
-        case Rhs.Call(_, _, _)           => false
-        case Rhs.Node(_, children)       => hasOnlySelfCalls(children)
-        case Rhs.CopyNode(children)      => hasOnlySelfCalls(children)
-        case Rhs.Concat(rhs1, rhs2)      => hasOnlySelfCalls(rhs1) && hasOnlySelfCalls(rhs2)
+        case Rhs.Call(_, _, args)        => args.exists(hasSelfCalls(_))
+        case Rhs.Node(_, children)       => hasSelfCalls(children)
+        case Rhs.CopyNode(children)      => hasSelfCalls(children)
+        case Rhs.Concat(rhs1, rhs2)      => hasSelfCalls(rhs1) && hasSelfCalls(rhs2)
         case _                           => true
       }
 
     val stayStates = rules.mapFilter { rules =>
       if (rules.isWildcard)
-        rules.tree.headOption.collect { case (_, rhs) if hasOnlySelfCalls(rhs) => rhs }
+        rules.tree.headOption.collect { case (_, rhs) if hasSelfCalls(rhs) => rhs }
       else
         none
     }
@@ -220,6 +220,7 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
     * that are never called from the initial state.
     */
   def removeUnreachableStates: MFT[Guard, InTag, OutTag] = {
+    @tailrec
     def reachable(toProcess: List[Int], processed: Set[Int]): Set[Int] =
       toProcess match {
         case q :: qs =>
