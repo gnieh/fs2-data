@@ -19,18 +19,21 @@ package data
 package mft
 package query
 
-import esp.{Conversion, Tag}
-import pattern.{ConstructorTree, Evaluator}
-
 import cats.Eq
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
 import weaver._
 
+import esp.{Conversion, Tag}
+import pattern.{ConstructorTree, Evaluator}
 import pfsa.{Candidate, Pred, Regular}
 
-object QuerySpec extends SimpleIOSuite {
+object OptimizedQuerySpec extends QuerySpec(50)
+
+object NonOptimizedQuerySpec extends QuerySpec(0)
+
+abstract class QuerySpec(credit: Int) extends SimpleIOSuite {
 
   implicit object StringConversions extends Conversion[String, MiniXML] {
 
@@ -47,8 +50,8 @@ object QuerySpec extends SimpleIOSuite {
     override def eval(guard: NonEmptyList[Set[String]], tree: ConstructorTree[Tag[String]]): Option[Tag[String]] =
       tree match {
         case ConstructorTree(Tag.Open, List(ConstructorTree(Tag.Name(n), _))) if guard.forall(_.contains(n)) =>
-          Some(Tag.True)
-        case ConstructorTree(Tag.Name(n), _) if guard.forall(_.contains(n)) => Some(Tag.True)
+          Some(Tag.Open)
+        case ConstructorTree(Tag.Name(n), _) if guard.forall(_.contains(n)) => Some(Tag.Open)
         case _                                                              => None
       }
 
@@ -112,9 +115,8 @@ object QuerySpec extends SimpleIOSuite {
   }
 
   test("child path") {
-    ignore("debugging")
     MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(Some("a"))))))
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(Some("a"))))), credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -161,7 +163,7 @@ object QuerySpec extends SimpleIOSuite {
 
   test("any child path") {
     MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(None)))))
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(None)))), credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -208,7 +210,7 @@ object QuerySpec extends SimpleIOSuite {
 
   test("descendant path") {
     MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))))
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))), credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -265,7 +267,7 @@ object QuerySpec extends SimpleIOSuite {
 
   test("any descendant path") {
     MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(None)))))
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(None)))), credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -326,7 +328,8 @@ object QuerySpec extends SimpleIOSuite {
     MiniXQueryCompiler
       .compile(
         Query
-          .LetClause("v", Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))), Query.Variable("v")))
+          .LetClause("v", Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))), Query.Variable("v")),
+        credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -385,7 +388,8 @@ object QuerySpec extends SimpleIOSuite {
     IO(
       MiniXQueryCompiler
         .compile(Query
-          .ForClause("v", MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))), Query.Variable("v"))))
+                   .ForClause("v", MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))), Query.Variable("v")),
+                 credit))
       .flatMap(_.esp[IO])
       .flatMap { esp =>
         Stream
@@ -443,13 +447,16 @@ object QuerySpec extends SimpleIOSuite {
   test("nested for") {
     IO(
       MiniXQueryCompiler
-        .compile(Query.ForClause(
-          "a",
-          MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))),
-          Query.ForClause("b",
-                          MiniXPath(NonEmptyList.one(Step.Child(None))),
-                          Query.Sequence(NonEmptyList.of(Query.Variable("a"), Query.Variable("b"))))
-        )))
+        .compile(
+          Query.ForClause(
+            "a",
+            MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))),
+            Query.ForClause("b",
+                            MiniXPath(NonEmptyList.one(Step.Child(None))),
+                            Query.Sequence(NonEmptyList.of(Query.Variable("a"), Query.Variable("b"))))
+          ),
+          credit
+        ))
       .flatMap(_.esp[IO])
       .flatMap { esp =>
         Stream
@@ -500,7 +507,8 @@ object QuerySpec extends SimpleIOSuite {
   test("leaves") {
     MiniXQueryCompiler
       .compile(
-        Query.ForClause("a", MiniXPath(NonEmptyList.of(Step.Child(Some("a")), Step.Child(None))), Query.Variable("a")))
+        Query.ForClause("a", MiniXPath(NonEmptyList.of(Step.Child(Some("a")), Step.Child(None))), Query.Variable("a")),
+        credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -533,7 +541,8 @@ object QuerySpec extends SimpleIOSuite {
 
   test("leaf function") {
     MiniXQueryCompiler
-      .compile(Query.ForClause("a", MiniXPath(NonEmptyList.of(Step.Descendant(None))), Query.LeafFunction(_.asRight)))
+      .compile(Query.ForClause("a", MiniXPath(NonEmptyList.of(Step.Descendant(None))), Query.LeafFunction(_.asRight)),
+               credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -565,10 +574,10 @@ object QuerySpec extends SimpleIOSuite {
 
   test("leaf function failure") {
     MiniXQueryCompiler
-      .compile(
-        Query.ForClause("a",
-                        MiniXPath(NonEmptyList.of(Step.Descendant(None))),
-                        Query.LeafFunction(t => s"No text expected but got $t".asLeft)))
+      .compile(Query.ForClause("a",
+                               MiniXPath(NonEmptyList.of(Step.Descendant(None))),
+                               Query.LeafFunction(t => s"No text expected but got $t".asLeft)),
+               credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -595,7 +604,10 @@ object QuerySpec extends SimpleIOSuite {
   test("wrap") {
     MiniXQueryCompiler
       .compile(Query
-        .ForClause("a", MiniXPath(NonEmptyList.of(Step.Descendant(None))), Query.Node("wrapped", Query.Variable("a"))))
+                 .ForClause("a",
+                            MiniXPath(NonEmptyList.of(Step.Descendant(None))),
+                            Query.Node("wrapped", Query.Variable("a"))),
+               credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -639,26 +651,31 @@ object QuerySpec extends SimpleIOSuite {
   }
 
   test("more nested") {
-    MiniXQueryCompiler
-      .compile(
-        Query.ForClause(
-          "v1",
-          MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))),
+    val mft =
+      MiniXQueryCompiler
+        .compile(
           Query.ForClause(
-            "v2",
-            MiniXPath(NonEmptyList.one(Step.Descendant(Some("b")))),
-            Query.LetClause(
-              "v3",
-              Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("c"))))),
+            "v1",
+            MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))),
+            Query.ForClause(
+              "v2",
+              MiniXPath(NonEmptyList.one(Step.Descendant(Some("b")))),
               Query.LetClause(
-                "v4",
-                Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("d"))))),
-                Query.Sequence(NonEmptyList
-                  .of(Query.Variable("v1"), Query.Variable("v2"), Query.Variable("v3"), Query.Variable("v4")))
+                "v3",
+                Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("c"))))),
+                Query.LetClause(
+                  "v4",
+                  Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("d"))))),
+                  Query.Sequence(NonEmptyList
+                    .of(Query.Variable("v1"), Query.Variable("v2"), Query.Variable("v3"), Query.Variable("v4")))
+                )
               )
             )
-          )
-        ))
+          ),
+          credit
+        )
+
+    mft
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -751,6 +768,73 @@ object QuerySpec extends SimpleIOSuite {
                 MiniXML.Close("b"),
                 MiniXML.Open("d"),
                 MiniXML.Close("d"),
+                // format: on
+              ),
+              events
+            ))
+      }
+  }
+
+  test("let-for") {
+    val mft =
+      MiniXQueryCompiler
+        .compile(
+          Query.LetClause(
+            "a",
+            Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))),
+            Query.ForClause(
+              "b",
+              MiniXPath(NonEmptyList.one(Step.Descendant(Some("b")))),
+              Query.Node("res", Query.Sequence(NonEmptyList.of(Query.Variable("a"), Query.Variable("b"))))
+            )
+          ),
+          credit
+        )
+
+    mft
+      .esp[IO]
+      .flatMap { esp =>
+        Stream
+          .emits(
+            List[MiniXML](
+              // format: off
+              MiniXML.Open("doc"),
+                MiniXML.Open("b"),
+                  MiniXML.Text("some b"),
+                MiniXML.Close("b"),
+                MiniXML.Open("b"),
+                  MiniXML.Text("another b"),
+                MiniXML.Close("b"),
+              MiniXML.Close("doc"),
+                MiniXML.Open("a"),
+                  MiniXML.Text("some a"),
+                MiniXML.Close("a"),
+              // format: on
+            )
+          )
+          .through(esp.pipe)
+          .compile
+          .toList
+          .map(events =>
+            expect.same(
+              List[MiniXML](
+                // format: off
+                MiniXML.Open("res"),
+                  MiniXML.Open("a"),
+                    MiniXML.Text("some a"),
+                  MiniXML.Close("a"),
+                  MiniXML.Open("b"),
+                    MiniXML.Text("some b"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("res"),
+                MiniXML.Open("res"),
+                  MiniXML.Open("a"),
+                    MiniXML.Text("some a"),
+                  MiniXML.Close("a"),
+                  MiniXML.Open("b"),
+                    MiniXML.Text("another b"),
+                  MiniXML.Close("b"),
+                MiniXML.Close("res"),
                 // format: on
               ),
               events
