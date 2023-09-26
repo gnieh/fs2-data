@@ -66,7 +66,7 @@ object Pattern {
   implicit def PatternIsPattern[G, T]: IsPattern[Pattern[G, T], G, Tag[T]] =
     new IsPattern[Pattern[G, T], G, Tag[T]] {
 
-      override val trueTag: Tag[T] = Tag.True
+      override val trueTag: Tag[T] = Tag.Open
 
       override def decompose(pat: Pattern[G, T]): List[RawSkeleton[G, Tag[T]]] =
         decompose(pat, None)

@@ -18,12 +18,11 @@ package fs2
 package data
 package esp
 
-import mft._
-
 import cats.effect._
-
-import weaver._
 import fs2.data.pattern._
+import weaver._
+
+import mft._
 
 object DupSpec extends IOSuite {
 

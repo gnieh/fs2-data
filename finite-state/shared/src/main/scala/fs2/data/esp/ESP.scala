@@ -18,44 +18,47 @@ package fs2
 package data
 package esp
 
-import pattern._
-
 import cats.syntax.all._
+import cats.{Order, Show}
 
-import scala.collection.mutable.ListBuffer
 import scala.annotation.tailrec
+import scala.collection.mutable.ListBuffer
+
+import pattern._
 
 /** An Event Stream Processor is a generalization of the one defined in _Streamlining Functional XML Processing_.
   * It encodes its recognized patterns into a [[fs2.data.matching.DecisionTree Decision Tree]], including the state and depth. This flexibility allows for easily implementing
   * catch all rules, no matter what the state or depth is.
   */
-private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
+private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
                                                     val params: Map[Int, Int],
                                                     val rules: DecisionTree[Guard, Tag[InTag], Rhs[OutTag]])(implicit
     F: RaiseThrowable[F]) {
 
-  def call[In, Out](env: Map[Int, Expr[Out]], q: Int, d: Int, args: List[Expr[Out]], in: Option[In])(implicit
+  def call[In, Out](env: Vector[Expr[Out]], q: Int, d: Int, args: List[Expr[Out]], in: Option[In], inline: Boolean)(
+      implicit
       In: Selectable[In, Tag[InTag]],
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
       G: Evaluator[Guard, Tag[InTag]]) =
     params.get(q).liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown state $q")).flatMap { params =>
       if (params === args.size) {
-        args.zipWithIndex
-          .foldLeftM(env) { case (env, (arg, param)) =>
-            step(env, arg, in).map { rhs =>
-              env.updated(param, rhs)
-            }
+        args
+          .traverse { arg =>
+            if (inline)
+              Pull.pure(arg)
+            else
+              step(env, arg, in)
           }
           .flatMap { env =>
             rules
               .get(Input(q, d, in))
               .liftTo[Pull[F, Nothing, *]](new ESPException(s"no rule found for state $q at depth $d for input $in"))
-              .flatMap(eval(env, d, in, _))
+              .flatMap(eval(env.toVector, d, in, _))
           }
       } else {
         Pull.raiseError(new ESPException(
-          s"wrong number of argument given in state $q reading input $in (expected $params but got ${args.size})"))
+          s"wrong number of arguments given in state $q reading input $in (expected $params but got ${args.size})"))
       }
     }
 
@@ -67,14 +70,14 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
       case Tag.Value(tag) => tag
     }
 
-  def step[In, Out](env: Map[Int, Expr[Out]], e: Expr[Out], in: Option[In])(implicit
+  def step[In, Out](env: Vector[Expr[Out]], e: Expr[Out], in: Option[In])(implicit
       In: Selectable[In, Tag[InTag]],
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
       G: Evaluator[Guard, Tag[InTag]]): Pull[F, Nothing, Expr[Out]] =
     e match {
       case Expr.Call(q, d, args) =>
-        call(env, q, d, args, in)
+        call(env, q, d, args, in, false)
       case Expr.Epsilon =>
         Pull.pure(Expr.Epsilon)
       case Expr.Open(o, next) =>
@@ -87,7 +90,7 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
         (step(env, e1, in), step(env, e2, in)).mapN(Expr.concat(_, _))
     }
 
-  def eval[In, Out](env: Map[Int, Expr[Out]], depth: Int, in: Option[In], rhs: Rhs[OutTag])(implicit
+  def eval[In, Out](env: Vector[Expr[Out]], depth: Int, in: Option[In], rhs: Rhs[OutTag])(implicit
       In: Selectable[In, Tag[InTag]],
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
@@ -100,10 +103,10 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
       case Rhs.SelfCall(q, params) =>
         params
           .traverse(eval(env, depth, in, _))
-          .flatMap(call(env, q, 0, _, in))
+          .flatMap(call(env, q, 0, _, in, true))
       case Rhs.Param(i) =>
         env
-          .get(i)
+          .lift(i)
           .liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown parameter $i"))
       case Rhs.Epsilon =>
         Pull.pure(Expr.Epsilon)
@@ -170,12 +173,8 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
     loop(e, new ListBuffer)
   }
 
-  def transform[In, Out](chunk: Chunk[In],
-                         idx: Int,
-                         rest: Stream[F, In],
-                         env: Map[Int, Expr[Out]],
-                         e: Expr[Out],
-                         chunkAcc: ListBuffer[Out])(implicit
+  def transform[In, Out](chunk: Chunk[In], idx: Int, rest: Stream[F, In], e: Expr[Out], chunkAcc: ListBuffer[Out])(
+      implicit
       In: Selectable[In, Tag[InTag]],
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
@@ -184,9 +183,9 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
       Pull.output(Chunk.from(chunkAcc.result())) >> rest.pull.uncons.flatMap {
         case Some((hd, tl)) =>
           chunkAcc.clear()
-          transform(hd, 0, tl, env, e, chunkAcc)
+          transform(hd, 0, tl, e, chunkAcc)
         case None =>
-          step(env, e, none).map(squeezeAll(_)).flatMap { case (e, s) =>
+          step(Vector.empty, e, none).map(squeezeAll(_)).flatMap { case (e, s) =>
             e match {
               case Expr.Epsilon =>
                 Pull.output(Chunk.from(s))
@@ -195,8 +194,8 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
           }
       }
     } else {
-      step(env, e, chunk(idx).some).map(squeeze(_)).flatMap { case (e, s) =>
-        transform(chunk, idx + 1, rest, env, e, chunkAcc ++= s)
+      step(Vector.empty, e, chunk(idx).some).map(squeeze(_)).flatMap { case (e, s) =>
+        transform(chunk, idx + 1, rest, e, chunkAcc ++= s)
       }
     }
 
@@ -205,6 +204,65 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](init: Int,
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
       G: Evaluator[Guard, Tag[InTag]]): Pipe[F, In, Out] =
-    transform[In, Out](Chunk.empty, 0, _, Map.empty, Expr.Call(init, 0, Nil), new ListBuffer).stream
+    transform[In, Out](Chunk.empty, 0, _, Expr.Call(init, 0, Nil), new ListBuffer).stream
+
+}
+
+object ESP {
+
+  private case class Case[I](q: Option[Int], depth: Option[Int], pat: Option[Tag[I]], rhs: String)
+
+  private object Case {
+    // None is bigger than anything else (wildcard case)
+    implicit def optionOrder[T: Order]: Order[Option[T]] = new Order[Option[T]] {
+      def compare(x: Option[T], y: Option[T]): Int =
+        x match {
+          case None =>
+            if (y.isEmpty) 0 else 1
+          case Some(a) =>
+            y match {
+              case None    => -1
+              case Some(b) => a.compare(b)
+            }
+        }
+    }
+
+    implicit def ord[I: Order]: Order[Case[I]] = Order.by { case Case(q, d, p, _) =>
+      (q, d, p)
+    }
+  }
+
+  implicit def show[F[_], G, I: Show: Order, O: Show]: Show[ESP[F, G, I, O]] = { esp =>
+    type TreeStack = (Option[Int], Option[Int], Option[Tag[I]], DecisionTree[G, Tag[I], Rhs[O]])
+    def makeCases(trees: List[TreeStack], acc: List[Case[I]]): List[Case[I]] =
+      trees match {
+        case Nil                                          => acc.sortWith(_ < _)
+        case (q, d, pat, DecisionTree.Fail()) :: trees    => makeCases(trees, Case(q, d, pat, "FAIL") :: acc)
+        case (q, d, pat, DecisionTree.Leaf(out)) :: trees => makeCases(trees, Case(q, d, pat, out.show) :: acc)
+        case (q, d, pat, DecisionTree.Switch(_, branches, default)) :: trees =>
+          val cases = branches.toList.map {
+            case (Tag.State(q), t) => (Some(q), d, pat, t)
+            case (Tag.Depth(d), t) => (q, Some(d), pat, t)
+            case (pat, t)          => (q, d, Some(pat), t)
+          }
+          makeCases(cases ++ default.fold(List.empty[TreeStack])((q, d, None, _) :: Nil) ++ trees, acc)
+      }
+
+    Stream
+      .emits(makeCases((None, None, None, esp.rules) :: Nil, Nil))
+      .groupAdjacentBy(_.q)
+      .map { case (_, qcases) =>
+        qcases
+          .map { case Case(q, d, p, r) =>
+            val params = List.tabulate(esp.params.getOrElse(q.getOrElse(-1), 0))(i => show"y$i").mkString_(", ")
+            show"${q.fold("_")(q => show"q$q")}[${d.fold(raw"$d")(_.show)}]($params) --[ ${p.fold("_")(_.show)} ]--> $r"
+          }
+          .mkString_("\n")
+      }
+      .intersperse("\n\n")
+      .compile
+      .string
+
+  }
 
 }
