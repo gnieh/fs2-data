@@ -79,8 +79,8 @@ jobs:
         run: sbt 'project ${{ matrix.project }}' '++ ${{ matrix.scala }}' doc
 
       - name: Compile documentation
-        if: matrix.scala == '2.13.12' && matrix.project == 'rootJVM'
-        run: 'sbt ''project ${{ matrix.project }}'' ''++ ${{ matrix.scala }}'' ''set ThisBuild / tlFatalWarningsInCi := false'' documentation/mdoc'
+        if: matrix.scala == '2.13' && matrix.project == 'rootJVM'
+        run: 'sbt ''project ${{ matrix.project }}'' ''++ ${{ matrix.scala }}'' ''set ThisBuild / tlFatalWarnings := false'' documentation/mdoc'
 
       - name: Make target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
