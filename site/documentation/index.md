@@ -1,7 +1,3 @@
----
-title: Documentation
----
-
 # `fs2-data` Documentation
 
 * Contents
@@ -65,7 +61,7 @@ For textual data formats (JSON, XML, CSV, ...) this stream needs to be decoded a
 
 #### Decoding textual inputs
 
-If your file is encoded using UTF-8 or a common single-byte encoding, you can use the built-in support `fs2-data` has for these encodings, which lives in the [`fs2.data.text` package][fs2-data-text-api].
+If your file is encoded using UTF-8 or a common single-byte encoding, you can use the built-in support `fs2-data` has for these encodings, which lives in the @:api(fs2.data.text) package.
 
 ```scala mdoc:silent
 // for instance if your input is encoded in ISO-8859-1 aka latin1

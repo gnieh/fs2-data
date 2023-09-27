@@ -18,32 +18,22 @@ val copyrightYears = "2019-2023"
 
 ThisBuild / tlBaseVersion := "1.8"
 
-ThisBuild / tlSonatypeUseLegacyHost := false
-
 ThisBuild / organization := "org.gnieh"
 ThisBuild / organizationName := "Lucas Satabin"
 ThisBuild / startYear := Some(2023)
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / developers := List(
-  // your GitHub handle and name
   tlGitHubDev("satabin", "Lucas Satabin"),
   tlGitHubDev("ybasket", "Yannick Heiber")
 )
-ThisBuild / apiURL := Some(new java.net.URL("https://fs2-data.gnieh.org/api/"))
 
 ThisBuild / crossScalaVersions := Seq(scala212, scala213, scala3)
 ThisBuild / scalaVersion := scala213
 
-ThisBuild / githubWorkflowBuildPostamble +=
-  WorkflowStep.Sbt(
-    List("set ThisBuild / tlFatalWarnings := false", "documentation/mdoc"),
-    None,
-    Some("Compile documentation"),
-    Some(s"matrix.scala == '2.13' && matrix.project == 'rootJVM'")
-  )
+ThisBuild / tlSitePublishBranch := None
+ThisBuild / tlSitePublishTags := true
 
 val commonSettings = List(
-  homepage := Some(url("https://github.com/satabin/fs2-data")),
   versionScheme := Some("early-semver"),
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
@@ -86,34 +76,6 @@ val commonSettings = List(
     .toList
     .flatten,
   testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
-  scmInfo := Some(ScmInfo(url("https://github.com/satabin/fs2-data"), "scm:git:git@github.com:satabin/fs2-data.git"))
-)
-
-val publishSettings = List(
-  Test / publishArtifact := false,
-  pomIncludeRepository := { x =>
-    false
-  },
-  developers := List(
-    Developer(id = "satabin",
-              name = "Lucas Satabin",
-              email = "lucas.satabin@gnieh.org",
-              url = url("https://github.com/satabin")),
-    Developer(id = "ybasket",
-              name = "Yannick Heiber",
-              email = "ybasket42+fs2-data@googlemail.com",
-              url = url("https://github.com/ybasket"))
-  ),
-  pomExtra := (
-    <ciManagement>
-      <system>GitHub Actions</system>
-      <url>https://github.com/satabin/fs2-data/actions</url>
-    </ciManagement>
-    <issueManagement>
-      <system>github</system>
-      <url>https://github.com/satabin/fs2-data/issues</url>
-    </issueManagement>
-  )
 )
 
 val root = tlCrossRootProject
@@ -130,35 +92,16 @@ val root = tlCrossRootProject
     scalaXml,
     cbor,
     cborJson,
-    finiteState
+    finiteState,
+    unidocs
   )
   .settings(commonSettings)
-  .enablePlugins(NoPublishPlugin, ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin)
-  .settings(
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
-      cbor.jvm,
-      cborJson.jvm,
-      csv.jvm,
-      csvGeneric.jvm,
-      json.jvm,
-      jsonCirce.jvm,
-      jsonDiffson.jvm,
-      jsonPlay.jvm,
-      jsonInterpolators.jvm,
-      text.jvm,
-      xml.jvm,
-      scalaXml.jvm
-    ),
-    ScalaUnidoc / siteSubdirName := "api",
-    addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
-    Nanoc / sourceDirectory := file("site")
-  )
+  .enablePlugins(NoPublishPlugin)
 
 lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("text"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-text",
     description := "Utilities for textual data format",
@@ -192,7 +135,6 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("csv"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-csv",
     description := "Streaming CSV manipulation library",
@@ -217,7 +159,6 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("csv/generic"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-csv-generic",
     description := "Generic CSV row decoder generation",
@@ -270,7 +211,6 @@ lazy val json = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("json"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-json",
     description := "Streaming JSON manipulation library",
@@ -291,7 +231,6 @@ lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("json/circe"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-json-circe",
     description := "Streaming JSON library with support for circe ASTs",
@@ -317,7 +256,6 @@ lazy val jsonPlay = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("json/play"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-json-play",
     description := "Streaming JSON library with support for Play! JSON ASTs",
@@ -335,7 +273,6 @@ lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("json/diffson"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-json-diffson",
     description := "Streaming JSON library with support for patches",
@@ -352,7 +289,6 @@ lazy val jsonInterpolators = crossProject(JVMPlatform, JSPlatform, NativePlatfor
   .crossType(CrossType.Pure)
   .in(file("json/interpolators"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-json-interpolators",
     description := "Json interpolators support",
@@ -376,7 +312,6 @@ lazy val xml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("xml"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-xml",
     description := "Streaming XML manipulation library",
@@ -419,7 +354,6 @@ lazy val scalaXml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("xml/scala-xml"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-xml-scala",
     description := "Support for Scala XML ASTs",
@@ -443,7 +377,6 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("cbor"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-cbor",
     description := "Streaming CBOR manipulation library",
@@ -465,7 +398,6 @@ lazy val finiteState = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("finite-state"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-finite-state",
     description := "Streaming finite state machines",
@@ -511,7 +443,6 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("cbor-json"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-cbor-json",
     description := "Streaming CBOR/JSON interoperability library",
@@ -524,35 +455,6 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .nativeSettings(
     tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
   )
-
-lazy val documentation = project
-  .in(file("documentation"))
-  .enablePlugins(MdocPlugin)
-  .settings(commonSettings)
-  .settings(
-    scalaVersion := scala213,
-    crossScalaVersions := List(scala212, scala213),
-    mdocIn := file("documentation/docs"),
-    mdocOut := file("site/content/documentation"),
-    libraryDependencies ++= List(
-      "com.beachape" %% "enumeratum" % "1.7.0",
-      "org.gnieh" %% "diffson-circe" % diffsonVersion,
-      "io.circe" %% "circe-generic-extras" % circeExtrasVersion,
-      "co.fs2" %% "fs2-io" % fs2Version,
-      "io.circe" %% "circe-fs2" % "0.14.1"
-    ),
-    scalacOptions += "-Ymacro-annotations"
-  )
-  .dependsOn(csv.jvm,
-             csvGeneric.jvm,
-             json.jvm,
-             jsonDiffson.jvm,
-             jsonCirce.jvm,
-             jsonInterpolators.jvm,
-             xml.jvm,
-             scalaXml.jvm,
-             cbor.jvm,
-             cborJson.jvm)
 
 lazy val benchmarks = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
@@ -600,6 +502,62 @@ lazy val scalafixTests = (project in file("scalafix/tests"))
   )
   .dependsOn(scalafixInput, scalafixRules)
   .enablePlugins(ScalafixTestkitPlugin)
+
+lazy val site = project
+  .in(file("msite"))
+  .enablePlugins(TypelevelSitePlugin)
+  .settings(
+    tlSiteIsTypelevelProject := Some(TypelevelProject.Affiliate),
+    tlSiteApiPackage := Some("fs2.data"),
+    tlJdkRelease := None,
+    tlFatalWarnings := false,
+    libraryDependencies ++= List(
+      "com.beachape" %% "enumeratum" % "1.7.0",
+      "org.gnieh" %% "diffson-circe" % diffsonVersion,
+      "io.circe" %% "circe-generic-extras" % circeExtrasVersion,
+      "co.fs2" %% "fs2-io" % fs2Version,
+      "io.circe" %% "circe-fs2" % "0.14.1"
+    ),
+    scalacOptions += "-Ymacro-annotations",
+    mdocIn := file("site"),
+    laikaSite := {
+      sbt.IO.copyDirectory(mdocOut.value, (laikaSite / target).value)
+      Set.empty
+    }
+  )
+  .dependsOn(csv.jvm,
+             csvGeneric.jvm,
+             json.jvm,
+             jsonDiffson.jvm,
+             jsonCirce.jvm,
+             jsonInterpolators.jvm,
+             xml.jvm,
+             scalaXml.jvm,
+             cbor.jvm,
+             cborJson.jvm)
+
+lazy val unidocs = project
+  .in(file("unidocs"))
+  .enablePlugins(TypelevelUnidocPlugin)
+  .settings(
+    name := "fs2-data-docs",
+    tlJdkRelease := None,
+    tlFatalWarnings := false,
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
+      cbor.jvm,
+      cborJson.jvm,
+      csv.jvm,
+      csvGeneric.jvm,
+      json.jvm,
+      jsonCirce.jvm,
+      jsonDiffson.jvm,
+      jsonPlay.jvm,
+      jsonInterpolators.jvm,
+      text.jvm,
+      xml.jvm,
+      scalaXml.jvm
+    )
+  )
 
 // Utils
 

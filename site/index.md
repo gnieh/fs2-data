@@ -1,7 +1,3 @@
----
-title: Home
----
-
 # Welcome to the fs2-data website
 
 [![Typelevel Affiliate Project](https://img.shields.io/badge/typelevel-affiliate%20project-FFB4B5.svg)](https://typelevel.org/projects/) [![Discord](https://img.shields.io/discord/632277896739946517.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2)](https://discord.gg/7qNAFsYkTn)
@@ -12,6 +8,7 @@ title: Home
 
 Artefacts are published on maven, use your favorite build tool to bring it into your project.
 Following modules are available:
+
   - `fs2-data-json`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json_2.13) A JSON parser and manipulation library
     - `fs2-data-json-circe`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-circe_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-circe_2.13) [circe][circe] support for parsed JSON.
     - `fs2-data-json-play`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-play_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-play_2.13) [Play! JSON][play-json] support for parsed JSON.
@@ -26,7 +23,7 @@ Following modules are available:
 
 
 [api]: /api/
-[doc]: /documentation/
+[doc]: /documentation/index.md
 [cats-friendly-logo]: https://typelevel.org/cats/img/cats-badge-tiny.png
 [fs2]: https://fs2.io
 [circe]: https://circe.github.io/circe/
