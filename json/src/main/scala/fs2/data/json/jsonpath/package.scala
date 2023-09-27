@@ -18,12 +18,14 @@ package fs2
 package data
 package json
 
+import cats.effect.Concurrent
+import cats.syntax.all._
+
+import scala.annotation.nowarn
+
 import ast.Builder
 import jsonpath.internals._
 import pfsa.{PDFA, PNFA}
-
-import cats.effect.Concurrent
-import cats.syntax.all._
 
 package object jsonpath {
 
@@ -31,6 +33,7 @@ package object jsonpath {
   def filter[F[_]]: PartiallyAppliedFilter[F] = new PartiallyAppliedFilter(true)
 
   /** Namespace containing the various JsonPath filtering pipes. */
+  @nowarn
   final class PartiallyAppliedFilter[F[_]] private[jsonpath] (val dummy: Boolean) extends AnyVal {
 
     /** Selects all macthing elements in the input stream. Each matching element is emitted in a new stream.

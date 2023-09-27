@@ -25,6 +25,7 @@ import Pred.syntax._
 
 import cats.effect.Concurrent
 import cats.syntax.all._
+import scala.annotation.nowarn
 
 package object xpath {
 
@@ -32,6 +33,7 @@ package object xpath {
   def filter[F[_]]: PartiallyAppliedFilter[F] = new PartiallyAppliedFilter(true)
 
   /** Namespace containing the various XPath filtering pipes. */
+  @nowarn
   final class PartiallyAppliedFilter[F[_]] private[xpath] (val dummy: Boolean) extends AnyVal {
 
     /** Selects all macthing elements in the input stream. Each matching element is emitted in a new stream.

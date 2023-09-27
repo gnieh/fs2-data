@@ -36,7 +36,7 @@ object CsvExceptionSpec extends SimpleIOSuite {
             List(Right(Row(NonEmptyList("1", List("2", "3")))),
                  Right(Row(NonEmptyList("a", List("b", "c")))),
                  Left(e: CsvException))) =>
-        e.line.contains(3) // check that we have the correct line number here
+        e.line.contains(3L) // check that we have the correct line number here
       case _ => false
     })
 

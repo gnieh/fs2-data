@@ -18,8 +18,6 @@ package fs2
 package data
 package xml
 
-import fs2._
-
 import weaver._
 
 object NormalizationTest extends SimpleIOSuite {

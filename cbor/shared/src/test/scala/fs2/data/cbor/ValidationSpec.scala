@@ -20,8 +20,6 @@ package cbor
 
 import low._
 
-import fs2._
-
 import weaver._
 
 import cats.effect._
