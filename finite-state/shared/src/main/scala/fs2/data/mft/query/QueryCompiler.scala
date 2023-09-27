@@ -94,43 +94,44 @@ private[fs2] abstract class QueryCompiler[Tag, Path] {
              })
           }.toMap
         // we can apply the DFA to MFT translation now
-        transitionCases.foldLeft(Map(dfa.init -> start)) { case (states, (src, transitions)) =>
-          val initialSrc = src === dfa.init
-          val (q1, states1) =
-            states.get(src) match {
-              case Some(q1) => (q1, states)
-              case None =>
-                val q1 =
-                  if (initialSrc)
-                    start
-                  else
-                    state(args = start.nargs)
-                (q1, states.updated(src, q1))
-            }
-          val copyArgs = List.tabulate(q1.nargs)(y(_))
-          val states2 =
-            transitions.foldLeft(states1) { case (states, (pattern, guard, tgt)) =>
-              val finalTgt = dfa.finals.contains(tgt)
-              val (q2, states1) =
-                states.get(tgt) match {
-                  case Some(q2) => (q2, states)
-                  case None =>
-                    val q2 = state(args = q1.nargs)
-                    (q2, states.updated(tgt, q2))
-                }
-              val pat: builder.Guardable = tagOf(pattern).fold(anyNode)(aNode(_))
-              if (!finalTgt) {
-                q1(pat.when(guard)) -> q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
-              } else {
-                q1(pat.when(guard)) -> end(x1, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*) ~
-                  q1(x2, copyArgs: _*)
+        val _ =
+          transitionCases.foldLeft(Map(dfa.init -> start)) { case (states, (src, transitions)) =>
+            val initialSrc = src === dfa.init
+            val (q1, states1) =
+              states.get(src) match {
+                case Some(q1) => (q1, states)
+                case None =>
+                  val q1 =
+                    if (initialSrc)
+                      start
+                    else
+                      state(args = start.nargs)
+                  (q1, states.updated(src, q1))
               }
-              states1
-            }
-          q1(anyLeaf) -> eps
-          q1(epsilon) -> eps
-          states2
-        }: Unit
+            val copyArgs = List.tabulate(q1.nargs)(y(_))
+            val states2 =
+              transitions.foldLeft(states1) { case (states, (pattern, guard, tgt)) =>
+                val finalTgt = dfa.finals.contains(tgt)
+                val (q2, states1) =
+                  states.get(tgt) match {
+                    case Some(q2) => (q2, states)
+                    case None =>
+                      val q2 = state(args = q1.nargs)
+                      (q2, states.updated(tgt, q2))
+                  }
+                val pat: builder.Guardable = tagOf(pattern).fold(anyNode)(aNode(_))
+                if (!finalTgt) {
+                  q1(pat.when(guard)) -> q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
+                } else {
+                  q1(pat.when(guard)) -> end(x1, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*) ~
+                    q1(x2, copyArgs: _*)
+                }
+                states1
+              }
+            q1(anyLeaf) -> eps
+            q1(epsilon) -> eps
+            states2
+          }
       }
 
       def translate(query: Query[Tag, Path], vars: List[String], q: builder.StateBuilder): Unit =

@@ -30,7 +30,7 @@ private[json] class JsonTokenParser[F[_], T, Res](
     private[this] final val chunkAcc: ChunkAccumulator[Res])(implicit F: RaiseThrowable[F], T: AsCharBuffer[F, T]) {
   private[this] var context = T.create(s)
 
-  private[this] def emitChunk[T]() =
+  private[this] def emitChunk() =
     Pull.output(chunkAcc.chunk())
 
   // the opening quote has already been read

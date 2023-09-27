@@ -109,11 +109,11 @@ package object scalaXml {
 
     private def makeAttributes(md: MetaData, acc: List[Attr]): List[Attr] =
       md match {
-        case Null => acc.reverse
         case PrefixedAttribute(prefix, key, value, next) =>
           makeAttributes(next, Attr(QName(Option(prefix), key), makeTexty(value.toList)) :: acc)
         case UnprefixedAttribute(key, value, next) =>
           makeAttributes(next, Attr(QName(key), makeTexty(value.toList)) :: acc)
+        case _ => acc.reverse
       }
   }
 }

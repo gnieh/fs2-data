@@ -204,7 +204,9 @@ object Regular {
   private case class And[CharSet](re1: Regular[CharSet], re2: Regular[CharSet]) extends Regular[CharSet]
   private case class Not[CharSet](re: Regular[CharSet]) extends Regular[CharSet]
 
-  implicit def eq[CharSet: Eq]: Eq[Regular[CharSet]] = Eq.instance {
+  private[pfsa] def eq[CharSet: Eq]: Eq[Regular[CharSet]] = regeq[CharSet]
+
+  implicit def regeq[CharSet: Eq]: Eq[Regular[CharSet]] = Eq.instance {
     case (Epsilon(), Epsilon())                                 => true
     case (Chars(cs1), Chars(cs2))                               => cs1 === cs2
     case (Star(re1), Star(re2))                                 => re1 === re2

@@ -36,10 +36,10 @@ ThisBuild / scalaVersion := scala213
 
 ThisBuild / githubWorkflowBuildPostamble +=
   WorkflowStep.Sbt(
-    List("set ThisBuild / tlFatalWarningsInCi := false", "documentation/mdoc"),
+    List("set ThisBuild / tlFatalWarnings := false", "documentation/mdoc"),
     None,
     Some("Compile documentation"),
-    Some(s"matrix.scala == '$scala213' && matrix.project == 'rootJVM'")
+    Some(s"matrix.scala == '2.13' && matrix.project == 'rootJVM'")
   )
 
 val commonSettings = List(
