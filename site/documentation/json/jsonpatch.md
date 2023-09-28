@@ -1,14 +1,11 @@
----
-title: JSON Patch
-index: 3
-module: json
----
+# JSON Patch
 
 Module: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-diffson_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-diffson_2.13)
 
 The `fs2-data-json-diffson` module provides some integration with [diffson][diffson].
 It allows for patching a Json stream as it is read to emit the patched value downstream.
 Patching stream can be useful in several case, for instance:
+
  - it can be used to filter out fields you don't need for further processing, before building an AST with these fields;
  - it can be used to make data from an input stream anonymous by removing names or identifiers;
  - it makes it possible to enrich an input stream with extra data you need for further processing;

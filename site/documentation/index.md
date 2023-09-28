@@ -1,7 +1,4 @@
-# `fs2-data` Documentation
-
-* Contents
-{:toc}
+# Introduction
 
 `fs2-data` consists of several modules, handling a different data format, and sub-modules for each data format, adding more features (but also more dependencies). The core module for each data format has no other dependency than `fs2` and provides tools to parse and transform data in a streaming manner.
 
@@ -61,7 +58,7 @@ For textual data formats (JSON, XML, CSV, ...) this stream needs to be decoded a
 
 #### Decoding textual inputs
 
-If your file is encoded using UTF-8 or a common single-byte encoding, you can use the built-in support `fs2-data` has for these encodings, which lives in the @:api(fs2.data.text) package.
+If your file is encoded using UTF-8 or a common single-byte encoding, you can use the built-in support `fs2-data` has for these encodings, which lives in the @:api(fs2.data.text.package) package.
 
 ```scala mdoc:silent
 // for instance if your input is encoded in ISO-8859-1 aka latin1

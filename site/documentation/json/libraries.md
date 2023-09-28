@@ -1,14 +1,6 @@
----
-title: JSON Libraries
-index: 1
-module: json
----
+# JSON Libraries
 
 Bindings to popular Scala JSON libraries can be added by implementing the `Builder` and `Tokenizer` traits. `fs2-data` provides some of them out of the box.
-
-This page covers the following libraries:
-* Contents
-{:toc}
 
 Examples on this page use the following input:
 
@@ -33,7 +25,7 @@ val stream = input[Fallible].through(tokens)
 val sel = jsonpath"$$.field3[*]"
 ```
 
-### Circe
+## Circe
 
 Module: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-circe_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-circe_2.13)
 
@@ -109,7 +101,7 @@ val transformed = stream.through(codec.transformOpt(f1, (i: Int) => (i > 0).guar
 transformed.compile.to(collector.pretty())
 ```
 
-#### Migrating from `circe-fs2`
+### Migrating from `circe-fs2`
 
 If you were using [`circe-fs2`][circe-fs2] to emit streams of `Json` values, you can easily switch to `fs2-data-json-circe`. Just replace your usages of `stringStreamParser` or `byteStreamParser` by usage of `fs2.data.json.ast.parse`.
 
@@ -143,7 +135,7 @@ input[Fallible]
 
 If you were using `byteStreamParser`, please refer to the the [`fs2.data.text` package documentation][text] to indicate how to decode the byte stream.
 
-### Play! JSON
+## Play! JSON
 
 Module: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-play_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-play_2.13)
 
@@ -151,8 +143,8 @@ The `fs2-data-json-play` module provides `Builder` and `Tokenizer` instances for
 
 It also provides `Deserializer` for types with a `Reads` instance and `Serializer` for the ones with a `Writes` instance.
 
-[json-doc]: /documentation/json/
+[json-doc]: /documentation/json/index.md
 [circe]: https://circe.github.io/circe/
 [play-json]: https://www.playframework.com/
 [circe-fs2]: https://github.com/circe/circe-fs2
-[text]: /documentation/#decoding-textual-inputs
+[text]: /documentation/index.md#decoding-textual-inputs

@@ -1,24 +1,14 @@
----
-title: CBOR
-description: CBOR parser and transformation
-index: 0
-type: binary
-module: cbor
----
+# Introduction
 
 Module: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-cbor_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-cbor_2.13)
 
 The `fs2-data-cbor` module provides tools to parse and transform [CBOR][cbor] data in a streaming manner.
 
-This page covers the following topics:
-* Contents
-{:toc}
-
-### Low-level representation
+## Low-level representation
 
 The low-level representation lives in the `fs2.data.cbor.low` package and follows closely the structure defined in the RFC. It is a flat structure, which doesn't represent data as an AST. This representation is useful when you don't need the tree structure for your processing or when the data cannot be represented in an AST way (e.g. when a collection contains more than `Int.MaxValue` elements).
 
-#### Parsing
+### Parsing
 
 Parsing a CBOR binary stream into low-level representation, use the `items` pipe.
 
@@ -34,7 +24,7 @@ val itemStream = byteStream.through(items[Fallible])
 itemStream.compile.toList
 ```
 
-#### Serializing
+### Serializing
 
 When you already have a hand on a CBOR item stream, you can serialize it back to the binary representation (for instance to send it to the consumer) by making it go through the `toBinary` pipe.
 
@@ -82,11 +72,11 @@ Of course, this stream will fail to be parsed.
 invalidBytes.through(items[Fallible]).compile.drain
 ```
 
-### High-level representation
+## High-level representation
 
 Some transformations are easier or safe to perform on more structure data, this is a scenario in which the high-level representation can come in handy. This representation lives in the `fs2.data.cbor.high` package.
 
-#### Parsing
+### Parsing
 
 The main parsing pipe to get a high-level value stream from a byte stream is the `values` pipe.
 
@@ -103,7 +93,7 @@ If you already have a stream of low-level items, you can make it go through the 
 itemStream.through(parseValues[Fallible]).compile.toList
 ```
 
-#### Serializing
+### Serializing
 
 High-level value stream can be serialized to binary format by using the `toBinary` pipe.
 

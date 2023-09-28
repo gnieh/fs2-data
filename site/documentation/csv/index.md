@@ -1,28 +1,20 @@
----
-title: CSV
-description: CSV parser and codec
-index: 0
-type: textual
-module: csv
----
+# Introduction
 
 Module: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv_2.13)
 
 The `fs2-data-csv` module contains tools to parse and transform CSV data. These tools live in the `fs2.data.csv` package.
 
-This page covers the following topics:
-* Contents
-{:toc}
-
-### High-level and low-level APIs
+## High-level and low-level APIs
 
 `fs2-data-csv` contains two APIs which share some common concepts and are built on top of each other:
+
 * The high-level API in `fs2.data.csv._` provides a set of `fs2.Pipe`s that are tailored towards common use cases of CSV en-/decoding. It's built by composing parts of the low-level API into a more convenient and concise interface.  
 * The low-level API in `fs2.data.csv.lowlevel._` contains pipes that do only a single step in a CSV processing pipeline and are hence better building blocks for complex use cases.
 
 Both APIs share data types and type classes that can be found in `fs2.data.csv._`.
 
-### Quick-Start with the high-level API
+## Quick-Start with the high-level API
+
 For the common use case of parsing a CSV into a `case class` or serializing your data into CSV, you can use this snippet:
 
 ```scala mdoc
@@ -53,6 +45,7 @@ val backAsText = decodedStream.through(encodeUsingFirstHeaders(fullRows = true))
 This will assume the file contains headers and takes those into account, re-emitting them again on encoding. How the data is de-/encoded is determined by the type class instances of `CsvRowDecoder` and `CsvRowEncoder` which are derived semi-automatically (for details, see [the fs2-data-csv-generic module][csv-generic-doc]). The details of these type classes are described later in this document.
 
 More high-level pipes are available for the following use cases:
+
 * `decodeWithoutHeaders` for CSV parsing that requires no headers and none are present in the input (Note: requires `RowDecoder` instead of `CsvRowDecoder`)
 * `decodeSkippingHeaders` for CSV parsing that requires no headers, but they are present in the input (Note: requires `RowDecoder` instead of `CsvRowDecoder`)
 * `decodeGivenHeaders` for CSV parsing that requires headers, but they aren't present in the input
@@ -61,13 +54,15 @@ More high-level pipes are available for the following use cases:
 * `encodeGivenHeaders` for CSV encoding that works without headers, but they should be added to the output
 * `encodeUsingFirstHeaders` for CSV encoding that works with headers. Uses the headers of the first row for the output.
 
-#### Dealing with erroneous files
+### Dealing with erroneous files
+
 The default behaviour when parsing CSV files, is to terminate the stream whenever the columns of a row do not match
 the columns of the header. If you're dealing with CSV files that could contain these kind of errors, you can make
 use of the `lenient` package. You will get back a `Stream` of results, where each parsed row is represented by an
 `Either[Throwable, A]`.
 
 The following high-level pipes are available for decoding erroneous CSV files:
+
 * `attemptDecodeWithoutHeaders` for CSV parsing that requires no headers and none are present in the input (Note: 
   requires `RowDecoder` instead of `CsvRowDecoder`)
 * `attemptDecodeSkippingHeaders` for CSV parsing that requires no headers, but they are present in the input (Note: 
@@ -106,11 +101,11 @@ Stream
       .toList
 ```
 
-### Low-level API
+## Low-level API
 
 This section takes a closer look on the low-level concepts the high-level API is built from.
 
-#### Parsing CSV into rows
+### Parsing CSV into rows
 
 The first one of the provided tools is the `rows` pipe, which transforms a stream of characters into a stream of parsed rows. The rows are represented by [`NonEmptyList[String]`][nel], empty lines are skipped. Values can be quoted and escaped, according to [the RFC][rfc].
 
@@ -144,7 +139,7 @@ val stream3 = Stream.emit(input3).through(lowlevel.rows[Fallible, String](',', Q
 stream3.compile.toList
 ```
 
-#### CSV rows with or without headers
+### CSV rows with or without headers
 
 Rows can be converted to a `Row` or `CsvRow[Header]` for some `Header` type. These classes provides higher-level utilities to manipulate rows.
 
@@ -187,9 +182,10 @@ withMyHeaders.map(_.toMap).compile.toList
 
 If the parse method fails for a header, the entire stream fails.
 
-#### Dealing with optional data
+### Dealing with optional data
 
 Optional values have no unified representation in CSV:
+
  - a field can be missing on some of the CSV inputs you are processing
  - a field can be an empty string on some rows when not set
  - a fields can have a placeholder empty value on some rows, such as `N/A` or `null` for instance
@@ -210,7 +206,8 @@ get("second")
 get("third")
 ```
 
-#### Writing CSV
+### Writing CSV
+
 There are also pipes for encoding rows to CSV, with or without headers. Simple example without headers:
 
 ```scala mdoc
@@ -224,7 +221,7 @@ testRows
 
 If you want to write headers, use `writeWithHeaders` or, in case you use `CsvRow`, `encodeRowWithFirstHeaders`. For writing non-String headers, you'll need to provide an instance of `WritableHeader`, a type class analog to `ParseableHeader`.
 
-### The type classes: Decoders and Encoders
+## The type classes: Decoders and Encoders
 
 The library also provides decoder and encoder type classes, which allow for decoding CSV rows into arbitrary data types through the `decode` and `decodeRow` pipes and encoding data to CSV via `encode` and `encodeRow`. There are several kinds:
  - `CellDecoder` is a simple value decoder, used to transform values within the CSV fields. `CellEncoder` describes the reverse operation, encoding a simple value into a String.
@@ -234,6 +231,7 @@ The library also provides decoder and encoder type classes, which allow for deco
 #### `CellDecoder` & `CellEncoder`
 
 The library provides decoders and encoders for most of the Scala common types:
+
    - primitive types;
    - `String`;
    - Enums;
@@ -242,7 +240,7 @@ The library provides decoders and encoders for most of the Scala common types:
    - `UUID`;
    - most common `java.time` types.
 
-If you wish to support custom field types, you need to implement your own `CellDecoder`. To that end, you can use the convenience methods like `map` or `emap` defined on the [`CellDecoder` trait][celldecoder-scaladoc].
+If you wish to support custom field types, you need to implement your own `CellDecoder`. To that end, you can use the convenience methods like `map` or `emap` defined on the @:api(fs2.data.csv.CellDecoder) trait.
 
 For instance, if you want to be able to parse an integer field into some enum, you can do:
 
@@ -275,7 +273,7 @@ or using `contramap` on an existing encoder:
 implicit val wrapperCellEncoder2: CellEncoder[Wrapper] = CellEncoder[String].contramap(_.content)
 ```
 
-#### `RowDecoder` & `RowEncoder`
+### `RowDecoder` & `RowEncoder`
 
 `RowDecoder`s can be used to decode an entire CSV row based on field positions. For instance if you want to decode the CSV data into [shapeless][shapeless] `HList`:
 
@@ -314,7 +312,7 @@ val row = Stream(Option(3) :: "test" :: 42 :: HNil)
 row.through(lowlevel.encode).compile.toList
 ```
 
-#### `CsvRowDecoder` & `CsvRowEncoder`
+### `CsvRowDecoder` & `CsvRowEncoder`
 
 If your CSV data set has headers, you can use `CsvRowDecoder`. Using the headers, one can decode the CSV data to some case class:
 
@@ -342,5 +340,5 @@ As you can see this can be quite tedious to implement. Lucky us, the `fs2-data-c
 [rfc]: https://tools.ietf.org/html/rfc4180
 [enumeratum]: https://github.com/lloydmeta/enumeratum/
 [shapeless]: https://github.com/milessabin/shapeless
-[csv-generic-doc]: /documentation/csv/generic/
+[csv-generic-doc]: /documentation/csv/generic.md
 [celldecoder-scaladoc]: /api/fs2/data/csv/CellDecoder.html

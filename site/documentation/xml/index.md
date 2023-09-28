@@ -1,20 +1,10 @@
----
-title: XML
-description: XML parser and validator
-index: 0
-type: textual
-module: xml
----
+# Introduction
 
 Module: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-xml_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-xml_2.13)
 
 The `fs2-data-xml` module provides tools to parse XML data in a streaming manner.
 
-This page covers the following topics:
-* Contents
-{:toc}
-
-### Basic usage
+## Basic usage
 
 To create a stream of XML events from an input stream, use the `events` pipe in `fs2.data.xml` package.
 
@@ -39,7 +29,7 @@ stream.compile.toList.unsafeRunSync()
 
 The pipe validates the XML structure while parsing. It reads all the XML elements in the input stream and emits events as they are available.
 
-### Resolvers
+## Resolvers
 
 Namespace can be resolved by using the `namespaceResolver` pipe.
 
@@ -55,7 +45,7 @@ val entityResolved = stream.through(referenceResolver[IO]())
 entityResolved.compile.toList.unsafeRunSync()
 ```
 
-### Normalization
+## Normalization
 
 Once entites and namespaces are resolved, the events might be numerous and can be normalized to avoid emitting too many of them. For instance, after reference resolution, consecutive text events can be merged. This is achieved by using the `normalize` pipe.
 
@@ -64,11 +54,11 @@ val normalized = entityResolved.through(normalize)
 normalized.compile.toList.unsafeRunSync()
 ```
 
-### DOM builder and eventifier
+## DOM builder and eventifier
 
 To handle XML DOM, you can use the types and pipes available in the `fs2.data.xml.dom` package.
 
-XML DOM can be built if you provide an implicit [`DocumentBuilder[Doc]`][builder-api] to the `documents` pipe. The `DocumentBuilder[Doc]` typeclass describes how XML DOM of type `Doc` are built from an XML event stream.
+XML DOM can be built if you provide an implicit @:api(fs2.data.xml.dom.DocumentBuilder) to the `documents` pipe. The `DocumentBuilder[Doc]` typeclass describes how XML DOM of type `Doc` are built from an XML event stream.
 
 ```scala mdoc:compile-only
 import dom._
@@ -79,7 +69,7 @@ implicit val builder: DocumentBuilder[SomeDocType] = ???
 stream.through(documents[IO, SomeDocType])
 ```
 
-Conversely, the pipe transforming a stream of `Doc`s into a stream of XML events is called `eventify` and requires an implicit [`DocumentEventifier[Doc]`][eventifier-api] in scope.
+Conversely, the pipe transforming a stream of `Doc`s into a stream of XML events is called `eventify` and requires an implicit @:api(fs2.data.xml.dom.DocumentEventifier) in scope.
 
 ```scala mdoc:compile-only
 import dom._
@@ -92,6 +82,3 @@ implicit val eventifier: DocumentEventifier[SomeDocType] = ???
 stream.through(documents[IO, SomeDocType])
       .through(eventify[IO, SomeDocType])
 ```
-
-[builder-api]: /api/fs2/data/xml/dom/DocumentBuilder.html
-[eventifier-api]: /api/fs2/data/xml/dom/DocumentEventifier.html

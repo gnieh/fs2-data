@@ -1,18 +1,8 @@
----
-title: JSONPath
-description: JSONPath support
-index: 2
-type: textual
-module: json
----
+# JSONPath
 
 Module: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-json_2.13)
 
 The `fs2-data-json` module provides a streaming implementation of JSONPath.
-
-This page covers the following topics:
-* Contents
-{:toc}
 
 Let's use the following JSON input as an example.
 
@@ -35,14 +25,15 @@ val input = """{
 val stream = Stream.emit(input).through(tokens[Fallible, String])
 ```
 
-### JSONPath
+## Building a JSONPath
 
 A subset of [JSONPath][jsonpath] can be used to select a subset of a JSON token stream. There are several ways to create selectors:
+
  - build the selector using the constructors, which can be quite verbose and cumbersome;
  - parse a string with the JSONPath parser;
  - use the `jsonpath` interpolator.
 
-#### Parsing a string using the JSONPath parser
+### Parsing a string using the JSONPath parser
 
 For instance, to select and enumerate elements that are in the `field3` array, you can create this selector. Only the tokens describing the values in `field3` will be emitted as a result.
 
@@ -63,7 +54,10 @@ val path = jsonpath"$$.field3[*]"
 Because `$` is a special character in interpolated strings, you need to escape it by doubling it.
 The advantage of the interpolator is that potential syntax errors are checked at compilation time.
 
+### The subset
+
 The supported JSONPath features are:
+
   - `.*` selects all the object children.
   - `..*` selects all the object descendants.
   - `.id` or `["id"]` selects the object child with key `id`.
@@ -73,7 +67,7 @@ The supported JSONPath features are:
   - `[:idx]` selects only elements starting from the beginning of the array up to `idx1` (inclusive). It fails if the value it is applied to is not an array.
   - `[*]` selects and enumerates elements from arrays. It fails if the value it is applied to is not an array.
 
-#### Using JSONPath
+## Using JSONPath
 
 Using the path defined above, we can filter the stream of tokens, to only emit selected tokens downstream. This can be used to drastically reduce the amount of emitted data, to only the parts that are of interest for you.
 The filtering pipes are located in the `fs2.data.json.jsonpath.filter` namespace.

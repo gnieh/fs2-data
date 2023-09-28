@@ -1,8 +1,4 @@
----
-title: Generic
-index: 1
-module: csv
----
+# Generic
 
 Module: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv-generic_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv-generic_2.13)
 
@@ -24,11 +20,7 @@ val input = """i,s,j
 val stream = Stream.emit(input).covary[Fallible]
 ```
 
-This page covers the following topics:
-* Contents
-{:toc}
-
-### Derivation of `CellDecoder` & `CellEncoder`
+## Derivation of `CellDecoder` & `CellEncoder`
 
 Cell types (`Int`, `String`, ...) can be decoded and encoded by providing implicit instances of `CellDecoder`/`CellEncoder`. Instances for primitives and common types are defined already. You can easily define your own or use generic derivation for coproducts:
 
@@ -77,7 +69,7 @@ advancedEncoder(Advanced.On)
 advancedEncoder(Advanced.Unknown("Off"))
 ```
 
-### Derivation of `RowDecoder` & `RowEncoder`
+## Derivation of `RowDecoder` & `RowEncoder`
 
 One can automatically derive an instance for a [shapeless][shapeless] `HList` if there are instances for all cell types. The example previously written manually now looks like:
 
@@ -90,7 +82,7 @@ val hlists = stream.through(decodeSkippingHeaders[Option[Int] :: String :: Int :
 hlists.compile.toList
 ```
 
-### Derivation of `CsvRowDecoder`
+## Derivation of `CsvRowDecoder`
 
 Let's say you want to decode the CSV row to the following case class:
 
@@ -131,7 +123,7 @@ val decoded = stream.through(decodeUsingHeaders[MyRowDefault]())
 decoded.compile.toList
 ```
 
-[csv-doc]: /documentation/csv/
+[csv-doc]: /documentation/csv/index.md
 [shapeless]: https://github.com/milessabin/shapeless
 [shapeless-3]: https://github.com/typelevel/shapeless-3
 [dotty#11667]: https://github.com/lampepfl/dotty/pull/11667

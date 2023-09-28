@@ -1,18 +1,8 @@
----
-title: XPath
-description: XPath support
-index: 2
-type: textual
-module: xml
----
+# XPath
 
 Module: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-xml_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-xml_2.13)
 
 The `fs2-data-xml` module provides a streaming implementation of XPath.
-
-This page covers the following topics:
-* Contents
-{:toc}
 
 Let's use the following XML input as an example.
 
@@ -34,14 +24,15 @@ val stream = xml"""
 """
 ```
 
-### XPath
+## Building an XPath
 
 A subset of [XPath][xpath] can be used to select a subset of a XML event stream. There are several ways to create selectors:
+
  - build the selector using the constructors, which can be quite verbose and cumbersome;
  - parse a string with the XPath parser;
  - use the `xpath` interpolator.
 
-#### Parsing a string using the XPath parser
+### Parsing a string using the XPath parser
 
 For instance, to select and enumerate `a` elements, you can create this selector. Only the events describing the `a` elements will be emitted as a result.
 
@@ -61,7 +52,10 @@ val path = xpath"//a"
 
 The advantage of the interpolator is that potential syntax errors are checked at compilation time.
 
+### The subset 
+
 The supported XPath features are:
+
   - `/` the child axis
     - `/a` selects all `a` children
     - `/*` selects all children elements
@@ -80,7 +74,7 @@ The supported XPath features are:
 Operator precedence is the common one: `!` has precedence over `&&` which has precedence over `||`. This means that `!p1 && p2 || p3` is the same as `((!p1) && p2) || p3`.
 You can use parentheses to associate differently, for instance `!(p1 && p2) || p3`.
 
-#### Using XPath
+## Using XPath
 
 Using the path defined above, we can filter the stream of events, to only emit selected tokens downstream. This can be used to drastically reduce the amount of emitted data, to only the parts that are of interest for you.
 The filtering pipes are located in the `fs2.data.xml.xpath.filter` namespace.

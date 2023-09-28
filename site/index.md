@@ -1,4 +1,4 @@
-# Welcome to the fs2-data website
+# Home
 
 [![Typelevel Affiliate Project](https://img.shields.io/badge/typelevel-affiliate%20project-FFB4B5.svg)](https://typelevel.org/projects/) [![Discord](https://img.shields.io/discord/632277896739946517.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2)](https://discord.gg/7qNAFsYkTn)
 
@@ -22,9 +22,7 @@ Following modules are available:
   - `fs2-data-cbor-json`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-cbor-json_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-cbor-json_2.13) CBOR/JSON interoperability library
 
 
-[api]: /api/
 [doc]: /documentation/index.md
-[cats-friendly-logo]: https://typelevel.org/cats/img/cats-badge-tiny.png
 [fs2]: https://fs2.io
 [circe]: https://circe.github.io/circe/
 [play-json]: https://www.playframework.com/documentation/latest/ScalaJson

@@ -1,4 +1,5 @@
 import com.typesafe.tools.mima.core._
+import laika.rewrite.link.{LinkConfig, ApiLinks}
 
 val scala212 = "2.12.18"
 val scala213 = "2.13.12"
@@ -75,7 +76,7 @@ val commonSettings = List(
     }
     .toList
     .flatten,
-  testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
+  testFrameworks += new TestFramework("weaver.framework.CatsEffect")
 )
 
 val root = tlCrossRootProject
@@ -511,6 +512,7 @@ lazy val site = project
     tlSiteApiPackage := Some("fs2.data"),
     tlJdkRelease := None,
     tlFatalWarnings := false,
+    tlSiteHelium := tlSiteHelium.value.site.mainNavigation(depth = 4),
     libraryDependencies ++= List(
       "com.beachape" %% "enumeratum" % "1.7.0",
       "org.gnieh" %% "diffson-circe" % diffsonVersion,
@@ -523,7 +525,11 @@ lazy val site = project
     laikaSite := {
       sbt.IO.copyDirectory(mdocOut.value, (laikaSite / target).value)
       Set.empty
-    }
+    },
+    laikaConfig := tlSiteApiUrl.value.fold(LaikaConfig.defaults)(url =>
+      LaikaConfig.defaults
+        .withConfigValue(LinkConfig.empty
+          .addApiLinks(ApiLinks(baseUri = url.toString().dropRight("fs2/data/index.html".size)))))
   )
   .dependsOn(csv.jvm,
              csvGeneric.jvm,
