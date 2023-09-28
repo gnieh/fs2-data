@@ -1,6 +1,5 @@
-addSbtPlugin("org.typelevel" % "sbt-typelevel" % "0.5.3")
-addSbtPlugin("org.typelevel" % "sbt-typelevel-site" % "0.5.3")
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.3.7")
+addSbtPlugin("org.typelevel" % "sbt-typelevel" % "0.6.0-M1")
+addSbtPlugin("org.typelevel" % "sbt-typelevel-site" % "0.6.0-M1")
 
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.6")
 

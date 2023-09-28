@@ -1,5 +1,17 @@
+import laika.ast
+import laika.config.PrettyURLs
+import org.typelevel.sbt.site.GenericSiteSettings
+import org.typelevel.sbt.site.TypelevelSiteSettings
+import laika.helium.config.ImageLink
+import laika.helium.config.ThemeLink
+import laika.ast.Image
+import laika.ast.Span
+import laika.ast.TemplateString
+import laika.helium.config.HeliumIcon
+import laika.helium.config.IconLink
 import com.typesafe.tools.mima.core._
-import laika.rewrite.link.{LinkConfig, ApiLinks}
+import laika.config.{LinkConfig, ApiLinks}
+import sbt.Def._
 
 val scala212 = "2.12.18"
 val scala213 = "2.13.12"
@@ -504,15 +516,44 @@ lazy val scalafixTests = (project in file("scalafix/tests"))
   .dependsOn(scalafixInput, scalafixRules)
   .enablePlugins(ScalafixTestkitPlugin)
 
+val homeLink: ThemeLink =
+  ImageLink.internal(ast.Path.Root / "index.md", Image.internal(ast.Path.Root / "media" / "logo-header.svg"))
+
+val footer: Initialize[Seq[Span]] = setting {
+  val licensePhrase = licenses.value.headOption.fold("") { case (name, url) =>
+    s""" distributed under the <a href="${url.toString}">$name</a> license"""
+  }
+  Seq(
+    TemplateString(
+      s"""<code>fs2-data</code> is a <a href="https://typelevel.org/">Typelevel</a> affiliate project$licensePhrase."""
+    ))
+}
+
+val chatLink: IconLink = IconLink.external("https://discord.gg/XF3CXcMzqD", HeliumIcon.chat)
+
+val mastodonLink: IconLink =
+  IconLink.external("https://fosstodon.org/@lucassatabin", HeliumIcon.mastodon)
+
 lazy val site = project
   .in(file("msite"))
   .enablePlugins(TypelevelSitePlugin)
   .settings(
-    tlSiteIsTypelevelProject := Some(TypelevelProject.Affiliate),
     tlSiteApiPackage := Some("fs2.data"),
     tlJdkRelease := None,
     tlFatalWarnings := false,
-    tlSiteHelium := tlSiteHelium.value.site.mainNavigation(depth = 4),
+    tlSiteHelium := TypelevelSiteSettings.defaults.value.site
+      .mainNavigation(depth = 4)
+      .site
+      .footer(footer.value: _*)
+      .site
+      .resetDefaults(topNavigation = true)
+      .site
+      .topNavigationBar(
+        homeLink = homeLink,
+        navLinks =
+          GenericSiteSettings.apiLink.value.toSeq ++ GenericSiteSettings.githubLink.value.toSeq ++ List(chatLink,
+                                                                                                        mastodonLink)
+      ),
     libraryDependencies ++= List(
       "com.beachape" %% "enumeratum" % "1.7.0",
       "org.gnieh" %% "diffson-circe" % diffsonVersion,
@@ -522,14 +563,11 @@ lazy val site = project
     ),
     scalacOptions += "-Ymacro-annotations",
     mdocIn := file("site"),
-    laikaSite := {
-      sbt.IO.copyDirectory(mdocOut.value, (laikaSite / target).value)
-      Set.empty
-    },
     laikaConfig := tlSiteApiUrl.value.fold(LaikaConfig.defaults)(url =>
       LaikaConfig.defaults
         .withConfigValue(LinkConfig.empty
-          .addApiLinks(ApiLinks(baseUri = url.toString().dropRight("fs2/data/index.html".size)))))
+          .addApiLinks(ApiLinks(baseUri = url.toString().dropRight("fs2/data/index.html".size))))),
+    laikaExtensions += PrettyURLs
   )
   .dependsOn(csv.jvm,
              csvGeneric.jvm,
