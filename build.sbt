@@ -1,3 +1,5 @@
+import laika.helium.config.TextLink
+import laika.helium.config.ThemeNavigationSection
 import laika.ast
 import laika.config.PrettyURLs
 import org.typelevel.sbt.site.GenericSiteSettings
@@ -541,8 +543,16 @@ lazy val site = project
     tlSiteApiPackage := Some("fs2.data"),
     tlJdkRelease := None,
     tlFatalWarnings := false,
+    tlSiteGenerate ++= List(
+      WorkflowStep.Use(UseRef.Public("actions", "setup-node", "v3")),
+      WorkflowStep.Run(
+        name = Some("Index documentation"),
+        commands = List(s"npx -y pagefind --site ${(ThisBuild / baseDirectory).value.toPath.toAbsolutePath
+            .relativize((laikaSite / target).value.toPath)}")
+      )
+    ),
     tlSiteHelium := TypelevelSiteSettings.defaults.value.site
-      .mainNavigation(depth = 4)
+      .mainNavigation(depth = 3)
       .site
       .footer(footer.value: _*)
       .site
@@ -553,7 +563,13 @@ lazy val site = project
         navLinks =
           GenericSiteSettings.apiLink.value.toSeq ++ GenericSiteSettings.githubLink.value.toSeq ++ List(chatLink,
                                                                                                         mastodonLink)
-      ),
+      )
+      // the pagefind elements are added after site generation,
+      // so laika does not find them using the internal commands
+      .site
+      .externalCSS("/pagefind/pagefind-ui.css")
+      .site
+      .externalJS("/pagefind/pagefind-ui.js"),
     libraryDependencies ++= List(
       "com.beachape" %% "enumeratum" % "1.7.0",
       "org.gnieh" %% "diffson-circe" % diffsonVersion,
