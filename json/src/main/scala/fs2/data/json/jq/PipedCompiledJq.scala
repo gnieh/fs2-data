@@ -19,7 +19,6 @@ package data
 package json
 package jq
 
-import fs2.data.json.Token
 import cats.data.NonEmptyChain
 
 /** Represents a sequence of piped compiled jq queries, applying every query to the result of the previous one. */
