@@ -224,49 +224,14 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
       case Jq.Bool(b) =>
         pure(Query.Leaf(TaggedJson.Raw(if (b) Token.TrueValue else Token.FalseValue)))
       case Jq.Arr(prefix1, values) =>
-        val (iterators, vs) =
-          values.zipWithIndex.partitionEither {
-            case (it @ Jq.Iterator(_, _), idx) => Left((it, idx))
-            case q                             => Right(q)
+        values.zipWithIndex
+          .traverse { case (elt, idx) =>
+            preprocess(prefix ~ prefix1, elt).map(q => Query.Node(TaggedJson.StartArrayElement(idx), q))
           }
-        iterators match {
-          case Nil =>
-            vs.traverse { case (elt, idx) =>
-              preprocess(prefix ~ prefix1, elt).map(q => Query.Node(TaggedJson.StartArrayElement(idx), q))
-            }.map { elts =>
-              Query.Node(TaggedJson.Raw(Token.StartArray),
-                         NonEmptyList.fromList(elts).fold(Query.empty[TaggedJson, Filter])(Query.Sequence(_)))
-            }
-          case (Jq.Iterator(filter, inner), idx) :: Nil =>
-            for {
-              values <- vs.traverse { case (elt, idx) =>
-                for {
-                  v <- nextIdent
-                  q <- preprocess(prefix ~ prefix1, elt)
-                } yield (v, Query.Node(TaggedJson.StartArrayElement(idx), q))
-              }
-              v <- nextIdent
-              inner <- preprocess(Jq.Identity, inner)
-            } yield {
-              val (before, after) = values.splitAt(idx)
-              val forClause: Query[TaggedJson, Filter] =
-                Query.ForClause(
-                  v,
-                  prefix ~ prefix1 ~ filter ~ Jq.Child,
-                  Query.Node(
-                    TaggedJson.Raw(Token.StartArray),
-                    Query.Sequence(
-                      NonEmptyList[Query[TaggedJson, Filter]](Query.Node(TaggedJson.StartArrayElement(idx), inner),
-                                                              after.map(kv =>
-                                                                Query.Variable[TaggedJson, Filter](kv._1)))
-                        .prependList(before.map(kv => Query.Variable[TaggedJson, Filter](kv._1))))
-                  )
-                )
-              values.foldLeft(forClause) { case (inner, (v, q)) => Query.LetClause(v, q, inner) }
-            }
-          case _ =>
-            raiseError(JqException(s"array constructors may have only one iterator element, but got ${iterators.size}"))
-        }
+          .map { elts =>
+            Query.Node(TaggedJson.Raw(Token.StartArray),
+                       NonEmptyList.fromList(elts).fold(Query.empty[TaggedJson, Filter])(Query.Sequence(_)))
+          }
       case Jq.Num(n) =>
         pure(Query.Leaf(TaggedJson.Raw(Token.NumberValue(n.toString()))))
       case Jq.Str(s) =>
@@ -294,7 +259,11 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
                 } yield (v, Query.Node(TaggedJson.StartObjectValue(name), q))
               }
               v <- nextIdent
-              inner <- preprocess(Jq.Identity, inner)
+              inner <-
+                if (inner == Jq.Identity)
+                  Query.Variable[TaggedJson, Filter](v).pure[State]
+                else
+                  preprocess(Jq.Identity, inner)
             } yield {
               val (before, after) = values.splitAt(idx)
               val forClause: Query[TaggedJson, Filter] =

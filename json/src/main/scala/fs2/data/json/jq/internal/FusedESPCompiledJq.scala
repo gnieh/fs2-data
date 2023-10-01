@@ -35,10 +35,10 @@ private[jq] class FusedESPCompiledJq[F[_]: RaiseThrowable](val esps: NonEmptyCha
 
   override def andThen(that: CompiledJq[F]): CompiledJq[F] =
     that match {
-      case that: ESPCompiledJq[F] =>
-        new FusedESPCompiledJq[F](this.esps :+ that.esp)
-      case that: FusedESPCompiledJq[F] =>
-        new FusedESPCompiledJq[F](this.esps ++ that.esps)
+      // case that: ESPCompiledJq[F] =>
+      //  new FusedESPCompiledJq[F](this.esps :+ that.esp)
+      // case that: FusedESPCompiledJq[F] =>
+      //  new FusedESPCompiledJq[F](this.esps ++ that.esps)
       case that: PipedCompiledJq[F] =>
         new PipedCompiledJq[F](this +: that.jqs)
       case _ =>

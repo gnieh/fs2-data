@@ -242,4 +242,31 @@ object JqSpec extends SimpleIOSuite {
     )
   }
 
+  test("array iterator") {
+    for {
+      compiled <- compiler.compile(jq"""[ "before", .a[], "after" ]""")
+      result <- input.through(compiled).compile.toList
+    } yield expect.same(
+      List(
+        Token.StartArray,
+        Token.StringValue("before"),
+        Token.StartObject,
+        Token.Key("b"),
+        Token.NumberValue("0"),
+        Token.EndObject,
+        Token.StartObject,
+        Token.Key("b"),
+        Token.NumberValue("1"),
+        Token.EndObject,
+        Token.StartObject,
+        Token.Key("b"),
+        Token.NumberValue("2"),
+        Token.EndObject,
+        Token.StringValue("after"),
+        Token.EndArray
+      ),
+      result
+    )
+  }
+
 }
