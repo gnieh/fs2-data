@@ -111,7 +111,8 @@ val root = tlCrossRootProject
     cbor,
     cborJson,
     finiteState,
-    unidocs
+    unidocs,
+    exampleJq
   )
   .settings(commonSettings)
   .enablePlugins(NoPublishPlugin)
@@ -465,7 +466,7 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
 lazy val benchmarks = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("benchmarks"))
-  .enablePlugins(JmhPlugin)
+  .enablePlugins(JmhPlugin, NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
