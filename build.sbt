@@ -1,3 +1,4 @@
+import laika.config.SourceLinks
 import laika.helium.config.TextLink
 import laika.helium.config.ThemeNavigationSection
 import laika.ast
@@ -14,6 +15,7 @@ import laika.helium.config.IconLink
 import com.typesafe.tools.mima.core._
 import laika.config.{LinkConfig, ApiLinks}
 import sbt.Def._
+import scala.scalanative.build._
 
 val scala212 = "2.12.18"
 val scala213 = "2.13.12"
@@ -474,6 +476,25 @@ lazy val benchmarks = crossProject(JVMPlatform)
   )
   .dependsOn(csv, scalaXml, jsonCirce)
 
+lazy val exampleJq = crossProject(JVMPlatform, NativePlatform)
+  .crossType(CrossType.Pure)
+  .in(file("examples/jqlike"))
+  .enablePlugins(NoPublishPlugin)
+  .settings(commonSettings)
+  .settings(
+    name := "jq-like",
+    libraryDependencies ++= List(
+      "co.fs2" %%% "fs2-io" % fs2Version,
+      "com.monovore" %%% "decline-effect" % "2.4.1"
+    )
+  )
+  .nativeSettings(nativeConfig ~= {
+    _.withLTO(LTO.thin)
+      .withMode(Mode.releaseFast)
+      .withGC(GC.immix)
+  })
+  .dependsOn(csvGeneric, scalaXml, jsonCirce, cborJson)
+
 val homeLink: ThemeLink =
   ImageLink.internal(ast.Path.Root / "index.md", Image.internal(ast.Path.Root / "media" / "logo-header.svg"))
 
@@ -537,8 +558,13 @@ lazy val site = project
     mdocIn := file("site"),
     laikaConfig := tlSiteApiUrl.value.fold(LaikaConfig.defaults)(url =>
       LaikaConfig.defaults
-        .withConfigValue(LinkConfig.empty
-          .addApiLinks(ApiLinks(baseUri = url.toString().dropRight("fs2/data/index.html".size))))),
+        .withConfigValue(
+          LinkConfig.empty
+            .addApiLinks(ApiLinks(baseUri = url.toString().dropRight("fs2/data/index.html".size)))
+            .addSourceLinks(SourceLinks(
+              baseUri = "https://github.com/gnieh/fs2-data/tree/main/examples/jqlike/src/main/scala/",
+              suffix = "scala"
+            ).withPackagePrefix("fs2.data.example.jqlike")))),
     laikaExtensions += PrettyURLs
   )
   .dependsOn(csv.jvm,
@@ -550,7 +576,8 @@ lazy val site = project
              xml.jvm,
              scalaXml.jvm,
              cbor.jvm,
-             cborJson.jvm)
+             cborJson.jvm,
+             exampleJq.jvm)
 
 lazy val unidocs = project
   .in(file("unidocs"))
