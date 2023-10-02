@@ -90,7 +90,8 @@ val commonSettings = List(
     }
     .toList
     .flatten,
-  testFrameworks += new TestFramework("weaver.framework.CatsEffect")
+  testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
+  tlBspCrossProjectPlatforms := Set(JVMPlatform)
 )
 
 val root = tlCrossRootProject
@@ -230,12 +231,29 @@ lazy val json = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     name := "fs2-data-json",
     description := "Streaming JSON manipulation library",
     libraryDependencies ++= List(
-      "org.typelevel" %%% "literally" % literallyVersion
+      "org.typelevel" %%% "literally" % literallyVersion,
+      "org.typelevel" %%% "cats-parse" % "0.3.9"
     ) ++ PartialFunction
       .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
       }
-      .toList
+      .toList,
+    mimaBinaryIssueFilters ++= List(
+      // all these experimental classes have been made internal
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.JsonTagger"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.JsonTagger$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$EndArrayElement$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$EndObjectValue$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$Raw"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$Raw$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartArrayElement"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartArrayElement$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartObjectValue"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartObjectValue$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.json.jsonpath.package.untag")
+    )
   )
   .nativeSettings(
     tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
@@ -416,36 +434,7 @@ lazy val finiteState = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .settings(
     name := "fs2-data-finite-state",
     description := "Streaming finite state machines",
-    tlVersionIntroduced := Map("3" -> "1.6.0", "2.13" -> "1.6.0", "2.12" -> "1.6.0"),
-    mimaBinaryIssueFilters ++= List(
-      // all filters related to esp.Rhs.Captured* come from converting it from case class to case object
-      ProblemFilters.exclude[MissingClassProblem]("fs2.data.esp.Rhs$CapturedLeaf"),
-      ProblemFilters.exclude[MissingTypesProblem]("fs2.data.esp.Rhs$CapturedLeaf$"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedLeaf.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedLeaf.unapply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.name"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.copy"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.esp.Rhs#CapturedTree.copy$default$1"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.copy$default$2"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.apply"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.esp.Rhs#CapturedLeaf.fromProduct"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.esp.Rhs#CapturedTree._1"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree._2"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem](
-        "fs2.data.mft.MFTBuilder#Guardable.fs2$data$mft$MFTBuilder$Guardable$$$outer"),
-      // rules now only have number of parameters
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.mft.Rules.params"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.copy"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.mft.Rules.copy$default$1"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.this"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.apply"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.mft.Rules._1"),
-      // Removal of experimental class
-      ProblemFilters.exclude[MissingFieldProblem]("fs2.data.esp.Tag.True"),
-      ProblemFilters.exclude[MissingClassProblem]("fs2.data.esp.Tag$True$")
-    )
+    tlMimaPreviousVersions := Set.empty // experimental module, no compatbility guarantess
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))

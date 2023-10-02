@@ -20,7 +20,7 @@ package fs2.data.pfsa
 trait Pred[P, Elt] {
 
   /** Whether the element `e` satisfies the predicate. */
-  def satsifies(p: P)(e: Elt): Boolean
+  def satisfies(p: P)(e: Elt): Boolean
 
   /** The predicate that is always true. */
   def always: P
@@ -56,7 +56,7 @@ object Pred {
 
     implicit class PredOps[P](val p1: P) extends AnyVal {
       def satisfies[Elt](e: Elt)(implicit P: Pred[P, Elt]): Boolean =
-        P.satsifies(p1)(e)
+        P.satisfies(p1)(e)
 
       def &&[Elt](p2: P)(implicit P: Pred[P, Elt]): P =
         P.and(p1, p2)

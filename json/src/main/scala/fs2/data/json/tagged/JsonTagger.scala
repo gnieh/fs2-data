@@ -17,25 +17,42 @@
 package fs2
 package data
 package json
-package jsonpath
-package internals
+package tagged
 
 import scala.collection.mutable.ListBuffer
+import cats.Show
+import cats.syntax.all._
 
-sealed trait TaggedJson
-object TaggedJson {
+private[json] sealed trait TaggedJson
+private[json] object TaggedJson {
+  case object StartJson extends TaggedJson
+  case object EndJson extends TaggedJson
   case class Raw(token: Token) extends TaggedJson
   case class StartArrayElement(idx: Int) extends TaggedJson
   case object EndArrayElement extends TaggedJson
   case class StartObjectValue(name: String) extends TaggedJson
   case object EndObjectValue extends TaggedJson
 
+  implicit object show extends Show[TaggedJson] {
+
+    override def show(t: TaggedJson): String =
+      t match {
+        case Raw(token)             => token.jsonRepr
+        case StartArrayElement(idx) => show".[$idx]"
+        case EndArrayElement        => ".[/]"
+        case StartObjectValue(name) => show".{$name}"
+        case EndObjectValue         => ".{/}"
+        case _                      => ""
+      }
+
+  }
+
 }
 
 /** Tags json tokens in an xml like fashion, with explicit open and close tags for points
   * of interest. This allows for implementing interesting queries with a simple tree automaton.
   */
-object JsonTagger {
+private[json] object JsonTagger {
   def pipe[F[_]: RaiseThrowable]: Pipe[F, Token, TaggedJson] = {
 
     def object_(chunk: Chunk[Token], idx: Int, rest: Stream[F, Token], chunkAcc: ListBuffer[TaggedJson])
@@ -118,8 +135,8 @@ object JsonTagger {
             Pull.done
         }
       } else {
-        value_(chunk, idx, rest, chunkAcc).flatMap { case (chunk, idx, rest, chunkAcc) =>
-          go_(chunk, idx, rest, chunkAcc)
+        value_(chunk, idx, rest, chunkAcc += TaggedJson.StartJson).flatMap { case (chunk, idx, rest, chunkAcc) =>
+          go_(chunk, idx, rest, chunkAcc += TaggedJson.EndJson)
         }
       }
 

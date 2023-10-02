@@ -57,7 +57,7 @@ abstract class QuerySpec(credit: Int) extends SimpleIOSuite {
 
   }
 
-  object MiniXQueryCompiler extends QueryCompiler[String, MiniXPath] {
+  object MiniXQueryCompiler extends QueryCompiler[String, String, MiniXPath] {
 
     type Matcher = Set[String]
     type Char = String
@@ -66,7 +66,7 @@ abstract class QuerySpec(credit: Int) extends SimpleIOSuite {
 
     override implicit object predicate extends Pred[Matcher, Char] {
 
-      override def satsifies(p: Matcher)(e: Char): Boolean = p.contains(e)
+      override def satisfies(p: Matcher)(e: Char): Boolean = p.contains(e)
 
       override val always: Matcher = Set("a", "b", "c", "d", "doc")
 

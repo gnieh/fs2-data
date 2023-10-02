@@ -42,7 +42,7 @@ object LocationMatch {
 
   implicit val LocationMatchPred: Pred[LocationMatch, StartElement] = new Pred[LocationMatch, StartElement] {
 
-    override def satsifies(p: LocationMatch)(e: StartElement): Boolean =
+    override def satisfies(p: LocationMatch)(e: StartElement): Boolean =
       p match {
         case True                 => true
         case False                => false
@@ -50,9 +50,9 @@ object LocationMatch {
         case AttrExists(attr)     => e.attributes.contains(attr)
         case AttrEq(attr, value)  => e.attributes.get(attr).contains(value)
         case AttrNeq(attr, value) => e.attributes.get(attr).fold(false)(_ =!= value)
-        case And(left, right)     => satsifies(left)(e) && satsifies(right)(e)
-        case Or(left, right)      => satsifies(left)(e) || satsifies(right)(e)
-        case Not(inner)           => !satsifies(inner)(e)
+        case And(left, right)     => satisfies(left)(e) && satisfies(right)(e)
+        case Or(left, right)      => satisfies(left)(e) || satisfies(right)(e)
+        case Not(inner)           => !satisfies(inner)(e)
       }
 
     override def always: LocationMatch = True
