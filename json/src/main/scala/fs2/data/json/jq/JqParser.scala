@@ -40,13 +40,19 @@ object JqParser {
   private val whitespace: P[Char] = P.charIn(" \t\r\n")
   private val whitespace0: Parser0[Unit] = whitespace.rep0.void
 
+  private val identifierChar: P[Unit] =
+    P.charIn(('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9') ++ "-_").void
   private val identifier: P[String] =
-    (P.charIn(('a' to 'z') ++ ('A' to 'Z')) ~ P.charIn(('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9') ++ "-_").rep0)
+    (P.charIn(('a' to 'z') ++ ('A' to 'Z')) ~ identifierChar.rep0)
       .withContext("identifier")
       .string <* whitespace0
 
   private def kw(kw: String): P[Unit] =
-    identifier.filter(_ == kw).void
+    (P.string(kw) ~ !identifierChar).void <* whitespace0
+
+  private val kwTrue: P[Unit] = kw("true")
+  private val kwFalse: P[Unit] = kw("false")
+  private val kwNull: P[Unit] = kw("null")
 
   private def ch(c: Char): P[Unit] =
     P.char(c) <* whitespace0
@@ -136,9 +142,9 @@ object JqParser {
             .between(ch('{'), ch('}'))
             .map[Filter => Constructor](fs => prefix => Jq.Obj(prefix, fs)) ::
           string.map[Filter => Constructor](s => _ => Jq.Str(s)) ::
-          kw("true").as[Filter => Constructor](_ => Jq.Bool(true)) ::
-          kw("false").as[Filter => Constructor](_ => Jq.Bool(false)) ::
-          kw("null").as[Filter => Constructor](_ => Jq.Null) ::
+          kwTrue.as[Filter => Constructor](_ => Jq.Bool(true)) ::
+          kwFalse.as[Filter => Constructor](_ => Jq.Bool(false)) ::
+          kwNull.as[Filter => Constructor](_ => Jq.Null) ::
           Numbers.jsonNumber.map[Filter => Constructor](n => _ => Jq.Num(n)) ::
           Nil)
 

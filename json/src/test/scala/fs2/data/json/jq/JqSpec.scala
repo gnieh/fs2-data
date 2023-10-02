@@ -269,4 +269,90 @@ object JqSpec extends SimpleIOSuite {
     )
   }
 
+  test("array iterator with constructor") {
+    for {
+      compiled <- compiler.compile(jq"""[ "before", .a[] | { "value": .b }, "after" ]""")
+      result <- input.through(compiled).compile.toList
+    } yield expect.same(
+      List(
+        Token.StartArray,
+        Token.StringValue("before"),
+        Token.StartObject,
+        Token.Key("value"),
+        Token.NumberValue("0"),
+        Token.EndObject,
+        Token.StartObject,
+        Token.Key("value"),
+        Token.NumberValue("1"),
+        Token.EndObject,
+        Token.StartObject,
+        Token.Key("value"),
+        Token.NumberValue("2"),
+        Token.EndObject,
+        Token.StringValue("after"),
+        Token.EndArray
+      ),
+      result
+    )
+  }
+
+  test("object iterator with constructor") {
+    for {
+      compiled <- compiler.compile(jq"""[ true, .a[].b | {"value": . }, false ]""")
+      result <- input.through(compiled).compile.toList
+    } yield expect.same(
+      List(
+        Token.StartArray,
+        Token.TrueValue,
+        Token.StartObject,
+        Token.Key("value"),
+        Token.NumberValue("0"),
+        Token.EndObject,
+        Token.StartObject,
+        Token.Key("value"),
+        Token.NumberValue("1"),
+        Token.EndObject,
+        Token.StartObject,
+        Token.Key("value"),
+        Token.NumberValue("2"),
+        Token.EndObject,
+        Token.FalseValue,
+        Token.EndArray
+      ),
+      result
+    )
+  }
+
+  test("object iterator with constructor iterator") {
+    for {
+      compiled <- compiler.compile(jq""".a[] | { "value": . }""")
+      result <- input.through(compiled).compile.toList
+    } yield expect.same(
+      List(
+        Token.StartObject,
+        Token.Key("value"),
+        Token.StartObject,
+        Token.Key("b"),
+        Token.NumberValue("0"),
+        Token.EndObject,
+        Token.EndObject,
+        Token.StartObject,
+        Token.Key("value"),
+        Token.StartObject,
+        Token.Key("b"),
+        Token.NumberValue("1"),
+        Token.EndObject,
+        Token.EndObject,
+        Token.StartObject,
+        Token.Key("value"),
+        Token.StartObject,
+        Token.Key("b"),
+        Token.NumberValue("2"),
+        Token.EndObject,
+        Token.EndObject
+      ),
+      result
+    )
+  }
+
 }

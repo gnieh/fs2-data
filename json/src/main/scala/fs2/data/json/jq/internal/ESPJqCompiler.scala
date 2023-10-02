@@ -36,11 +36,17 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
 
   private type State[T] = StateT[F, Int, T]
 
-  private def nextIdent: State[String] =
+  private val nextIdent: State[String] =
     for {
       id <- StateT.get
       _ <- StateT.set(id + 1)
     } yield s"v$id"
+
+  private val currentIdent: State[Option[String]] =
+    StateT.get.map {
+      case 0 => None
+      case n => Some(s"v${n - 1}")
+    }
 
   private def pure[T](v: T): State[T] =
     StateT.pure(v)
@@ -147,7 +153,7 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
                   else none
               }
             case ((pat @ TaggedMatcher.Index(idx), guard), TaggedMatcher.Slice(start, end)) =>
-              if (idx >= start && end.forall(idx <= _))
+              if (idx >= start && end.forall(idx < _))
                 // guard is redundant
                 (pat, guard).some
               else
@@ -160,7 +166,7 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
               else // incompatible
                 none
             case ((pat @ TaggedMatcher.Index(idx), guard), TaggedMatcher.Not(TaggedMatcher.Slice(start, end))) =>
-              if (idx < start || end.exists(start > _))
+              if (idx < start || end.exists(start >= _))
                 // guard is redundant
                 (pat, guard).some
               else
@@ -245,7 +251,15 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
         iterators match {
           case Nil =>
             vs.traverse { case (name, elt) =>
-              preprocess(prefix ~ prefix1, elt).map(q => Query.Node(TaggedJson.StartObjectValue(name), q))
+              if (elt == Jq.Identity && prefix1 == Jq.Identity)
+                currentIdent.flatMap {
+                  case Some(v) =>
+                    Query.node[TaggedJson, Filter](TaggedJson.StartObjectValue(name), Query.variable(v)).pure[State]
+                  case None =>
+                    preprocess(prefix ~ prefix1, elt).map(q => Query.node(TaggedJson.StartObjectValue(name), q))
+                }
+              else
+                preprocess(prefix ~ prefix1, elt).map(q => Query.node(TaggedJson.StartObjectValue(name), q))
             }.map { elts =>
               Query.Node(TaggedJson.Raw(Token.StartObject),
                          NonEmptyList.fromList(elts).fold(Query.empty[TaggedJson, Filter])(Query.Sequence(_)))
@@ -255,7 +269,11 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
               values <- vs.traverse { case (name, elt) =>
                 for {
                   v <- nextIdent
-                  q <- preprocess(prefix ~ prefix1, elt)
+                  q <-
+                    if (elt == Jq.Identity)
+                      Query.Variable[TaggedJson, Filter](v).pure[State]
+                    else
+                      preprocess(prefix ~ prefix1, elt)
                 } yield (v, Query.Node(TaggedJson.StartObjectValue(name), q))
               }
               v <- nextIdent
