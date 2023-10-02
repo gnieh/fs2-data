@@ -39,7 +39,7 @@ object RegularSpec extends SimpleIOSuite with Checkers {
 
   implicit object CharSetInstances extends Pred[Set[Char], Char] with Candidate[Set[Char], Char] {
 
-    override def satsifies(p: Set[Char])(e: Char): Boolean = p.contains(e)
+    override def satisfies(p: Set[Char])(e: Char): Boolean = p.contains(e)
 
     override val always: Set[Char] = Set('a', 'b')
 

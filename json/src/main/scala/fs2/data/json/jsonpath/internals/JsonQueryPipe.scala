@@ -54,16 +54,16 @@ private[json] object PathMatcher {
   implicit val PathMatcherPred: Pred[PathMatcher, TaggedJson] =
     new Pred[PathMatcher, TaggedJson] {
 
-      override def satsifies(p: PathMatcher)(e: TaggedJson): Boolean =
+      override def satisfies(p: PathMatcher)(e: TaggedJson): Boolean =
         (p, e) match {
           case (True, _) => true
           case (Range(low, high), TaggedJson.StartArrayElement(idx)) =>
             idx >= low && idx <= high
           case (AnyKey, TaggedJson.StartObjectValue(_))   => true
           case (Key(n1), TaggedJson.StartObjectValue(n2)) => n1 === n2
-          case (And(l, r), _)                             => satsifies(l)(e) && satsifies(r)(e)
-          case (Or(l, r), _)                              => satsifies(l)(e) || satsifies(r)(e)
-          case (Not(i), _)                                => !satsifies(i)(e)
+          case (And(l, r), _)                             => satisfies(l)(e) && satisfies(r)(e)
+          case (Or(l, r), _)                              => satisfies(l)(e) || satisfies(r)(e)
+          case (Not(i), _)                                => !satisfies(i)(e)
           case (_, _)                                     => false
         }
 

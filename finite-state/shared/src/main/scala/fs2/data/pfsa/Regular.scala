@@ -119,7 +119,7 @@ sealed abstract class Regular[CharSet] {
   def derive[C](c: C)(implicit CharSet: Pred[CharSet, C], eq: Eq[CharSet]): Regular[CharSet] =
     this match {
       case Regular.Epsilon()                               => Regular.Chars(CharSet.never)
-      case Regular.Chars(set) if CharSet.satsifies(set)(c) => Regular.Epsilon()
+      case Regular.Chars(set) if CharSet.satisfies(set)(c) => Regular.Epsilon()
       case Regular.Chars(_)                                => Regular.Chars(CharSet.never)
       case Regular.Concatenation(re1, re2) if re1.acceptEpsilon =>
         (re1.derive(c) ~ re2) || re2.derive(c)
@@ -235,7 +235,7 @@ object Regular {
   implicit def pred[CharSet: Eq, C](implicit CharSet: Pred[CharSet, C]): Pred[Regular[CharSet], C] =
     new Pred[Regular[CharSet], C] {
 
-      override def satsifies(p: Regular[CharSet])(e: C): Boolean =
+      override def satisfies(p: Regular[CharSet])(e: C): Boolean =
         p match {
           case Epsilon()  => false
           case Chars(set) => set.satisfies(e)

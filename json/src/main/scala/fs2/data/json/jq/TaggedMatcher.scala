@@ -89,7 +89,7 @@ private object TaggedMatcher {
         case Not(Slice(start, _)) => Some(TaggedJson.StartArrayElement(start - 1))
       }
 
-    override def satsifies(p: TaggedMatcher)(e: TaggedJson): Boolean =
+    override def satisfies(p: TaggedMatcher)(e: TaggedJson): Boolean =
       (p, e) match {
         case (StartJson, TaggedJson.StartJson)                      => true
         case (StartObject, TaggedJson.Raw(Token.StartObject))       => true
@@ -99,9 +99,9 @@ private object TaggedMatcher {
         case (Slice(start, end), TaggedJson.StartArrayElement(idx)) => idx >= start && end.forall(idx < _)
         case (Any, _)                                               => true
         case (Fail, _)                                              => false
-        case (AnyOf(ps), _)                                         => ps.exists(satsifies(_)(e))
-        case (AllOf(ps), _)                                         => ps.forall(satsifies(_)(e))
-        case (Not(p), _)                                            => !satsifies(p)(e)
+        case (AnyOf(ps), _)                                         => ps.exists(satisfies(_)(e))
+        case (AllOf(ps), _)                                         => ps.forall(satisfies(_)(e))
+        case (Not(p), _)                                            => !satisfies(p)(e)
         case (_, _)                                                 => false
       }
 
