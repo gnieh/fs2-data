@@ -90,7 +90,8 @@ val commonSettings = List(
     }
     .toList
     .flatten,
-  testFrameworks += new TestFramework("weaver.framework.CatsEffect")
+  testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
+  tlBspCrossProjectPlatforms := Set(JVMPlatform)
 )
 
 val root = tlCrossRootProject
@@ -433,39 +434,7 @@ lazy val finiteState = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .settings(
     name := "fs2-data-finite-state",
     description := "Streaming finite state machines",
-    tlVersionIntroduced := Map("3" -> "1.6.0", "2.13" -> "1.6.0", "2.12" -> "1.6.0"),
-    mimaBinaryIssueFilters ++= List(
-      // all filters related to esp.Rhs.Captured* come from converting it from case class to case object
-      ProblemFilters.exclude[MissingClassProblem]("fs2.data.esp.Rhs$CapturedLeaf"),
-      ProblemFilters.exclude[MissingTypesProblem]("fs2.data.esp.Rhs$CapturedLeaf$"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedLeaf.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedLeaf.unapply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.name"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.copy"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.esp.Rhs#CapturedTree.copy$default$1"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.copy$default$2"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.apply"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.esp.Rhs#CapturedLeaf.fromProduct"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.esp.Rhs#CapturedTree._1"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree._2"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem](
-        "fs2.data.mft.MFTBuilder#Guardable.fs2$data$mft$MFTBuilder$Guardable$$$outer"),
-      // rules now only have number of parameters
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.mft.Rules.params"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.copy"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.mft.Rules.copy$default$1"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.this"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.apply"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.mft.Rules._1"),
-      // Removal of experimental class
-      ProblemFilters.exclude[MissingFieldProblem]("fs2.data.esp.Tag.True"),
-      ProblemFilters.exclude[MissingClassProblem]("fs2.data.esp.Tag$True$")
-    )
-  )
-  .jsSettings(
-    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+    tlMimaPreviousVersions := Set.empty // experimental module, no compatbility guarantess
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
