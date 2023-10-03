@@ -317,7 +317,7 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
         pure(Query.Ordpath(prefix ~ filter))
     }
 
-  def compile(jq: Jq): F[CompiledJq[F]] =
+  def compile(jq: Jq): F[Pipe[F, Token, Token]] =
     for {
       query <- preprocess(Jq.Root, jq).runA(0)
       mft = compile(query)

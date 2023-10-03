@@ -13,7 +13,7 @@ import laika.ast.TemplateString
 import laika.helium.config.HeliumIcon
 import laika.helium.config.IconLink
 import com.typesafe.tools.mima.core._
-import laika.config.{LinkConfig, ApiLinks}
+import laika.config._
 import sbt.Def._
 import scala.scalanative.build._
 
@@ -477,7 +477,7 @@ lazy val benchmarks = crossProject(JVMPlatform)
   )
   .dependsOn(csv, scalaXml, jsonCirce)
 
-lazy val exampleJq = crossProject(JVMPlatform, NativePlatform)
+lazy val exampleJq = crossProject(JVMPlatform, NativePlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("examples/jqlike"))
   .enablePlugins(NoPublishPlugin)
@@ -489,11 +489,19 @@ lazy val exampleJq = crossProject(JVMPlatform, NativePlatform)
       "com.monovore" %%% "decline-effect" % "2.4.1"
     )
   )
+  .jvmSettings(
+    assembly / mainClass := Some("fs2.data.example.jqlike.JqLike"),
+    assembly / assemblyJarName := "jq-like.jar"
+  )
   .nativeSettings(nativeConfig ~= {
     _.withLTO(LTO.thin)
       .withMode(Mode.releaseFast)
       .withGC(GC.immix)
   })
+  .jsSettings(
+    scalaJSUseMainModuleInitializer := true,
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
   .dependsOn(csvGeneric, scalaXml, jsonCirce, cborJson)
 
 val homeLink: ThemeLink =
@@ -547,7 +555,11 @@ lazy val site = project
       .site
       .externalCSS("/pagefind/pagefind-ui.css")
       .site
-      .externalJS("/pagefind/pagefind-ui.js"),
+      .externalJS("/pagefind/pagefind-ui.js")
+      .site
+      .internalCSS(ast.Path.Root / "css")
+      .site
+      .internalJS(ast.Path.Root / "js"),
     libraryDependencies ++= List(
       "com.beachape" %% "enumeratum" % "1.7.0",
       "org.gnieh" %% "diffson-circe" % diffsonVersion,
@@ -557,15 +569,23 @@ lazy val site = project
     ),
     scalacOptions += "-Ymacro-annotations",
     mdocIn := file("site"),
-    laikaConfig := tlSiteApiUrl.value.fold(LaikaConfig.defaults)(url =>
-      LaikaConfig.defaults
-        .withConfigValue(
-          LinkConfig.empty
-            .addApiLinks(ApiLinks(baseUri = url.toString().dropRight("fs2/data/index.html".size)))
-            .addSourceLinks(SourceLinks(
-              baseUri = "https://github.com/gnieh/fs2-data/tree/main/examples/jqlike/src/main/scala/",
-              suffix = "scala"
-            ).withPackagePrefix("fs2.data.example.jqlike")))),
+    laikaConfig := tlSiteApiUrl.value
+      .fold(LaikaConfig.defaults)(url =>
+        LaikaConfig.defaults
+          .withConfigValue(
+            LinkConfig.empty
+              .addApiLinks(ApiLinks(baseUri = url.toString().dropRight("fs2/data/index.html".size)))
+              .addSourceLinks(SourceLinks(
+                baseUri = "https://github.com/gnieh/fs2-data/tree/main/examples/jqlike/src/main/scala/",
+                suffix = "scala"
+              ).withPackagePrefix("fs2.data.example.jqlike"))))
+      .withConfigValue(
+        Selections(
+          SelectionConfig("platform",
+                          ChoiceConfig("jvm", "JVM"),
+                          ChoiceConfig("native", "Scala Native"),
+                          ChoiceConfig("js", "Scala.JS")).withSeparateEbooks
+        )),
     laikaExtensions += PrettyURLs
   )
   .dependsOn(csv.jvm,
@@ -577,8 +597,7 @@ lazy val site = project
              xml.jvm,
              scalaXml.jvm,
              cbor.jvm,
-             cborJson.jvm,
-             exampleJq.jvm)
+             cborJson.jvm)
 
 lazy val unidocs = project
   .in(file("unidocs"))

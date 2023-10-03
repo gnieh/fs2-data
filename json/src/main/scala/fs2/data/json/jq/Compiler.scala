@@ -28,7 +28,7 @@ case class JqException(msg: String) extends Exception(msg)
 /** A compiler for jq queries into some compiled form. */
 trait Compiler[F[_]] {
 
-  def compile(jq: Jq): F[CompiledJq[F]]
+  def compile(jq: Jq): F[Pipe[F, Token, Token]]
 
 }
 
