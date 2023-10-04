@@ -24,6 +24,7 @@ import cats.data._
 import cats.syntax.all._
 
 import scala.annotation.{implicitNotFound, unused}
+import scala.annotation.nowarn
 
 package object csv {
 
@@ -81,6 +82,7 @@ package object csv {
     "No implicit CsvRowEncoderF[H,  found for type ${T}.\nYou can define one using CsvRowEncoderF[H, .instance, by calling contramap on another CsvRowEncoderF[H,  or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val csvRowEncoder: CsvRowEncoderF[H, [${T}] = deriveCsvRowEncoderF[H, \nMake sure to have instances of CellEncoder for every member type in scope.\n")
   type CsvRowEncoder[T, Header] = RowEncoderF[Some, T, Header]
 
+  @nowarn
   sealed trait QuoteHandling
 
   object QuoteHandling {
@@ -108,6 +110,7 @@ package object csv {
   def decodeWithoutHeaders[T]: PartiallyAppliedDecodeWithoutHeaders[T] =
     new PartiallyAppliedDecodeWithoutHeaders[T](dummy = true)
 
+  @nowarn
   class PartiallyAppliedDecodeWithoutHeaders[T](val dummy: Boolean) extends AnyVal {
     def apply[F[_], C](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
         F: RaiseThrowable[F],
@@ -122,6 +125,7 @@ package object csv {
   def decodeSkippingHeaders[T]: PartiallyAppliedDecodeSkippingHeaders[T] =
     new PartiallyAppliedDecodeSkippingHeaders[T](dummy = true)
 
+  @nowarn
   class PartiallyAppliedDecodeSkippingHeaders[T](val dummy: Boolean) extends AnyVal {
     def apply[F[_], C](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
         F: RaiseThrowable[F],
@@ -137,6 +141,7 @@ package object csv {
   def decodeUsingHeaders[T]: PartiallyAppliedDecodeUsingHeaders[T] =
     new PartiallyAppliedDecodeUsingHeaders[T](dummy = true)
 
+  @nowarn
   class PartiallyAppliedDecodeUsingHeaders[T](val dummy: Boolean) extends AnyVal {
     def apply[F[_], C, Header](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(
         implicit
@@ -158,6 +163,7 @@ package object csv {
   def decodeGivenHeaders[T]: PartiallyAppliedDecodeGivenHeaders[T] =
     new PartiallyAppliedDecodeGivenHeaders(dummy = true)
 
+  @nowarn
   class PartiallyAppliedDecodeGivenHeaders[T](val dummy: Boolean) extends AnyVal {
     def apply[F[_], C, Header](headers: NonEmptyList[Header],
                                skipHeaders: Boolean = false,
@@ -178,6 +184,7 @@ package object csv {
   def encodeWithoutHeaders[T]: PartiallyAppliedEncodeWithoutHeaders[T] =
     new PartiallyAppliedEncodeWithoutHeaders[T](dummy = true)
 
+  @nowarn
   class PartiallyAppliedEncodeWithoutHeaders[T](val dummy: Boolean) extends AnyVal {
     def apply[F[_]](fullRows: Boolean = false,
                     separator: Char = ',',
@@ -194,6 +201,7 @@ package object csv {
   def encodeGivenHeaders[T]: PartiallyAppliedEncodeGivenHeaders[T] =
     new PartiallyAppliedEncodeGivenHeaders[T](dummy = true)
 
+  @nowarn
   class PartiallyAppliedEncodeGivenHeaders[T](val dummy: Boolean) extends AnyVal {
     def apply[F[_], Header](headers: NonEmptyList[Header],
                             fullRows: Boolean = false,
@@ -213,6 +221,7 @@ package object csv {
   def encodeUsingFirstHeaders[T]: PartiallyAppliedEncodeUsingFirstHeaders[T] =
     new PartiallyAppliedEncodeUsingFirstHeaders(dummy = true)
 
+  @nowarn
   class PartiallyAppliedEncodeUsingFirstHeaders[T](val dummy: Boolean) extends AnyVal {
     def apply[F[_], Header](fullRows: Boolean = false,
                             separator: Char = ',',

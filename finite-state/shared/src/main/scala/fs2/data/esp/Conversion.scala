@@ -17,8 +17,8 @@
 package fs2.data.esp
 
 /** A typeclass to create events out of tags. */
-trait Conversion[Tag, Evt] {
-  def makeOpen(t: Tag): Evt
-  def makeClose(t: Tag): Evt
-  def makeLeaf(t: Tag): Evt
+trait Conversion[T, Evt] {
+  def makeOpen(t: T): Evt
+  def makeClose(t: T): Evt
+  def makeLeaf(t: T): Evt
 }

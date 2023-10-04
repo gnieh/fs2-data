@@ -25,43 +25,43 @@ import cats.syntax.all._
 /** A pattern to be matched.
   * A pattern can capture a submatch, that is then usable in the RHS.
   */
-sealed trait Pattern[Guard, Tag] {
-  def |(that: Pattern[Guard, Tag]): Pattern[Guard, Tag] =
+sealed trait Pattern[Guard, T] {
+  def |(that: Pattern[Guard, T]): Pattern[Guard, T] =
     (this, that) match {
       case (Pattern.Wildcard(), _) | (_, Pattern.Wildcard()) => Pattern.Wildcard()
       case (Pattern.Or(alts1), Pattern.Or(alts2))            => Pattern.Or(alts1 ++ alts2)
       case (_, _)                                            => Pattern.Or(NonEmptyChain(this, that))
     }
 
-  def when(guard: Guard): Pattern[Guard, Tag] =
+  def when(guard: Guard): Pattern[Guard, T] =
     Pattern.Guarded(this, guard)
 }
 
 object Pattern {
 
   /** Matches anything. */
-  case class Wildcard[Guard, Tag]() extends Pattern[Guard, Tag]
+  case class Wildcard[Guard, T]() extends Pattern[Guard, T]
 
   /** Matches the end of stream. */
-  case class EOS[Guard, Tag]() extends Pattern[Guard, Tag]
+  case class EOS[Guard, T]() extends Pattern[Guard, T]
 
   /** Matches the input in a state at a depth for some input pattern. */
-  case class Input[Guard, Tag](q: Option[Int], d: Option[Int], inner: Pattern[Guard, Tag]) extends Pattern[Guard, Tag]
+  case class Input[Guard, T](q: Option[Int], d: Option[Int], inner: Pattern[Guard, T]) extends Pattern[Guard, T]
 
   /** Matches some open tag. */
-  case class Open[Guard, Tag](tag: Option[Tag]) extends Pattern[Guard, Tag]
+  case class Open[Guard, T](tag: Option[T]) extends Pattern[Guard, T]
 
   /** Matches some close tag. */
-  case class Close[Guard, Tag](tag: Option[Tag]) extends Pattern[Guard, Tag]
+  case class Close[Guard, T](tag: Option[T]) extends Pattern[Guard, T]
 
   /** Matches some leaf value. */
-  case class Leaf[Guard, Tag](value: Option[Tag]) extends Pattern[Guard, Tag]
+  case class Leaf[Guard, T](value: Option[T]) extends Pattern[Guard, T]
 
   /** Alternative, matched from left to right. */
-  case class Or[Guard, Tag](patterns: NonEmptyChain[Pattern[Guard, Tag]]) extends Pattern[Guard, Tag]
+  case class Or[Guard, T](patterns: NonEmptyChain[Pattern[Guard, T]]) extends Pattern[Guard, T]
 
   /** A guarded pattern. */
-  case class Guarded[Guard, Tag](inner: Pattern[Guard, Tag], guard: Guard) extends Pattern[Guard, Tag]
+  case class Guarded[Guard, T](inner: Pattern[Guard, T], guard: Guard) extends Pattern[Guard, T]
 
   implicit def PatternIsPattern[G, T]: IsPattern[Pattern[G, T], G, Tag[T]] =
     new IsPattern[Pattern[G, T], G, Tag[T]] {
@@ -131,36 +131,36 @@ object Pattern {
 
 }
 
-class PatternDsl[Guard, Tag] {
+class PatternDsl[Guard, T] {
 
-  def state(q: Int)(inner: Pattern[Guard, Tag]): Pattern[Guard, Tag] =
+  def state(q: Int)(inner: Pattern[Guard, T]): Pattern[Guard, T] =
     Pattern.Input(q.some, none, inner)
 
-  def state(q: Int, d: Int)(inner: Pattern[Guard, Tag]): Pattern[Guard, Tag] =
+  def state(q: Int, d: Int)(inner: Pattern[Guard, T]): Pattern[Guard, T] =
     Pattern.Input(q.some, d.some, inner)
 
-  def value(v: Tag): Pattern[Guard, Tag] =
+  def value(v: T): Pattern[Guard, T] =
     Pattern.Leaf(v.some)
 
-  val value: Pattern[Guard, Tag] =
+  val value: Pattern[Guard, T] =
     Pattern.Leaf(none)
 
-  val eos: Pattern[Guard, Tag] =
+  val eos: Pattern[Guard, T] =
     Pattern.EOS()
 
-  val any: Pattern[Guard, Tag] =
+  val any: Pattern[Guard, T] =
     Pattern.Wildcard()
 
-  def open(t: Tag): Pattern[Guard, Tag] =
+  def open(t: T): Pattern[Guard, T] =
     Pattern.Open(t.some)
 
-  val open: Pattern[Guard, Tag] =
+  val open: Pattern[Guard, T] =
     Pattern.Open(none)
 
-  def close(t: Tag): Pattern[Guard, Tag] =
+  def close(t: T): Pattern[Guard, T] =
     Pattern.Close(t.some)
 
-  val close: Pattern[Guard, Tag] =
+  val close: Pattern[Guard, T] =
     Pattern.Close(none)
 
 }

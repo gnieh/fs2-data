@@ -16,8 +16,8 @@
 
 package fs2.data.pfsa
 
-trait Candidate[Set, C] {
+trait Candidate[S, C] {
 
-  def pick(set: Set): Option[C]
+  def pick(set: S): Option[C]
 
 }

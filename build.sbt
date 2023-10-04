@@ -1,4 +1,19 @@
+import laika.helium.config.TextLink
+import laika.helium.config.ThemeNavigationSection
+import laika.ast
+import laika.config.PrettyURLs
+import org.typelevel.sbt.site.GenericSiteSettings
+import org.typelevel.sbt.site.TypelevelSiteSettings
+import laika.helium.config.ImageLink
+import laika.helium.config.ThemeLink
+import laika.ast.Image
+import laika.ast.Span
+import laika.ast.TemplateString
+import laika.helium.config.HeliumIcon
+import laika.helium.config.IconLink
 import com.typesafe.tools.mima.core._
+import laika.config.{LinkConfig, ApiLinks}
+import sbt.Def._
 
 val scala212 = "2.12.18"
 val scala213 = "2.13.12"
@@ -18,32 +33,22 @@ val copyrightYears = "2019-2023"
 
 ThisBuild / tlBaseVersion := "1.8"
 
-ThisBuild / tlSonatypeUseLegacyHost := false
-
 ThisBuild / organization := "org.gnieh"
 ThisBuild / organizationName := "Lucas Satabin"
 ThisBuild / startYear := Some(2023)
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / developers := List(
-  // your GitHub handle and name
   tlGitHubDev("satabin", "Lucas Satabin"),
   tlGitHubDev("ybasket", "Yannick Heiber")
 )
-ThisBuild / apiURL := Some(new java.net.URL("https://fs2-data.gnieh.org/api/"))
 
 ThisBuild / crossScalaVersions := Seq(scala212, scala213, scala3)
 ThisBuild / scalaVersion := scala213
 
-ThisBuild / githubWorkflowBuildPostamble +=
-  WorkflowStep.Sbt(
-    List("set ThisBuild / tlFatalWarningsInCi := false", "documentation/mdoc"),
-    None,
-    Some("Compile documentation"),
-    Some(s"matrix.scala == '$scala213' && matrix.project == 'rootJVM'")
-  )
+ThisBuild / tlSitePublishBranch := None
+ThisBuild / tlSitePublishTags := true
 
 val commonSettings = List(
-  homepage := Some(url("https://github.com/satabin/fs2-data")),
   versionScheme := Some("early-semver"),
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
@@ -86,34 +91,7 @@ val commonSettings = List(
     .toList
     .flatten,
   testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
-  scmInfo := Some(ScmInfo(url("https://github.com/satabin/fs2-data"), "scm:git:git@github.com:satabin/fs2-data.git"))
-)
-
-val publishSettings = List(
-  Test / publishArtifact := false,
-  pomIncludeRepository := { x =>
-    false
-  },
-  developers := List(
-    Developer(id = "satabin",
-              name = "Lucas Satabin",
-              email = "lucas.satabin@gnieh.org",
-              url = url("https://github.com/satabin")),
-    Developer(id = "ybasket",
-              name = "Yannick Heiber",
-              email = "ybasket42+fs2-data@googlemail.com",
-              url = url("https://github.com/ybasket"))
-  ),
-  pomExtra := (
-    <ciManagement>
-      <system>GitHub Actions</system>
-      <url>https://github.com/satabin/fs2-data/actions</url>
-    </ciManagement>
-    <issueManagement>
-      <system>github</system>
-      <url>https://github.com/satabin/fs2-data/issues</url>
-    </issueManagement>
-  )
+  tlBspCrossProjectPlatforms := Set(JVMPlatform)
 )
 
 val root = tlCrossRootProject
@@ -130,35 +108,16 @@ val root = tlCrossRootProject
     scalaXml,
     cbor,
     cborJson,
-    finiteState
+    finiteState,
+    unidocs
   )
   .settings(commonSettings)
-  .enablePlugins(NoPublishPlugin, ScalaUnidocPlugin, SiteScaladocPlugin, NanocPlugin)
-  .settings(
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
-      cbor.jvm,
-      cborJson.jvm,
-      csv.jvm,
-      csvGeneric.jvm,
-      json.jvm,
-      jsonCirce.jvm,
-      jsonDiffson.jvm,
-      jsonPlay.jvm,
-      jsonInterpolators.jvm,
-      text.jvm,
-      xml.jvm,
-      scalaXml.jvm
-    ),
-    ScalaUnidoc / siteSubdirName := "api",
-    addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
-    Nanoc / sourceDirectory := file("site")
-  )
+  .enablePlugins(NoPublishPlugin)
 
 lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("text"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-text",
     description := "Utilities for textual data format",
@@ -192,7 +151,6 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("csv"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-csv",
     description := "Streaming CSV manipulation library",
@@ -217,7 +175,6 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("csv/generic"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-csv-generic",
     description := "Generic CSV row decoder generation",
@@ -270,17 +227,33 @@ lazy val json = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("json"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-json",
     description := "Streaming JSON manipulation library",
     libraryDependencies ++= List(
-      "org.typelevel" %%% "literally" % literallyVersion
+      "org.typelevel" %%% "literally" % literallyVersion,
+      "org.typelevel" %%% "cats-parse" % "0.3.9"
     ) ++ PartialFunction
       .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
       }
-      .toList
+      .toList,
+    mimaBinaryIssueFilters ++= List(
+      // all these experimental classes have been made internal
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.JsonTagger"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.JsonTagger$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$EndArrayElement$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$EndObjectValue$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$Raw"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$Raw$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartArrayElement"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartArrayElement$"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartObjectValue"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartObjectValue$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.json.jsonpath.package.untag")
+    )
   )
   .nativeSettings(
     tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
@@ -291,7 +264,6 @@ lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("json/circe"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-json-circe",
     description := "Streaming JSON library with support for circe ASTs",
@@ -317,7 +289,6 @@ lazy val jsonPlay = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("json/play"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-json-play",
     description := "Streaming JSON library with support for Play! JSON ASTs",
@@ -335,7 +306,6 @@ lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("json/diffson"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-json-diffson",
     description := "Streaming JSON library with support for patches",
@@ -352,7 +322,6 @@ lazy val jsonInterpolators = crossProject(JVMPlatform, JSPlatform, NativePlatfor
   .crossType(CrossType.Pure)
   .in(file("json/interpolators"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-json-interpolators",
     description := "Json interpolators support",
@@ -376,7 +345,6 @@ lazy val xml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("xml"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-xml",
     description := "Streaming XML manipulation library",
@@ -419,7 +387,6 @@ lazy val scalaXml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("xml/scala-xml"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-xml-scala",
     description := "Support for Scala XML ASTs",
@@ -443,7 +410,6 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("cbor"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-cbor",
     description := "Streaming CBOR manipulation library",
@@ -465,40 +431,10 @@ lazy val finiteState = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("finite-state"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-finite-state",
     description := "Streaming finite state machines",
-    tlVersionIntroduced := Map("3" -> "1.6.0", "2.13" -> "1.6.0", "2.12" -> "1.6.0"),
-    mimaBinaryIssueFilters ++= List(
-      // all filters related to esp.Rhs.Captured* come from converting it from case class to case object
-      ProblemFilters.exclude[MissingClassProblem]("fs2.data.esp.Rhs$CapturedLeaf"),
-      ProblemFilters.exclude[MissingTypesProblem]("fs2.data.esp.Rhs$CapturedLeaf$"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedLeaf.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedLeaf.unapply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.name"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.copy"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.esp.Rhs#CapturedTree.copy$default$1"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.copy$default$2"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree.apply"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.esp.Rhs#CapturedLeaf.fromProduct"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.esp.Rhs#CapturedTree._1"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.esp.Rhs#CapturedTree._2"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem](
-        "fs2.data.mft.MFTBuilder#Guardable.fs2$data$mft$MFTBuilder$Guardable$$$outer"),
-      // rules now only have number of parameters
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.mft.Rules.params"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.copy"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.mft.Rules.copy$default$1"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.this"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.mft.Rules.apply"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.mft.Rules._1"),
-      // Removal of experimental class
-      ProblemFilters.exclude[MissingFieldProblem]("fs2.data.esp.Tag.True"),
-      ProblemFilters.exclude[MissingClassProblem]("fs2.data.esp.Tag$True$")
-    )
+    tlMimaPreviousVersions := Set.empty // experimental module, no compatbility guarantess
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
@@ -511,7 +447,6 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("cbor-json"))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "fs2-data-cbor-json",
     description := "Streaming CBOR/JSON interoperability library",
@@ -524,35 +459,6 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .nativeSettings(
     tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
   )
-
-lazy val documentation = project
-  .in(file("documentation"))
-  .enablePlugins(MdocPlugin)
-  .settings(commonSettings)
-  .settings(
-    scalaVersion := scala213,
-    crossScalaVersions := List(scala212, scala213),
-    mdocIn := file("documentation/docs"),
-    mdocOut := file("site/content/documentation"),
-    libraryDependencies ++= List(
-      "com.beachape" %% "enumeratum" % "1.7.0",
-      "org.gnieh" %% "diffson-circe" % diffsonVersion,
-      "io.circe" %% "circe-generic-extras" % circeExtrasVersion,
-      "co.fs2" %% "fs2-io" % fs2Version,
-      "io.circe" %% "circe-fs2" % "0.14.1"
-    ),
-    scalacOptions += "-Ymacro-annotations"
-  )
-  .dependsOn(csv.jvm,
-             csvGeneric.jvm,
-             json.jvm,
-             jsonDiffson.jvm,
-             jsonCirce.jvm,
-             jsonInterpolators.jvm,
-             xml.jvm,
-             scalaXml.jvm,
-             cbor.jvm,
-             cborJson.jvm)
 
 lazy val benchmarks = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
@@ -568,38 +474,106 @@ lazy val benchmarks = crossProject(JVMPlatform)
   )
   .dependsOn(csv, scalaXml, jsonCirce)
 
-lazy val scalafixInput = (project in file("scalafix/input"))
-  .disablePlugins(ScalafixPlugin)
-  .dependsOn(jsonCirce.jvm)
+val homeLink: ThemeLink =
+  ImageLink.internal(ast.Path.Root / "index.md", Image.internal(ast.Path.Root / "media" / "logo-header.svg"))
 
-lazy val scalafixOutput = (project in file("scalafix/output"))
-  .disablePlugins(ScalafixPlugin)
-  .dependsOn(jsonCirce.jvm)
+val footer: Initialize[Seq[Span]] = setting {
+  val licensePhrase = licenses.value.headOption.fold("") { case (name, url) =>
+    s""" distributed under the <a href="${url.toString}">$name</a> license"""
+  }
+  Seq(
+    TemplateString(
+      s"""<code>fs2-data</code> is a <a href="https://typelevel.org/">Typelevel</a> affiliate project$licensePhrase."""
+    ))
+}
 
-lazy val scalafixRules = (project in file("scalafix/rules"))
-  .disablePlugins(ScalafixPlugin)
+val chatLink: IconLink = IconLink.external("https://discord.gg/XF3CXcMzqD", HeliumIcon.chat)
+
+val mastodonLink: IconLink =
+  IconLink.external("https://fosstodon.org/@lucassatabin", HeliumIcon.mastodon)
+
+lazy val site = project
+  .in(file("msite"))
+  .enablePlugins(TypelevelSitePlugin)
   .settings(
-    libraryDependencies +=
-      "ch.epfl.scala" %%
-        "scalafix-core" %
-        _root_.scalafix.sbt.BuildInfo.scalafixVersion
+    tlSiteApiPackage := Some("fs2.data"),
+    tlJdkRelease := None,
+    tlFatalWarnings := false,
+    tlSiteGenerate ++= List(
+      WorkflowStep.Use(UseRef.Public("actions", "setup-node", "v3")),
+      WorkflowStep.Run(
+        name = Some("Index documentation"),
+        commands = List(s"npx -y pagefind --site ${(ThisBuild / baseDirectory).value.toPath.toAbsolutePath
+            .relativize((laikaSite / target).value.toPath)}")
+      )
+    ),
+    tlSiteHelium := TypelevelSiteSettings.defaults.value.site
+      .mainNavigation(depth = 3)
+      .site
+      .footer(footer.value: _*)
+      .site
+      .resetDefaults(topNavigation = true)
+      .site
+      .topNavigationBar(
+        homeLink = homeLink,
+        navLinks =
+          GenericSiteSettings.apiLink.value.toSeq ++ GenericSiteSettings.githubLink.value.toSeq ++ List(chatLink,
+                                                                                                        mastodonLink)
+      )
+      // the pagefind elements are added after site generation,
+      // so laika does not find them using the internal commands
+      .site
+      .externalCSS("/pagefind/pagefind-ui.css")
+      .site
+      .externalJS("/pagefind/pagefind-ui.js"),
+    libraryDependencies ++= List(
+      "com.beachape" %% "enumeratum" % "1.7.0",
+      "org.gnieh" %% "diffson-circe" % diffsonVersion,
+      "io.circe" %% "circe-generic-extras" % circeExtrasVersion,
+      "co.fs2" %% "fs2-io" % fs2Version,
+      "io.circe" %% "circe-fs2" % "0.14.1"
+    ),
+    scalacOptions += "-Ymacro-annotations",
+    mdocIn := file("site"),
+    laikaConfig := tlSiteApiUrl.value.fold(LaikaConfig.defaults)(url =>
+      LaikaConfig.defaults
+        .withConfigValue(LinkConfig.empty
+          .addApiLinks(ApiLinks(baseUri = url.toString().dropRight("fs2/data/index.html".size))))),
+    laikaExtensions += PrettyURLs
   )
+  .dependsOn(csv.jvm,
+             csvGeneric.jvm,
+             json.jvm,
+             jsonDiffson.jvm,
+             jsonCirce.jvm,
+             jsonInterpolators.jvm,
+             xml.jvm,
+             scalaXml.jvm,
+             cbor.jvm,
+             cborJson.jvm)
 
-lazy val scalafixTests = (project in file("scalafix/tests"))
+lazy val unidocs = project
+  .in(file("unidocs"))
+  .enablePlugins(TypelevelUnidocPlugin)
   .settings(
-    scalafixTestkitOutputSourceDirectories :=
-      (scalafixOutput / Compile / sourceDirectories).value,
-    scalafixTestkitInputSourceDirectories :=
-      (scalafixInput / Compile / sourceDirectories).value,
-    scalafixTestkitInputClasspath :=
-      (scalafixInput / Compile / fullClasspath).value,
-    scalafixTestkitInputScalacOptions :=
-      (scalafixInput / Compile / scalacOptions).value,
-    scalafixTestkitInputScalaVersion :=
-      (scalafixInput / Compile / scalaVersion).value
+    name := "fs2-data-docs",
+    tlJdkRelease := None,
+    tlFatalWarnings := false,
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
+      cbor.jvm,
+      cborJson.jvm,
+      csv.jvm,
+      csvGeneric.jvm,
+      json.jvm,
+      jsonCirce.jvm,
+      jsonDiffson.jvm,
+      jsonPlay.jvm,
+      jsonInterpolators.jvm,
+      text.jvm,
+      xml.jvm,
+      scalaXml.jvm
+    )
   )
-  .dependsOn(scalafixInput, scalafixRules)
-  .enablePlugins(ScalafixTestkitPlugin)
 
 // Utils
 

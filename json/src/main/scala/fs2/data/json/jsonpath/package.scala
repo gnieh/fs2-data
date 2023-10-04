@@ -18,12 +18,15 @@ package fs2
 package data
 package json
 
-import ast.Builder
-import jsonpath.internals._
-import pfsa.{PDFA, PNFA}
-
 import cats.effect.Concurrent
 import cats.syntax.all._
+
+import scala.annotation.nowarn
+
+import ast.Builder
+import tagged._
+import jsonpath.internals._
+import pfsa.{PDFA, PNFA}
 
 package object jsonpath {
 
@@ -31,6 +34,7 @@ package object jsonpath {
   def filter[F[_]]: PartiallyAppliedFilter[F] = new PartiallyAppliedFilter(true)
 
   /** Namespace containing the various JsonPath filtering pipes. */
+  @nowarn
   final class PartiallyAppliedFilter[F[_]] private[jsonpath] (val dummy: Boolean) extends AnyVal {
 
     /** Selects all macthing elements in the input stream. Each matching element is emitted in a new stream.
@@ -117,15 +121,6 @@ package object jsonpath {
             .aggregate(_, _.map(untag(_)).unNone.compile.to(collector), deterministic, maxMatch, maxNest))
 
   }
-
-  private def untag(tj: TaggedJson): Option[Token] =
-    tj match {
-      case TaggedJson.Raw(t)                 => Some(t)
-      case TaggedJson.StartArrayElement(_)   => None
-      case TaggedJson.EndArrayElement        => None
-      case TaggedJson.StartObjectValue(name) => Some(Token.Key(name))
-      case TaggedJson.EndObjectValue         => None
-    }
 
   private def compileJsonPath(path: JsonPath): PDFA[PathMatcher, TaggedJson] = {
 

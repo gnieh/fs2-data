@@ -1,26 +1,10 @@
-// Remove me as soon as all sbt plugins use scala-xml 2 and we got rid of the annoying errors
-ThisBuild / libraryDependencySchemes ++= Seq(
-  "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
-)
-
-addSbtPlugin("org.typelevel" % "sbt-typelevel" % "0.4.22")
-
-addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.5.0")
-
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.3.7")
+addSbtPlugin("org.typelevel" % "sbt-typelevel" % "0.6.0-M1")
+addSbtPlugin("org.typelevel" % "sbt-typelevel-site" % "0.6.0-M1")
 
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.6")
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.4.1")
-
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.13.2")
-
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.14.0")
 addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.3.2")
 
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.0.9")
-
 addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.4.15")
-
 addSbtPlugin("org.portable-scala" % "sbt-scala-native-crossproject" % "1.3.2")
-
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.11.1")

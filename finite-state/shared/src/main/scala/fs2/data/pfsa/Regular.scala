@@ -40,6 +40,9 @@ sealed abstract class Regular[CharSet] {
           Regular.empty
     }
 
+  def ?(implicit CharSet: Pred[CharSet, _], eq: Eq[CharSet]): Regular[CharSet] =
+    this || Regular.empty
+
   def &&(that: Regular[CharSet])(implicit CharSet: Pred[CharSet, _], eq: Eq[CharSet]): Regular[CharSet] =
     (this, that) match {
       case (Regular.And(re1, re2), _) => re1 && (re2 && that)
@@ -116,7 +119,7 @@ sealed abstract class Regular[CharSet] {
   def derive[C](c: C)(implicit CharSet: Pred[CharSet, C], eq: Eq[CharSet]): Regular[CharSet] =
     this match {
       case Regular.Epsilon()                               => Regular.Chars(CharSet.never)
-      case Regular.Chars(set) if CharSet.satsifies(set)(c) => Regular.Epsilon()
+      case Regular.Chars(set) if CharSet.satisfies(set)(c) => Regular.Epsilon()
       case Regular.Chars(_)                                => Regular.Chars(CharSet.never)
       case Regular.Concatenation(re1, re2) if re1.acceptEpsilon =>
         (re1.derive(c) ~ re2) || re2.derive(c)
@@ -184,7 +187,8 @@ sealed abstract class Regular[CharSet] {
                 transitions: Map[Int, List[(CharSet, Int)]],
                 re: Regular[CharSet]): (Chain[Regular[CharSet]], Map[Int, List[(CharSet, Int)]]) = {
       val q = qs.size.toInt - 1
-      re.classes.foldLeft((qs, transitions)) { case ((qs, transitions), cs) =>
+      val cls = re.classes
+      cls.foldLeft((qs, transitions)) { case ((qs, transitions), cs) =>
         goto(re, q, cs, qs, transitions)
       }
     }
@@ -204,7 +208,9 @@ object Regular {
   private case class And[CharSet](re1: Regular[CharSet], re2: Regular[CharSet]) extends Regular[CharSet]
   private case class Not[CharSet](re: Regular[CharSet]) extends Regular[CharSet]
 
-  implicit def eq[CharSet: Eq]: Eq[Regular[CharSet]] = Eq.instance {
+  private[pfsa] def eq[CharSet: Eq]: Eq[Regular[CharSet]] = regeq[CharSet]
+
+  implicit def regeq[CharSet: Eq]: Eq[Regular[CharSet]] = Eq.instance {
     case (Epsilon(), Epsilon())                                 => true
     case (Chars(cs1), Chars(cs2))                               => cs1 === cs2
     case (Star(re1), Star(re2))                                 => re1 === re2
@@ -229,7 +235,7 @@ object Regular {
   implicit def pred[CharSet: Eq, C](implicit CharSet: Pred[CharSet, C]): Pred[Regular[CharSet], C] =
     new Pred[Regular[CharSet], C] {
 
-      override def satsifies(p: Regular[CharSet])(e: C): Boolean =
+      override def satisfies(p: Regular[CharSet])(e: C): Boolean =
         p match {
           case Epsilon()  => false
           case Chars(set) => set.satisfies(e)

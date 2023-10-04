@@ -1,0 +1,25 @@
+<nav id="sidebar">
+
+  <div class="row">
+    @:for(helium.site.topNavigation.phoneLinks)
+    ${_}
+    @:@
+  </div>
+
+  @:navigationTree {
+    entries = ${helium.site.mainNavigation.prependLinks} [
+      { target = "/", excludeRoot = true, excludeSections = ${helium.site.mainNavigation.excludeSections}, depth = ${helium.site.mainNavigation.depth} }
+    ] ${helium.site.mainNavigation.appendLinks}
+  }
+
+  <ul class="nav-list">
+    <li><div id="search"></div></li>
+  </ul>
+
+</nav>
+
+<script>
+window.addEventListener('DOMContentLoaded', (event) => {
+  new PagefindUI({ element: "#search", showSubResults: true, showImages: false });
+});
+</script>

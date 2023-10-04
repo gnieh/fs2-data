@@ -290,7 +290,7 @@ private[xml] object EventParser {
                 case (ctx, chunkAcc, '-') =>
                   acceptChar(ctx, '>', "15", "'--' is not inside comments", chunkAcc)
                 case (ctx, chunkAcc, c) =>
-                  if (includeComments) builder.append('-').append(c)
+                  if (includeComments) { val _ = builder.append('-').append(c) }
                   loop(ctx, builder, chunkAcc)
               }
             case (ctx, chunkAcc, c) =>
