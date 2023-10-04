@@ -29,7 +29,7 @@ object JqLike extends CommandIOApp(name = "fs2-jq", header = "A streaming implem
 
   val query: Opts[Option[String]] =
     Opts
-      .option[String](long = "query", short = "q", help = "The query to execute on the input (default to '.')")
+      .option[String](long = "query", short = "q", help = "The query to execute on the input (defaults to '.')")
       .orNone
 
   val input: Opts[Either[String, Path]] =
