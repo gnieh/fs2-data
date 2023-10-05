@@ -29,7 +29,7 @@ object Query {
   case class ForClause[Tag, Path](variable: String, source: Path, result: Query[Tag, Path]) extends Query[Tag, Path]
   case class LetClause[Tag, Path](variable: String, query: Query[Tag, Path], result: Query[Tag, Path])
       extends Query[Tag, Path]
-  case class Ordpath[Tag, Path](path: Path) extends Query[Tag, Path]
+  case class Ordpath[Tag, Path](path: Path, default: Option[Tag]) extends Query[Tag, Path]
   case class Variable[Tag, Path](name: String) extends Query[Tag, Path]
   case class Node[Tag, Path](tag: Tag, child: Query[Tag, Path]) extends Query[Tag, Path]
   case class Leaf[Tag, Path](tag: Tag) extends Query[Tag, Path]

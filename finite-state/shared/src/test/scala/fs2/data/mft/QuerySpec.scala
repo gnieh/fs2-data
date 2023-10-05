@@ -116,7 +116,7 @@ abstract class QuerySpec(credit: Int) extends SimpleIOSuite {
 
   test("child path") {
     MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(Some("a"))))), credit)
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(Some("a")))), None), credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -163,7 +163,7 @@ abstract class QuerySpec(credit: Int) extends SimpleIOSuite {
 
   test("any child path") {
     MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(None)))), credit)
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Child(None))), None), credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -210,7 +210,7 @@ abstract class QuerySpec(credit: Int) extends SimpleIOSuite {
 
   test("descendant path") {
     MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))), credit)
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))), None), credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -267,7 +267,7 @@ abstract class QuerySpec(credit: Int) extends SimpleIOSuite {
 
   test("any descendant path") {
     MiniXQueryCompiler
-      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(None)))), credit)
+      .compile(Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(None))), None), credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -326,10 +326,11 @@ abstract class QuerySpec(credit: Int) extends SimpleIOSuite {
 
   test("simple let") {
     MiniXQueryCompiler
-      .compile(
-        Query
-          .LetClause("v", Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))), Query.Variable("v")),
-        credit)
+      .compile(Query
+                 .LetClause("v",
+                            Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))), None),
+                            Query.Variable("v")),
+               credit)
       .esp[IO]
       .flatMap { esp =>
         Stream
@@ -662,10 +663,10 @@ abstract class QuerySpec(credit: Int) extends SimpleIOSuite {
               MiniXPath(NonEmptyList.one(Step.Descendant(Some("b")))),
               Query.LetClause(
                 "v3",
-                Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("c"))))),
+                Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("c")))), None),
                 Query.LetClause(
                   "v4",
-                  Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("d"))))),
+                  Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("d")))), None),
                   Query.Sequence(NonEmptyList
                     .of(Query.Variable("v1"), Query.Variable("v2"), Query.Variable("v3"), Query.Variable("v4")))
                 )
@@ -781,7 +782,7 @@ abstract class QuerySpec(credit: Int) extends SimpleIOSuite {
         .compile(
           Query.LetClause(
             "a",
-            Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a"))))),
+            Query.Ordpath(MiniXPath(NonEmptyList.one(Step.Descendant(Some("a")))), None),
             Query.ForClause(
               "b",
               MiniXPath(NonEmptyList.one(Step.Descendant(Some("b")))),

@@ -76,6 +76,7 @@ private[data] class PNFA[P, T](val init: Int, val finals: Set[Int], val transiti
         case Nil =>
           new PDFA[P, T](0,
                          newFinals.map(newStates(_)),
+                         None,
                          newTransitions.result().map(_.map { case (p, q) => (p, newStates(q)) }))
         case q :: qs =>
           if (newStates.contains(q)) {

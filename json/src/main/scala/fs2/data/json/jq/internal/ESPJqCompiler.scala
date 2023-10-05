@@ -34,6 +34,8 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
 
   override protected val emitSelected: Boolean = false
 
+  private val default: Option[TaggedJson] = Some(TaggedJson.Raw(Token.NullValue))
+
   private type State[T] = StateT[F, Int, T]
 
   private val nextIdent: State[String] =
@@ -223,7 +225,7 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
       }
   }
 
-  private def preprocess(prefix: Filter, jq: Jq): State[Query[TaggedJson, Filter]] =
+  private def preprocess(prefix: Filter, jq: Jq, withDefault: Boolean): State[Query[TaggedJson, Filter]] =
     jq match {
       case Jq.Null =>
         pure(Query.Leaf(TaggedJson.Raw(Token.NullValue)))
@@ -232,7 +234,7 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
       case Jq.Arr(prefix1, values) =>
         values.zipWithIndex
           .traverse { case (elt, idx) =>
-            preprocess(prefix ~ prefix1, elt).map(q => Query.Node(TaggedJson.StartArrayElement(idx), q))
+            preprocess(prefix ~ prefix1, elt, false).map(q => Query.Node(TaggedJson.StartArrayElement(idx), q))
           }
           .map { elts =>
             Query.Node(TaggedJson.Raw(Token.StartArray),
@@ -256,10 +258,10 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
                   case Some(v) =>
                     Query.node[TaggedJson, Filter](TaggedJson.StartObjectValue(name), Query.variable(v)).pure[State]
                   case None =>
-                    preprocess(prefix ~ prefix1, elt).map(q => Query.node(TaggedJson.StartObjectValue(name), q))
+                    preprocess(prefix ~ prefix1, elt, true).map(q => Query.node(TaggedJson.StartObjectValue(name), q))
                 }
               else
-                preprocess(prefix ~ prefix1, elt).map(q => Query.node(TaggedJson.StartObjectValue(name), q))
+                preprocess(prefix ~ prefix1, elt, true).map(q => Query.node(TaggedJson.StartObjectValue(name), q))
             }.map { elts =>
               Query.Node(TaggedJson.Raw(Token.StartObject),
                          NonEmptyList.fromList(elts).fold(Query.empty[TaggedJson, Filter])(Query.Sequence(_)))
@@ -273,7 +275,7 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
                     if (elt == Jq.Identity)
                       Query.Variable[TaggedJson, Filter](v).pure[State]
                     else
-                      preprocess(prefix ~ prefix1, elt)
+                      preprocess(prefix ~ prefix1, elt, true)
                 } yield (v, Query.Node(TaggedJson.StartObjectValue(name), q))
               }
               v <- nextIdent
@@ -281,7 +283,7 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
                 if (inner == Jq.Identity)
                   Query.Variable[TaggedJson, Filter](v).pure[State]
                 else
-                  preprocess(Jq.Identity, inner)
+                  preprocess(Jq.Identity, inner, true)
             } yield {
               val (before, after) = values.splitAt(idx)
               val forClause: Query[TaggedJson, Filter] =
@@ -306,20 +308,20 @@ private[jq] class ESPJqCompiler[F[_]](implicit F: MonadThrow[F], defer: Defer[F]
       case Jq.Iterator(filter, inner: Constructor) =>
         for {
           v <- nextIdent
-          inner <- preprocess(Jq.Identity, inner)
+          inner <- preprocess(Jq.Identity, inner, withDefault)
         } yield Query.ForClause(v, prefix ~ filter ~ Jq.Child, inner)
       case Jq.Iterator(filter, inner) =>
         for {
           v <- nextIdent
-          inner <- preprocess(Jq.Child, inner)
+          inner <- preprocess(Jq.Child, inner, withDefault)
         } yield Query.ForClause(v, prefix ~ filter, inner)
       case filter: Filter =>
-        pure(Query.Ordpath(prefix ~ filter))
+        pure(Query.Ordpath(prefix ~ filter, if (withDefault) default else None))
     }
 
   def compile(jq: Jq): F[Pipe[F, Token, Token]] =
     for {
-      query <- preprocess(Jq.Root, jq).runA(0)
+      query <- preprocess(Jq.Root, jq, false).runA(0)
       mft = compile(query)
       esp <- mft.esp
     } yield new ESPCompiledJq[F](esp)
