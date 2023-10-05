@@ -23,7 +23,7 @@ val scala3 = "3.3.1"
 val fs2Version = "3.9.2"
 val circeVersion = "0.14.6"
 val circeExtrasVersion = "0.14.2"
-val playVersion = "2.10.0-RC7"
+val playVersion = "2.10.1"
 val shapeless2Version = "2.3.10"
 val shapeless3Version = "3.3.0"
 val scalaJavaTimeVersion = "2.5.0"
@@ -46,6 +46,7 @@ ThisBuild / developers := List(
 
 ThisBuild / crossScalaVersions := Seq(scala212, scala213, scala3)
 ThisBuild / scalaVersion := scala213
+ThisBuild / tlJdkRelease := Some(11)
 
 ThisBuild / tlSitePublishBranch := None
 ThisBuild / tlSitePublishTags := true
