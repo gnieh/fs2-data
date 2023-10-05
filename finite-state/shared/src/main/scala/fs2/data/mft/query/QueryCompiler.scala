@@ -18,10 +18,11 @@ package fs2.data
 package mft
 package query
 
-import pfsa.{Candidate, Pred, Regular}
 import cats.Eq
-import cats.syntax.all._
 import cats.data.NonEmptyList
+import cats.syntax.all._
+
+import pfsa.{Candidate, Pred, Regular}
 
 /** This compiler can be used to compile to an MFT any query language that can be represented by nested for loops.
   *
@@ -82,7 +83,10 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
       // input is copied in the first argument
       q0(any) -> qinit(x0, qcopy(x0))
 
-      def translatePath(path: Path, start: builder.StateBuilder, end: builder.StateBuilder): Unit = {
+      def translatePath(path: Path,
+                        default: Rhs[OutTag],
+                        start: builder.StateBuilder,
+                        end: builder.StateBuilder): Unit = {
         val regular = path2regular(path)
         val dfa = regular.deriveDFA
         // resolve transitions into patterns and guards
@@ -114,6 +118,7 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
             val states2 =
               transitions.foldLeft(states1) { case (states, (pattern, guard, tgt)) =>
                 val finalTgt = dfa.finals.contains(tgt)
+                val trapTgt = dfa.trap.contains(tgt)
                 val (q2, states1) =
                   states.get(tgt) match {
                     case Some(q2) => (q2, states)
@@ -122,14 +127,16 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
                       (q2, states.updated(tgt, q2))
                   }
                 val pat: builder.Guardable = tagOf(pattern).fold(anyNode)(aNode(_))
-                if (!finalTgt) {
-                  q1(pat.when(guard)) -> q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
+                if (trapTgt) {
+                  q1(pat.when(guard)) -> (if (default == eps) q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*) else default)
+                } else if (!finalTgt) {
+                  q1(pat.when(guard)) -> q2(x1, copyArgs: _*) ~ (if (default == eps) q1(x2, copyArgs: _*) else eps)
                 } else if (emitSelected) {
                   q1(pat.when(guard)) -> end(x1, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*) ~
-                    q1(x2, copyArgs: _*)
+                    (if (default == eps) q1(x2, copyArgs: _*) else eps)
                 } else {
                   q1(pat.when(guard)) -> end(x1, (copyArgs :+ qcopy(x1)): _*) ~ q2(x1, copyArgs: _*) ~
-                    q1(x2, copyArgs: _*)
+                    (if (default == eps) q1(x2, copyArgs: _*) else eps)
                 }
                 states1
               }
@@ -148,7 +155,7 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
             val q1 = state(args = q.nargs + 1)
 
             // compile the variable binding path
-            translatePath(source, q, q1)
+            translatePath(source, eps, q, q1)
 
             // then the body with the bound variable
             translate(result, variable :: vars, q1)
@@ -166,11 +173,11 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
             val copyArgs = List.tabulate(q.nargs)(y(_))
             q(any) -> q1(x0, (copyArgs :+ qv(x0, copyArgs: _*)): _*)
 
-          case Query.Ordpath(path) =>
+          case Query.Ordpath(path, default) =>
             val q1 = state(args = q.nargs + 1)
 
             // compile the path
-            translatePath(path, q, q1)
+            translatePath(path, default.map(leaf(_)).getOrElse(eps), q, q1)
 
             // emit the result
             q1(any) -> y(q.nargs)

@@ -194,8 +194,10 @@ sealed abstract class Regular[CharSet] {
     }
 
     val (qs, transitions) = explore(Chain.one(this), Map.empty, this)
-    val finals = qs.zipWithIndex.collect { case (re, idx) if re.acceptEpsilon => idx }.toList.toSet
-    new PDFA[CharSet, C](0, finals, Array.tabulate(qs.size.toInt)(transitions.getOrElse(_, Nil)))
+    val indexedStates = qs.zipWithIndex
+    val finals = indexedStates.collect { case (re, idx) if re.acceptEpsilon => idx }.toList.toSet
+    val trap = indexedStates.collectFirst { case (Regular.Chars(cs), idx) if cs === never => idx }
+    new PDFA[CharSet, C](0, finals, trap, Array.tabulate(qs.size.toInt)(transitions.getOrElse(_, Nil)))
   }
 
 }

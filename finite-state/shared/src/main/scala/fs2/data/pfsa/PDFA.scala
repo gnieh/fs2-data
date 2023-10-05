@@ -21,8 +21,10 @@ import cats.syntax.foldable._
 
 import Pred.syntax._
 
-private[data] class PDFA[P, T](val init: Int, val finals: Set[Int], val transitions: Array[List[(P, Int)]])(implicit
-    P: Pred[P, T]) {
+private[data] class PDFA[P, T](val init: Int,
+                               val finals: Set[Int],
+                               val trap: Option[Int],
+                               val transitions: Array[List[(P, Int)]])(implicit P: Pred[P, T]) {
 
   def step(q: Int, t: T): Option[Int] =
     if (q >= transitions.length)

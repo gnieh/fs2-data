@@ -44,6 +44,34 @@ object JqSpec extends SimpleIOSuite {
     } yield expect.same(List(Token.NumberValue("0")), result)
   }
 
+  test("select not found") {
+    for {
+      compiled <- compiler.compile(jq".a[0].d.e")
+      result <- input.through(compiled).compile.toList
+    } yield expect.same(Nil, result)
+  }
+
+  test("iterate not found") {
+    for {
+      compiled <- compiler.compile(jq""".d[]""")
+      result <- input.through(compiled).compile.toList
+    } yield expect.same(Nil, result)
+  }
+
+  test("iterate object not found") {
+    for {
+      compiled <- compiler.compile(jq""".d[] | { "value": .a }""")
+      result <- input.through(compiled).compile.toList
+    } yield expect.same(Nil, result)
+  }
+
+  test("iterate array not found") {
+    for {
+      compiled <- compiler.compile(jq"""[ .d[] ]""")
+      result <- input.through(compiled).compile.toList
+    } yield expect.same(List(Token.StartArray, Token.EndArray), result)
+  }
+
   test("simple recursive descent") {
     for {
       compiled <- compiler.compile(jq"..")
@@ -349,6 +377,44 @@ object JqSpec extends SimpleIOSuite {
         Token.Key("b"),
         Token.NumberValue("2"),
         Token.EndObject,
+        Token.EndObject
+      ),
+      result
+    )
+  }
+
+  test("not found value constructor") {
+    for {
+      compiled <- compiler.compile(jq"""{ "value": .a[0].d }""")
+      result <- input.through(compiled).compile.toList
+    } yield expect.same(
+      List(
+        Token.StartObject,
+        Token.Key("value"),
+        Token.NullValue,
+        Token.EndObject
+      ),
+      result
+    )
+  }
+
+  test("not found value object iterator") {
+    for {
+      compiled <- compiler.compile(jq"""{ "value": .a[].unknown }""")
+      result <- input.through(compiled).compile.toList
+    } yield expect.same(
+      List(
+        Token.StartObject,
+        Token.Key("value"),
+        Token.NullValue,
+        Token.EndObject,
+        Token.StartObject,
+        Token.Key("value"),
+        Token.NullValue,
+        Token.EndObject,
+        Token.StartObject,
+        Token.Key("value"),
+        Token.NullValue,
         Token.EndObject
       ),
       result
