@@ -523,6 +523,21 @@ val chatLink: IconLink = IconLink.external("https://discord.gg/XF3CXcMzqD", Heli
 val mastodonLink: IconLink =
   IconLink.external("https://fosstodon.org/@lucassatabin", HeliumIcon.mastodon)
 
+val sonatypeApiUrl = setting {
+    CrossVersion(
+      crossVersion.value,
+      scalaVersion.value,
+      scalaBinaryVersion.value
+    ).map { cross =>
+      val host = sonatypeCredentialHost.value
+      val repo = if (isSnapshot.value) "snapshots" else "releases"
+      val org = organization.value.replace('.', '/')
+      val mod = cross("fs2-data-docs")
+      val ver = version.value
+      url(s"https://$host/service/local/repositories/$repo/archive/$org/$mod/$ver/$mod-$ver-javadoc.jar/!/index.html")
+    }
+}
+
 lazy val site = project
   .in(file("msite"))
   .enablePlugins(TypelevelSitePlugin)
@@ -570,12 +585,13 @@ lazy val site = project
     ),
     scalacOptions += "-Ymacro-annotations",
     mdocIn := file("site"),
+    tlSiteApiUrl := sonatypeApiUrl.value,
     laikaConfig := tlSiteApiUrl.value
       .fold(LaikaConfig.defaults)(url =>
         LaikaConfig.defaults
           .withConfigValue(
             LinkConfig.empty
-              .addApiLinks(ApiLinks(baseUri = url.toString().dropRight("fs2/data/index.html".size)))
+              .addApiLinks(ApiLinks(baseUri = url.toString().dropRight("index.html".size)))
               .addSourceLinks(SourceLinks(
                 baseUri = "https://github.com/gnieh/fs2-data/tree/main/examples/jqlike/src/main/scala/",
                 suffix = "scala"
