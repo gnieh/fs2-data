@@ -6,7 +6,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="Typelevel Laika + Helium Theme" />
-  <title>Introduction</title>
+  <title>JSON Patch</title>
   
   <meta name="author" content="Lucas Satabin"/>
   
@@ -25,10 +25,10 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono:500">
   
   <link rel="stylesheet" type="text/css" href="/pagefind/pagefind-ui.css" />
-    <link rel="stylesheet" type="text/css" href="../helium/site/icofont.min.css" />
-    <link rel="stylesheet" type="text/css" href="../helium/site/laika-helium.css" />
+    <link rel="stylesheet" type="text/css" href="../../../helium/site/icofont.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../../helium/site/laika-helium.css" />
   <script src="/pagefind/pagefind-ui.js"></script>
-    <script src="../helium/site/laika-helium.js"></script>
+    <script src="../../../helium/site/laika-helium.js"></script>
   
   
   <script> /* for avoiding page load transitions */ </script>
@@ -46,7 +46,7 @@
     
   </div>
 
-  <a class="image-link" href="../"><img src="../media/logo-header.svg"></a>
+  <a class="image-link" href="../../../"><img src="../../../media/logo-header.svg"></a>
 
   <div class="row links">
     
@@ -101,29 +101,29 @@
   </div>
 
   <ul class="nav-list">
-    <li class="level1 nav-leaf"><a href="../">Home</a></li>
+    <li class="level1 nav-leaf"><a href="../../../">Home</a></li>
     <li class="level1 nav-header">documentation</li>
-    <li class="level2 active nav-leaf"><a href="#">Introduction</a></li>
+    <li class="level2 nav-leaf"><a href="../../">Introduction</a></li>
     <li class="level2 nav-header">csv</li>
-    <li class="level3 nav-leaf"><a href="csv/">Introduction</a></li>
-    <li class="level3 nav-leaf"><a href="csv/generic/">Generic</a></li>
+    <li class="level3 nav-leaf"><a href="../../csv/">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../../csv/generic/">Generic</a></li>
     <li class="level2 nav-header">json</li>
-    <li class="level3 nav-leaf"><a href="json/">Introduction</a></li>
-    <li class="level3 nav-leaf"><a href="json/jsonpath/">JSONPath</a></li>
-    <li class="level3 nav-leaf"><a href="json/jq/">JSON Queries</a></li>
-    <li class="level3 nav-leaf"><a href="json/libraries/">JSON Libraries</a></li>
-    <li class="level3 nav-leaf"><a href="json/jsonpatch/">JSON Patch</a></li>
-    <li class="level3 nav-leaf"><a href="json/transformations/">Transformations</a></li>
+    <li class="level3 nav-leaf"><a href="../">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../jsonpath/">JSONPath</a></li>
+    <li class="level3 nav-leaf"><a href="../jq/">JSON Queries</a></li>
+    <li class="level3 nav-leaf"><a href="../libraries/">JSON Libraries</a></li>
+    <li class="level3 active nav-leaf"><a href="#">JSON Patch</a></li>
+    <li class="level3 nav-leaf"><a href="../transformations/">Transformations</a></li>
     <li class="level2 nav-header">xml</li>
-    <li class="level3 nav-leaf"><a href="xml/">Introduction</a></li>
-    <li class="level3 nav-leaf"><a href="xml/xpath/">XPath</a></li>
-    <li class="level3 nav-leaf"><a href="xml/libraries/">XML Libraries</a></li>
+    <li class="level3 nav-leaf"><a href="../../xml/">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../../xml/xpath/">XPath</a></li>
+    <li class="level3 nav-leaf"><a href="../../xml/libraries/">XML Libraries</a></li>
     <li class="level2 nav-header">cbor</li>
-    <li class="level3 nav-leaf"><a href="cbor/">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../../cbor/">Introduction</a></li>
     <li class="level2 nav-header">cbor-json</li>
-    <li class="level3 nav-leaf"><a href="cbor-json/">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../../cbor-json/">Introduction</a></li>
     <li class="level1 nav-header">cookbooks</li>
-    <li class="level2 nav-leaf"><a href="../cookbooks/jq/">Reading/transforming/writing JSON data</a></li>
+    <li class="level2 nav-leaf"><a href="../../../cookbooks/jq/">Reading/transforming/writing JSON data</a></li>
   </ul>
 
   <ul class="nav-list">
@@ -143,12 +143,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
       
 <nav id="page-nav">
-  <p class="header"><a href="#">Introduction</a></p>
+  <p class="header"><a href="#">JSON Patch</a></p>
 
   <ul class="nav-list">
-    <li class="level1 nav-leaf"><a href="#parsing-textual-formats">Parsing textual formats</a></li>
-    <li class="level1 nav-node"><a href="#reading-text-inputs-from-a-file">Reading text inputs from a file</a></li>
-    <li class="level2 nav-leaf"><a href="#decoding-textual-inputs">Decoding textual inputs</a></li>
   </ul>
 
   <p class="footer"></p>
@@ -157,56 +154,83 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
       <main class="content">
 
-        <h1 id="introduction" class="title">Introduction</h1>
-        <p><code>fs2-data</code> consists of several modules, handling a different data format, and sub-modules for each data format, adding more features (but also more dependencies). The core module for each data format has no other dependency than <code>fs2</code> and provides tools to parse and transform data in a streaming manner.</p>
-        <p>For each module, the entry point is an <a href="https://fs2.io/guide.html#statefully-transforming-streams">fs2 <code>Pipe</code></a> transforming a stream of some input (typically <code>Char</code>, <code>String</code>, or <code>Byte</code>) into some tokens or events. All parsers are streaming parsers, which means that the parsed tree is never constructed in memory by the parser, but instead, is emitted as a sequence of <em>tokens</em> or <em>events</em> (similar to <a href="https://en.wikipedia.org/wiki/Simple_API_for_XML">SAX</a>), and that the input data is not fully held in memory either. The parsers read the input as it comes, and emit the tokens as soon as possible, discarding the input data that is not useful anymore.</p>
-        
-        <h2 id="parsing-textual-formats" class="section"><a class="anchor-link left" href="#parsing-textual-formats"><i class="icofont-laika link">&#xef71;</i></a>Parsing textual formats</h2>
-        <p>The general pattern for the text parsers (JSON, XML, CSV, ...) is to have a pipe with this signature:</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">_</span><span>
-</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">text</span><span>.</span><span class="type-name">CharLikeChunks</span><span>
+        <h1 id="json-patch" class="title">JSON Patch</h1>
+        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-diffson_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-diffson_2.13.svg" alt="Maven Central"></a></p>
+        <p>The <code>fs2-data-json-diffson</code> module provides some integration with <a href="https://github.com/gnieh/diffson">diffson</a>.
+        It allows for patching a Json stream as it is read to emit the patched value downstream.
+        Patching stream can be useful in several case, for instance:</p>
+        <ul>
+          <li>it can be used to filter out fields you don&#39;t need for further processing, before building an AST with these fields;</li>
+        </ul>
+        <ul>
+          <li>it can be used to make data from an input stream anonymous by removing names or identifiers;</li>
+        </ul>
+        <ul>
+          <li>it makes it possible to enrich an input stream with extra data you need for further processing;</li>
+        </ul>
+        <ul>
+          <li>many other use cases when you need to amend input data on the fly without building the entire AST in memory.</li>
+        </ul>
+        <p>Currently only <a href="https://tools.ietf.org/html/rfc7396">JSON Merge Patch</a> is supported.</p>
+        <p>In order for patches to be applied, you need a <code>Tokenizer</code> for some <code>Json</code> type the patch operates on (see above) and a <code>Jsony</code> from <a href="https://github.com/gnieh/diffson">diffson</a> for that same <code>Json</code> type.</p>
+        <p>Let&#39;s say you are using circe as Json AST library, you can use patches like this:</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.{</span><span class="type-name">Fallible</span><span>, </span><span class="type-name">Stream</span><span>}
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">circe</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">mergepatch</span><span>.</span><span class="identifier">_</span><span>
 
-</span><span class="comment">// the Token type depends on the format
-</span><span class="keyword">trait</span><span> </span><span class="type-name">Token</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">diffson</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">diffson</span><span>.</span><span class="identifier">circe</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">diffson</span><span>.</span><span class="identifier">jsonmergepatch</span><span>.</span><span class="identifier">_</span><span>
 
-</span><span class="keyword">def</span><span> </span><span class="declaration-name">tokens</span><span>[</span><span class="type-name">F</span><span>[</span><span class="identifier">_</span><span>], </span><span class="type-name">T</span><span>](</span><span class="keyword">implicit</span><span> </span><span class="type-name">T</span><span>: </span><span class="type-name">CharLikeChunks</span><span>[</span><span class="type-name">F</span><span>, </span><span class="type-name">T</span><span>]): </span><span class="type-name">Pipe</span><span>[</span><span class="type-name">F</span><span>, </span><span class="type-name">T</span><span>, </span><span class="type-name">Token</span><span>] =
-  </span><span class="identifier">s</span><span> =&gt; </span><span class="type-name">Stream</span><span>.</span><span class="identifier">suspend</span><span>(???)</span></code></pre>
-        <p>The input stream can be of any type <code>T</code> which can be used to read characters from. <code>fs2-data</code> provides by default implementations for types <code>Char</code> and <code>String</code>, so that you can write:</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="comment">// Stream of `Char`
-</span><span class="type-name">Stream</span><span>.</span><span class="identifier">emits</span><span>(</span><span class="string-literal">&quot;Some input string&quot;</span><span>).</span><span class="identifier">through</span><span>(</span><span class="identifier">tokens</span><span>[</span><span class="type-name">Pure</span><span>, </span><span class="type-name">Char</span><span>])
-</span><span class="comment">// res0: Stream[[x]Pure[x], Token] = Stream(..)
+</span><span class="keyword">import</span><span> </span><span class="identifier">io</span><span>.</span><span class="identifier">circe</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">input</span><span> = </span><span class="string-literal">&quot;&quot;&quot;{
+              |  &quot;field1&quot;: 0,
+              |  &quot;field2&quot;: &quot;test&quot;,
+              |  &quot;field3&quot;: [1, 2, 3]
+              |}
+              |{
+              |  &quot;field1&quot;: 2,
+              |  &quot;field3&quot;: []
+              |}&quot;&quot;&quot;</span><span>.</span><span class="identifier">stripMargin</span><span>
+</span><span class="comment">// input: String = &quot;&quot;&quot;{
+//   &quot;field1&quot;: 0,
+//   &quot;field2&quot;: &quot;test&quot;,
+//   &quot;field3&quot;: [1, 2, 3]
+// }
+// {
+//   &quot;field1&quot;: 2,
+//   &quot;field3&quot;: []
+// }&quot;&quot;&quot;
 </span><span>
-</span><span class="comment">// Stream of `String`
-</span><span class="type-name">Stream</span><span>.</span><span class="identifier">emit</span><span>(</span><span class="string-literal">&quot;Some input string&quot;</span><span>).</span><span class="identifier">through</span><span>(</span><span class="identifier">tokens</span><span>[</span><span class="type-name">Pure</span><span>, </span><span class="type-name">String</span><span>])
-</span><span class="comment">// res1: Stream[[x]Pure[x], Token] = Stream(..)</span></code></pre>
-        
-        <h2 id="reading-text-inputs-from-a-file" class="section"><a class="anchor-link left" href="#reading-text-inputs-from-a-file"><i class="icofont-laika link">&#xef71;</i></a>Reading text inputs from a file</h2>
-        <p>A common pattern when using this library to read data from a file is to start by build a <code>Stream[F, Byte]</code> as follows:</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="identifier">_</span><span>
-
-</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">_</span><span>
-</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">io</span><span>.</span><span class="identifier">file</span><span>.{</span><span class="type-name">Files</span><span>, </span><span class="type-name">Flags</span><span>, </span><span class="type-name">Path</span><span>}
-
-</span><span class="type-name">Files</span><span>[</span><span class="type-name">IO</span><span>]
-  .</span><span class="identifier">readAll</span><span>(</span><span class="type-name">Path</span><span>(</span><span class="string-literal">&quot;/some/path/to/a/file.data&quot;</span><span>), </span><span class="number-literal">1024</span><span>, </span><span class="type-name">Flags</span><span>.</span><span class="type-name">Read</span><span>)
-  </span><span class="comment">// perform your decoding, parsing, and transformation here
-</span><span>  .</span><span class="identifier">compile</span><span>
-  .</span><span class="identifier">drain</span></code></pre>
-        <p>For textual data formats (JSON, XML, CSV, ...) this stream needs to be decoded according to the file encoding.</p>
-        
-        <h3 id="decoding-textual-inputs" class="section"><a class="anchor-link left" href="#decoding-textual-inputs"><i class="icofont-laika link">&#xef71;</i></a>Decoding textual inputs</h3>
-        <p>If your file is encoded using UTF-8 or a common single-byte encoding, you can use the built-in support <code>fs2-data</code> has for these encodings, which lives in the <a class="api" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/fs2/data/text/index.html">fs2.data.text</a> package.</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="comment">// for instance if your input is encoded in ISO-8859-1 aka latin1
-</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">text</span><span>.</span><span class="identifier">latin1</span><span>.</span><span class="identifier">_</span><span>
-</span><span class="comment">// if you have UTF-8 instead:
-// import fs2.data.text.utf8._
+</span><span class="keyword">val</span><span> </span><span class="identifier">stream</span><span> = </span><span class="type-name">Stream</span><span>.</span><span class="identifier">emits</span><span>(</span><span class="identifier">input</span><span>).</span><span class="identifier">through</span><span>(</span><span class="identifier">tokens</span><span>[</span><span class="type-name">Fallible</span><span>, </span><span class="type-name">Char</span><span>])
+</span><span class="comment">// stream: Stream[[A]Fallible[A], Token] = Stream(..)
 </span><span>
-</span><span class="type-name">Files</span><span>[</span><span class="type-name">IO</span><span>]
-  .</span><span class="identifier">readAll</span><span>(</span><span class="type-name">Path</span><span>(</span><span class="string-literal">&quot;/some/path/to/a/file.data&quot;</span><span>), </span><span class="number-literal">1024</span><span>, </span><span class="type-name">Flags</span><span>.</span><span class="type-name">Read</span><span>)
-  </span><span class="comment">// decoding is done by the now in scope `CharLikeChunks[IO, Byte]` instance
-</span><span>  .</span><span class="identifier">through</span><span>(</span><span class="identifier">tokens</span><span>)
-  .</span><span class="identifier">compile</span><span>
-  .</span><span class="identifier">drain</span></code></pre>
+</span><span class="comment">// a patch that removes `field3`
+</span><span class="keyword">val</span><span> </span><span class="identifier">mergePatch</span><span> = </span><span class="type-name">JsonMergePatch</span><span>.</span><span class="type-name">Object</span><span>(</span><span class="type-name">Map</span><span>(</span><span class="string-literal">&quot;field3&quot;</span><span> -&gt; </span><span class="type-name">Json</span><span>.</span><span class="type-name">Null</span><span>))
+</span><span class="comment">// mergePatch: JsonMergePatch.Object[Json] = Object(
+//   fields = Map(&quot;field3&quot; -&gt; null)
+// )
+</span><span>
+</span><span class="keyword">val</span><span> </span><span class="identifier">patched</span><span> = </span><span class="identifier">stream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">patch</span><span>[</span><span class="type-name">Fallible</span><span>, </span><span class="type-name">Json</span><span>](</span><span class="identifier">mergePatch</span><span>))
+</span><span class="comment">// patched: Stream[[x]Fallible[x], Token] = Stream(..)
+</span><span>
+</span><span class="identifier">patched</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>
+</span><span class="comment">// res0: Either[Throwable, List[Token]] = Right(
+//   value = List(
+//     StartObject,
+//     Key(value = &quot;field1&quot;),
+//     NumberValue(value = &quot;0&quot;),
+//     Key(value = &quot;field2&quot;),
+//     StringValue(value = &quot;test&quot;),
+//     EndObject,
+//     StartObject,
+//     Key(value = &quot;field1&quot;),
+//     NumberValue(value = &quot;2&quot;),
+//     EndObject
+//   )
+// )</span></code></pre>
 
         
 <hr class="footer-rule"/>

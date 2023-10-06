@@ -1,277 +1,307 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html lang="en">
+  
   <head>
-    <meta charset="utf-8">
-    <title>fs2-data - Generic</title>
-    <link rel="stylesheet" href="/css/stylesheet.css">
-    <link rel="stylesheet" href="/css/syntax.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
-    <style>body{font-family: overpass, sans-serif; }</style>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="Typelevel Laika + Helium Theme" />
+  <title>Generic</title>
+  
+  <meta name="author" content="Lucas Satabin"/>
+  
+  <meta name="author" content="Yannick Heiber"/>
+  
+  
+  <meta name="description" content="site"/>
+  
+  
+  
+  <link rel="icon" sizes="32x32" type="image/png" href="https://typelevel.org/img/favicon.png"/>
+  
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700">
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono:500">
+  
+  <link rel="stylesheet" type="text/css" href="/pagefind/pagefind-ui.css" />
+    <link rel="stylesheet" type="text/css" href="../../../helium/site/icofont.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../../helium/site/laika-helium.css" />
+  <script src="/pagefind/pagefind-ui.js"></script>
+    <script src="../../../helium/site/laika-helium.js"></script>
+  
+  
+  <script> /* for avoiding page load transitions */ </script>
+</head>
 
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
-
-    <!-- search index -->
-    <link rel="stylesheet" href="/css/stork.css" />
-    <script src="/js/stork.js"></script>
-
-    <meta name="generator" content="Nanoc 4.12.16">
-  </head>
   <body>
-    <header>
-        <nav class="nav-extended red darken-2">
-          <a href="#!" class="brand-logo right">fs2-data</a>
-          <a href="#" data-target="collapsed" class="sidenav-trigger"><i class="material-icons">menu</i></a>
-          <div class="nav-wrapper">
-            <ul id="nav-mobile" class="left hide-on-med-and-down">
-              <li><a href="/">Home</a></li>
-              <li><a href="/documentation/">Documentation</a></li>
-              <li><a href="/api/">Scaladoc</a></li>
-              <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
-              <li><i class="material-icons">search</i></li>
-              <li>
-                <form>
-                  <div class="input-field">
-                    <input data-stork="search" id="search" type="search" required placeholder="Search the website" autocomplete="off" />
-                  </div>
-                </form>
-              </li>
-            </ul>
-          </div>
-          
-          
-          <div class="nav-content">
-            <ul class="tabs tabs-transparent">
-              
-              
-              <li class="tab"><a href="/documentation/csv/">CSV</a></li>
-              
-              
-              
-              <li class="tab active"><a href="/documentation/csv/generic/">Generic</a></li>
-              
-              
-            </ul>
-          </div>
-          
-        </nav>
-        <div class="stork-wrapper-flat">
-          <div data-stork="search-output" class="stork-output"></div>
-        </div>
 
-    </header>
+    <header id="top-bar" class="light-default dark-default">
 
-    <ul class="sidenav" id="collapsed">
-      <li><a href="/">Home</a></li>
-      <li><a href="/documentation/">Documentation</a></li>
-      <li><a href="/api/">Scaladoc</a></li>
-      <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
-    </ul>
-
+  <div class="row">
+    <a id="nav-icon">
+      <i class="icofont-laika navigationMenu" title="Navigation">&#xefa2;</i>
+    </a>
     
-    <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
-      <a class="btn-floating btn-large blue darken-2" href="https://github.com/gnieh/fs2-data/edit/main/documentation/docs/csv/generic.md" target="_blank">
-        <i class="large material-icons">mode_edit</i>
-      </a>
-    </div>
     
+  </div>
 
-    <main>
-      <div class="container">
-        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv-generic_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv-generic_2.13.svg" alt="Maven Central" /></a></p>
+  <a class="image-link" href="../../../"><img src="../../../media/logo-header.svg"></a>
 
-<p>The <code>fs2-data-csv-generic</code> module provides automatic (Scala 2-only) and semi-automatic derivation for <code>RowDecoder</code> and <code>CsvRowDecoder</code>.</p>
+  <div class="row links">
+    
+    <a class="icon-link svg-link" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/index.html"><span class="api" title="API"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M75,47.5c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm-50,-0c13.246,-0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,-0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm2.705,16.735l7.239,0l0.622,-4.904l-21.833,0l-0,4.904l7.589,0l0,22.067l6.383,0l-0,-22.067Zm58.076,7.265c-0,-8.757 -3.698,-14.166 -10.781,-14.166c-7.083,-0 -10.781,5.604 -10.781,14.166c0,8.757 3.698,14.166 10.781,14.166c7.083,0 10.781,-5.604 10.781,-14.166Zm-6.539,0c0,6.538 -1.128,9.496 -4.242,9.496c-2.997,0 -4.242,-2.88 -4.242,-9.496c-0,-6.616 1.206,-9.496 4.242,-9.496c3.036,-0 4.242,2.88 4.242,9.496Zm-29.242,-67c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm0.512,9.834c-7.122,-0 -12.609,5.098 -12.609,14.127c-0,9.263 5.215,14.205 12.532,14.205c4.164,0 7.083,-1.634 9.068,-3.658l-2.88,-3.697c-1.518,1.206 -3.153,2.413 -5.838,2.413c-3.697,-0 -6.266,-2.763 -6.266,-9.263c-0,-6.616 2.724,-9.379 6.149,-9.379c2.102,-0 3.892,0.778 5.371,1.984l3.113,-3.775c-2.257,-1.868 -4.748,-2.957 -8.64,-2.957Z"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link svg-link" href="https://github.com/gnieh/fs2-data"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link glyph-link" href="https://discord.gg/XF3CXcMzqD"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
+    
+    <a class="icon-link svg-link" href="https://fosstodon.org/@lucassatabin"><span class="mastodon" title="Mastodon"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <g class="svg-shape">
+    <path d="M11.19 12.195c2.016-.24 3.77-1.475 3.99-2.603.348-1.778.32-4.339.32-4.339 0-3.47-2.286-4.488-2.286-4.488C12.062.238 10.083.017 8.027 0h-.05C5.92.017 3.942.238 2.79.765c0 0-2.285 1.017-2.285 4.488l-.002.662c-.004.64-.007 1.35.011 2.091.083 3.394.626 6.74 3.78 7.57 1.454.383 2.703.463 3.709.408 1.823-.1 2.847-.647 2.847-.647l-.06-1.317s-1.303.41-2.767.36c-1.45-.05-2.98-.156-3.215-1.928a3.614 3.614 0 0 1-.033-.496s1.424.346 3.228.428c1.103.05 2.137-.064 3.188-.189zm1.613-2.47H11.13v-4.08c0-.859-.364-1.295-1.091-1.295-.804 0-1.207.517-1.207 1.541v2.233H7.168V5.89c0-1.024-.403-1.541-1.207-1.541-.727 0-1.091.436-1.091 1.296v4.079H3.197V5.522c0-.859.22-1.541.66-2.046.456-.505 1.052-.764 1.793-.764.856 0 1.504.328 1.933.983L8 4.39l.417-.695c.429-.655 1.077-.983 1.934-.983.74 0 1.336.259 1.791.764.442.505.661 1.187.661 2.046v4.203z"/>
+  </g>
+</svg></span></a>
+    
+  </div>  
 
-<p>It makes it easier to support custom row types but is based on <a href="https://github.com/milessabin/shapeless">shapeless</a>, which can have a significant impact on compilation time on Scala 2. On Scala 3, it relies on mix of hand-written derivation on top of <code>scala.deriving.Mirror</code> and the more light-weight <a href="https://github.com/typelevel/shapeless-3">shapeless-3</a>, so that compile times shouldn’t be problematic as on Scala 2. Note that auto derivation is currently not yet supported on Scala, same goes for using default constructor arguments of <code>case class</code>es (for background see <a href="https://github.com/lampepfl/dotty/pull/11667">dotty#11667</a>).</p>
+</header>
+    
+    <nav id="sidebar">
 
-<p>To demonstrate how it works, let’s work again with the CSV data from the <a href="/documentation/csv/">core</a> module documentation.</p>
+  <div class="row">
+    
+    <a class="icon-link svg-link" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/index.html"><span class="api" title="API"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M75,47.5c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm-50,-0c13.246,-0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,-0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm2.705,16.735l7.239,0l0.622,-4.904l-21.833,0l-0,4.904l7.589,0l0,22.067l6.383,0l-0,-22.067Zm58.076,7.265c-0,-8.757 -3.698,-14.166 -10.781,-14.166c-7.083,-0 -10.781,5.604 -10.781,14.166c0,8.757 3.698,14.166 10.781,14.166c7.083,0 10.781,-5.604 10.781,-14.166Zm-6.539,0c0,6.538 -1.128,9.496 -4.242,9.496c-2.997,0 -4.242,-2.88 -4.242,-9.496c-0,-6.616 1.206,-9.496 4.242,-9.496c3.036,-0 4.242,2.88 4.242,9.496Zm-29.242,-67c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm0.512,9.834c-7.122,-0 -12.609,5.098 -12.609,14.127c-0,9.263 5.215,14.205 12.532,14.205c4.164,0 7.083,-1.634 9.068,-3.658l-2.88,-3.697c-1.518,1.206 -3.153,2.413 -5.838,2.413c-3.697,-0 -6.266,-2.763 -6.266,-9.263c-0,-6.616 2.724,-9.379 6.149,-9.379c2.102,-0 3.892,0.778 5.371,1.984l3.113,-3.775c-2.257,-1.868 -4.748,-2.957 -8.64,-2.957Z"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link svg-link" href="https://github.com/gnieh/fs2-data"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link glyph-link" href="https://discord.gg/XF3CXcMzqD"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
+    
+    <a class="icon-link svg-link" href="https://fosstodon.org/@lucassatabin"><span class="mastodon" title="Mastodon"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <g class="svg-shape">
+    <path d="M11.19 12.195c2.016-.24 3.77-1.475 3.99-2.603.348-1.778.32-4.339.32-4.339 0-3.47-2.286-4.488-2.286-4.488C12.062.238 10.083.017 8.027 0h-.05C5.92.017 3.942.238 2.79.765c0 0-2.285 1.017-2.285 4.488l-.002.662c-.004.64-.007 1.35.011 2.091.083 3.394.626 6.74 3.78 7.57 1.454.383 2.703.463 3.709.408 1.823-.1 2.847-.647 2.847-.647l-.06-1.317s-1.303.41-2.767.36c-1.45-.05-2.98-.156-3.215-1.928a3.614 3.614 0 0 1-.033-.496s1.424.346 3.228.428c1.103.05 2.137-.064 3.188-.189zm1.613-2.47H11.13v-4.08c0-.859-.364-1.295-1.091-1.295-.804 0-1.207.517-1.207 1.541v2.233H7.168V5.89c0-1.024-.403-1.541-1.207-1.541-.727 0-1.091.436-1.091 1.296v4.079H3.197V5.522c0-.859.22-1.541.66-2.046.456-.505 1.052-.764 1.793-.764.856 0 1.504.328 1.933.983L8 4.39l.417-.695c.429-.655 1.077-.983 1.934-.983.74 0 1.336.259 1.791.764.442.505.661 1.187.661 2.046v4.203z"/>
+  </g>
+</svg></span></a>
+    
+  </div>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2._</span>
-<span class="k">import</span> <span class="nn">fs2.data.csv._</span>
+  <ul class="nav-list">
+    <li class="level1 nav-leaf"><a href="../../../">Home</a></li>
+    <li class="level1 nav-header">documentation</li>
+    <li class="level2 nav-leaf"><a href="../../">Introduction</a></li>
+    <li class="level2 nav-header">csv</li>
+    <li class="level3 nav-leaf"><a href="../">Introduction</a></li>
+    <li class="level3 active nav-leaf"><a href="#">Generic</a></li>
+    <li class="level2 nav-header">json</li>
+    <li class="level3 nav-leaf"><a href="../../json/">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../../json/jsonpath/">JSONPath</a></li>
+    <li class="level3 nav-leaf"><a href="../../json/jq/">JSON Queries</a></li>
+    <li class="level3 nav-leaf"><a href="../../json/libraries/">JSON Libraries</a></li>
+    <li class="level3 nav-leaf"><a href="../../json/jsonpatch/">JSON Patch</a></li>
+    <li class="level3 nav-leaf"><a href="../../json/transformations/">Transformations</a></li>
+    <li class="level2 nav-header">xml</li>
+    <li class="level3 nav-leaf"><a href="../../xml/">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../../xml/xpath/">XPath</a></li>
+    <li class="level3 nav-leaf"><a href="../../xml/libraries/">XML Libraries</a></li>
+    <li class="level2 nav-header">cbor</li>
+    <li class="level3 nav-leaf"><a href="../../cbor/">Introduction</a></li>
+    <li class="level2 nav-header">cbor-json</li>
+    <li class="level3 nav-leaf"><a href="../../cbor-json/">Introduction</a></li>
+    <li class="level1 nav-header">cookbooks</li>
+    <li class="level2 nav-leaf"><a href="../../../cookbooks/jq/">Reading/transforming/writing JSON data</a></li>
+  </ul>
 
-<span class="k">val</span> <span class="nv">input</span> <span class="k">=</span> <span class="s">"""i,s,j
+  <ul class="nav-list">
+    <li><div id="search"></div></li>
+  </ul>
+
+</nav>
+
+<script>
+window.addEventListener('DOMContentLoaded', (event) => {
+  new PagefindUI({ element: "#search", showSubResults: true, showImages: false });
+});
+</script>
+
+
+    <div id="container">
+
+      
+<nav id="page-nav">
+  <p class="header"><a href="#">Generic</a></p>
+
+  <ul class="nav-list">
+    <li class="level1 nav-leaf"><a href="#derivation-of-celldecoder-cellencoder">Derivation of <code>CellDecoder</code> &amp; <code>CellEncoder</code></a></li>
+    <li class="level1 nav-leaf"><a href="#derivation-of-rowdecoder-rowencoder">Derivation of <code>RowDecoder</code> &amp; <code>RowEncoder</code></a></li>
+    <li class="level1 nav-leaf"><a href="#derivation-of-csvrowdecoder">Derivation of <code>CsvRowDecoder</code></a></li>
+  </ul>
+
+  <p class="footer"></p>
+</nav>
+
+
+      <main class="content">
+
+        <h1 id="generic" class="title">Generic</h1>
+        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv-generic_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv-generic_2.13.svg" alt="Maven Central"></a></p>
+        <p>The <code>fs2-data-csv-generic</code> module provides automatic (Scala 2-only) and semi-automatic derivation for <code>RowDecoder</code> and <code>CsvRowDecoder</code>. </p>
+        <p>It makes it easier to support custom row types but is based on <a href="https://github.com/milessabin/shapeless">shapeless</a>, which can have a significant impact on compilation time on Scala 2. On Scala 3, it relies on mix of hand-written derivation on top of <code>scala.deriving.Mirror</code> and the more light-weight <a href="https://github.com/typelevel/shapeless-3">shapeless-3</a>, so that compile times shouldn&#39;t be problematic as on Scala 2. Note that auto derivation is currently not yet supported on Scala, same goes for using default constructor arguments of <code>case class</code>es (for background see <a href="https://github.com/lampepfl/dotty/pull/11667">dotty#11667</a>).<br></p>
+        <p>To demonstrate how it works, let&#39;s work again with the CSV data from the <a href="../">core</a> module documentation.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">csv</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">input</span><span> = </span><span class="string-literal">&quot;&quot;&quot;i,s,j
               |1,test,2
               |,other,-3
-              |"""</span><span class="o">.</span><span class="py">stripMargin</span>
-<span class="c1">// input: String = """i,s,j</span>
-<span class="c1">// 1,test,2</span>
-<span class="c1">// ,other,-3</span>
-<span class="c1">// """</span>
+              |&quot;&quot;&quot;</span><span>.</span><span class="identifier">stripMargin</span><span>
+</span><span class="comment">// input: String = &quot;&quot;&quot;i,s,j
+// 1,test,2
+// ,other,-3
+// &quot;&quot;&quot;
+</span><span>
+</span><span class="keyword">val</span><span> </span><span class="identifier">stream</span><span> = </span><span class="type-name">Stream</span><span>.</span><span class="identifier">emit</span><span>(</span><span class="identifier">input</span><span>).</span><span class="identifier">covary</span><span>[</span><span class="type-name">Fallible</span><span>]
+</span><span class="comment">// stream: Stream[Fallible, String] = Stream(..)</span></code></pre>
+        
+        <h2 id="derivation-of-celldecoder-cellencoder" class="section"><a class="anchor-link left" href="#derivation-of-celldecoder-cellencoder"><i class="icofont-laika link">&#xef71;</i></a>Derivation of <code>CellDecoder</code> &amp; <code>CellEncoder</code></h2>
+        <p>Cell types (<code>Int</code>, <code>String</code>, ...) can be decoded and encoded by providing implicit instances of <code>CellDecoder</code>/<code>CellEncoder</code>. Instances for primitives and common types are defined already. You can easily define your own or use generic derivation for coproducts:</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">csv</span><span>.</span><span class="identifier">generic</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">csv</span><span>.</span><span class="identifier">generic</span><span>.</span><span class="identifier">semiauto</span><span>.</span><span class="identifier">_</span><span>
 
-<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emit</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">covary</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">]</span>
-<span class="c1">// stream: Stream[Fallible, String] = Stream(..)</span>
-</code></pre></div></div>
+</span><span class="keyword">sealed</span><span> </span><span class="keyword">trait</span><span> </span><span class="type-name">State</span><span>
+</span><span class="keyword">object</span><span> </span><span class="type-name">State</span><span> {
+  </span><span class="keyword">case</span><span> </span><span class="keyword">object</span><span> </span><span class="type-name">On</span><span> </span><span class="keyword">extends</span><span> </span><span class="type-name">State</span><span>
+  </span><span class="keyword">case</span><span> </span><span class="keyword">object</span><span> </span><span class="type-name">Off</span><span> </span><span class="keyword">extends</span><span> </span><span class="type-name">State</span><span>
+}
 
-<p>This page covers the following topics:</p>
-<ul id="markdown-toc">
-  <li><a href="#derivation-of-celldecoder--cellencoder" id="markdown-toc-derivation-of-celldecoder--cellencoder">Derivation of <code>CellDecoder</code> &amp; <code>CellEncoder</code></a></li>
-  <li><a href="#derivation-of-rowdecoder--rowencoder" id="markdown-toc-derivation-of-rowdecoder--rowencoder">Derivation of <code>RowDecoder</code> &amp; <code>RowEncoder</code></a></li>
-  <li><a href="#derivation-of-csvrowdecoder" id="markdown-toc-derivation-of-csvrowdecoder">Derivation of <code>CsvRowDecoder</code></a></li>
-</ul>
+</span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">stateDecoder</span><span> = </span><span class="identifier">deriveCellDecoder</span><span>[</span><span class="type-name">State</span><span>]
+</span><span class="comment">// stateDecoder: CellDecoder[State] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@5eab7008
+// use stateDecoder to derive decoders for rows...or just test:
+</span><span class="identifier">stateDecoder</span><span>(</span><span class="string-literal">&quot;On&quot;</span><span>)
+</span><span class="comment">// res1: DecoderResult[State] = Right(value = On)
+</span><span class="identifier">stateDecoder</span><span>(</span><span class="string-literal">&quot;Off&quot;</span><span>)
+</span><span class="comment">// res2: DecoderResult[State] = Right(value = Off)
+</span><span>
+</span><span class="comment">// same goes for the encoder
+</span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">stateEncoder</span><span> = </span><span class="identifier">deriveCellEncoder</span><span>[</span><span class="type-name">State</span><span>]
+</span><span class="comment">// stateEncoder: CellEncoder[State] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@16fd3039
+</span><span class="identifier">stateEncoder</span><span>(</span><span class="type-name">State</span><span>.</span><span class="type-name">On</span><span>)
+</span><span class="comment">// res3: String = &quot;On&quot;</span></code></pre>
+        <p>The generic derivation for cell decoders also supports renaming and deriving instances for unary product types (case classes with one field):</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">csv</span><span>.</span><span class="identifier">generic</span><span>.</span><span class="identifier">semiauto</span><span>.</span><span class="identifier">_</span><span>
 
-<h3 id="derivation-of-celldecoder--cellencoder">Derivation of <code>CellDecoder</code> &amp; <code>CellEncoder</code></h3>
+</span><span class="keyword">sealed</span><span> </span><span class="keyword">trait</span><span> </span><span class="type-name">Advanced</span><span>
+</span><span class="keyword">object</span><span> </span><span class="type-name">Advanced</span><span> {
+  </span><span class="annotation">@CsvValue</span><span>(</span><span class="string-literal">&quot;Active&quot;</span><span>) </span><span class="keyword">case</span><span> </span><span class="keyword">object</span><span> </span><span class="type-name">On</span><span> </span><span class="keyword">extends</span><span> </span><span class="type-name">Advanced</span><span>
+  </span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">Unknown</span><span>(</span><span class="identifier">name</span><span>: </span><span class="type-name">String</span><span>) </span><span class="keyword">extends</span><span> </span><span class="type-name">Advanced</span><span>
+}
 
-<p>Cell types (<code>Int</code>, <code>String</code>, …) can be decoded and encoded by providing implicit instances of <code>CellDecoder</code>/<code>CellEncoder</code>. Instances for primitives and common types are defined already. You can easily define your own or use generic derivation for coproducts:</p>
+</span><span class="comment">// works as we have an implicit CellDecoder[String]
+</span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">unknownDecoder</span><span> = </span><span class="identifier">deriveCellDecoder</span><span>[</span><span class="type-name">Advanced</span><span>.</span><span class="type-name">Unknown</span><span>]
+</span><span class="comment">// unknownDecoder: CellDecoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$unaryProductDecoder$3@57c6ee3b
+</span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">advancedDecoder</span><span> = </span><span class="identifier">deriveCellDecoder</span><span>[</span><span class="type-name">Advanced</span><span>]
+</span><span class="comment">// advancedDecoder: CellDecoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@3eb3c6de
+</span><span>
+</span><span class="identifier">advancedDecoder</span><span>(</span><span class="string-literal">&quot;Active&quot;</span><span>)
+</span><span class="comment">// res4: DecoderResult[Advanced] = Right(value = On)
+</span><span class="identifier">advancedDecoder</span><span>(</span><span class="string-literal">&quot;Off&quot;</span><span>)
+</span><span class="comment">// res5: DecoderResult[Advanced] = Right(value = Unknown(name = &quot;Off&quot;))
+</span><span>
+</span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">unknownEncoder</span><span> = </span><span class="identifier">deriveCellEncoder</span><span>[</span><span class="type-name">Advanced</span><span>.</span><span class="type-name">Unknown</span><span>]
+</span><span class="comment">// unknownEncoder: CellEncoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$unaryProductEncoder$3@3b9dca30
+</span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">advancedEncoder</span><span> = </span><span class="identifier">deriveCellEncoder</span><span>[</span><span class="type-name">Advanced</span><span>]
+</span><span class="comment">// advancedEncoder: CellEncoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@449e5982
+</span><span>
+</span><span class="identifier">advancedEncoder</span><span>(</span><span class="type-name">Advanced</span><span>.</span><span class="type-name">On</span><span>)
+</span><span class="comment">// res6: String = &quot;Active&quot;
+</span><span class="identifier">advancedEncoder</span><span>(</span><span class="type-name">Advanced</span><span>.</span><span class="type-name">Unknown</span><span>(</span><span class="string-literal">&quot;Off&quot;</span><span>))
+</span><span class="comment">// res7: String = &quot;Off&quot;</span></code></pre>
+        
+        <h2 id="derivation-of-rowdecoder-rowencoder" class="section"><a class="anchor-link left" href="#derivation-of-rowdecoder-rowencoder"><i class="icofont-laika link">&#xef71;</i></a>Derivation of <code>RowDecoder</code> &amp; <code>RowEncoder</code></h2>
+        <p>One can automatically derive an instance for a <a href="https://github.com/milessabin/shapeless">shapeless</a> <code>HList</code> if there are instances for all cell types. The example previously written manually now looks like:</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">shapeless</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">csv</span><span>.</span><span class="identifier">generic</span><span>.</span><span class="identifier">hlist</span><span>.</span><span class="identifier">_</span><span>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.csv.generic._</span>
-<span class="k">import</span> <span class="nn">fs2.data.csv.generic.semiauto._</span>
+</span><span class="comment">// .tail drops the header line
+</span><span class="keyword">val</span><span> </span><span class="identifier">hlists</span><span> = </span><span class="identifier">stream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">decodeSkippingHeaders</span><span>[</span><span class="type-name">Option</span><span>[</span><span class="type-name">Int</span><span>] :: </span><span class="type-name">String</span><span> :: </span><span class="type-name">Int</span><span> :: </span><span class="type-name">HNil</span><span>]())
+</span><span class="comment">// hlists: Stream[[x]Fallible[x], Option[Int] :: String :: Int :: HNil] = Stream(..)
+</span><span class="identifier">hlists</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>
+</span><span class="comment">// res8: Either[Throwable, List[Option[Int] :: String :: Int :: HNil]] = Right(
+//   value = List(
+//     Some(value = 1) :: &quot;test&quot; :: 2 :: HNil,
+//     None :: &quot;other&quot; :: -3 :: HNil
+//   )
+// )</span></code></pre>
+        
+        <h2 id="derivation-of-csvrowdecoder" class="section"><a class="anchor-link left" href="#derivation-of-csvrowdecoder"><i class="icofont-laika link">&#xef71;</i></a>Derivation of <code>CsvRowDecoder</code></h2>
+        <p>Let&#39;s say you want to decode the CSV row to the following case class:</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">MyRow</span><span>(</span><span class="identifier">i</span><span>: </span><span class="type-name">Option</span><span>[</span><span class="type-name">Int</span><span>], </span><span class="identifier">j</span><span>: </span><span class="type-name">Int</span><span>, </span><span class="identifier">s</span><span>: </span><span class="type-name">String</span><span>)</span></code></pre>
+        <p>You can get an automatically derived <code>CsvRowDecoder</code> (and a matching <code>CsvRowEncoder</code>) for every case class by importing <code>fs2.data.csv.generic.auto._</code></p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">csv</span><span>.</span><span class="identifier">generic</span><span>.</span><span class="identifier">auto</span><span>.</span><span class="identifier">_</span><span>
 
-<span class="k">sealed</span> <span class="k">trait</span> <span class="nc">State</span>
-<span class="k">object</span> <span class="nc">State</span> <span class="o">{</span>
-  <span class="k">case</span> <span class="k">object</span> <span class="nc">On</span> <span class="k">extends</span> <span class="nc">State</span>
-  <span class="k">case</span> <span class="k">object</span> <span class="nc">Off</span> <span class="k">extends</span> <span class="nc">State</span>
-<span class="o">}</span>
+</span><span class="keyword">val</span><span> </span><span class="identifier">roundtrip</span><span> = </span><span class="identifier">stream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">decodeUsingHeaders</span><span>[</span><span class="type-name">MyRow</span><span>]())
+  </span><span class="comment">// and back - note that types and corresponding are all inferred
+</span><span>  .</span><span class="identifier">through</span><span>(</span><span class="identifier">encodeUsingFirstHeaders</span><span>(</span><span class="identifier">fullRows</span><span> = </span><span class="boolean-literal">true</span><span>))
+</span><span class="comment">// roundtrip: Stream[[x]Fallible[x], String] = Stream(..)
+</span><span class="identifier">roundtrip</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">string</span><span>
+</span><span class="comment">// res9: Either[Throwable, String] = Right(
+//   value = &quot;&quot;&quot;i,j,s
+// 1,2,test
+// ,-3,other
+// &quot;&quot;&quot;
+// )</span></code></pre>
+        <p>Automatic derivation can be quite slow at compile time, so you might want to opt for semiautomatic derivation. In this case, you need to explicitly define the implicit instance in scope.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">csv</span><span>.</span><span class="identifier">generic</span><span>.</span><span class="identifier">semiauto</span><span>.</span><span class="identifier">_</span><span>
 
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">stateDecoder</span> <span class="k">=</span> <span class="n">deriveCellDecoder</span><span class="o">[</span><span class="kt">State</span><span class="o">]</span>
-<span class="c1">// stateDecoder: CellDecoder[State] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@e250e1c</span>
-<span class="c1">// use stateDecoder to derive decoders for rows...or just test:</span>
-<span class="nf">stateDecoder</span><span class="o">(</span><span class="s">"On"</span><span class="o">)</span>
-<span class="c1">// res1: DecoderResult[State] = Right(value = On)</span>
-<span class="nf">stateDecoder</span><span class="o">(</span><span class="s">"Off"</span><span class="o">)</span>
-<span class="c1">// res2: DecoderResult[State] = Right(value = Off)</span>
+</span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="type-name">MyRowDecoder</span><span>: </span><span class="type-name">CsvRowDecoder</span><span>[</span><span class="type-name">MyRow</span><span>, </span><span class="type-name">String</span><span>] = </span><span class="identifier">deriveCsvRowDecoder</span><span>[</span><span class="type-name">MyRow</span><span>]
+</span><span class="comment">// MyRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@d3205a1
+</span><span>
+</span><span class="keyword">val</span><span> </span><span class="identifier">decoded</span><span> = </span><span class="identifier">stream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">decodeUsingHeaders</span><span>[</span><span class="type-name">MyRow</span><span>]())
+</span><span class="comment">// decoded: Stream[[x]Fallible[x], MyRow] = Stream(..)
+</span><span class="identifier">decoded</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>
+</span><span class="comment">// res10: Either[Throwable, List[MyRow]] = Right(
+//   value = List(
+//     MyRow(i = Some(value = 1), j = 2, s = &quot;test&quot;),
+//     MyRow(i = None, j = -3, s = &quot;other&quot;)
+//   )
+// )</span></code></pre>
+        <p>Both automatic and semi-automatic decoders support also default values when decoding, so instead of an <code>Option[Int]</code> for <code>i</code>, you can define this class:</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">csv</span><span>.</span><span class="identifier">generic</span><span>.</span><span class="identifier">auto</span><span>.</span><span class="identifier">_</span><span>
 
-<span class="c1">// same goes for the encoder</span>
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">stateEncoder</span> <span class="k">=</span> <span class="n">deriveCellEncoder</span><span class="o">[</span><span class="kt">State</span><span class="o">]</span>
-<span class="c1">// stateEncoder: CellEncoder[State] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@e60b5fe</span>
-<span class="nf">stateEncoder</span><span class="o">(</span><span class="nv">State</span><span class="o">.</span><span class="py">On</span><span class="o">)</span>
-<span class="c1">// res3: String = "On"</span>
-</code></pre></div></div>
+</span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">MyRowDefault</span><span>(</span><span class="identifier">i</span><span>: </span><span class="type-name">Int</span><span> = </span><span class="number-literal">42</span><span>, </span><span class="identifier">j</span><span>: </span><span class="type-name">Int</span><span>, </span><span class="identifier">s</span><span>: </span><span class="type-name">String</span><span>)
 
-<p>The generic derivation for cell decoders also supports renaming and deriving instances for unary product types (case classes with one field):</p>
+</span><span class="keyword">val</span><span> </span><span class="identifier">decoded</span><span> = </span><span class="identifier">stream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">decodeUsingHeaders</span><span>[</span><span class="type-name">MyRowDefault</span><span>]())
+</span><span class="comment">// decoded: Stream[[x]Fallible[x], MyRowDefault] = Stream(..)
+</span><span class="identifier">decoded</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>
+</span><span class="comment">// res11: Either[Throwable, List[MyRowDefault]] = Left(
+//   value = fs2.data.csv.DecoderError: unable to decode &#39;&#39; as an integer in line 3
+// )</span></code></pre>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.csv.generic.semiauto._</span>
-
-<span class="k">sealed</span> <span class="k">trait</span> <span class="nc">Advanced</span>
-<span class="k">object</span> <span class="nc">Advanced</span> <span class="o">{</span>
-  <span class="nd">@CsvValue</span><span class="o">(</span><span class="s">"Active"</span><span class="o">)</span> <span class="k">case</span> <span class="k">object</span> <span class="nc">On</span> <span class="k">extends</span> <span class="nc">Advanced</span>
-  <span class="k">case</span> <span class="k">class</span> <span class="nc">Unknown</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Advanced</span>
-<span class="o">}</span>
-
-<span class="c1">// works as we have an implicit CellDecoder[String]</span>
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">unknownDecoder</span> <span class="k">=</span> <span class="n">deriveCellDecoder</span><span class="o">[</span><span class="kt">Advanced.Unknown</span><span class="o">]</span>
-<span class="c1">// unknownDecoder: CellDecoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$unaryProductDecoder$3@101431bc</span>
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">advancedDecoder</span> <span class="k">=</span> <span class="n">deriveCellDecoder</span><span class="o">[</span><span class="kt">Advanced</span><span class="o">]</span>
-<span class="c1">// advancedDecoder: CellDecoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@5a429f41</span>
-
-<span class="nf">advancedDecoder</span><span class="o">(</span><span class="s">"Active"</span><span class="o">)</span>
-<span class="c1">// res4: DecoderResult[Advanced] = Right(value = On)</span>
-<span class="nf">advancedDecoder</span><span class="o">(</span><span class="s">"Off"</span><span class="o">)</span>
-<span class="c1">// res5: DecoderResult[Advanced] = Right(value = Unknown(name = "Off"))</span>
-
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">unknownEncoder</span> <span class="k">=</span> <span class="n">deriveCellEncoder</span><span class="o">[</span><span class="kt">Advanced.Unknown</span><span class="o">]</span>
-<span class="c1">// unknownEncoder: CellEncoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$unaryProductEncoder$3@7cb12ffb</span>
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">advancedEncoder</span> <span class="k">=</span> <span class="n">deriveCellEncoder</span><span class="o">[</span><span class="kt">Advanced</span><span class="o">]</span>
-<span class="c1">// advancedEncoder: CellEncoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@77f5bad6</span>
-
-<span class="nf">advancedEncoder</span><span class="o">(</span><span class="nv">Advanced</span><span class="o">.</span><span class="py">On</span><span class="o">)</span>
-<span class="c1">// res6: String = "Active"</span>
-<span class="nf">advancedEncoder</span><span class="o">(</span><span class="nv">Advanced</span><span class="o">.</span><span class="py">Unknown</span><span class="o">(</span><span class="s">"Off"</span><span class="o">))</span>
-<span class="c1">// res7: String = "Off"</span>
-</code></pre></div></div>
-
-<h3 id="derivation-of-rowdecoder--rowencoder">Derivation of <code>RowDecoder</code> &amp; <code>RowEncoder</code></h3>
-
-<p>One can automatically derive an instance for a <a href="https://github.com/milessabin/shapeless">shapeless</a> <code>HList</code> if there are instances for all cell types. The example previously written manually now looks like:</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">shapeless._</span>
-<span class="k">import</span> <span class="nn">fs2.data.csv.generic.hlist._</span>
-
-<span class="c1">// .tail drops the header line</span>
-<span class="k">val</span> <span class="nv">hlists</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decodeSkippingHeaders</span><span class="o">[</span><span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="kt">::</span> <span class="kt">String</span> <span class="kt">::</span> <span class="kt">Int</span> <span class="kt">::</span> <span class="kt">HNil</span><span class="o">]())</span>
-<span class="c1">// hlists: Stream[[x]Fallible[x], Option[Int] :: String :: Int :: HNil] = Stream(..)</span>
-<span class="nv">hlists</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res8: Either[Throwable, List[Option[Int] :: String :: Int :: HNil]] = Right(</span>
-<span class="c1">//   value = List(</span>
-<span class="c1">//     Some(value = 1) :: "test" :: 2 :: HNil,</span>
-<span class="c1">//     None :: "other" :: -3 :: HNil</span>
-<span class="c1">//   )</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<h3 id="derivation-of-csvrowdecoder">Derivation of <code>CsvRowDecoder</code></h3>
-
-<p>Let’s say you want to decode the CSV row to the following case class:</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">MyRow</span><span class="o">(</span><span class="n">i</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">],</span> <span class="n">j</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
-</code></pre></div></div>
-
-<p>You can get an automatically derived <code>CsvRowDecoder</code> (and a matching <code>CsvRowEncoder</code>) for every case class by importing <code>fs2.data.csv.generic.auto._</code></p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.csv.generic.auto._</span>
-
-<span class="k">val</span> <span class="nv">roundtrip</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decodeUsingHeaders</span><span class="o">[</span><span class="kt">MyRow</span><span class="o">]())</span>
-  <span class="c1">// and back - note that types and corresponding are all inferred</span>
-  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nf">encodeUsingFirstHeaders</span><span class="o">(</span><span class="n">fullRows</span> <span class="k">=</span> <span class="kc">true</span><span class="o">))</span>
-<span class="c1">// roundtrip: Stream[[x]Fallible[x], String] = Stream(..)</span>
-<span class="nv">roundtrip</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">string</span>
-<span class="c1">// res9: Either[Throwable, String] = Right(</span>
-<span class="c1">//   value = """i,j,s</span>
-<span class="c1">// 1,2,test</span>
-<span class="c1">// ,-3,other</span>
-<span class="c1">// """</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>Automatic derivation can be quite slow at compile time, so you might want to opt for semiautomatic derivation. In this case, you need to explicitly define the implicit instance in scope.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.csv.generic.semiauto._</span>
-
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">MyRowDecoder</span><span class="k">:</span> <span class="kt">CsvRowDecoder</span><span class="o">[</span><span class="kt">MyRow</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="n">deriveCsvRowDecoder</span><span class="o">[</span><span class="kt">MyRow</span><span class="o">]</span>
-<span class="c1">// MyRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@27e9c53f</span>
-
-<span class="k">val</span> <span class="nv">decoded</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decodeUsingHeaders</span><span class="o">[</span><span class="kt">MyRow</span><span class="o">]())</span>
-<span class="c1">// decoded: Stream[[x]Fallible[x], MyRow] = Stream(..)</span>
-<span class="nv">decoded</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res10: Either[Throwable, List[MyRow]] = Right(</span>
-<span class="c1">//   value = List(</span>
-<span class="c1">//     MyRow(i = Some(value = 1), j = 2, s = "test"),</span>
-<span class="c1">//     MyRow(i = None, j = -3, s = "other")</span>
-<span class="c1">//   )</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>Both automatic and semi-automatic decoders support also default values when decoding, so instead of an <code>Option[Int]</code> for <code>i</code>, you can define this class:</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.csv.generic.auto._</span>
-
-<span class="k">case</span> <span class="k">class</span> <span class="nc">MyRowDefault</span><span class="o">(</span><span class="n">i</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">42</span><span class="o">,</span> <span class="n">j</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">s</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
-
-<span class="k">val</span> <span class="nv">decoded</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">decodeUsingHeaders</span><span class="o">[</span><span class="kt">MyRowDefault</span><span class="o">]())</span>
-<span class="c1">// decoded: Stream[[x]Fallible[x], MyRowDefault] = Stream(..)</span>
-<span class="nv">decoded</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res11: Either[Throwable, List[MyRowDefault]] = Left(</span>
-<span class="c1">//   value = fs2.data.csv.DecoderError: unable to decode '' as an integer in line 3</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
+        
+<hr class="footer-rule"/>
+<footer>
+  <code>fs2-data</code> is a <a href="https://typelevel.org/">Typelevel</a> affiliate project distributed under the <a href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache-2.0</a> license.
+</footer>
 
 
-      </div>
-    </main>
+      </main>
 
-    <footer class="page-footer red lighten-2">
-      <div class="footer-copyright red darken-2">
-        <div class="container">
-          Copyright © 2019-2023 <a class="grey-text text-lighten-4" href="https://fosstodon.org/@lucassatabin">@lucassatabin</a>
-          <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" class="grey-text text-lighten-4 right" /></a>
-          <br />
-          <a href="https://typelevel.org/projects/"><img alt="Typelevel Affiliate Project" style="border-width:0" src="https://img.shields.io/badge/typelevel-affiliate%20project-FFB4B5.svg" /></a>
-          <a href="https://discord.gg/7qNAFsYkTn"><img alt="Discord" style="border-width:0" src="https://img.shields.io/discord/632277896739946517.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2" /></a>
-        </div>
-      </div>
-    </footer>
+    </div>
 
-    <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function() {
-      var elems = document.querySelectorAll('.sidenav');
-      var instances = M.Sidenav.init(elems, {});
-    });
-    document.addEventListener('DOMContentLoaded', function() {
-      var elems = document.querySelectorAll('.tooltipped');
-      var instances = M.Tooltip.init(elems, {});
-    });
-
-    stork.initialize("/js/stork.wasm")
-    stork.register("search", "/index.st", { showCloseButton: false })
-    </script>
+  </body>
 
 </html>

@@ -1,531 +1,412 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html lang="en">
+  
   <head>
-    <meta charset="utf-8">
-    <title>fs2-data - JSON</title>
-    <link rel="stylesheet" href="/css/stylesheet.css">
-    <link rel="stylesheet" href="/css/syntax.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
-    <style>body{font-family: overpass, sans-serif; }</style>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="Typelevel Laika + Helium Theme" />
+  <title>Introduction</title>
+  
+  <meta name="author" content="Lucas Satabin"/>
+  
+  <meta name="author" content="Yannick Heiber"/>
+  
+  
+  <meta name="description" content="site"/>
+  
+  
+  
+  <link rel="icon" sizes="32x32" type="image/png" href="https://typelevel.org/img/favicon.png"/>
+  
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700">
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono:500">
+  
+  <link rel="stylesheet" type="text/css" href="/pagefind/pagefind-ui.css" />
+    <link rel="stylesheet" type="text/css" href="../../helium/site/icofont.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../helium/site/laika-helium.css" />
+  <script src="/pagefind/pagefind-ui.js"></script>
+    <script src="../../helium/site/laika-helium.js"></script>
+  
+  
+  <script> /* for avoiding page load transitions */ </script>
+</head>
 
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
-
-    <!-- search index -->
-    <link rel="stylesheet" href="/css/stork.css" />
-    <script src="/js/stork.js"></script>
-
-    <meta name="generator" content="Nanoc 4.12.16">
-  </head>
   <body>
-    <header>
-        <nav class="nav-extended red darken-2">
-          <a href="#!" class="brand-logo right">fs2-data</a>
-          <a href="#" data-target="collapsed" class="sidenav-trigger"><i class="material-icons">menu</i></a>
-          <div class="nav-wrapper">
-            <ul id="nav-mobile" class="left hide-on-med-and-down">
-              <li><a href="/">Home</a></li>
-              <li><a href="/documentation/">Documentation</a></li>
-              <li><a href="/api/">Scaladoc</a></li>
-              <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
-              <li><i class="material-icons">search</i></li>
-              <li>
-                <form>
-                  <div class="input-field">
-                    <input data-stork="search" id="search" type="search" required placeholder="Search the website" autocomplete="off" />
-                  </div>
-                </form>
-              </li>
-            </ul>
-          </div>
-          
-          
-          <div class="nav-content">
-            <ul class="tabs tabs-transparent">
-              
-              
-              <li class="tab active"><a href="/documentation/json/">JSON</a></li>
-              
-              
-              
-              <li class="tab"><a href="/documentation/json/libraries/">JSON Libraries</a></li>
-              
-              
-              
-              <li class="tab"><a href="/documentation/json/jsonpath/">JSONPath</a></li>
-              
-              
-              
-              <li class="tab"><a href="/documentation/json/patches/">JSON Patch</a></li>
-              
-              
-              
-              <li class="tab"><a href="/documentation/json/interpolators/">Interpolators</a></li>
-              
-              
-            </ul>
-          </div>
-          
-        </nav>
-        <div class="stork-wrapper-flat">
-          <div data-stork="search-output" class="stork-output"></div>
-        </div>
 
-    </header>
+    <header id="top-bar" class="light-default dark-default">
 
-    <ul class="sidenav" id="collapsed">
-      <li><a href="/">Home</a></li>
-      <li><a href="/documentation/">Documentation</a></li>
-      <li><a href="/api/">Scaladoc</a></li>
-      <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
-    </ul>
-
+  <div class="row">
+    <a id="nav-icon">
+      <i class="icofont-laika navigationMenu" title="Navigation">&#xefa2;</i>
+    </a>
     
-    <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
-      <a class="btn-floating btn-large blue darken-2" href="https://github.com/gnieh/fs2-data/edit/main/documentation/docs/json/index.md" target="_blank">
-        <i class="large material-icons">mode_edit</i>
-      </a>
-    </div>
     
+  </div>
 
-    <main>
-      <div class="container">
-        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json_2.13.svg" alt="Maven Central" /></a></p>
+  <a class="image-link" href="../../"><img src="../../media/logo-header.svg"></a>
 
-<p>The <code>fs2-data-json</code> module provides tools to parse, query and transform JSON data in a streaming manner.</p>
+  <div class="row links">
+    
+    <a class="icon-link svg-link" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/index.html"><span class="api" title="API"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M75,47.5c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm-50,-0c13.246,-0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,-0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm2.705,16.735l7.239,0l0.622,-4.904l-21.833,0l-0,4.904l7.589,0l0,22.067l6.383,0l-0,-22.067Zm58.076,7.265c-0,-8.757 -3.698,-14.166 -10.781,-14.166c-7.083,-0 -10.781,5.604 -10.781,14.166c0,8.757 3.698,14.166 10.781,14.166c7.083,0 10.781,-5.604 10.781,-14.166Zm-6.539,0c0,6.538 -1.128,9.496 -4.242,9.496c-2.997,0 -4.242,-2.88 -4.242,-9.496c-0,-6.616 1.206,-9.496 4.242,-9.496c3.036,-0 4.242,2.88 4.242,9.496Zm-29.242,-67c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm0.512,9.834c-7.122,-0 -12.609,5.098 -12.609,14.127c-0,9.263 5.215,14.205 12.532,14.205c4.164,0 7.083,-1.634 9.068,-3.658l-2.88,-3.697c-1.518,1.206 -3.153,2.413 -5.838,2.413c-3.697,-0 -6.266,-2.763 -6.266,-9.263c-0,-6.616 2.724,-9.379 6.149,-9.379c2.102,-0 3.892,0.778 5.371,1.984l3.113,-3.775c-2.257,-1.868 -4.748,-2.957 -8.64,-2.957Z"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link svg-link" href="https://github.com/gnieh/fs2-data"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link glyph-link" href="https://discord.gg/XF3CXcMzqD"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
+    
+    <a class="icon-link svg-link" href="https://fosstodon.org/@lucassatabin"><span class="mastodon" title="Mastodon"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <g class="svg-shape">
+    <path d="M11.19 12.195c2.016-.24 3.77-1.475 3.99-2.603.348-1.778.32-4.339.32-4.339 0-3.47-2.286-4.488-2.286-4.488C12.062.238 10.083.017 8.027 0h-.05C5.92.017 3.942.238 2.79.765c0 0-2.285 1.017-2.285 4.488l-.002.662c-.004.64-.007 1.35.011 2.091.083 3.394.626 6.74 3.78 7.57 1.454.383 2.703.463 3.709.408 1.823-.1 2.847-.647 2.847-.647l-.06-1.317s-1.303.41-2.767.36c-1.45-.05-2.98-.156-3.215-1.928a3.614 3.614 0 0 1-.033-.496s1.424.346 3.228.428c1.103.05 2.137-.064 3.188-.189zm1.613-2.47H11.13v-4.08c0-.859-.364-1.295-1.091-1.295-.804 0-1.207.517-1.207 1.541v2.233H7.168V5.89c0-1.024-.403-1.541-1.207-1.541-.727 0-1.091.436-1.091 1.296v4.079H3.197V5.522c0-.859.22-1.541.66-2.046.456-.505 1.052-.764 1.793-.764.856 0 1.504.328 1.933.983L8 4.39l.417-.695c.429-.655 1.077-.983 1.934-.983.74 0 1.336.259 1.791.764.442.505.661 1.187.661 2.046v4.203z"/>
+  </g>
+</svg></span></a>
+    
+  </div>  
 
-<p>This page covers the following topics:</p>
-<ul id="markdown-toc">
-  <li><a href="#json-parsing" id="markdown-toc-json-parsing">JSON parsing</a></li>
-  <li><a href="#selectors" id="markdown-toc-selectors">Selectors</a>    <ul>
-      <li><a href="#parsing-a-string-using-the-selector-syntax" id="markdown-toc-parsing-a-string-using-the-selector-syntax">Parsing a string using the selector syntax</a></li>
-      <li><a href="#using-the-selector-dsl" id="markdown-toc-using-the-selector-dsl">Using the selector DSL</a></li>
-    </ul>
-  </li>
-  <li><a href="#ast-builder-and-tokenizer" id="markdown-toc-ast-builder-and-tokenizer">AST builder and tokenizer</a>    <ul>
-      <li><a href="#parsing-a-stream-to-values" id="markdown-toc-parsing-a-stream-to-values">parsing a stream to values</a></li>
-      <li><a href="#from-tokens-to-values" id="markdown-toc-from-tokens-to-values">From <code>Token</code>s to values</a></li>
-      <li><a href="#from-values-to-tokens" id="markdown-toc-from-values-to-tokens">From values to <code>Token</code>s</a></li>
-    </ul>
-  </li>
-  <li><a href="#serializers-and-deserializers" id="markdown-toc-serializers-and-deserializers">Serializers and deserializers</a></li>
-  <li><a href="#json-renderers" id="markdown-toc-json-renderers">JSON Renderers</a></li>
-  <li><a href="#generating-json-streams" id="markdown-toc-generating-json-streams">Generating JSON streams</a></li>
-</ul>
+</header>
+    
+    <nav id="sidebar">
 
-<h3 id="json-parsing">JSON parsing</h3>
+  <div class="row">
+    
+    <a class="icon-link svg-link" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/index.html"><span class="api" title="API"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M75,47.5c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm-50,-0c13.246,-0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,-0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm2.705,16.735l7.239,0l0.622,-4.904l-21.833,0l-0,4.904l7.589,0l0,22.067l6.383,0l-0,-22.067Zm58.076,7.265c-0,-8.757 -3.698,-14.166 -10.781,-14.166c-7.083,-0 -10.781,5.604 -10.781,14.166c0,8.757 3.698,14.166 10.781,14.166c7.083,0 10.781,-5.604 10.781,-14.166Zm-6.539,0c0,6.538 -1.128,9.496 -4.242,9.496c-2.997,0 -4.242,-2.88 -4.242,-9.496c-0,-6.616 1.206,-9.496 4.242,-9.496c3.036,-0 4.242,2.88 4.242,9.496Zm-29.242,-67c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm0.512,9.834c-7.122,-0 -12.609,5.098 -12.609,14.127c-0,9.263 5.215,14.205 12.532,14.205c4.164,0 7.083,-1.634 9.068,-3.658l-2.88,-3.697c-1.518,1.206 -3.153,2.413 -5.838,2.413c-3.697,-0 -6.266,-2.763 -6.266,-9.263c-0,-6.616 2.724,-9.379 6.149,-9.379c2.102,-0 3.892,0.778 5.371,1.984l3.113,-3.775c-2.257,-1.868 -4.748,-2.957 -8.64,-2.957Z"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link svg-link" href="https://github.com/gnieh/fs2-data"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link glyph-link" href="https://discord.gg/XF3CXcMzqD"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
+    
+    <a class="icon-link svg-link" href="https://fosstodon.org/@lucassatabin"><span class="mastodon" title="Mastodon"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <g class="svg-shape">
+    <path d="M11.19 12.195c2.016-.24 3.77-1.475 3.99-2.603.348-1.778.32-4.339.32-4.339 0-3.47-2.286-4.488-2.286-4.488C12.062.238 10.083.017 8.027 0h-.05C5.92.017 3.942.238 2.79.765c0 0-2.285 1.017-2.285 4.488l-.002.662c-.004.64-.007 1.35.011 2.091.083 3.394.626 6.74 3.78 7.57 1.454.383 2.703.463 3.709.408 1.823-.1 2.847-.647 2.847-.647l-.06-1.317s-1.303.41-2.767.36c-1.45-.05-2.98-.156-3.215-1.928a3.614 3.614 0 0 1-.033-.496s1.424.346 3.228.428c1.103.05 2.137-.064 3.188-.189zm1.613-2.47H11.13v-4.08c0-.859-.364-1.295-1.091-1.295-.804 0-1.207.517-1.207 1.541v2.233H7.168V5.89c0-1.024-.403-1.541-1.207-1.541-.727 0-1.091.436-1.091 1.296v4.079H3.197V5.522c0-.859.22-1.541.66-2.046.456-.505 1.052-.764 1.793-.764.856 0 1.504.328 1.933.983L8 4.39l.417-.695c.429-.655 1.077-.983 1.934-.983.74 0 1.336.259 1.791.764.442.505.661 1.187.661 2.046v4.203z"/>
+  </g>
+</svg></span></a>
+    
+  </div>
 
-<p>To create a stream of JSON tokens from an input stream, use the <code>tokens</code> pipe in <code>fs2.data.json</code> package. This pipe accepts a stream of characters and returns a stream of JSON tokens. This produces a stream of structurally valid tokens forming the JSON documents.</p>
+  <ul class="nav-list">
+    <li class="level1 nav-leaf"><a href="../../">Home</a></li>
+    <li class="level1 nav-header">documentation</li>
+    <li class="level2 nav-leaf"><a href="../">Introduction</a></li>
+    <li class="level2 nav-header">csv</li>
+    <li class="level3 nav-leaf"><a href="../csv/">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../csv/generic/">Generic</a></li>
+    <li class="level2 nav-header">json</li>
+    <li class="level3 active nav-leaf"><a href="#">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="jsonpath/">JSONPath</a></li>
+    <li class="level3 nav-leaf"><a href="jq/">JSON Queries</a></li>
+    <li class="level3 nav-leaf"><a href="libraries/">JSON Libraries</a></li>
+    <li class="level3 nav-leaf"><a href="jsonpatch/">JSON Patch</a></li>
+    <li class="level3 nav-leaf"><a href="transformations/">Transformations</a></li>
+    <li class="level2 nav-header">xml</li>
+    <li class="level3 nav-leaf"><a href="../xml/">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../xml/xpath/">XPath</a></li>
+    <li class="level3 nav-leaf"><a href="../xml/libraries/">XML Libraries</a></li>
+    <li class="level2 nav-header">cbor</li>
+    <li class="level3 nav-leaf"><a href="../cbor/">Introduction</a></li>
+    <li class="level2 nav-header">cbor-json</li>
+    <li class="level3 nav-leaf"><a href="../cbor-json/">Introduction</a></li>
+    <li class="level1 nav-header">cookbooks</li>
+    <li class="level2 nav-leaf"><a href="../../cookbooks/jq/">Reading/transforming/writing JSON data</a></li>
+  </ul>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect._</span>
-<span class="k">import</span> <span class="nn">cats.syntax.all._</span>
+  <ul class="nav-list">
+    <li><div id="search"></div></li>
+  </ul>
 
-<span class="k">import</span> <span class="nn">fs2._</span>
-<span class="k">import</span> <span class="nn">fs2.data.json._</span>
+</nav>
 
-<span class="k">val</span> <span class="nv">input</span> <span class="k">=</span> <span class="s">"""{
-              |  "field1": 0,
-              |  "field2": "test",
-              |  "field3": [1, 2, 3]
+<script>
+window.addEventListener('DOMContentLoaded', (event) => {
+  new PagefindUI({ element: "#search", showSubResults: true, showImages: false });
+});
+</script>
+
+
+    <div id="container">
+
+      
+<nav id="page-nav">
+  <p class="header"><a href="#">Introduction</a></p>
+
+  <ul class="nav-list">
+    <li class="level1 nav-leaf"><a href="#json-parsing">JSON parsing</a></li>
+    <li class="level1 nav-node"><a href="#ast-builder-and-tokenizer">AST builder and tokenizer</a></li>
+    <li class="level2 nav-leaf"><a href="#parsing-a-stream-to-values">parsing a stream to values</a></li>
+    <li class="level2 nav-leaf"><a href="#from-tokens-to-values">From <code>Token</code>s to values</a></li>
+    <li class="level2 nav-leaf"><a href="#from-values-to-tokens">From values to <code>Token</code>s</a></li>
+    <li class="level1 nav-leaf"><a href="#serializers-and-deserializers">Serializers and deserializers</a></li>
+    <li class="level1 nav-leaf"><a href="#json-renderers">JSON Renderers</a></li>
+    <li class="level1 nav-leaf"><a href="#generating-json-streams">Generating JSON streams</a></li>
+  </ul>
+
+  <p class="footer"></p>
+</nav>
+
+
+      <main class="content">
+
+        <h1 id="introduction" class="title">Introduction</h1>
+        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json_2.13.svg" alt="Maven Central"></a></p>
+        <p>The <code>fs2-data-json</code> module provides tools to parse, query and transform JSON data in a streaming manner.</p>
+        
+        <h2 id="json-parsing" class="section"><a class="anchor-link left" href="#json-parsing"><i class="icofont-laika link">&#xef71;</i></a>JSON parsing</h2>
+        <p>To create a stream of JSON tokens from an input stream, use the <code>tokens</code> pipe in <a class="api" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/fs2/data/json/index.html">fs2.data.json</a> package. This pipe accepts a stream of characters and returns a stream of JSON tokens. This produces a stream of structurally valid tokens forming the JSON documents.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">syntax</span><span>.</span><span class="identifier">all</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">input</span><span> = </span><span class="string-literal">&quot;&quot;&quot;{
+              |  &quot;field1&quot;: 0,
+              |  &quot;field2&quot;: &quot;test&quot;,
+              |  &quot;field3&quot;: [1, 2, 3]
               |}
               |{
-              |  "field1": 2,
-              |  "field3": []
-              |}"""</span><span class="o">.</span><span class="py">stripMargin</span>
-<span class="c1">// input: String = """{</span>
-<span class="c1">//   "field1": 0,</span>
-<span class="c1">//   "field2": "test",</span>
-<span class="c1">//   "field3": [1, 2, 3]</span>
-<span class="c1">// }</span>
-<span class="c1">// {</span>
-<span class="c1">//   "field1": 2,</span>
-<span class="c1">//   "field3": []</span>
-<span class="c1">// }"""</span>
-
-<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emit</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">String</span><span class="o">])</span>
-<span class="c1">// stream: Stream[[A]Fallible[A], Token] = Stream(..)</span>
-<span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res0: Either[Throwable, List[Token]] = Right(</span>
-<span class="c1">//   value = List(</span>
-<span class="c1">//     StartObject,</span>
-<span class="c1">//     Key(value = "field1"),</span>
-<span class="c1">//     NumberValue(value = "0"),</span>
-<span class="c1">//     Key(value = "field2"),</span>
-<span class="c1">//     StringValue(value = "test"),</span>
-<span class="c1">//     Key(value = "field3"),</span>
-<span class="c1">//     StartArray,</span>
-<span class="c1">//     NumberValue(value = "1"),</span>
-<span class="c1">//     NumberValue(value = "2"),</span>
-<span class="c1">//     NumberValue(value = "3"),</span>
-<span class="c1">//     EndArray,</span>
-<span class="c1">//     EndObject,</span>
-<span class="c1">//     StartObject,</span>
-<span class="c1">//     Key(value = "field1"),</span>
-<span class="c1">//     NumberValue(value = "2"),</span>
-<span class="c1">//     Key(value = "field3"),</span>
-<span class="c1">//     StartArray,</span>
-<span class="c1">//     EndArray,</span>
-<span class="c1">//     EndObject</span>
-<span class="c1">//   )</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>The pipe validates the JSON structure while parsing. It reads all the json values in the input stream and emits tokens as they are available.</p>
-
-<h3 id="selectors">Selectors</h3>
-
-<p>Selectors can be used to select a subset of a JSON token stream. There are several ways to create selectors:</p>
-<ul>
-  <li>build the selector using the constructors, which can be quite verbose and cumbersome;</li>
-  <li>parse a string with the selector syntax;</li>
-  <li>use the selector DSL.</li>
-</ul>
-
-<h4 id="parsing-a-string-using-the-selector-syntax">Parsing a string using the selector syntax</h4>
-
-<p>For instance, to select and enumerate elements that are in the <code>field3</code> array, you can create this selector. Only the tokens describing the values in <code>field3</code> will be emitted as a result.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">type</span> <span class="kt">ThrowableEither</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Either</span><span class="o">[</span><span class="kt">Throwable</span>, <span class="kt">T</span><span class="o">]</span>
-
-<span class="k">val</span> <span class="nv">selector</span> <span class="k">=</span> <span class="s">".field3.[]"</span><span class="o">.</span><span class="py">parseSelector</span><span class="o">[</span><span class="kt">ThrowableEither</span><span class="o">].</span><span class="py">toTry</span><span class="o">.</span><span class="py">get</span>
-<span class="c1">// selector: Selector = PipeSelector(</span>
-<span class="c1">//   left = NameSelector(</span>
-<span class="c1">//     pred = Single(name = "field3"),</span>
-<span class="c1">//     strict = true,</span>
-<span class="c1">//     mandatory = false</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   right = IteratorSelector(strict = true)</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>The <code>parseSelector</code> method implicitly comes from the <code>import fs2.data.json._</code> and wraps the result in anything that has an <a href="https://typelevel.org/cats/api/cats/MonadError.html"><code>MonadError</code> with error type <code>Throwable</code></a> to catch potential parsing errors. If you prefer not to have this wrapping and don’t mind an extra dependency, you can have a look at <a href="/documentation/json/libraries">the interpolator</a>.</p>
-
-<p>The filter syntax is as follows:</p>
-<ul>
-  <li><code>.</code> selects the root values, it is basically the identity filter.</li>
-  <li><code>.f</code> selects the field named <code>f</code> in objects. It fails if the value it is applied to is not a JSON object.
-    <ul>
-      <li><code>f</code> must be a valid Java identifier, meaning it has to respect this regular expression: <code>[a-zA-Z_][a-zA-Z0-9_]*</code>. If you wish to select a field that doesn’t respect this regular expression, you can use the syntax <code>.["my non-identifier field"]</code> described below.</li>
-      <li>name <code>f</code> can be immediately followed by a <code>!</code> to mark it as mandatory. Stream will fail if the end of the object the selector is applied to is reached and the field was not present in the object.</li>
-    </ul>
-  </li>
-  <li><code>.f?</code> is similar to <code>.f</code> but doesn’t fail in case the value it is applied to is not a JSON object.
-    <ul>
-      <li>both <code>!</code> and <code>?</code> can be combined as <code>.f!?</code> to indicate that if the value it is applied to is a JSON object, then the field must be in it.</li>
-    </ul>
-  </li>
-  <li><code>.["f1", "f2", ..., "fn"]</code> selects only fields <code>f1</code> to <code>fn</code> in objects. It fails if the value it is applied to is not an object.
-    <ul>
-      <li>the field list can be immediately followed by a <code>!</code> to mark all fields as mandatory. Stream will fail if the end of the object the selector is applied to is reached and at least one field in the list was not present in the object.</li>
-    </ul>
-  </li>
-  <li><code>.["f1", "f2", ..., "fn"]?</code> is similar to <code>.["f1", "f2", ..., "fn"]</code> but doesn’t fail if the value it is applied to is not an object.
-    <ul>
-      <li>both <code>!</code> and <code>?</code> can be combined as <code>.["f1", "f2", ..., "fn"]!?</code> to indicate that if the value it is applied to is a JSON object, then all the specified fields must be in it.</li>
-    </ul>
-  </li>
-  <li><code>.[id1, idx2, ..., idxn]</code> selects only elements <code>idx1</code>, …, <code>idxn</code> in arrays. It fails if the value it is applied to is not an array.</li>
-  <li><code>.[idx1, idx2, ..., idxn]?</code> is similar to <code>.[idx1, idx2, ..., idxn]</code> but doesn’t fail if the value it is applied to is not an array.</li>
-  <li><code>.[idx1:idx2]</code> selects only elements between <code>idx1</code> (inclusive) and <code>idx2</code> (exclusive) in arrays. It fails if the value it is applied to is not an array.</li>
-  <li><code>.[idx1:idx2]?</code> is similar to <code>.[idx1:idx2]</code> but doesn’t fail if the value it is applied to is not an array.</li>
-  <li><code>.[]</code> selects and enumerates elements from arrays or objects. It fails if the value it is applied to is not an array or an object.</li>
-  <li><code>.[]?</code> is similar as <code>.[]</code> but doesn’t fail if the value it is applied to is neither an array nor an object.</li>
-  <li><code>sel1 sel2</code> applies selector <code>sel1</code> to the root value, and selector <code>sel2</code> to each selected value.</li>
-</ul>
-
-<h4 id="using-the-selector-dsl">Using the selector DSL</h4>
-
-<p>The selector DSL is a nice way to describe selectors without using any string parsing. They also allow for programmatically building selectors.<br />
-The DSL resides within the <code>fs2.data.json.selector</code> package, and you start a selector using the <code>root</code> builder.<br />
-The selector above can be written like this with the DSL:</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.selector._</span>
-
-<span class="k">val</span> <span class="nv">selectorFromDsl</span> <span class="k">=</span> <span class="nv">root</span><span class="o">.</span><span class="py">field</span><span class="o">(</span><span class="s">"field3"</span><span class="o">).</span><span class="py">iterate</span><span class="o">.</span><span class="py">compile</span>
-<span class="c1">// selectorFromDsl: Selector = PipeSelector(</span>
-<span class="c1">//   left = NameSelector(</span>
-<span class="c1">//     pred = Single(name = "field3"),</span>
-<span class="c1">//     strict = true,</span>
-<span class="c1">//     mandatory = false</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   right = IteratorSelector(strict = true)</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>The <code>.compile</code> in the end transforms the previous selector builder from the DSL into the final selector. Builders are safe to reuse, re-compose and compile several times.</p>
-
-<p>You can express the same selectors as with the syntax described above. For instance to make the field mandatory and the iteration lenient you can do:</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">selectorFromDsl</span> <span class="k">=</span> <span class="nv">root</span><span class="o">.</span><span class="py">field</span><span class="o">(</span><span class="s">"field3"</span><span class="o">).!.</span><span class="py">iterate</span><span class="o">.?.</span><span class="py">compile</span>
-<span class="c1">// selectorFromDsl: Selector = PipeSelector(</span>
-<span class="c1">//   left = NameSelector(</span>
-<span class="c1">//     pred = Single(name = "field3"),</span>
-<span class="c1">//     strict = true,</span>
-<span class="c1">//     mandatory = true</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   right = IteratorSelector(strict = false)</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>The DSL is typesafe, so that you cannot write invalid selectors. Any attempt to do so results in a compilation error.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// array index selection cannot be made mandatory</span>
-<span class="nv">root</span><span class="o">.</span><span class="py">index</span><span class="o">(</span><span class="mi">1</span><span class="o">).!</span>
-<span class="c1">// error: Only not yet mandatory field selectors can be made mandatory</span>
-<span class="c1">// root.index(1).!</span>
-<span class="c1">// ^^^^^^^^^^^^^^^</span>
-</code></pre></div></div>
-
-<h3 id="ast-builder-and-tokenizer">AST builder and tokenizer</h3>
-
-<p>To handle Json ASTs, you can use the types and pipes available in the <code>fs2.data.json.ast</code> package.</p>
-
-<h4 id="parsing-a-stream-to-values">parsing a stream to values</h4>
-
-<p>If you are not interested in tokens, but instead want to parse the input stream into a stream of AST values, you can use the <code>ast.parse</code> pipe, provided you have an implicit <a href="/api/fs2/data/json/ast/Builder.html"><code>Builder[Json]</code></a> in scope. The <code>Builder[Json]</code> typeclass describes how JSON ASTs of type <code>Json</code> are built from events generated by the parser.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">ast._</span>
-
-<span class="k">trait</span> <span class="nc">SomeJsonType</span>
-
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">builder</span><span class="k">:</span> <span class="kt">Builder</span><span class="o">[</span><span class="kt">SomeJsonType</span><span class="o">]</span> <span class="k">=</span> <span class="o">???</span>
-
-<span class="nv">Stream</span><span class="o">.</span><span class="py">emit</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">covary</span><span class="o">[</span><span class="kt">Fallible</span><span class="o">].</span><span class="py">through</span><span class="o">(</span><span class="n">parse</span><span class="o">)</span>
-</code></pre></div></div>
-
-<p>The <code>ast</code> stream emits all top-level JSON values parsed, in our example, the two objects are emitted.</p>
-
-<h4 id="from-tokens-to-values">From <code>Token</code>s to values</h4>
-
-<p>JSON ASTs can be built from an existing token stream, provided you have an implicit <a href="/api/fs2/data/json/ast/Builder.html"><code>Builder[Json]</code></a>, using the <code>values</code> pipe.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">ast._</span>
-
-<span class="k">trait</span> <span class="nc">SomeJsonType</span>
-
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">builder</span><span class="k">:</span> <span class="kt">Builder</span><span class="o">[</span><span class="kt">SomeJsonType</span><span class="o">]</span> <span class="k">=</span> <span class="o">???</span>
-
-<span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">values</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">SomeJsonType</span><span class="o">])</span>
-</code></pre></div></div>
-
-<p><strong>Note:</strong> even though this snippet is equivalent in result to the one using <code>ast.parse</code> it is less efficient, and if you are only interested in the values, you should always use <code>ast.parse</code>.</p>
-
-<h4 id="from-values-to-tokens">From values to <code>Token</code>s</h4>
-
-<p>If you provide an implicit <a href="/api/fs2/data/json/ast/Tokenizer.html"><code>Tokenizer[Json]</code></a>, which describes how a JSON AST is transformed into JSON tokens, you can apply transformations to the JSON stream. For instance, you can apply a function <code>fun</code> to all values in the <code>fields3</code> array by using this code:</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">ast._</span>
-
-<span class="k">trait</span> <span class="nc">SomeJsonType</span>
-
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">builder</span><span class="k">:</span> <span class="kt">Builder</span><span class="o">[</span><span class="kt">SomeJsonType</span><span class="o">]</span> <span class="k">=</span> <span class="o">???</span>
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">tokenizer</span><span class="k">:</span> <span class="kt">Tokenizer</span><span class="o">[</span><span class="kt">SomeJsonType</span><span class="o">]</span> <span class="k">=</span> <span class="o">???</span>
-
-<span class="k">def</span> <span class="nf">fun</span><span class="o">(</span><span class="n">json</span><span class="k">:</span> <span class="kt">SomeJsonType</span><span class="o">)</span><span class="k">:</span> <span class="kt">SomeJsonType</span> <span class="o">=</span> <span class="o">???</span>
-
-<span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">transform</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">SomeJsonType</span><span class="o">](</span><span class="n">selector</span><span class="o">,</span> <span class="n">fun</span><span class="o">))</span>
-</code></pre></div></div>
-<p>For concrete examples of provided <code>Builder</code>s and <code>Tokenizer</code>s, please refer to <a href="/documentation/json/libraries">the JSON library binding modules documentation</a>.</p>
-
-<p>Sometimes you would like to delete some Json values from the input stream, based o some predicate at a given path, and keep the rest untouched. In this case, you can use the <code>transformOpt</code> pipe, and return <code>None</code> for values you want to remove from the stream.</p>
-
-<h3 id="serializers-and-deserializers">Serializers and deserializers</h3>
-
-<p>To handle Json (de)serialized values, you can use the types and pipes available in the <code>fs2.data.json.codec</code> package.</p>
-
-<p>Values can be automatically deserialized from a stream of JSON tokens by providing a <a href="/api/fs2/data/json/codec/Deserializer.html"><code>Deserializer[T]</code></a>.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">codec._</span>
-
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">deserializer</span><span class="k">:</span> <span class="kt">Deserializer</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="o">???</span>
-<span class="nv">stream</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="n">deserialize</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">Int</span><span class="o">])</span>
-</code></pre></div></div>
-
-<p>You can also serialize a stream of values by providing a <a href="/api/fs2/data/json/codec/Serializer.html"><code>Serializer[T]</code></a>.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">codec._</span>
-
-<span class="k">implicit</span> <span class="k">val</span> <span class="nv">serializer</span><span class="k">:</span> <span class="kt">Serializer</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="o">???</span>
-
-<span class="nc">Stream</span><span class="o">(</span><span class="s">"a"</span><span class="o">,</span> <span class="s">"b"</span><span class="o">,</span> <span class="s">"c"</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">serialize</span><span class="o">)</span>
-</code></pre></div></div>
-
-<p>The <code>codec</code> package also contains various transformation pipes, acting directly on values. Please refer to the <a href="/api/fs2/data/json/codec/">package API documentation</a> for more details.</p>
-
-<p>For concrete examples of provided <code>Deserializer</code>s and <code>Serializer</code>s, please refer to <a href="/documentation/json/libraries">the JSON library binding modules documentation</a>.</p>
-
-<h3 id="json-renderers">JSON Renderers</h3>
-
-<p>Once you got a JSON token stream, selected and transformed what you needed in it, you can then write the resulting token stream to some storage. This can be achieved using renderers.</p>
-
-<p>For instance, let’s say you want to write the resulting JSON stream to a file in compact form (i.e. with no space or new lines), you can do:</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.io.file.</span><span class="o">{</span><span class="nc">Files</span><span class="o">,</span> <span class="nc">Flags</span><span class="o">,</span> <span class="nc">Path</span><span class="o">}</span>
-
-<span class="n">stream</span>
-  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">render</span><span class="o">.</span><span class="py">compact</span><span class="o">)</span>
-  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">text</span><span class="o">.</span><span class="py">utf8</span><span class="o">.</span><span class="py">encode</span><span class="o">)</span>
-  <span class="o">.</span><span class="py">lift</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
-  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nc">Files</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="py">writeAll</span><span class="o">(</span><span class="nc">Path</span><span class="o">(</span><span class="s">"/some/path/to/file.json"</span><span class="o">),</span> <span class="nv">Flags</span><span class="o">.</span><span class="py">Write</span><span class="o">))</span>
-  <span class="o">.</span><span class="py">compile</span>
-  <span class="o">.</span><span class="py">drain</span>
-</code></pre></div></div>
-
-<p>There exists also a <code>pretty()</code> renderer, that indents inner elements by the given indent string.</p>
-
-<p>If you are interested in the String rendering as a value, the library also provides <a href="https://oss.sonatype.org/service/local/repositories/releases/archive/co/fs2/fs2-core_2.13/2.3.0/fs2-core_2.13-2.3.0-javadoc.jar/!/fs2/Collector.html"><code>Collector</code>s</a>:</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">compact</span><span class="o">)</span>
-<span class="c1">// res8: Either[Throwable, collector.compact.Out] = Right(</span>
-<span class="c1">//   value = "{\"field1\":0,\"field2\":\"test\",\"field3\":[1,2,3]}{\"field1\":2,\"field3\":[]}"</span>
-<span class="c1">// )</span>
-
-<span class="c1">// default indentation is 2 spaces</span>
-<span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">())</span>
-<span class="c1">// res9: Either[Throwable, String] = Right(</span>
-<span class="c1">//   value = """{</span>
-<span class="c1">//   "field1": 0,</span>
-<span class="c1">//   "field2": "test",</span>
-<span class="c1">//   "field3": [</span>
-<span class="c1">//     1,</span>
-<span class="c1">//     2,</span>
-<span class="c1">//     3</span>
-<span class="c1">//   ]</span>
-<span class="c1">// }</span>
-<span class="c1">// {</span>
-<span class="c1">//   "field1": 2,</span>
-<span class="c1">//   "field3": []</span>
-<span class="c1">// }"""</span>
-<span class="c1">// )</span>
-<span class="c1">// if you are more into tabs (or any other indentation size) you can change the indentation string</span>
-<span class="nv">stream</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">to</span><span class="o">(</span><span class="nv">collector</span><span class="o">.</span><span class="py">pretty</span><span class="o">(</span><span class="s">"\t"</span><span class="o">))</span>
-<span class="c1">// res10: Either[Throwable, String] = Right(</span>
-<span class="c1">//   value = """{</span>
-<span class="c1">// 	"field1": 0,</span>
-<span class="c1">// 	"field2": "test",</span>
-<span class="c1">// 	"field3": [</span>
-<span class="c1">// 		1,</span>
-<span class="c1">// 		2,</span>
-<span class="c1">// 		3</span>
-<span class="c1">// 	]</span>
-<span class="c1">// }</span>
-<span class="c1">// {</span>
-<span class="c1">// 	"field1": 2,</span>
-<span class="c1">// 	"field3": []</span>
-<span class="c1">// }"""</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<h3 id="generating-json-streams">Generating JSON streams</h3>
-
-<p>Another use case of the library can be to generate a JSON token stream. This comes in handy if you are developing a web service that returns some big JSON in chunks.</p>
-
-<p>To this end you can use the pipes in <code>wrap</code> which allow you to wrap a stream into an object structure.</p>
-
-<p>For instance imagine you have a store of events which can return a stream of events, and you have a way to serialize the events into JSON.</p>
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">Event</span>
-<span class="k">case</span> <span class="k">class</span> <span class="nc">CreateCounter</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">initialValue</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Event</span>
-<span class="k">case</span> <span class="k">class</span> <span class="nc">RemoveCounter</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Event</span>
-<span class="k">case</span> <span class="k">class</span> <span class="nc">IncreaseCounter</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Event</span>
-
-<span class="k">object</span> <span class="nc">Event</span> <span class="o">{</span>
-  <span class="k">import</span> <span class="nn">_root_.io.circe.Encoder</span>
-  <span class="k">import</span> <span class="nn">_root_.io.circe.generic.extras.Configuration</span>
-  <span class="k">import</span> <span class="nn">_root_.io.circe.generic.extras.semiauto._</span>
-  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">configuration</span> <span class="k">=</span> <span class="nv">Configuration</span><span class="o">.</span><span class="py">default</span><span class="o">.</span><span class="py">withDiscriminator</span><span class="o">(</span><span class="s">"type"</span><span class="o">)</span>
-
-  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">encoder</span><span class="k">:</span> <span class="kt">Encoder</span><span class="o">[</span><span class="kt">Event</span><span class="o">]</span> <span class="k">=</span> <span class="n">deriveConfiguredEncoder</span>
-<span class="o">}</span>
-
-<span class="k">val</span> <span class="nv">events</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emits</span><span class="o">(</span>
-  <span class="nc">List</span><span class="o">[</span><span class="kt">Event</span><span class="o">](</span>
-    <span class="nc">CreateCounter</span><span class="o">(</span><span class="s">"counter1"</span><span class="o">,</span> <span class="mi">0</span><span class="o">),</span>
-    <span class="nc">IncreaseCounter</span><span class="o">(</span><span class="s">"counter1"</span><span class="o">),</span>
-    <span class="nc">CreateCounter</span><span class="o">(</span><span class="s">"counter2"</span><span class="o">,</span> <span class="mi">0</span><span class="o">),</span>
-    <span class="nc">RemoveCounter</span><span class="o">(</span><span class="s">"counter2"</span><span class="o">)</span>
-  <span class="o">)</span>
-<span class="o">)</span>
-<span class="c1">// events: Stream[[x]Pure[x], Event] = Stream(..)</span>
-</code></pre></div></div>
-
-<p>You can generate a stream of JSON token wrapped in an object at a key named <code>events</code> like this:</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.circe._</span>
-
-<span class="k">val</span> <span class="nv">wrappedTokens</span> <span class="k">=</span> <span class="nv">events</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">ast</span><span class="o">.</span><span class="py">tokenize</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="nv">wrap</span><span class="o">.</span><span class="py">asArrayInObject</span><span class="o">(</span><span class="n">at</span> <span class="k">=</span> <span class="s">"events"</span><span class="o">))</span>
-<span class="c1">// wrappedTokens: Stream[[x]Pure[x], Token] = Stream(..)</span>
-</code></pre></div></div>
-
-<p>You can use the renderers described above to generate the rendered chunks to send to the client.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">wrappedTokens</span><span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">render</span><span class="o">.</span><span class="py">compact</span><span class="o">).</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res11: cats.package.Id[List[String]] = List(</span>
-<span class="c1">//   "{",</span>
-<span class="c1">//   "\"events\":",</span>
-<span class="c1">//   "[",</span>
-<span class="c1">//   "{\"name\":\"counter1\",\"initialValue\":0,\"type\":\"CreateCounter\"}",</span>
-<span class="c1">//   ",{\"name\":\"counter1\",\"type\":\"IncreaseCounter\"}",</span>
-<span class="c1">//   ",{\"name\":\"counter2\",\"initialValue\":0,\"type\":\"CreateCounter\"}",</span>
-<span class="c1">//   ",{\"name\":\"counter2\",\"type\":\"RemoveCounter\"}",</span>
-<span class="c1">//   "]",</span>
-<span class="c1">//   "}"</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>You can also add other fields to the the generated object stream. For instance, let’s assume we can know how big the stream will be in advance from our event store, we can send this piece of data in the first chunks, so that the client can react accordingly.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">_root_.io.circe.Json</span>
-
-<span class="n">events</span>
-  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">ast</span><span class="o">.</span><span class="py">tokenize</span><span class="o">)</span>
-  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">wrap</span><span class="o">.</span><span class="py">asArrayInObject</span><span class="o">(</span><span class="n">at</span> <span class="k">=</span> <span class="s">"events"</span><span class="o">,</span> <span class="n">in</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">(</span><span class="s">"size"</span> <span class="o">-&gt;</span> <span class="nv">Json</span><span class="o">.</span><span class="py">fromInt</span><span class="o">(</span><span class="mi">4</span><span class="o">))))</span>
-  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">render</span><span class="o">.</span><span class="py">compact</span><span class="o">)</span>
-  <span class="o">.</span><span class="py">compile</span>
-  <span class="o">.</span><span class="py">toList</span>
-<span class="c1">// res12: cats.package.Id[List[String]] = List(</span>
-<span class="c1">//   "{",</span>
-<span class="c1">//   "\"size\":4",</span>
-<span class="c1">//   ",\"events\":",</span>
-<span class="c1">//   "[",</span>
-<span class="c1">//   "{\"name\":\"counter1\",\"initialValue\":0,\"type\":\"CreateCounter\"}",</span>
-<span class="c1">//   ",{\"name\":\"counter1\",\"type\":\"IncreaseCounter\"}",</span>
-<span class="c1">//   ",{\"name\":\"counter2\",\"initialValue\":0,\"type\":\"CreateCounter\"}",</span>
-<span class="c1">//   ",{\"name\":\"counter2\",\"type\":\"RemoveCounter\"}",</span>
-<span class="c1">//   "]",</span>
-<span class="c1">//   "}"</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>For more pipes and options, please refer to the <a href="/api/fs2/data/json/package$$wrap$.html">API documentation</a>.</p>
-
-
-      </div>
-    </main>
-
-    <footer class="page-footer red lighten-2">
-      <div class="footer-copyright red darken-2">
-        <div class="container">
-          Copyright © 2019-2023 <a class="grey-text text-lighten-4" href="https://fosstodon.org/@lucassatabin">@lucassatabin</a>
-          <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" class="grey-text text-lighten-4 right" /></a>
-          <br />
-          <a href="https://typelevel.org/projects/"><img alt="Typelevel Affiliate Project" style="border-width:0" src="https://img.shields.io/badge/typelevel-affiliate%20project-FFB4B5.svg" /></a>
-          <a href="https://discord.gg/7qNAFsYkTn"><img alt="Discord" style="border-width:0" src="https://img.shields.io/discord/632277896739946517.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2" /></a>
-        </div>
-      </div>
-    </footer>
-
-    <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function() {
-      var elems = document.querySelectorAll('.sidenav');
-      var instances = M.Sidenav.init(elems, {});
-    });
-    document.addEventListener('DOMContentLoaded', function() {
-      var elems = document.querySelectorAll('.tooltipped');
-      var instances = M.Tooltip.init(elems, {});
-    });
-
-    stork.initialize("/js/stork.wasm")
-    stork.register("search", "/index.st", { showCloseButton: false })
-    </script>
+              |  &quot;field1&quot;: 2,
+              |  &quot;field3&quot;: []
+              |}&quot;&quot;&quot;</span><span>.</span><span class="identifier">stripMargin</span><span>
+</span><span class="comment">// input: String = &quot;&quot;&quot;{
+//   &quot;field1&quot;: 0,
+//   &quot;field2&quot;: &quot;test&quot;,
+//   &quot;field3&quot;: [1, 2, 3]
+// }
+// {
+//   &quot;field1&quot;: 2,
+//   &quot;field3&quot;: []
+// }&quot;&quot;&quot;
+</span><span>
+</span><span class="keyword">val</span><span> </span><span class="identifier">stream</span><span> = </span><span class="type-name">Stream</span><span>.</span><span class="identifier">emit</span><span>(</span><span class="identifier">input</span><span>).</span><span class="identifier">through</span><span>(</span><span class="identifier">tokens</span><span>[</span><span class="type-name">Fallible</span><span>, </span><span class="type-name">String</span><span>])
+</span><span class="comment">// stream: Stream[[A]Fallible[A], Token] = Stream(..)
+</span><span class="identifier">stream</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>
+</span><span class="comment">// res0: Either[Throwable, List[Token]] = Right(
+//   value = List(
+//     StartObject,
+//     Key(value = &quot;field1&quot;),
+//     NumberValue(value = &quot;0&quot;),
+//     Key(value = &quot;field2&quot;),
+//     StringValue(value = &quot;test&quot;),
+//     Key(value = &quot;field3&quot;),
+//     StartArray,
+//     NumberValue(value = &quot;1&quot;),
+//     NumberValue(value = &quot;2&quot;),
+//     NumberValue(value = &quot;3&quot;),
+//     EndArray,
+//     EndObject,
+//     StartObject,
+//     Key(value = &quot;field1&quot;),
+//     NumberValue(value = &quot;2&quot;),
+//     Key(value = &quot;field3&quot;),
+//     StartArray,
+//     EndArray,
+//     EndObject
+//   )
+// )</span></code></pre>
+        <p>The pipe validates the JSON structure while parsing. It reads all the json values in the input stream and emits tokens as they are available.</p>
+        
+        <h2 id="ast-builder-and-tokenizer" class="section"><a class="anchor-link left" href="#ast-builder-and-tokenizer"><i class="icofont-laika link">&#xef71;</i></a>AST builder and tokenizer</h2>
+        <p>To handle Json ASTs, you can use the types and pipes available in the <code>fs2.data.json.ast</code> package.</p>
+        
+        <h3 id="parsing-a-stream-to-values" class="section"><a class="anchor-link left" href="#parsing-a-stream-to-values"><i class="icofont-laika link">&#xef71;</i></a>parsing a stream to values</h3>
+        <p>If you are not interested in tokens, but instead want to parse the input stream into a stream of AST values, you can use the <code>ast.parse</code> pipe, provided you have an implicit <a class="api" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/fs2/data/json/ast/Builder.html">Builder</a> in scope. The <code>Builder[Json]</code> typeclass describes how JSON ASTs of type <code>Json</code> are built from events generated by the parser.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">ast</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">trait</span><span> </span><span class="type-name">SomeJsonType</span><span>
+
+</span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">builder</span><span>: </span><span class="type-name">Builder</span><span>[</span><span class="type-name">SomeJsonType</span><span>] = ???
+
+</span><span class="type-name">Stream</span><span>.</span><span class="identifier">emit</span><span>(</span><span class="identifier">input</span><span>).</span><span class="identifier">covary</span><span>[</span><span class="type-name">Fallible</span><span>].</span><span class="identifier">through</span><span>(</span><span class="identifier">parse</span><span>)</span></code></pre>
+        <p>The <code>ast</code> stream emits all top-level JSON values parsed, in our example, the two objects are emitted.</p>
+        
+        <h3 id="from-tokens-to-values" class="section"><a class="anchor-link left" href="#from-tokens-to-values"><i class="icofont-laika link">&#xef71;</i></a>From <code>Token</code>s to values</h3>
+        <p>JSON ASTs can be built from an existing token stream, provided you have an implicit <a class="api" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/fs2/data/json/ast/Builder.html">Builder</a>, using the <code>values</code> pipe.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">ast</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">trait</span><span> </span><span class="type-name">SomeJsonType</span><span>
+
+</span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">builder</span><span>: </span><span class="type-name">Builder</span><span>[</span><span class="type-name">SomeJsonType</span><span>] = ???
+
+</span><span class="identifier">stream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">values</span><span>[</span><span class="type-name">Fallible</span><span>, </span><span class="type-name">SomeJsonType</span><span>])</span></code></pre>
+        <p><strong>Note:</strong> even though this snippet is equivalent in result to the one using <code>ast.parse</code> it is less efficient, and if you are only interested in the values, you should always use <code>ast.parse</code>.</p>
+        
+        <h3 id="from-values-to-tokens" class="section"><a class="anchor-link left" href="#from-values-to-tokens"><i class="icofont-laika link">&#xef71;</i></a>From values to <code>Token</code>s</h3>
+        <p>JSON tokens can be built from an existing existing value, provided you have an implicit <a class="api" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/fs2/data/json/ast/Tokenizer.html">Tokenizer</a>, using the <code>tokenize</code> pipe.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">ast</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">trait</span><span> </span><span class="type-name">SomeJsonType</span><span>
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">v</span><span>: </span><span class="type-name">SomeJsonType</span><span> = ???
+
+</span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">tokenizer</span><span>: </span><span class="type-name">Tokenizer</span><span>[</span><span class="type-name">SomeJsonType</span><span>] = ???
+
+</span><span class="type-name">Stream</span><span>.</span><span class="identifier">emit</span><span>(</span><span class="identifier">v</span><span>).</span><span class="identifier">through</span><span>(</span><span class="identifier">tokenize</span><span>[</span><span class="type-name">Fallible</span><span>, </span><span class="type-name">SomeJsonType</span><span>])</span></code></pre>
+        
+        <h2 id="serializers-and-deserializers" class="section"><a class="anchor-link left" href="#serializers-and-deserializers"><i class="icofont-laika link">&#xef71;</i></a>Serializers and deserializers</h2>
+        <p>To handle Json (de)serialized values, you can use the types and pipes available in the <code>fs2.data.json.codec</code> package.</p>
+        <p>Values can be automatically deserialized from a stream of JSON tokens by providing a <a class="api" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/fs2/data/json/codec/Deserializer.html">Deserializer</a>.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">codec</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">deserializer</span><span>: </span><span class="type-name">Deserializer</span><span>[</span><span class="type-name">Int</span><span>] = ???
+</span><span class="identifier">stream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">deserialize</span><span>[</span><span class="type-name">Fallible</span><span>, </span><span class="type-name">Int</span><span>])</span></code></pre>
+        <p>You can also serialize a stream of values by providing a <a class="api" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/fs2/data/json/codec/Serializer.html">Serializer</a>.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">codec</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">serializer</span><span>: </span><span class="type-name">Serializer</span><span>[</span><span class="type-name">String</span><span>] = ???
+
+</span><span class="type-name">Stream</span><span>(</span><span class="string-literal">&quot;a&quot;</span><span>, </span><span class="string-literal">&quot;b&quot;</span><span>, </span><span class="string-literal">&quot;c&quot;</span><span>).</span><span class="identifier">through</span><span>(</span><span class="identifier">serialize</span><span>)</span></code></pre>
+        <p>The <code>codec</code> package also contains various transformation pipes, acting directly on values. Please refer to the <a class="api" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/fs2/data/json/codec/index.html">fs2.data.json.codec</a> package API documentation for more details.</p>
+        <p>For concrete examples of provided <code>Deserializer</code>s and <code>Serializer</code>s, please refer to <a href="libraries/">the JSON library binding modules documentation</a>.</p>
+        
+        <h2 id="json-renderers" class="section"><a class="anchor-link left" href="#json-renderers"><i class="icofont-laika link">&#xef71;</i></a>JSON Renderers</h2>
+        <p>Once you got a JSON token stream, selected and transformed what you needed in it, you can then write the resulting token stream to some storage. This can be achieved using renderers.</p>
+        <p>For instance, let&#39;s say you want to write the resulting JSON stream to a file in compact form (i.e. with no space or new lines), you can do:</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">io</span><span>.</span><span class="identifier">file</span><span>.{</span><span class="type-name">Files</span><span>, </span><span class="type-name">Flags</span><span>, </span><span class="type-name">Path</span><span>}
+
+</span><span class="identifier">stream</span><span>
+  .</span><span class="identifier">through</span><span>(</span><span class="identifier">render</span><span>.</span><span class="identifier">compact</span><span>)
+  .</span><span class="identifier">through</span><span>(</span><span class="identifier">text</span><span>.</span><span class="identifier">utf8</span><span>.</span><span class="identifier">encode</span><span>)
+  .</span><span class="identifier">lift</span><span>[</span><span class="type-name">IO</span><span>]
+  .</span><span class="identifier">through</span><span>(</span><span class="type-name">Files</span><span>[</span><span class="type-name">IO</span><span>].</span><span class="identifier">writeAll</span><span>(</span><span class="type-name">Path</span><span>(</span><span class="string-literal">&quot;/some/path/to/file.json&quot;</span><span>), </span><span class="type-name">Flags</span><span>.</span><span class="type-name">Write</span><span>))
+  .</span><span class="identifier">compile</span><span>
+  .</span><span class="identifier">drain</span></code></pre>
+        <p>There exists also a <code>pretty()</code> renderer, that indents inner elements by the given indent string.</p>
+        <p>If you are interested in the String rendering as a value, the library also provides <code>Collector</code>s:</p>
+        <pre><code class="nohighlight"><span class="identifier">stream</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">to</span><span>(</span><span class="identifier">collector</span><span>.</span><span class="identifier">compact</span><span>)
+</span><span class="comment">// res7: Either[Throwable, collector.compact.Out] = Right(
+//   value = &quot;{\&quot;field1\&quot;:0,\&quot;field2\&quot;:\&quot;test\&quot;,\&quot;field3\&quot;:[1,2,3]}{\&quot;field1\&quot;:2,\&quot;field3\&quot;:[]}&quot;
+// )
+</span><span>
+</span><span class="comment">// default indentation is 2 spaces
+</span><span class="identifier">stream</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">to</span><span>(</span><span class="identifier">collector</span><span>.</span><span class="identifier">pretty</span><span>())
+</span><span class="comment">// res8: Either[Throwable, String] = Right(
+//   value = &quot;&quot;&quot;{
+//   &quot;field1&quot;: 0,
+//   &quot;field2&quot;: &quot;test&quot;,
+//   &quot;field3&quot;: [
+//     1,
+//     2,
+//     3
+//   ]
+// }
+// {
+//   &quot;field1&quot;: 2,
+//   &quot;field3&quot;: []
+// }&quot;&quot;&quot;
+// )
+// if you are more into tabs (or any other indentation size) you can change the indentation string
+</span><span class="identifier">stream</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">to</span><span>(</span><span class="identifier">collector</span><span>.</span><span class="identifier">pretty</span><span>(</span><span class="string-literal">&quot;</span><span class="escape-sequence">\t</span><span class="string-literal">&quot;</span><span>))
+</span><span class="comment">// res9: Either[Throwable, String] = Right(
+//   value = &quot;&quot;&quot;{
+// 	&quot;field1&quot;: 0,
+// 	&quot;field2&quot;: &quot;test&quot;,
+// 	&quot;field3&quot;: [
+// 		1,
+// 		2,
+// 		3
+// 	]
+// }
+// {
+// 	&quot;field1&quot;: 2,
+// 	&quot;field3&quot;: []
+// }&quot;&quot;&quot;
+// )</span></code></pre>
+        
+        <h2 id="generating-json-streams" class="section"><a class="anchor-link left" href="#generating-json-streams"><i class="icofont-laika link">&#xef71;</i></a>Generating JSON streams</h2>
+        <p>Another use case of the library can be to generate a JSON token stream. This comes in handy if you are developing a web service that returns some big JSON in chunks.</p>
+        <p>To this end you can use the pipes in <code>wrap</code> which allow you to wrap a stream into an object structure.</p>
+        <p>For instance imagine you have a store of events which can return a stream of events, and you have a way to serialize the events into JSON.</p>
+        <pre><code class="nohighlight"><span class="keyword">sealed</span><span> </span><span class="keyword">trait</span><span> </span><span class="type-name">Event</span><span>
+</span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">CreateCounter</span><span>(</span><span class="identifier">name</span><span>: </span><span class="type-name">String</span><span>, </span><span class="identifier">initialValue</span><span>: </span><span class="type-name">Int</span><span>) </span><span class="keyword">extends</span><span> </span><span class="type-name">Event</span><span>
+</span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">RemoveCounter</span><span>(</span><span class="identifier">name</span><span>: </span><span class="type-name">String</span><span>) </span><span class="keyword">extends</span><span> </span><span class="type-name">Event</span><span>
+</span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">IncreaseCounter</span><span>(</span><span class="identifier">name</span><span>: </span><span class="type-name">String</span><span>) </span><span class="keyword">extends</span><span> </span><span class="type-name">Event</span><span>
+
+</span><span class="keyword">object</span><span> </span><span class="type-name">Event</span><span> {
+  </span><span class="keyword">import</span><span> </span><span class="identifier">_root_</span><span>.</span><span class="identifier">io</span><span>.</span><span class="identifier">circe</span><span>.</span><span class="type-name">Encoder</span><span>
+  </span><span class="keyword">import</span><span> </span><span class="identifier">_root_</span><span>.</span><span class="identifier">io</span><span>.</span><span class="identifier">circe</span><span>.</span><span class="identifier">generic</span><span>.</span><span class="identifier">extras</span><span>.</span><span class="type-name">Configuration</span><span>
+  </span><span class="keyword">import</span><span> </span><span class="identifier">_root_</span><span>.</span><span class="identifier">io</span><span>.</span><span class="identifier">circe</span><span>.</span><span class="identifier">generic</span><span>.</span><span class="identifier">extras</span><span>.</span><span class="identifier">semiauto</span><span>.</span><span class="identifier">_</span><span>
+  </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">configuration</span><span> = </span><span class="type-name">Configuration</span><span>.</span><span class="keyword">default</span><span>.</span><span class="identifier">withDiscriminator</span><span>(</span><span class="string-literal">&quot;type&quot;</span><span>)
+
+  </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">encoder</span><span>: </span><span class="type-name">Encoder</span><span>[</span><span class="type-name">Event</span><span>] = </span><span class="identifier">deriveConfiguredEncoder</span><span>
+}
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">events</span><span> = </span><span class="type-name">Stream</span><span>.</span><span class="identifier">emits</span><span>(
+  </span><span class="type-name">List</span><span>[</span><span class="type-name">Event</span><span>](
+    </span><span class="type-name">CreateCounter</span><span>(</span><span class="string-literal">&quot;counter1&quot;</span><span>, </span><span class="number-literal">0</span><span>),
+    </span><span class="type-name">IncreaseCounter</span><span>(</span><span class="string-literal">&quot;counter1&quot;</span><span>),
+    </span><span class="type-name">CreateCounter</span><span>(</span><span class="string-literal">&quot;counter2&quot;</span><span>, </span><span class="number-literal">0</span><span>),
+    </span><span class="type-name">RemoveCounter</span><span>(</span><span class="string-literal">&quot;counter2&quot;</span><span>)
+  )
+)
+</span><span class="comment">// events: Stream[[x]Pure[x], Event] = Stream(..)</span></code></pre>
+        <p>You can generate a stream of JSON token wrapped in an object at a key named <code>events</code> like this:</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">circe</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">wrappedTokens</span><span> = </span><span class="identifier">events</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">ast</span><span>.</span><span class="identifier">tokenize</span><span>).</span><span class="identifier">through</span><span>(</span><span class="identifier">wrap</span><span>.</span><span class="identifier">asArrayInObject</span><span>(</span><span class="identifier">at</span><span> = </span><span class="string-literal">&quot;events&quot;</span><span>))
+</span><span class="comment">// wrappedTokens: Stream[[x]Pure[x], Token] = Stream(..)</span></code></pre>
+        <p>You can use the renderers described above to generate the rendered chunks to send to the client.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">wrappedTokens</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">render</span><span>.</span><span class="identifier">compact</span><span>).</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>
+</span><span class="comment">// res10: cats.package.Id[List[String]] = List(
+//   &quot;{&quot;,
+//   &quot;\&quot;events\&quot;:&quot;,
+//   &quot;[&quot;,
+//   &quot;{\&quot;name\&quot;:\&quot;counter1\&quot;,\&quot;initialValue\&quot;:0,\&quot;type\&quot;:\&quot;CreateCounter\&quot;}&quot;,
+//   &quot;,{\&quot;name\&quot;:\&quot;counter1\&quot;,\&quot;type\&quot;:\&quot;IncreaseCounter\&quot;}&quot;,
+//   &quot;,{\&quot;name\&quot;:\&quot;counter2\&quot;,\&quot;initialValue\&quot;:0,\&quot;type\&quot;:\&quot;CreateCounter\&quot;}&quot;,
+//   &quot;,{\&quot;name\&quot;:\&quot;counter2\&quot;,\&quot;type\&quot;:\&quot;RemoveCounter\&quot;}&quot;,
+//   &quot;]&quot;,
+//   &quot;}&quot;
+// )</span></code></pre>
+        <p>You can also add other fields to the the generated object stream. For instance, let&#39;s assume we can know how big the stream will be in advance from our event store, we can send this piece of data in the first chunks, so that the client can react accordingly.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">_root_</span><span>.</span><span class="identifier">io</span><span>.</span><span class="identifier">circe</span><span>.</span><span class="type-name">Json</span><span>
+
+</span><span class="identifier">events</span><span>
+  .</span><span class="identifier">through</span><span>(</span><span class="identifier">ast</span><span>.</span><span class="identifier">tokenize</span><span>)
+  .</span><span class="identifier">through</span><span>(</span><span class="identifier">wrap</span><span>.</span><span class="identifier">asArrayInObject</span><span>(</span><span class="identifier">at</span><span> = </span><span class="string-literal">&quot;events&quot;</span><span>, </span><span class="identifier">in</span><span> = </span><span class="type-name">Map</span><span>(</span><span class="string-literal">&quot;size&quot;</span><span> -&gt; </span><span class="type-name">Json</span><span>.</span><span class="identifier">fromInt</span><span>(</span><span class="number-literal">4</span><span>))))
+  .</span><span class="identifier">through</span><span>(</span><span class="identifier">render</span><span>.</span><span class="identifier">compact</span><span>)
+  .</span><span class="identifier">compile</span><span>
+  .</span><span class="identifier">toList</span><span>
+</span><span class="comment">// res11: cats.package.Id[List[String]] = List(
+//   &quot;{&quot;,
+//   &quot;\&quot;size\&quot;:4&quot;,
+//   &quot;,\&quot;events\&quot;:&quot;,
+//   &quot;[&quot;,
+//   &quot;{\&quot;name\&quot;:\&quot;counter1\&quot;,\&quot;initialValue\&quot;:0,\&quot;type\&quot;:\&quot;CreateCounter\&quot;}&quot;,
+//   &quot;,{\&quot;name\&quot;:\&quot;counter1\&quot;,\&quot;type\&quot;:\&quot;IncreaseCounter\&quot;}&quot;,
+//   &quot;,{\&quot;name\&quot;:\&quot;counter2\&quot;,\&quot;initialValue\&quot;:0,\&quot;type\&quot;:\&quot;CreateCounter\&quot;}&quot;,
+//   &quot;,{\&quot;name\&quot;:\&quot;counter2\&quot;,\&quot;type\&quot;:\&quot;RemoveCounter\&quot;}&quot;,
+//   &quot;]&quot;,
+//   &quot;}&quot;
+// )</span></code></pre>
+        <p>For more pipes and options, please refer to the <a class="api" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/fs2/data/json/package$$wrap$.html">package$$wrap</a> API documentation.</p>
+
+        
+<hr class="footer-rule"/>
+<footer>
+  <code>fs2-data</code> is a <a href="https://typelevel.org/">Typelevel</a> affiliate project distributed under the <a href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache-2.0</a> license.
+</footer>
+
+
+      </main>
+
+    </div>
+
+  </body>
 
 </html>

@@ -1,345 +1,382 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html lang="en">
+  
   <head>
-    <meta charset="utf-8">
-    <title>fs2-data - JSONPath</title>
-    <link rel="stylesheet" href="/css/stylesheet.css">
-    <link rel="stylesheet" href="/css/syntax.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" rel="stylesheet" href="/css/materialize.min.css" media="screen,projection"/>
-    <style>body{font-family: overpass, sans-serif; }</style>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="Typelevel Laika + Helium Theme" />
+  <title>JSONPath</title>
+  
+  <meta name="author" content="Lucas Satabin"/>
+  
+  <meta name="author" content="Yannick Heiber"/>
+  
+  
+  <meta name="description" content="site"/>
+  
+  
+  
+  <link rel="icon" sizes="32x32" type="image/png" href="https://typelevel.org/img/favicon.png"/>
+  
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700">
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono:500">
+  
+  <link rel="stylesheet" type="text/css" href="/pagefind/pagefind-ui.css" />
+    <link rel="stylesheet" type="text/css" href="../../../helium/site/icofont.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../../helium/site/laika-helium.css" />
+  <script src="/pagefind/pagefind-ui.js"></script>
+    <script src="../../../helium/site/laika-helium.js"></script>
+  
+  
+  <script> /* for avoiding page load transitions */ </script>
+</head>
 
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
-
-    <!-- search index -->
-    <link rel="stylesheet" href="/css/stork.css" />
-    <script src="/js/stork.js"></script>
-
-    <meta name="generator" content="Nanoc 4.12.16">
-  </head>
   <body>
-    <header>
-        <nav class="nav-extended red darken-2">
-          <a href="#!" class="brand-logo right">fs2-data</a>
-          <a href="#" data-target="collapsed" class="sidenav-trigger"><i class="material-icons">menu</i></a>
-          <div class="nav-wrapper">
-            <ul id="nav-mobile" class="left hide-on-med-and-down">
-              <li><a href="/">Home</a></li>
-              <li><a href="/documentation/">Documentation</a></li>
-              <li><a href="/api/">Scaladoc</a></li>
-              <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
-              <li><i class="material-icons">search</i></li>
-              <li>
-                <form>
-                  <div class="input-field">
-                    <input data-stork="search" id="search" type="search" required placeholder="Search the website" autocomplete="off" />
-                  </div>
-                </form>
-              </li>
-            </ul>
-          </div>
-          
-          
-          <div class="nav-content">
-            <ul class="tabs tabs-transparent">
-              
-              
-              <li class="tab"><a href="/documentation/json/">JSON</a></li>
-              
-              
-              
-              <li class="tab"><a href="/documentation/json/libraries/">JSON Libraries</a></li>
-              
-              
-              
-              <li class="tab active"><a href="/documentation/json/jsonpath/">JSONPath</a></li>
-              
-              
-              
-              <li class="tab"><a href="/documentation/json/patches/">JSON Patch</a></li>
-              
-              
-              
-              <li class="tab"><a href="/documentation/json/interpolators/">Interpolators</a></li>
-              
-              
-            </ul>
-          </div>
-          
-        </nav>
-        <div class="stork-wrapper-flat">
-          <div data-stork="search-output" class="stork-output"></div>
-        </div>
 
-    </header>
+    <header id="top-bar" class="light-default dark-default">
 
-    <ul class="sidenav" id="collapsed">
-      <li><a href="/">Home</a></li>
-      <li><a href="/documentation/">Documentation</a></li>
-      <li><a href="/api/">Scaladoc</a></li>
-      <li><a href="https://github.com/gnieh/fs2-data">Github</a></li>
-    </ul>
-
+  <div class="row">
+    <a id="nav-icon">
+      <i class="icofont-laika navigationMenu" title="Navigation">&#xefa2;</i>
+    </a>
     
-    <div class="fixed-action-btn tooltipped" data-position="left" data-tooltip="Edit this page">
-      <a class="btn-floating btn-large blue darken-2" href="https://github.com/gnieh/fs2-data/edit/main/documentation/docs/json/jsonpath.md" target="_blank">
-        <i class="large material-icons">mode_edit</i>
-      </a>
-    </div>
     
+  </div>
 
-    <main>
-      <div class="container">
-        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json_2.13.svg" alt="Maven Central" /></a></p>
+  <a class="image-link" href="../../../"><img src="../../../media/logo-header.svg"></a>
 
-<p>The <code>fs2-data-json</code> module provides a streaming implementation of JSONPath.</p>
+  <div class="row links">
+    
+    <a class="icon-link svg-link" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/index.html"><span class="api" title="API"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M75,47.5c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm-50,-0c13.246,-0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,-0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm2.705,16.735l7.239,0l0.622,-4.904l-21.833,0l-0,4.904l7.589,0l0,22.067l6.383,0l-0,-22.067Zm58.076,7.265c-0,-8.757 -3.698,-14.166 -10.781,-14.166c-7.083,-0 -10.781,5.604 -10.781,14.166c0,8.757 3.698,14.166 10.781,14.166c7.083,0 10.781,-5.604 10.781,-14.166Zm-6.539,0c0,6.538 -1.128,9.496 -4.242,9.496c-2.997,0 -4.242,-2.88 -4.242,-9.496c-0,-6.616 1.206,-9.496 4.242,-9.496c3.036,-0 4.242,2.88 4.242,9.496Zm-29.242,-67c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm0.512,9.834c-7.122,-0 -12.609,5.098 -12.609,14.127c-0,9.263 5.215,14.205 12.532,14.205c4.164,0 7.083,-1.634 9.068,-3.658l-2.88,-3.697c-1.518,1.206 -3.153,2.413 -5.838,2.413c-3.697,-0 -6.266,-2.763 -6.266,-9.263c-0,-6.616 2.724,-9.379 6.149,-9.379c2.102,-0 3.892,0.778 5.371,1.984l3.113,-3.775c-2.257,-1.868 -4.748,-2.957 -8.64,-2.957Z"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link svg-link" href="https://github.com/gnieh/fs2-data"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link glyph-link" href="https://discord.gg/XF3CXcMzqD"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
+    
+    <a class="icon-link svg-link" href="https://fosstodon.org/@lucassatabin"><span class="mastodon" title="Mastodon"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <g class="svg-shape">
+    <path d="M11.19 12.195c2.016-.24 3.77-1.475 3.99-2.603.348-1.778.32-4.339.32-4.339 0-3.47-2.286-4.488-2.286-4.488C12.062.238 10.083.017 8.027 0h-.05C5.92.017 3.942.238 2.79.765c0 0-2.285 1.017-2.285 4.488l-.002.662c-.004.64-.007 1.35.011 2.091.083 3.394.626 6.74 3.78 7.57 1.454.383 2.703.463 3.709.408 1.823-.1 2.847-.647 2.847-.647l-.06-1.317s-1.303.41-2.767.36c-1.45-.05-2.98-.156-3.215-1.928a3.614 3.614 0 0 1-.033-.496s1.424.346 3.228.428c1.103.05 2.137-.064 3.188-.189zm1.613-2.47H11.13v-4.08c0-.859-.364-1.295-1.091-1.295-.804 0-1.207.517-1.207 1.541v2.233H7.168V5.89c0-1.024-.403-1.541-1.207-1.541-.727 0-1.091.436-1.091 1.296v4.079H3.197V5.522c0-.859.22-1.541.66-2.046.456-.505 1.052-.764 1.793-.764.856 0 1.504.328 1.933.983L8 4.39l.417-.695c.429-.655 1.077-.983 1.934-.983.74 0 1.336.259 1.791.764.442.505.661 1.187.661 2.046v4.203z"/>
+  </g>
+</svg></span></a>
+    
+  </div>  
 
-<p>This page covers the following topics:</p>
-<ul id="markdown-toc">
-  <li><a href="#jsonpath" id="markdown-toc-jsonpath">JSONPath</a>    <ul>
-      <li><a href="#parsing-a-string-using-the-jsonpath-parser" id="markdown-toc-parsing-a-string-using-the-jsonpath-parser">Parsing a string using the JSONPath parser</a></li>
-      <li><a href="#using-jsonpath" id="markdown-toc-using-jsonpath">Using JSONPath</a></li>
-    </ul>
-  </li>
-</ul>
+</header>
+    
+    <nav id="sidebar">
 
-<p>Let’s use the following JSON input as an example.</p>
+  <div class="row">
+    
+    <a class="icon-link svg-link" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/index.html"><span class="api" title="API"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M75,47.5c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm-50,-0c13.246,-0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,-0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm2.705,16.735l7.239,0l0.622,-4.904l-21.833,0l-0,4.904l7.589,0l0,22.067l6.383,0l-0,-22.067Zm58.076,7.265c-0,-8.757 -3.698,-14.166 -10.781,-14.166c-7.083,-0 -10.781,5.604 -10.781,14.166c0,8.757 3.698,14.166 10.781,14.166c7.083,0 10.781,-5.604 10.781,-14.166Zm-6.539,0c0,6.538 -1.128,9.496 -4.242,9.496c-2.997,0 -4.242,-2.88 -4.242,-9.496c-0,-6.616 1.206,-9.496 4.242,-9.496c3.036,-0 4.242,2.88 4.242,9.496Zm-29.242,-67c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm0.512,9.834c-7.122,-0 -12.609,5.098 -12.609,14.127c-0,9.263 5.215,14.205 12.532,14.205c4.164,0 7.083,-1.634 9.068,-3.658l-2.88,-3.697c-1.518,1.206 -3.153,2.413 -5.838,2.413c-3.697,-0 -6.266,-2.763 -6.266,-9.263c-0,-6.616 2.724,-9.379 6.149,-9.379c2.102,-0 3.892,0.778 5.371,1.984l3.113,-3.775c-2.257,-1.868 -4.748,-2.957 -8.64,-2.957Z"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link svg-link" href="https://github.com/gnieh/fs2-data"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link glyph-link" href="https://discord.gg/XF3CXcMzqD"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
+    
+    <a class="icon-link svg-link" href="https://fosstodon.org/@lucassatabin"><span class="mastodon" title="Mastodon"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <g class="svg-shape">
+    <path d="M11.19 12.195c2.016-.24 3.77-1.475 3.99-2.603.348-1.778.32-4.339.32-4.339 0-3.47-2.286-4.488-2.286-4.488C12.062.238 10.083.017 8.027 0h-.05C5.92.017 3.942.238 2.79.765c0 0-2.285 1.017-2.285 4.488l-.002.662c-.004.64-.007 1.35.011 2.091.083 3.394.626 6.74 3.78 7.57 1.454.383 2.703.463 3.709.408 1.823-.1 2.847-.647 2.847-.647l-.06-1.317s-1.303.41-2.767.36c-1.45-.05-2.98-.156-3.215-1.928a3.614 3.614 0 0 1-.033-.496s1.424.346 3.228.428c1.103.05 2.137-.064 3.188-.189zm1.613-2.47H11.13v-4.08c0-.859-.364-1.295-1.091-1.295-.804 0-1.207.517-1.207 1.541v2.233H7.168V5.89c0-1.024-.403-1.541-1.207-1.541-.727 0-1.091.436-1.091 1.296v4.079H3.197V5.522c0-.859.22-1.541.66-2.046.456-.505 1.052-.764 1.793-.764.856 0 1.504.328 1.933.983L8 4.39l.417-.695c.429-.655 1.077-.983 1.934-.983.74 0 1.336.259 1.791.764.442.505.661 1.187.661 2.046v4.203z"/>
+  </g>
+</svg></span></a>
+    
+  </div>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.syntax.all._</span>
+  <ul class="nav-list">
+    <li class="level1 nav-leaf"><a href="../../../">Home</a></li>
+    <li class="level1 nav-header">documentation</li>
+    <li class="level2 nav-leaf"><a href="../../">Introduction</a></li>
+    <li class="level2 nav-header">csv</li>
+    <li class="level3 nav-leaf"><a href="../../csv/">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../../csv/generic/">Generic</a></li>
+    <li class="level2 nav-header">json</li>
+    <li class="level3 nav-leaf"><a href="../">Introduction</a></li>
+    <li class="level3 active nav-leaf"><a href="#">JSONPath</a></li>
+    <li class="level3 nav-leaf"><a href="../jq/">JSON Queries</a></li>
+    <li class="level3 nav-leaf"><a href="../libraries/">JSON Libraries</a></li>
+    <li class="level3 nav-leaf"><a href="../jsonpatch/">JSON Patch</a></li>
+    <li class="level3 nav-leaf"><a href="../transformations/">Transformations</a></li>
+    <li class="level2 nav-header">xml</li>
+    <li class="level3 nav-leaf"><a href="../../xml/">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../../xml/xpath/">XPath</a></li>
+    <li class="level3 nav-leaf"><a href="../../xml/libraries/">XML Libraries</a></li>
+    <li class="level2 nav-header">cbor</li>
+    <li class="level3 nav-leaf"><a href="../../cbor/">Introduction</a></li>
+    <li class="level2 nav-header">cbor-json</li>
+    <li class="level3 nav-leaf"><a href="../../cbor-json/">Introduction</a></li>
+    <li class="level1 nav-header">cookbooks</li>
+    <li class="level2 nav-leaf"><a href="../../../cookbooks/jq/">Reading/transforming/writing JSON data</a></li>
+  </ul>
 
-<span class="k">import</span> <span class="nn">fs2._</span>
-<span class="k">import</span> <span class="nn">fs2.data.json._</span>
+  <ul class="nav-list">
+    <li><div id="search"></div></li>
+  </ul>
 
-<span class="k">val</span> <span class="nv">input</span> <span class="k">=</span> <span class="s">"""{
-              |  "field1": 0,
-              |  "field2": "test",
-              |  "field3": [1, 2, 3]
+</nav>
+
+<script>
+window.addEventListener('DOMContentLoaded', (event) => {
+  new PagefindUI({ element: "#search", showSubResults: true, showImages: false });
+});
+</script>
+
+
+    <div id="container">
+
+      
+<nav id="page-nav">
+  <p class="header"><a href="#">JSONPath</a></p>
+
+  <ul class="nav-list">
+    <li class="level1 nav-node"><a href="#building-a-jsonpath">Building a JSONPath</a></li>
+    <li class="level2 nav-leaf"><a href="#parsing-a-string-using-the-jsonpath-parser">Parsing a string using the JSONPath parser</a></li>
+    <li class="level2 nav-leaf"><a href="#the-subset">The subset</a></li>
+    <li class="level1 nav-leaf"><a href="#using-jsonpath">Using JSONPath</a></li>
+  </ul>
+
+  <p class="footer"></p>
+</nav>
+
+
+      <main class="content">
+
+        <h1 id="jsonpath" class="title">JSONPath</h1>
+        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json_2.13.svg" alt="Maven Central"></a></p>
+        <p>The <code>fs2-data-json</code> module provides a streaming implementation of JSONPath.</p>
+        <p>Let&#39;s use the following JSON input as an example.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">syntax</span><span>.</span><span class="identifier">all</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">input</span><span> = </span><span class="string-literal">&quot;&quot;&quot;{
+              |  &quot;field1&quot;: 0,
+              |  &quot;field2&quot;: &quot;test&quot;,
+              |  &quot;field3&quot;: [1, 2, 3]
               |}
               |{
-              |  "field1": 2,
-              |  "field3": []
-              |}"""</span><span class="o">.</span><span class="py">stripMargin</span>
-<span class="c1">// input: String = """{</span>
-<span class="c1">//   "field1": 0,</span>
-<span class="c1">//   "field2": "test",</span>
-<span class="c1">//   "field3": [1, 2, 3]</span>
-<span class="c1">// }</span>
-<span class="c1">// {</span>
-<span class="c1">//   "field1": 2,</span>
-<span class="c1">//   "field3": []</span>
-<span class="c1">// }"""</span>
+              |  &quot;field1&quot;: 2,
+              |  &quot;field3&quot;: []
+              |}&quot;&quot;&quot;</span><span>.</span><span class="identifier">stripMargin</span><span>
+</span><span class="comment">// input: String = &quot;&quot;&quot;{
+//   &quot;field1&quot;: 0,
+//   &quot;field2&quot;: &quot;test&quot;,
+//   &quot;field3&quot;: [1, 2, 3]
+// }
+// {
+//   &quot;field1&quot;: 2,
+//   &quot;field3&quot;: []
+// }&quot;&quot;&quot;
+</span><span>
+</span><span class="keyword">val</span><span> </span><span class="identifier">stream</span><span> = </span><span class="type-name">Stream</span><span>.</span><span class="identifier">emit</span><span>(</span><span class="identifier">input</span><span>).</span><span class="identifier">through</span><span>(</span><span class="identifier">tokens</span><span>[</span><span class="type-name">Fallible</span><span>, </span><span class="type-name">String</span><span>])
+</span><span class="comment">// stream: Stream[[A]Fallible[A], Token] = Stream(..)</span></code></pre>
+        
+        <h2 id="building-a-jsonpath" class="section"><a class="anchor-link left" href="#building-a-jsonpath"><i class="icofont-laika link">&#xef71;</i></a>Building a JSONPath</h2>
+        <p>A subset of <a href="https://goessner.net/articles/JsonPath/index.html">JSONPath</a> can be used to select a subset of a JSON token stream. There are several ways to create selectors:</p>
+        <ul>
+          <li>build the selector using the constructors, which can be quite verbose and cumbersome;</li>
+        </ul>
+        <ul>
+          <li>parse a string with the JSONPath parser;</li>
+        </ul>
+        <ul>
+          <li>use the <code>jsonpath</code> interpolator.</li>
+        </ul>
+        
+        <h3 id="parsing-a-string-using-the-jsonpath-parser" class="section"><a class="anchor-link left" href="#parsing-a-string-using-the-jsonpath-parser"><i class="icofont-laika link">&#xef71;</i></a>Parsing a string using the JSONPath parser</h3>
+        <p>For instance, to select and enumerate elements that are in the <code>field3</code> array, you can create this selector. Only the tokens describing the values in <code>field3</code> will be emitted as a result.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">jsonpath</span><span>.</span><span class="identifier">_</span><span>
 
-<span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="nv">Stream</span><span class="o">.</span><span class="py">emit</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="py">through</span><span class="o">(</span><span class="n">tokens</span><span class="o">[</span><span class="kt">Fallible</span>, <span class="kt">String</span><span class="o">])</span>
-<span class="c1">// stream: Stream[[A]Fallible[A], Token] = Stream(..)</span>
-</code></pre></div></div>
+</span><span class="keyword">val</span><span> </span><span class="identifier">selector</span><span> = </span><span class="type-name">JsonPathParser</span><span>.</span><span class="identifier">either</span><span>(</span><span class="string-literal">&quot;$.field3[*]&quot;</span><span>)
+</span><span class="comment">// selector: Either[Throwable, JsonPath] = Right(
+//   value = JsonPath(
+//     locations = NonEmptyList(
+//       head = Child(child = Name(n = &quot;field3&quot;)),
+//       tail = List(Pred(predicate = Wildcard))
+//     )
+//   )
+// )</span></code></pre>
+        <p>The JSONPath parser wraps the result in anything that has an <a href="https://typelevel.org/cats/api/cats/MonadError.html"><code>MonadError</code> with error type <code>Throwable</code></a> to catch potential parsing errors. If you prefer not to have this wrapping, you can use the <code>jsonpath</code> interpolator.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">jsonpath</span><span>.</span><span class="identifier">literals</span><span>.</span><span class="identifier">_</span><span>
 
-<h3 id="jsonpath">JSONPath</h3>
+</span><span class="keyword">val</span><span> </span><span class="identifier">path</span><span> = </span><span class="string-literal">jsonpath&quot;$$.field3[*]&quot;</span><span>
+</span><span class="comment">// path: JsonPath = JsonPath(
+//   locations = NonEmptyList(
+//     head = Child(child = Name(n = &quot;field3&quot;)),
+//     tail = List(Pred(predicate = Wildcard))
+//   )
+// )</span></code></pre>
+        <p>Because <code>$</code> is a special character in interpolated strings, you need to escape it by doubling it.
+        The advantage of the interpolator is that potential syntax errors are checked at compilation time.</p>
+        
+        <h3 id="the-subset" class="section"><a class="anchor-link left" href="#the-subset"><i class="icofont-laika link">&#xef71;</i></a>The subset</h3>
+        <p>The supported JSONPath features are:</p>
+        <ul>
+          <li><code>.*</code> selects all the object children.</li>
+        </ul>
+        <ul>
+          <li><code>..*</code> selects all the object descendants.</li>
+        </ul>
+        <ul>
+          <li><code>.id</code> or <code>[&quot;id&quot;]</code> selects the object child with key <code>id</code>.</li>
+        </ul>
+        <ul>
+          <li><code>..id</code> the recursive descent operator</li>
+        </ul>
+        <ul>
+          <li><code>[idx1:idx2]</code> selects only elements between <code>idx1</code> (inclusive) and <code>idx2</code> (inclusive) in arrays. It fails if the value it is applied to is not an array.</li>
+        </ul>
+        <ul>
+          <li><code>[idx:]</code> selects only elements starting from <code>idx1</code> (inclusive) until the end of the array. It fails if the value it is applied to is not an array.</li>
+        </ul>
+        <ul>
+          <li><code>[:idx]</code> selects only elements starting from the beginning of the array up to <code>idx1</code> (inclusive). It fails if the value it is applied to is not an array.</li>
+        </ul>
+        <ul>
+          <li><code>[*]</code> selects and enumerates elements from arrays. It fails if the value it is applied to is not an array.</li>
+        </ul>
+        
+        <h2 id="using-jsonpath" class="section"><a class="anchor-link left" href="#using-jsonpath"><i class="icofont-laika link">&#xef71;</i></a>Using JSONPath</h2>
+        <p>Using the path defined above, we can filter the stream of tokens, to only emit selected tokens downstream. This can be used to drastically reduce the amount of emitted data, to only the parts that are of interest for you.
+        The filtering pipes are located in the <code>fs2.data.json.jsonpath.filter</code> namespace.</p>
+        <p>Since JSONPath includes a recursive descent operator, there can be nested matches for your path.
+        The <code>filter.raw</code> emits a stream of all matches.
+        Each match is represented as a nested stream of JSON tokens which must be consumed.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">jsonpath</span><span>.</span><span class="identifier">filter</span><span>
 
-<p>A subset of <a href="https://goessner.net/articles/JsonPath/index.html">JSONPath</a> can be used to select a subset of a JSON token stream. There are several ways to create selectors:</p>
-<ul>
-  <li>build the selector using the constructors, which can be quite verbose and cumbersome;</li>
-  <li>parse a string with the JSONPath parser;</li>
-  <li>use the <code>jsonpath</code> interpolator.</li>
-</ul>
+</span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="identifier">unsafe</span><span>.</span><span class="identifier">implicits</span><span>.</span><span class="identifier">global</span><span>
 
-<h4 id="parsing-a-string-using-the-jsonpath-parser">Parsing a string using the JSONPath parser</h4>
+</span><span class="keyword">val</span><span> </span><span class="identifier">filtered</span><span> = </span><span class="identifier">stream</span><span>.</span><span class="identifier">lift</span><span>[</span><span class="type-name">IO</span><span>].</span><span class="identifier">through</span><span>(</span><span class="identifier">filter</span><span>.</span><span class="identifier">raw</span><span>(</span><span class="identifier">path</span><span>)).</span><span class="identifier">parEvalMapUnbounded</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>)
+</span><span class="comment">// filtered: Stream[[x]IO[x], List[Token]] = Stream(..)
+</span><span class="identifier">filtered</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>.</span><span class="identifier">unsafeRunSync</span><span>()
+</span><span class="comment">// res0: List[List[Token]] = List(
+//   List(NumberValue(value = &quot;1&quot;)),
+//   List(NumberValue(value = &quot;2&quot;)),
+//   List(NumberValue(value = &quot;3&quot;))
+// )</span></code></pre>
+        <p>The matching streams are returned in the order their matching element is encountered in the input.
+        This means that for nested matches, the first stream returned is the ancestor element.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">literals</span><span>.</span><span class="identifier">_</span><span>
 
-<p>For instance, to select and enumerate elements that are in the <code>field3</code> array, you can create this selector. Only the tokens describing the values in <code>field3</code> will be emitted as a result.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.jsonpath._</span>
-
-<span class="k">val</span> <span class="nv">selector</span> <span class="k">=</span> <span class="nv">JsonPathParser</span><span class="o">.</span><span class="py">either</span><span class="o">(</span><span class="s">"$.field3[*]"</span><span class="o">)</span>
-<span class="c1">// selector: Either[Throwable, JsonPath] = Right(</span>
-<span class="c1">//   value = JsonPath(</span>
-<span class="c1">//     locations = NonEmptyList(</span>
-<span class="c1">//       head = Child(child = Name(n = "field3")),</span>
-<span class="c1">//       tail = List(Pred(predicate = Wildcard))</span>
-<span class="c1">//     )</span>
-<span class="c1">//   )</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>The JSONPath parser wraps the result in anything that has an <a href="https://typelevel.org/cats/api/cats/MonadError.html"><code>MonadError</code> with error type <code>Throwable</code></a> to catch potential parsing errors. If you prefer not to have this wrapping, you can use the <code>jsonpath</code> interpolator.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.jsonpath.literals._</span>
-
-<span class="k">val</span> <span class="nv">path</span> <span class="k">=</span> <span class="n">jsonpath</span><span class="s">"$$.field3[*]"</span>
-<span class="c1">// path: JsonPath = JsonPath(</span>
-<span class="c1">//   locations = NonEmptyList(</span>
-<span class="c1">//     head = Child(child = Name(n = "field3")),</span>
-<span class="c1">//     tail = List(Pred(predicate = Wildcard))</span>
-<span class="c1">//   )</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>Because <code>$</code> is a special character in interpolated strings, you need to escape it by doubling it.<br />
-The advantage of the interpolator is that potential syntax errors are checked at compilation time.</p>
-
-<p>The supported JSONPath features are:</p>
-<ul>
-  <li><code>.*</code> selects all the object children.</li>
-  <li><code>..*</code> selects all the object descendants.</li>
-  <li><code>.id</code> or <code>["id"]</code> selects the object child with key <code>id</code>.</li>
-  <li><code>..id</code> the recursive descent operator</li>
-  <li><code>[idx1:idx2]</code> selects only elements between <code>idx1</code> (inclusive) and <code>idx2</code> (inclusive) in arrays. It fails if the value it is applied to is not an array.</li>
-  <li><code>[idx:]</code> selects only elements starting from <code>idx1</code> (inclusive) until the end of the array. It fails if the value it is applied to is not an array.</li>
-  <li><code>[:idx]</code> selects only elements starting from the beginning of the array up to <code>idx1</code> (inclusive). It fails if the value it is applied to is not an array.</li>
-  <li><code>[*]</code> selects and enumerates elements from arrays. It fails if the value it is applied to is not an array.</li>
-</ul>
-
-<h4 id="using-jsonpath">Using JSONPath</h4>
-
-<p>Using the path defined above, we can filter the stream of tokens, to only emit selected tokens downstream. This can be used to drastically reduce the amount of emitted data, to only the parts that are of interest for you.<br />
-The filtering pipes are located in the <code>fs2.data.json.jsonpath.filter</code> namespace.</p>
-
-<p>Since JSONPath includes a recursive descent operator, there can be nested matches for your path.<br />
-The <code>filter.raw</code> emits a stream of all matches.<br />
-Each match is represented as a nested stream of JSON tokens which must be consumed.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.jsonpath.filter</span>
-
-<span class="k">import</span> <span class="nn">cats.effect._</span>
-<span class="k">import</span> <span class="nn">cats.effect.unsafe.implicits.global</span>
-
-<span class="k">val</span> <span class="nv">filtered</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">lift</span><span class="o">[</span><span class="kt">IO</span><span class="o">].</span><span class="py">through</span><span class="o">(</span><span class="nv">filter</span><span class="o">.</span><span class="py">raw</span><span class="o">(</span><span class="n">path</span><span class="o">)).</span><span class="py">parEvalMapUnbounded</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">)</span>
-<span class="c1">// filtered: Stream[[x]IO[x], List[Token]] = Stream(..)</span>
-<span class="nv">filtered</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
-<span class="c1">// res0: List[List[Token]] = List(</span>
-<span class="c1">//   List(NumberValue(value = "1")),</span>
-<span class="c1">//   List(NumberValue(value = "2")),</span>
-<span class="c1">//   List(NumberValue(value = "3"))</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>The matching streams are returned in the order their matching element is encountered in the input.<br />
-This means that for nested matches, the first stream returned is the ancestor element.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">fs2.data.json.literals._</span>
-
-<span class="k">val</span> <span class="nv">recursive</span> <span class="k">=</span> <span class="n">jsonpath</span><span class="s">"$$..a"</span>
-<span class="c1">// recursive: JsonPath = JsonPath(</span>
-<span class="c1">//   locations = NonEmptyList(</span>
-<span class="c1">//     head = Descendant(child = Name(n = "a")),</span>
-<span class="c1">//     tail = List()</span>
-<span class="c1">//   )</span>
-<span class="c1">// )</span>
-
-<span class="k">val</span> <span class="nv">json</span> <span class="k">=</span> <span class="n">json</span><span class="s">"""{
-  "a": {
-    "a": {
-      "c": 1
+</span><span class="keyword">val</span><span> </span><span class="identifier">recursive</span><span> = </span><span class="string-literal">jsonpath&quot;$$..a&quot;</span><span>
+</span><span class="comment">// recursive: JsonPath = JsonPath(
+//   locations = NonEmptyList(
+//     head = Descendant(child = Name(n = &quot;a&quot;)),
+//     tail = List()
+//   )
+// )
+</span><span>
+</span><span class="keyword">val</span><span> </span><span class="identifier">json</span><span> = </span><span class="string-literal">json&quot;&quot;&quot;{
+  &quot;a&quot;: {
+    &quot;a&quot;: {
+      &quot;c&quot;: 1
     },
-    "b": 2,
-    "c": 3
+    &quot;b&quot;: 2,
+    &quot;c&quot;: 3
   }
-}"""</span>
-<span class="c1">// json: Stream[Fallible, Token] = Stream(..)</span>
+}&quot;&quot;&quot;</span><span>
+</span><span class="comment">// json: Stream[Fallible, Token] = Stream(..)
+</span><span>
+</span><span class="identifier">json</span><span>
+  .</span><span class="identifier">lift</span><span>[</span><span class="type-name">IO</span><span>]
+  .</span><span class="identifier">through</span><span>(</span><span class="identifier">filter</span><span>.</span><span class="identifier">raw</span><span>(</span><span class="identifier">recursive</span><span>))
+  .</span><span class="identifier">parEvalMapUnbounded</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>)
+  .</span><span class="identifier">compile</span><span>
+  .</span><span class="identifier">toList</span><span>
+  .</span><span class="identifier">unsafeRunSync</span><span>()
+</span><span class="comment">// res1: List[List[Token]] = List(
+//   List(
+//     StartObject,
+//     Key(value = &quot;a&quot;),
+//     StartObject,
+//     Key(value = &quot;c&quot;),
+//     NumberValue(value = &quot;1&quot;),
+//     EndObject,
+//     Key(value = &quot;b&quot;),
+//     NumberValue(value = &quot;2&quot;),
+//     Key(value = &quot;c&quot;),
+//     NumberValue(value = &quot;3&quot;),
+//     EndObject
+//   ),
+//   List(StartObject, Key(value = &quot;c&quot;), NumberValue(value = &quot;1&quot;), EndObject)
+// )</span></code></pre>
+        <p>This is actually a common use case, so the library offers <code>filter.collect</code> to have this behavior for any collector.</p>
+        <pre><code class="nohighlight"><span class="identifier">json</span><span>
+  .</span><span class="identifier">lift</span><span>[</span><span class="type-name">IO</span><span>]
+  .</span><span class="identifier">through</span><span>(</span><span class="identifier">filter</span><span>.</span><span class="identifier">collect</span><span>(</span><span class="identifier">recursive</span><span>, </span><span class="type-name">List</span><span>))
+  .</span><span class="identifier">compile</span><span>
+  .</span><span class="identifier">toList</span><span>
+  .</span><span class="identifier">unsafeRunSync</span><span>()
+</span><span class="comment">// res2: List[List[Token]] = List(
+//   List(
+//     StartObject,
+//     Key(value = &quot;a&quot;),
+//     StartObject,
+//     Key(value = &quot;c&quot;),
+//     NumberValue(value = &quot;1&quot;),
+//     EndObject,
+//     Key(value = &quot;b&quot;),
+//     NumberValue(value = &quot;2&quot;),
+//     Key(value = &quot;c&quot;),
+//     NumberValue(value = &quot;3&quot;),
+//     EndObject
+//   ),
+//   List(StartObject, Key(value = &quot;c&quot;), NumberValue(value = &quot;1&quot;), EndObject)
+// )</span></code></pre>
+        <p>If you want to have results emitted as early as possible instead of in order, you can set the <code>deterministic</code> parameter to <code>false</code>.</p>
+        <pre><code class="nohighlight"><span class="identifier">json</span><span>
+  .</span><span class="identifier">lift</span><span>[</span><span class="type-name">IO</span><span>]
+  .</span><span class="identifier">through</span><span>(</span><span class="identifier">filter</span><span>.</span><span class="identifier">collect</span><span>(</span><span class="identifier">recursive</span><span>, </span><span class="type-name">List</span><span>, </span><span class="identifier">deterministic</span><span> = </span><span class="boolean-literal">false</span><span>))
+  .</span><span class="identifier">compile</span><span>
+  .</span><span class="identifier">toList</span><span>
+  .</span><span class="identifier">unsafeRunSync</span><span>()
+</span><span class="comment">// res3: List[List[Token]] = List(
+//   List(
+//     StartObject,
+//     Key(value = &quot;a&quot;),
+//     StartObject,
+//     Key(value = &quot;c&quot;),
+//     NumberValue(value = &quot;1&quot;),
+//     EndObject,
+//     Key(value = &quot;b&quot;),
+//     NumberValue(value = &quot;2&quot;),
+//     Key(value = &quot;c&quot;),
+//     NumberValue(value = &quot;3&quot;),
+//     EndObject
+//   ),
+//   List(StartObject, Key(value = &quot;c&quot;), NumberValue(value = &quot;1&quot;), EndObject)
+// )</span></code></pre>
 
-<span class="n">json</span>
-  <span class="o">.</span><span class="py">lift</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
-  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">filter</span><span class="o">.</span><span class="py">raw</span><span class="o">(</span><span class="n">recursive</span><span class="o">))</span>
-  <span class="o">.</span><span class="py">parEvalMapUnbounded</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">compile</span><span class="o">.</span><span class="py">toList</span><span class="o">)</span>
-  <span class="o">.</span><span class="py">compile</span>
-  <span class="o">.</span><span class="py">toList</span>
-  <span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
-<span class="c1">// res1: List[List[Token]] = List(</span>
-<span class="c1">//   List(</span>
-<span class="c1">//     StartObject,</span>
-<span class="c1">//     Key(value = "a"),</span>
-<span class="c1">//     StartObject,</span>
-<span class="c1">//     Key(value = "c"),</span>
-<span class="c1">//     NumberValue(value = "1"),</span>
-<span class="c1">//     EndObject,</span>
-<span class="c1">//     Key(value = "b"),</span>
-<span class="c1">//     NumberValue(value = "2"),</span>
-<span class="c1">//     Key(value = "c"),</span>
-<span class="c1">//     NumberValue(value = "3"),</span>
-<span class="c1">//     EndObject</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   List(StartObject, Key(value = "c"), NumberValue(value = "1"), EndObject)</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>This is actually a common use case, so the library offers <code>filter.collect</code> to have this behavior for any collector.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">json</span>
-  <span class="o">.</span><span class="py">lift</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
-  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">filter</span><span class="o">.</span><span class="py">collect</span><span class="o">(</span><span class="n">recursive</span><span class="o">,</span> <span class="nc">List</span><span class="o">))</span>
-  <span class="o">.</span><span class="py">compile</span>
-  <span class="o">.</span><span class="py">toList</span>
-  <span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
-<span class="c1">// res2: List[List[Token]] = List(</span>
-<span class="c1">//   List(</span>
-<span class="c1">//     StartObject,</span>
-<span class="c1">//     Key(value = "a"),</span>
-<span class="c1">//     StartObject,</span>
-<span class="c1">//     Key(value = "c"),</span>
-<span class="c1">//     NumberValue(value = "1"),</span>
-<span class="c1">//     EndObject,</span>
-<span class="c1">//     Key(value = "b"),</span>
-<span class="c1">//     NumberValue(value = "2"),</span>
-<span class="c1">//     Key(value = "c"),</span>
-<span class="c1">//     NumberValue(value = "3"),</span>
-<span class="c1">//     EndObject</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   List(StartObject, Key(value = "c"), NumberValue(value = "1"), EndObject)</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
-
-<p>If you want to have results emitted as early as possible instead of in order, you can set the <code>deterministic</code> parameter to <code>false</code>.</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">json</span>
-  <span class="o">.</span><span class="py">lift</span><span class="o">[</span><span class="kt">IO</span><span class="o">]</span>
-  <span class="o">.</span><span class="py">through</span><span class="o">(</span><span class="nv">filter</span><span class="o">.</span><span class="py">collect</span><span class="o">(</span><span class="n">recursive</span><span class="o">,</span> <span class="nc">List</span><span class="o">,</span> <span class="n">deterministic</span> <span class="k">=</span> <span class="kc">false</span><span class="o">))</span>
-  <span class="o">.</span><span class="py">compile</span>
-  <span class="o">.</span><span class="py">toList</span>
-  <span class="o">.</span><span class="py">unsafeRunSync</span><span class="o">()</span>
-<span class="c1">// res3: List[List[Token]] = List(</span>
-<span class="c1">//   List(</span>
-<span class="c1">//     StartObject,</span>
-<span class="c1">//     Key(value = "a"),</span>
-<span class="c1">//     StartObject,</span>
-<span class="c1">//     Key(value = "c"),</span>
-<span class="c1">//     NumberValue(value = "1"),</span>
-<span class="c1">//     EndObject,</span>
-<span class="c1">//     Key(value = "b"),</span>
-<span class="c1">//     NumberValue(value = "2"),</span>
-<span class="c1">//     Key(value = "c"),</span>
-<span class="c1">//     NumberValue(value = "3"),</span>
-<span class="c1">//     EndObject</span>
-<span class="c1">//   ),</span>
-<span class="c1">//   List(StartObject, Key(value = "c"), NumberValue(value = "1"), EndObject)</span>
-<span class="c1">// )</span>
-</code></pre></div></div>
+        
+<hr class="footer-rule"/>
+<footer>
+  <code>fs2-data</code> is a <a href="https://typelevel.org/">Typelevel</a> affiliate project distributed under the <a href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache-2.0</a> license.
+</footer>
 
 
-      </div>
-    </main>
+      </main>
 
-    <footer class="page-footer red lighten-2">
-      <div class="footer-copyright red darken-2">
-        <div class="container">
-          Copyright © 2019-2023 <a class="grey-text text-lighten-4" href="https://fosstodon.org/@lucassatabin">@lucassatabin</a>
-          <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" class="grey-text text-lighten-4 right" /></a>
-          <br />
-          <a href="https://typelevel.org/projects/"><img alt="Typelevel Affiliate Project" style="border-width:0" src="https://img.shields.io/badge/typelevel-affiliate%20project-FFB4B5.svg" /></a>
-          <a href="https://discord.gg/7qNAFsYkTn"><img alt="Discord" style="border-width:0" src="https://img.shields.io/discord/632277896739946517.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2" /></a>
-        </div>
-      </div>
-    </footer>
+    </div>
 
-    <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function() {
-      var elems = document.querySelectorAll('.sidenav');
-      var instances = M.Sidenav.init(elems, {});
-    });
-    document.addEventListener('DOMContentLoaded', function() {
-      var elems = document.querySelectorAll('.tooltipped');
-      var instances = M.Tooltip.init(elems, {});
-    });
-
-    stork.initialize("/js/stork.wasm")
-    stork.register("search", "/index.st", { showCloseButton: false })
-    </script>
+  </body>
 
 </html>

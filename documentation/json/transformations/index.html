@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+  <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="Typelevel Laika + Helium Theme" />
+  <title>Transformations</title>
+  
+  <meta name="author" content="Lucas Satabin"/>
+  
+  <meta name="author" content="Yannick Heiber"/>
+  
+  
+  <meta name="description" content="site"/>
+  
+  
+  
+  <link rel="icon" sizes="32x32" type="image/png" href="https://typelevel.org/img/favicon.png"/>
+  
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700">
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono:500">
+  
+  <link rel="stylesheet" type="text/css" href="/pagefind/pagefind-ui.css" />
+    <link rel="stylesheet" type="text/css" href="../../../helium/site/icofont.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../../helium/site/laika-helium.css" />
+  <script src="/pagefind/pagefind-ui.js"></script>
+    <script src="../../../helium/site/laika-helium.js"></script>
+  
+  
+  <script> /* for avoiding page load transitions */ </script>
+</head>
+
+  <body>
+
+    <header id="top-bar" class="light-default dark-default">
+
+  <div class="row">
+    <a id="nav-icon">
+      <i class="icofont-laika navigationMenu" title="Navigation">&#xefa2;</i>
+    </a>
+    
+    
+  </div>
+
+  <a class="image-link" href="../../../"><img src="../../../media/logo-header.svg"></a>
+
+  <div class="row links">
+    
+    <a class="icon-link svg-link" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/index.html"><span class="api" title="API"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M75,47.5c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm-50,-0c13.246,-0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,-0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm2.705,16.735l7.239,0l0.622,-4.904l-21.833,0l-0,4.904l7.589,0l0,22.067l6.383,0l-0,-22.067Zm58.076,7.265c-0,-8.757 -3.698,-14.166 -10.781,-14.166c-7.083,-0 -10.781,5.604 -10.781,14.166c0,8.757 3.698,14.166 10.781,14.166c7.083,0 10.781,-5.604 10.781,-14.166Zm-6.539,0c0,6.538 -1.128,9.496 -4.242,9.496c-2.997,0 -4.242,-2.88 -4.242,-9.496c-0,-6.616 1.206,-9.496 4.242,-9.496c3.036,-0 4.242,2.88 4.242,9.496Zm-29.242,-67c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm0.512,9.834c-7.122,-0 -12.609,5.098 -12.609,14.127c-0,9.263 5.215,14.205 12.532,14.205c4.164,0 7.083,-1.634 9.068,-3.658l-2.88,-3.697c-1.518,1.206 -3.153,2.413 -5.838,2.413c-3.697,-0 -6.266,-2.763 -6.266,-9.263c-0,-6.616 2.724,-9.379 6.149,-9.379c2.102,-0 3.892,0.778 5.371,1.984l3.113,-3.775c-2.257,-1.868 -4.748,-2.957 -8.64,-2.957Z"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link svg-link" href="https://github.com/gnieh/fs2-data"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link glyph-link" href="https://discord.gg/XF3CXcMzqD"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
+    
+    <a class="icon-link svg-link" href="https://fosstodon.org/@lucassatabin"><span class="mastodon" title="Mastodon"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <g class="svg-shape">
+    <path d="M11.19 12.195c2.016-.24 3.77-1.475 3.99-2.603.348-1.778.32-4.339.32-4.339 0-3.47-2.286-4.488-2.286-4.488C12.062.238 10.083.017 8.027 0h-.05C5.92.017 3.942.238 2.79.765c0 0-2.285 1.017-2.285 4.488l-.002.662c-.004.64-.007 1.35.011 2.091.083 3.394.626 6.74 3.78 7.57 1.454.383 2.703.463 3.709.408 1.823-.1 2.847-.647 2.847-.647l-.06-1.317s-1.303.41-2.767.36c-1.45-.05-2.98-.156-3.215-1.928a3.614 3.614 0 0 1-.033-.496s1.424.346 3.228.428c1.103.05 2.137-.064 3.188-.189zm1.613-2.47H11.13v-4.08c0-.859-.364-1.295-1.091-1.295-.804 0-1.207.517-1.207 1.541v2.233H7.168V5.89c0-1.024-.403-1.541-1.207-1.541-.727 0-1.091.436-1.091 1.296v4.079H3.197V5.522c0-.859.22-1.541.66-2.046.456-.505 1.052-.764 1.793-.764.856 0 1.504.328 1.933.983L8 4.39l.417-.695c.429-.655 1.077-.983 1.934-.983.74 0 1.336.259 1.791.764.442.505.661 1.187.661 2.046v4.203z"/>
+  </g>
+</svg></span></a>
+    
+  </div>  
+
+</header>
+    
+    <nav id="sidebar">
+
+  <div class="row">
+    
+    <a class="icon-link svg-link" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/index.html"><span class="api" title="API"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M75,47.5c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm-50,-0c13.246,-0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,-0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm2.705,16.735l7.239,0l0.622,-4.904l-21.833,0l-0,4.904l7.589,0l0,22.067l6.383,0l-0,-22.067Zm58.076,7.265c-0,-8.757 -3.698,-14.166 -10.781,-14.166c-7.083,-0 -10.781,5.604 -10.781,14.166c0,8.757 3.698,14.166 10.781,14.166c7.083,0 10.781,-5.604 10.781,-14.166Zm-6.539,0c0,6.538 -1.128,9.496 -4.242,9.496c-2.997,0 -4.242,-2.88 -4.242,-9.496c-0,-6.616 1.206,-9.496 4.242,-9.496c3.036,-0 4.242,2.88 4.242,9.496Zm-29.242,-67c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm0.512,9.834c-7.122,-0 -12.609,5.098 -12.609,14.127c-0,9.263 5.215,14.205 12.532,14.205c4.164,0 7.083,-1.634 9.068,-3.658l-2.88,-3.697c-1.518,1.206 -3.153,2.413 -5.838,2.413c-3.697,-0 -6.266,-2.763 -6.266,-9.263c-0,-6.616 2.724,-9.379 6.149,-9.379c2.102,-0 3.892,0.778 5.371,1.984l3.113,-3.775c-2.257,-1.868 -4.748,-2.957 -8.64,-2.957Z"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link svg-link" href="https://github.com/gnieh/fs2-data"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link glyph-link" href="https://discord.gg/XF3CXcMzqD"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
+    
+    <a class="icon-link svg-link" href="https://fosstodon.org/@lucassatabin"><span class="mastodon" title="Mastodon"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <g class="svg-shape">
+    <path d="M11.19 12.195c2.016-.24 3.77-1.475 3.99-2.603.348-1.778.32-4.339.32-4.339 0-3.47-2.286-4.488-2.286-4.488C12.062.238 10.083.017 8.027 0h-.05C5.92.017 3.942.238 2.79.765c0 0-2.285 1.017-2.285 4.488l-.002.662c-.004.64-.007 1.35.011 2.091.083 3.394.626 6.74 3.78 7.57 1.454.383 2.703.463 3.709.408 1.823-.1 2.847-.647 2.847-.647l-.06-1.317s-1.303.41-2.767.36c-1.45-.05-2.98-.156-3.215-1.928a3.614 3.614 0 0 1-.033-.496s1.424.346 3.228.428c1.103.05 2.137-.064 3.188-.189zm1.613-2.47H11.13v-4.08c0-.859-.364-1.295-1.091-1.295-.804 0-1.207.517-1.207 1.541v2.233H7.168V5.89c0-1.024-.403-1.541-1.207-1.541-.727 0-1.091.436-1.091 1.296v4.079H3.197V5.522c0-.859.22-1.541.66-2.046.456-.505 1.052-.764 1.793-.764.856 0 1.504.328 1.933.983L8 4.39l.417-.695c.429-.655 1.077-.983 1.934-.983.74 0 1.336.259 1.791.764.442.505.661 1.187.661 2.046v4.203z"/>
+  </g>
+</svg></span></a>
+    
+  </div>
+
+  <ul class="nav-list">
+    <li class="level1 nav-leaf"><a href="../../../">Home</a></li>
+    <li class="level1 nav-header">documentation</li>
+    <li class="level2 nav-leaf"><a href="../../">Introduction</a></li>
+    <li class="level2 nav-header">csv</li>
+    <li class="level3 nav-leaf"><a href="../../csv/">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../../csv/generic/">Generic</a></li>
+    <li class="level2 nav-header">json</li>
+    <li class="level3 nav-leaf"><a href="../">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../jsonpath/">JSONPath</a></li>
+    <li class="level3 nav-leaf"><a href="../jq/">JSON Queries</a></li>
+    <li class="level3 nav-leaf"><a href="../libraries/">JSON Libraries</a></li>
+    <li class="level3 nav-leaf"><a href="../jsonpatch/">JSON Patch</a></li>
+    <li class="level3 active nav-leaf"><a href="#">Transformations</a></li>
+    <li class="level2 nav-header">xml</li>
+    <li class="level3 nav-leaf"><a href="../../xml/">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../../xml/xpath/">XPath</a></li>
+    <li class="level3 nav-leaf"><a href="../../xml/libraries/">XML Libraries</a></li>
+    <li class="level2 nav-header">cbor</li>
+    <li class="level3 nav-leaf"><a href="../../cbor/">Introduction</a></li>
+    <li class="level2 nav-header">cbor-json</li>
+    <li class="level3 nav-leaf"><a href="../../cbor-json/">Introduction</a></li>
+    <li class="level1 nav-header">cookbooks</li>
+    <li class="level2 nav-leaf"><a href="../../../cookbooks/jq/">Reading/transforming/writing JSON data</a></li>
+  </ul>
+
+  <ul class="nav-list">
+    <li><div id="search"></div></li>
+  </ul>
+
+</nav>
+
+<script>
+window.addEventListener('DOMContentLoaded', (event) => {
+  new PagefindUI({ element: "#search", showSubResults: true, showImages: false });
+});
+</script>
+
+
+    <div id="container">
+
+      
+<nav id="page-nav">
+  <p class="header"><a href="#">Transformations</a></p>
+
+  <ul class="nav-list">
+    <li class="level1 nav-node"><a href="#selectors">Selectors</a></li>
+    <li class="level2 nav-leaf"><a href="#parsing-a-string-using-the-selector-syntax">Parsing a string using the selector syntax</a></li>
+    <li class="level2 nav-leaf"><a href="#using-the-selector-dsl">Using the selector DSL</a></li>
+    <li class="level2 nav-leaf"><a href="#parsing-a-string-using-the-selector-interpolator">Parsing a string using the selector interpolator</a></li>
+    <li class="level1 nav-leaf"><a href="#using-the-selectors">Using the selectors</a></li>
+  </ul>
+
+  <p class="footer"></p>
+</nav>
+
+
+      <main class="content">
+
+        <h1 id="transformations" class="title">Transformations</h1>
+        <p>Sometimes <a href="../jsonpath/">JSONPath</a> and <a href="../jq/">JSON queries</a> are not sufficient for your use case. In these cases, you can use the transformation pipes provided by the <a class="api" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/fs2/data/json/ast/transform/index.html">fs2.data.json.ast.transform</a> package.</p>
+        
+        <h2 id="selectors" class="section"><a class="anchor-link left" href="#selectors"><i class="icofont-laika link">&#xef71;</i></a>Selectors</h2>
+        <p>Selectors can be used to select a subset of a JSON token stream. There are several ways to create selectors:</p>
+        <ul>
+          <li>build the selector using the constructors, which can be quite verbose and cumbersome;</li>
+        </ul>
+        <ul>
+          <li>parse a string with the selector syntax;</li>
+        </ul>
+        <ul>
+          <li>use the selector DSL.</li>
+        </ul>
+        
+        <h3 id="parsing-a-string-using-the-selector-syntax" class="section"><a class="anchor-link left" href="#parsing-a-string-using-the-selector-syntax"><i class="icofont-laika link">&#xef71;</i></a>Parsing a string using the selector syntax</h3>
+        <p>For instance, to select and enumerate elements that are in the <code>field3</code> array, you can create this selector. Only the tokens describing the values in <code>field3</code> will be emitted as a result.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">type</span><span> </span><span class="type-name">ThrowableEither</span><span>[</span><span class="type-name">T</span><span>] = </span><span class="type-name">Either</span><span>[</span><span class="type-name">Throwable</span><span>, </span><span class="type-name">T</span><span>]
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">selector</span><span> = </span><span class="string-literal">&quot;.field3.[]&quot;</span><span>.</span><span class="identifier">parseSelector</span><span>[</span><span class="type-name">ThrowableEither</span><span>].</span><span class="identifier">toTry</span><span>.</span><span class="identifier">get</span><span>
+</span><span class="comment">// selector: Selector = PipeSelector(
+//   left = NameSelector(
+//     pred = Single(name = &quot;field3&quot;),
+//     strict = true,
+//     mandatory = false
+//   ),
+//   right = IteratorSelector(strict = true)
+// )</span></code></pre>
+        <p>The <code>parseSelector</code> method implicitly comes from the <code>import fs2.data.json._</code> and wraps the result in anything that has an <a href="https://typelevel.org/cats/api/cats/MonadError.html"><code>MonadError</code> with error type <code>Throwable</code></a> to catch potential parsing errors. If you prefer not to have this wrapping and don&#39;t mind an extra dependency, you can have a look at <a href="#parsing-a-string-using-the-selector-interpolator">the interpolator</a>.</p>
+        <p>The filter syntax is as follows:</p>
+        <ul>
+          <li><code>.</code> selects the root values, it is basically the identity filter.</li>
+        </ul>
+        <ul>
+          <li>
+            <code>.f</code> selects the field named <code>f</code> in objects. It fails if the value it is applied to is not a JSON object.
+            <ul>
+              <li><code>f</code> must be a valid Java identifier, meaning it has to respect this regular expression: <code>[a-zA-Z_][a-zA-Z0-9_]*</code>. If you wish to select a field that doesn&#39;t respect this regular expression, you can use the syntax <code>.[&quot;my non-identifier field&quot;]</code> described below.</li>
+              <li>name <code>f</code> can be immediately followed by a <code>!</code> to mark it as mandatory. Stream will fail if the end of the object the selector is applied to is reached and the field was not present in the object.</li>
+            </ul>
+          </li>
+        </ul>
+        <ul>
+          <li>
+            <code>.f?</code> is similar to <code>.f</code> but doesn&#39;t fail in case the value it is applied to is not a JSON object.
+            <ul>
+              <li>both <code>!</code> and <code>?</code> can be combined as <code>.f!?</code> to indicate that if the value it is applied to is a JSON object, then the field must be in it.</li>
+            </ul>
+          </li>
+        </ul>
+        <ul>
+          <li>
+            <code>.[&quot;f1&quot;, &quot;f2&quot;, ..., &quot;fn&quot;]</code> selects only fields <code>f1</code> to <code>fn</code> in objects. It fails if the value it is applied to is not an object.
+            <ul>
+              <li>the field list can be immediately followed by a <code>!</code> to mark all fields as mandatory. Stream will fail if the end of the object the selector is applied to is reached and at least one field in the list was not present in the object.</li>
+            </ul>
+          </li>
+        </ul>
+        <ul>
+          <li>
+            <code>.[&quot;f1&quot;, &quot;f2&quot;, ..., &quot;fn&quot;]?</code> is similar to <code>.[&quot;f1&quot;, &quot;f2&quot;, ..., &quot;fn&quot;]</code> but doesn&#39;t fail if the value it is applied to is not an object.
+            <ul>
+              <li>both <code>!</code> and <code>?</code> can be combined as <code>.[&quot;f1&quot;, &quot;f2&quot;, ..., &quot;fn&quot;]!?</code> to indicate that if the value it is applied to is a JSON object, then all the specified fields must be in it.</li>
+            </ul>
+          </li>
+        </ul>
+        <ul>
+          <li><code>.[id1, idx2, ..., idxn]</code> selects only elements <code>idx1</code>, ..., <code>idxn</code> in arrays. It fails if the value it is applied to is not an array.</li>
+        </ul>
+        <ul>
+          <li><code>.[idx1, idx2, ..., idxn]?</code> is similar to <code>.[idx1, idx2, ..., idxn]</code> but doesn&#39;t fail if the value it is applied to is not an array.</li>
+        </ul>
+        <ul>
+          <li><code>.[idx1:idx2]</code> selects only elements between <code>idx1</code> (inclusive) and <code>idx2</code> (exclusive) in arrays. It fails if the value it is applied to is not an array.</li>
+        </ul>
+        <ul>
+          <li><code>.[idx1:idx2]?</code> is similar to <code>.[idx1:idx2]</code> but doesn&#39;t fail if the value it is applied to is not an array.</li>
+        </ul>
+        <ul>
+          <li><code>.[]</code> selects and enumerates elements from arrays or objects. It fails if the value it is applied to is not an array or an object.</li>
+        </ul>
+        <ul>
+          <li><code>.[]?</code> is similar as <code>.[]</code> but doesn&#39;t fail if the value it is applied to is neither an array nor an object.</li>
+        </ul>
+        <ul>
+          <li><code>sel1 sel2</code> applies selector <code>sel1</code> to the root value, and selector <code>sel2</code> to each selected value.</li>
+        </ul>
+        
+        <h3 id="using-the-selector-dsl" class="section"><a class="anchor-link left" href="#using-the-selector-dsl"><i class="icofont-laika link">&#xef71;</i></a>Using the selector DSL</h3>
+        <p>The selector DSL is a nice way to describe selectors without using any string parsing. They also allow for programmatically building selectors.
+        The DSL resides within the <code>fs2.data.json.selector</code> package, and you start a selector using the <code>root</code> builder.
+        The selector above can be written like this with the DSL:</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">selector</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">selectorFromDsl</span><span> = </span><span class="identifier">root</span><span>.</span><span class="identifier">field</span><span>(</span><span class="string-literal">&quot;field3&quot;</span><span>).</span><span class="identifier">iterate</span><span>.</span><span class="identifier">compile</span><span>
+</span><span class="comment">// selectorFromDsl: Selector = PipeSelector(
+//   left = NameSelector(
+//     pred = Single(name = &quot;field3&quot;),
+//     strict = true,
+//     mandatory = false
+//   ),
+//   right = IteratorSelector(strict = true)
+// )</span></code></pre>
+        <p>The <code>.compile</code> in the end transforms the previous selector builder from the DSL into the final selector. Builders are safe to reuse, re-compose and compile several times.</p>
+        <p>You can express the same selectors as with the syntax described above. For instance to make the field mandatory and the iteration lenient you can do:</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">val</span><span> </span><span class="identifier">selectorFromDsl</span><span> = </span><span class="identifier">root</span><span>.</span><span class="identifier">field</span><span>(</span><span class="string-literal">&quot;field3&quot;</span><span>).!.</span><span class="identifier">iterate</span><span>.?.</span><span class="identifier">compile</span><span>
+</span><span class="comment">// selectorFromDsl: Selector = PipeSelector(
+//   left = NameSelector(
+//     pred = Single(name = &quot;field3&quot;),
+//     strict = true,
+//     mandatory = true
+//   ),
+//   right = IteratorSelector(strict = false)
+// )</span></code></pre>
+        <p>The DSL is typesafe, so that you cannot write invalid selectors. Any attempt to do so results in a compilation error.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="comment">// array index selection cannot be made mandatory
+</span><span class="identifier">root</span><span>.</span><span class="identifier">index</span><span>(</span><span class="number-literal">1</span><span>).!
+</span><span class="comment">// error: Only not yet mandatory field selectors can be made mandatory
+// root.index(1).!
+// ^^^^^^^^^^^^^^^</span></code></pre>
+        
+        <h3 id="parsing-a-string-using-the-selector-interpolator" class="section"><a class="anchor-link left" href="#parsing-a-string-using-the-selector-interpolator"><i class="icofont-laika link">&#xef71;</i></a>Parsing a string using the selector interpolator</h3>
+        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-json-interpolators_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-json-interpolators_2.13.svg" alt="Maven Central"></a></p>
+        <p>The <code>fs2-data-json-interpolators</code> module provides users with some useful string interpolators. The interpolators are based on <a href="https://github.com/typelevel/literally">literally</a> and are statically checked.</p>
+        <p>You can use the <code>selector</code> interpolator to parse a literal string.</p>
+        <p>The example above can be rewritten as:</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">interpolators</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">selector</span><span> = </span><span class="string-literal">selector&quot;.field3.[]&quot;</span><span>
+</span><span class="comment">// selector: Selector = PipeSelector(
+//   left = NameSelector(
+//     pred = Single(name = &quot;field3&quot;),
+//     strict = true,
+//     mandatory = false
+//   ),
+//   right = IteratorSelector(strict = true)
+// )</span></code></pre>
+        
+        <h2 id="using-the-selectors" class="section"><a class="anchor-link left" href="#using-the-selectors"><i class="icofont-laika link">&#xef71;</i></a>Using the selectors</h2>
+        <p>All the pipes in this package are based on a selector, a <a class="api" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/fs2/data/json/ast/Builder.html">Builder</a>, and a <a class="api" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/fs2/data/json/ast/Tokenizer.html">Tokenizer</a>.</p>
+        <p>If you provide an implicit <a class="api" href="https://s01.oss.sonatype.org/service/local/repositories/releases/archive/org/gnieh/fs2-data-docs_2.13/1.9.0/fs2-data-docs_2.13-1.9.0-javadoc.jar/!/fs2/data/json/ast/Tokenizer.html">Tokenizer</a>, which describes how a JSON AST is transformed into JSON tokens, you can apply transformations to the JSON stream. For instance, you can apply a function <code>fun</code> to all values in the <code>fields3</code> array by using this code:</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">ast</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">trait</span><span> </span><span class="type-name">SomeJsonType</span><span>
+
+</span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">builder</span><span>: </span><span class="type-name">Builder</span><span>[</span><span class="type-name">SomeJsonType</span><span>] = ???
+</span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">tokenizer</span><span>: </span><span class="type-name">Tokenizer</span><span>[</span><span class="type-name">SomeJsonType</span><span>] = ???
+
+</span><span class="keyword">def</span><span> </span><span class="declaration-name">fun</span><span>(</span><span class="identifier">json</span><span>: </span><span class="type-name">SomeJsonType</span><span>): </span><span class="type-name">SomeJsonType</span><span> = ???
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">stream</span><span>: </span><span class="type-name">Stream</span><span>[</span><span class="type-name">Fallible</span><span>, </span><span class="type-name">Token</span><span>] = ???
+
+</span><span class="identifier">stream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">transform</span><span>[</span><span class="type-name">Fallible</span><span>, </span><span class="type-name">SomeJsonType</span><span>](</span><span class="identifier">selector</span><span>, </span><span class="identifier">fun</span><span>))</span></code></pre>
+        <p>For concrete examples of provided <code>Builder</code>s and <code>Tokenizer</code>s, please refer to <a href="../libraries/">the JSON library binding modules documentation</a>.</p>
+        <p>Sometimes you would like to delete some Json values from the input stream, based o some predicate at a given path, and keep the rest untouched. In this case, you can use the <code>transformOpt</code> pipe, and return <code>None</code> for values you want to remove from the stream.</p>
+
+        
+<hr class="footer-rule"/>
+<footer>
+  <code>fs2-data</code> is a <a href="https://typelevel.org/">Typelevel</a> affiliate project distributed under the <a href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache-2.0</a> license.
+</footer>
+
+
+      </main>
+
+    </div>
+
+  </body>
+
+</html>
