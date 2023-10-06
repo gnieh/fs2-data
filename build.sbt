@@ -524,18 +524,18 @@ val mastodonLink: IconLink =
   IconLink.external("https://fosstodon.org/@lucassatabin", HeliumIcon.mastodon)
 
 val sonatypeApiUrl = setting {
-    CrossVersion(
-      crossVersion.value,
-      scalaVersion.value,
-      scalaBinaryVersion.value
-    ).map { cross =>
-      val host = sonatypeCredentialHost.value
-      val repo = if (isSnapshot.value) "snapshots" else "releases"
-      val org = organization.value.replace('.', '/')
-      val mod = cross("fs2-data-docs")
-      val ver = version.value
-      url(s"https://$host/service/local/repositories/$repo/archive/$org/$mod/$ver/$mod-$ver-javadoc.jar/!/index.html")
-    }
+  CrossVersion(
+    crossVersion.value,
+    scalaVersion.value,
+    scalaBinaryVersion.value
+  ).map { cross =>
+    val host = sonatypeCredentialHost.value
+    val repo = if (isSnapshot.value) "snapshots" else "releases"
+    val org = organization.value.replace('.', '/')
+    val mod = cross("fs2-data-docs")
+    val ver = version.value
+    url(s"https://$host/service/local/repositories/$repo/archive/$org/$mod/$ver/$mod-$ver-javadoc.jar/!/index.html")
+  }
 }
 
 lazy val site = project
