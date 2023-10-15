@@ -83,10 +83,7 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
       // input is copied in the first argument
       q0(any) -> qinit(x0, qcopy(x0))
 
-      def translatePath(path: Path,
-                        default: Rhs[OutTag],
-                        start: builder.StateBuilder,
-                        end: builder.StateBuilder): Unit = {
+      def translatePath(path: Path, start: builder.StateBuilder, end: builder.StateBuilder): Unit = {
         val regular = path2regular(path)
         val dfa = regular.deriveDFA
         // resolve transitions into patterns and guards
@@ -118,7 +115,6 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
             val states2 =
               transitions.foldLeft(states1) { case (states, (pattern, guard, tgt)) =>
                 val finalTgt = dfa.finals.contains(tgt)
-                val trapTgt = dfa.trap.contains(tgt)
                 val (q2, states1) =
                   states.get(tgt) match {
                     case Some(q2) => (q2, states)
@@ -127,16 +123,14 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
                       (q2, states.updated(tgt, q2))
                   }
                 val pat: builder.Guardable = tagOf(pattern).fold(anyNode)(aNode(_))
-                if (trapTgt) {
-                  q1(pat.when(guard)) -> (if (default == eps) q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*) else default)
-                } else if (!finalTgt) {
-                  q1(pat.when(guard)) -> q2(x1, copyArgs: _*) ~ (if (default == eps) q1(x2, copyArgs: _*) else eps)
+                if (!finalTgt) {
+                  q1(pat.when(guard)) -> q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
                 } else if (emitSelected) {
                   q1(pat.when(guard)) -> end(x1, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*) ~
-                    (if (default == eps) q1(x2, copyArgs: _*) else eps)
+                    q1(x2, copyArgs: _*)
                 } else {
                   q1(pat.when(guard)) -> end(x1, (copyArgs :+ qcopy(x1)): _*) ~ q2(x1, copyArgs: _*) ~
-                    (if (default == eps) q1(x2, copyArgs: _*) else eps)
+                    q1(x2, copyArgs: _*)
                 }
                 states1
               }
@@ -155,7 +149,7 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
             val q1 = state(args = q.nargs + 1)
 
             // compile the variable binding path
-            translatePath(source, eps, q, q1)
+            translatePath(source, q, q1)
 
             // then the body with the bound variable
             translate(result, variable :: vars, q1)
@@ -173,14 +167,27 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
             val copyArgs = List.tabulate(q.nargs)(y(_))
             q(any) -> q1(x0, (copyArgs :+ qv(x0, copyArgs: _*)): _*)
 
-          case Query.Ordpath(path, default) =>
+          case Query.Ordpath(path, None) =>
             val q1 = state(args = q.nargs + 1)
 
             // compile the path
-            translatePath(path, default.map(leaf(_)).getOrElse(eps), q, q1)
+            translatePath(path, q, q1)
 
             // emit the result
             q1(any) -> y(q.nargs)
+
+          case Query.Ordpath(path, Some(dflt)) =>
+            val q0 = state(args = q.nargs)
+            val q1 = state(args = q.nargs + 1)
+
+            // compile the path
+            translatePath(path, q0, q1)
+
+            // emit the result
+            val copyArgs = List.tabulate(q.nargs)(y(_))
+            q(any) -> default(dflt) ~ q0(Forest.Self, copyArgs: _*)
+            q1(any) -> y(q.nargs)
+
           case Query.Node(tag, child) =>
             val q1 = state(args = q.nargs)
 

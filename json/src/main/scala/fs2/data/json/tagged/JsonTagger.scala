@@ -19,9 +19,10 @@ package data
 package json
 package tagged
 
-import scala.collection.mutable.ListBuffer
 import cats.Show
 import cats.syntax.all._
+
+import scala.collection.mutable.ListBuffer
 
 private[json] sealed trait TaggedJson
 private[json] object TaggedJson {

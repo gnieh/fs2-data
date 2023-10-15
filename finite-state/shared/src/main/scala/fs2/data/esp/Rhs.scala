@@ -40,6 +40,9 @@ object Rhs {
   /** Empty RHS. */
   case object Epsilon extends Rhs[Nothing]
 
+  /** Default RHS. Value is used only if the result would be epsilon */
+  case class Default[T](v: T) extends Rhs[T]
+
   /** Builds a tree. */
   case class Tree[OutTag](tag: OutTag, inner: Rhs[OutTag]) extends Rhs[OutTag]
 
@@ -73,6 +76,7 @@ object Rhs {
     case ApplyToLeaf(_)      => "$f(%)"
     case Concat(fst, snd)    => show"$fst $snd"
     case Epsilon             => ""
+    case Default(v)          => show"($v)?"
   }
 
 }

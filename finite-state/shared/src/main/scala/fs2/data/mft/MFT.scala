@@ -58,6 +58,7 @@ sealed trait Rhs[+OutTag] {
 object Rhs {
   case class Call[OutTag](q: Int, x: Forest, parameters: List[Rhs[OutTag]]) extends Rhs[OutTag]
   case object Epsilon extends Rhs[Nothing]
+  case class Default[OutTag](v: OutTag) extends Rhs[OutTag]
   case class Param(n: Int) extends Rhs[Nothing]
   case class Node[OutTag](tag: OutTag, children: Rhs[OutTag]) extends Rhs[OutTag]
   case class CopyNode[OutTag](children: Rhs[OutTag]) extends Rhs[OutTag]
@@ -71,6 +72,7 @@ object Rhs {
       case Call(q, x, Nil)     => show"q$q($x)"
       case Call(q, x, ps)      => show"q$q($x${(ps: List[Rhs[O]]).mkString_(", ", ", ", "")})"
       case Epsilon             => ""
+      case Default(v)          => show"($v)?"
       case Param(i)            => show"y$i"
       case Node(tag, children) => show"<$tag>($children)"
       case CopyNode(children)  => show"%t($children)"
@@ -262,6 +264,7 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
         case Rhs.Call(q, Forest.Second, params) => ERhs.Call(q, Depth.Value(1), params.map(translateRhs(_)))
         case Rhs.Param(i)                       => ERhs.Param(i)
         case Rhs.Epsilon                        => ERhs.Epsilon
+        case Rhs.Default(v)                     => ERhs.Default(v)
         case Rhs.Node(tag, inner)               => ERhs.Tree(tag, translateRhs(inner))
         case Rhs.CopyNode(inner)                => ERhs.CapturedTree(translateRhs(inner))
         case Rhs.Leaf(v)                        => ERhs.Leaf(v)
