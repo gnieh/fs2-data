@@ -28,7 +28,7 @@ private[jq] class ESPCompiledJq[F[_]: RaiseThrowable](val esp: JqESP[F]) extends
 
   def apply(in: Stream[F, Token]): Stream[F, Token] =
     in.through(JsonTagger.pipe)
-      .through(esp.pipe)
+      .through(esp.pipe[TaggedJson, TaggedJson])
       .map(untag(_))
       .unNone
 

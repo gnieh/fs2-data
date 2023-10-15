@@ -421,4 +421,40 @@ object JqSpec extends SimpleIOSuite {
     )
   }
 
+  test("documentation") {
+    val source = json"""{
+      "field1": 0,
+      "field2": "test",
+      "field3": [1, 2, 3]
+    }""".lift[IO]
+    for {
+      compiled <- compiler.compile(jq"""[ { "field2": .field2, "field3": .field3[] } ]""")
+      result <- source.through(compiled).compile.toList
+    } yield expect.same(
+      List(
+        Token.StartArray,
+        Token.StartObject,
+        Token.Key("field2"),
+        Token.StringValue("test"),
+        Token.Key("field3"),
+        Token.NumberValue("1"),
+        Token.EndObject,
+        Token.StartObject,
+        Token.Key("field2"),
+        Token.StringValue("test"),
+        Token.Key("field3"),
+        Token.NumberValue("2"),
+        Token.EndObject,
+        Token.StartObject,
+        Token.Key("field2"),
+        Token.StringValue("test"),
+        Token.Key("field3"),
+        Token.NumberValue("3"),
+        Token.EndObject,
+        Token.EndArray
+      ),
+      result
+    )
+  }
+
 }

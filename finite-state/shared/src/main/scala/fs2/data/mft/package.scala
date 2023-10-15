@@ -76,6 +76,9 @@ package object mft {
   def leaf[OutTag](out: OutTag): Rhs[OutTag] =
     Rhs.Leaf(out)
 
+  def default[OutTag](out: OutTag): Rhs[OutTag] =
+    Rhs.Default(out)
+
   def copy: Rhs[Nothing] =
     Rhs.CopyLeaf
 

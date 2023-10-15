@@ -76,8 +76,8 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
       TT: Tag2Tag[InTag, OutTag],
       G: Evaluator[Guard, Tag[InTag]]): Pull[F, Nothing, Expr[Out]] =
     e match {
-      case Expr.Call(q, d, args) =>
-        call(env, q, d, args, in, false)
+      case Expr.Call(q, d, args, next) =>
+        (call(env, q, d, args, in, false), step(env, next, in)).mapN(Expr.concat(_, _))
       case Expr.Epsilon =>
         Pull.pure(Expr.Epsilon)
       case Expr.Open(o, next) =>
@@ -86,8 +86,13 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
         step(env, next, in).map(Expr.Close(c, _))
       case Expr.Leaf(v, next) =>
         step(env, next, in).map(Expr.Leaf(v, _))
-      case Expr.Concat(e1, e2) =>
-        (step(env, e1, in), step(env, e2, in)).mapN(Expr.concat(_, _))
+      case Expr.Default(v, next) =>
+        step(env, next, in).map {
+          case Expr.Epsilon              => Expr.Leaf(v, Expr.Epsilon)
+          case e @ Expr.Close(_, _)      => Expr.Leaf(v, e)
+          case q @ Expr.Call(_, _, _, _) => Expr.Default(v, q)
+          case e                         => e
+        }
     }
 
   def eval[In, Out](env: Vector[Expr[Out]], depth: Int, in: Option[In], rhs: Rhs[OutTag])(implicit
@@ -99,7 +104,7 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
       case Rhs.Call(q, d, params) =>
         params
           .traverse(eval(env, depth, in, _))
-          .map(Expr.Call(q, d(depth), _))
+          .map(Expr.Call(q, d(depth), _, Expr.Epsilon))
       case Rhs.SelfCall(q, params) =>
         params
           .traverse(eval(env, depth, in, _))
@@ -110,6 +115,8 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
           .liftTo[Pull[F, Nothing, *]](new ESPException(s"unknown parameter $i"))
       case Rhs.Epsilon =>
         Pull.pure(Expr.Epsilon)
+      case Rhs.Default(v) =>
+        Pull.pure(Expr.Default(Out.makeLeaf(v), Expr.Epsilon))
       case Rhs.Tree(tag, inner) =>
         eval(env, depth, in, inner)
           .map(inner => Expr.Open(Out.makeOpen(tag), Expr.concat(inner, Expr.Close(Out.makeClose(tag), Expr.Epsilon))))
@@ -142,8 +149,12 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
 
   private def squeeze[Out](e: Expr[Out]): (Expr[Out], List[Out]) =
     e match {
-      case Expr.Call(_, _, _) => (e, Nil)
-      case Expr.Epsilon       => (Expr.Epsilon, Nil)
+      case Expr.Call(_, _, _, _)                                    => (e, Nil)
+      case Expr.Epsilon                                             => (Expr.Epsilon, Nil)
+      case Expr.Default(v, Expr.Epsilon)                            => (Expr.Leaf(v, Expr.Epsilon), Nil)
+      case Expr.Default(v, e @ Expr.Close(_, _))                    => squeeze(Expr.Leaf(v, e))
+      case Expr.Default(_, e @ (Expr.Open(_, _) | Expr.Leaf(_, _))) => squeeze(e)
+      case Expr.Default(_, _)                                       => (e, Nil)
       case Expr.Open(o, e) =>
         val (e1, s1) = squeeze(e)
         (e1, o :: s1)
@@ -153,19 +164,13 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
       case Expr.Leaf(v, e) =>
         val (e1, s1) = squeeze(e)
         (e1, v :: s1)
-      case Expr.Concat(Expr.Epsilon, e2) =>
-        val (e21, s2) = squeeze(e2)
-        (e21, s2)
-      case Expr.Concat(e1, e2) =>
-        val (e11, s1) = squeeze(e1)
-        (Expr.concat(e11, e2), s1)
     }
 
   def squeezeAll[Out](e: Expr[Out]): (Expr[Out], List[Out]) = {
     @tailrec
     def loop(e: Expr[Out], acc: ListBuffer[Out]): (Expr[Out], List[Out]) =
       e match {
-        case Expr.Epsilon | Expr.Call(_, _, _) => (e, acc.result())
+        case Expr.Epsilon | Expr.Call(_, _, _, _) => (e, acc.result())
         case _ =>
           val (e1, s) = squeeze(e)
           loop(e1, acc ++= s)
@@ -204,7 +209,7 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
       Out: Conversion[OutTag, Out],
       TT: Tag2Tag[InTag, OutTag],
       G: Evaluator[Guard, Tag[InTag]]): Pipe[F, In, Out] =
-    transform[In, Out](Chunk.empty, 0, _, Expr.Call(init, 0, Nil), new ListBuffer).stream
+    transform[In, Out](Chunk.empty, 0, _, Expr.Call(init, 0, Nil, Expr.Epsilon), new ListBuffer).stream
 
 }
 
