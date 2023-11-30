@@ -23,7 +23,7 @@ val scala3 = "3.3.1"
 val fs2Version = "3.9.3"
 val circeVersion = "0.14.6"
 val circeExtrasVersion = "0.14.2"
-val playVersion = "2.10.3"
+val playVersion = "3.0.1"
 val shapeless2Version = "2.3.10"
 val shapeless3Version = "3.3.0"
 val scalaJavaTimeVersion = "2.5.0"
@@ -297,7 +297,7 @@ lazy val jsonPlay = crossProject(JVMPlatform, JSPlatform)
     name := "fs2-data-json-play",
     description := "Streaming JSON library with support for Play! JSON ASTs",
     libraryDependencies ++= List(
-      "com.typesafe.play" %%% "play-json" % playVersion,
+      "org.playframework" %%% "play-json" % playVersion,
       "org.gnieh" %%% "diffson-play-json" % diffsonVersion % "test"
     ),
     // 2.x support was actually introduced in 1.3.0, but we forgot to publish the artifacts in later versions
