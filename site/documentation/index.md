@@ -66,5 +66,5 @@ Files[IO]
   .drain
 ```
 
-[pipe-doc]: https://fs2.io/guide.html#statefully-transforming-streams
+[pipe-doc]: https://fs2.io/#/guide?id=statefully-transforming-streams
 [sax]: https://en.wikipedia.org/wiki/Simple_API_for_XML
