@@ -31,13 +31,11 @@ val diffsonVersion = "4.5.0"
 val literallyVersion = "1.1.0"
 val weaverVersion = "0.8.3"
 
-val copyrightYears = "2019-2023"
-
 ThisBuild / tlBaseVersion := "1.10"
 
 ThisBuild / organization := "org.gnieh"
-ThisBuild / organizationName := "Lucas Satabin"
-ThisBuild / startYear := Some(2023)
+ThisBuild / organizationName := "fs2-data Project"
+ThisBuild / startYear := Some(2024)
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / developers := List(
   tlGitHubDev("satabin", "Lucas Satabin"),
