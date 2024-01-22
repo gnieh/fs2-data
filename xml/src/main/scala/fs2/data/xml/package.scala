@@ -80,12 +80,43 @@ package object xml {
     * without additional (or original) whitespace and with empty tags being collapsed to the short self-closed form <x/>
     * if collapseEmpty is true. Preserves chunking, each String in the output will correspond to one event in the input.
     */
+  @deprecated(message = "Use `fs2.data.xml.render.raw() instead.`", since = "fs2-data 1.11.0")
   def render[F[_]](collapseEmpty: Boolean = true): Pipe[F, XmlEvent, String] =
-    _.zipWithPrevious.map {
-      case (_, st: XmlEvent.StartTag)                                                 => st.render(collapseEmpty)
-      case (Some(XmlEvent.StartTag(_, _, true)), XmlEvent.EndTag(_)) if collapseEmpty => ""
-      case (_, event)                                                                 => event.show
-    }
+    render.raw(collapseEmpty)
+
+  object render {
+
+    /**
+    * Render the incoming xml events to their string representation. The output will be concise,
+    * without additional (or original) whitespace and with empty tags being collapsed to the short self-closed form <x/>
+    * if collapseEmpty is true. Preserves chunking, each String in the output will correspond to one event in the input.
+    */
+    def raw[F[_]](collapseEmpty: Boolean = true): Pipe[F, XmlEvent, String] =
+      _.zipWithPrevious.map {
+        case (_, st: XmlEvent.StartTag)                                                 => st.render(collapseEmpty)
+        case (Some(XmlEvent.StartTag(_, _, true)), XmlEvent.EndTag(_)) if collapseEmpty => ""
+        case (_, event)                                                                 => event.show
+      }
+
+    /**
+      * Render the incoming xml events intot a prettified string representation.
+      * _Prettified_ means that nested tags will be indented as per `indent` parameter
+      * and text data (except for `CDATA`, which remains untouched) is indented to the current
+      * indentation level after each new line.
+      *
+      * This pipe can be used when whitespace characters are not relevant to the application
+      * and to make it more readable to human beings.
+      *
+      * @param collapseEmpty Whether empty tags are collapsed in a single self closing tag
+      * @param indent THe indentation string
+      * @param attributeThreshold Number of attributes above which each attribute is rendered on a new line
+      */
+    def pretty[F[_]](collapseEmpty: Boolean = true,
+                     indent: String = "  ",
+                     attributeThreshold: Int = 3): Pipe[F, XmlEvent, String] =
+      Renderer.pipe(collapseEmpty, indent, attributeThreshold)
+
+  }
 
   val ncNameStart = CharRanges.fromRanges(
     ('A', 'Z'),
