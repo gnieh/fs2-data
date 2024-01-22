@@ -10,6 +10,20 @@ There a several ways you can contribute to `fs2-data`:
 
 If in doubt, you can always [contact us][getting-help] and ask as many questions as you want.
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+## Table of Contents
+
+- [Documentation](#documentation)
+- [Code formatting](#code-formatting)
+- [Extend an existing data format with new features](#extend-an-existing-data-format-with-new-features)
+- [Add support for a new data format](#add-support-for-a-new-data-format)
+  - [Adding a text data format](#adding-a-text-data-format)
+  - [Adding a binary data format](#adding-a-binary-data-format)
+- [Licensing](#licensing)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Documentation
 
 The documentation is written in markdown and lives in the `documentation/docs` directory.
@@ -87,6 +101,10 @@ def tokens[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, Token]
 ```
 
 for the `Token` type the parser defines.
+
+## Licensing
+
+`fs2-data` is licensed under the Apache Software License 2.0. Opening a pull request is to be considered affirmative consent to incorporate your changes into the project, granting an unrestricted license to the `fs2-data` project maintainers to distribute and derive new work from your changes, as per the contribution terms of ASL 2.0. You also affirm that you own the rights to the code you are contributing. All contributors retain the copyright to their own work.
 
 [open-issue]: https://github.com/satabin/fs2-data/issues/new/choose
 [open-pr]: https://github.com/satabin/fs2-data/pull/new/main
