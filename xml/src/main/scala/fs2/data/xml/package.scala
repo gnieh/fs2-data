@@ -78,25 +78,22 @@ package object xml {
   /**
     * Render the incoming xml events to their string representation. The output will be concise,
     * without additional (or original) whitespace and with empty tags being collapsed to the short self-closed form <x/>
-    * if collapseEmpty is true. Preserves chunking, each String in the output will correspond to one event in the input.
+    * if collapseEmpty is true.
     */
   @deprecated(message = "Use `fs2.data.xml.render.raw() instead.`", since = "fs2-data 1.11.0")
   def render[F[_]](collapseEmpty: Boolean = true): Pipe[F, XmlEvent, String] =
     render.raw(collapseEmpty)
 
+  /** XML Event stream pipes to render XML values. */
   object render {
 
     /**
     * Render the incoming xml events to their string representation. The output will be concise,
     * without additional (or original) whitespace and with empty tags being collapsed to the short self-closed form <x/>
-    * if collapseEmpty is true. Preserves chunking, each String in the output will correspond to one event in the input.
+    * if collapseEmpty is true.
     */
     def raw[F[_]](collapseEmpty: Boolean = true): Pipe[F, XmlEvent, String] =
-      _.zipWithPrevious.map {
-        case (_, st: XmlEvent.StartTag)                                                 => st.render(collapseEmpty)
-        case (Some(XmlEvent.StartTag(_, _, true)), XmlEvent.EndTag(_)) if collapseEmpty => ""
-        case (_, event)                                                                 => event.show
-      }
+      Renderer.pipe(false, collapseEmpty, "", 0)
 
     /**
       * Render the incoming xml events intot a prettified string representation.
@@ -114,7 +111,7 @@ package object xml {
     def pretty[F[_]](collapseEmpty: Boolean = true,
                      indent: String = "  ",
                      attributeThreshold: Int = 3): Pipe[F, XmlEvent, String] =
-      Renderer.pipe(collapseEmpty, indent, attributeThreshold)
+      Renderer.pipe(true, collapseEmpty, indent, attributeThreshold)
 
   }
 
@@ -152,6 +149,7 @@ package object xml {
   object collector {
 
     /** Renders all events using the `Show` instance and build the result string. */
+    @deprecated(message = "Use `fs2.data.xml.collector.raw(false)` instead", since = "fs2-data 1.11.0")
     object show extends Collector[XmlEvent] {
       type Out = String
       def newBuilder: Collector.Builder[XmlEvent, Out] =
@@ -167,6 +165,29 @@ package object xml {
 
         }
     }
+
+    /** Renders all events without extra formatting. */
+    def raw(collapseEmpty: Boolean = true): Collector[XmlEvent] =
+      new Collector[XmlEvent] {
+        type Out = String
+        def newBuilder: Collector.Builder[XmlEvent, Out] =
+          new Renderer(false, collapseEmpty, false, "", 0)
+      }
+
+    /** Renders all events with trying to make it more readable.
+      * This collector should only be used if white spaces is not relevant to the application
+      * and results in more human readable XML.
+      *
+      * @param collapseEmpty Whether empty tags are collapsed in a single self closing tag
+      * @param indent THe indentation string
+      * @param attributeThreshold Number of attributes above which each attribute is rendered on a new line
+      */
+    def pretty(collapseEmpty: Boolean = true, indent: String = "  ", attributeThreshold: Int = 3): Collector[XmlEvent] =
+      new Collector[XmlEvent] {
+        type Out = String
+        def newBuilder: Collector.Builder[XmlEvent, Out] =
+          new Renderer(true, collapseEmpty, false, indent, attributeThreshold)
+      }
 
   }
 

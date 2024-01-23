@@ -21,7 +21,11 @@ package internals
 
 import cats.syntax.all._
 
-private[xml] class Renderer(collapseEmpty: Boolean, resetOnChunk: Boolean, indent: String, attributeThreshold: Int)
+private[xml] class Renderer(pretty: Boolean,
+                            collapseEmpty: Boolean,
+                            resetOnChunk: Boolean,
+                            indent: String,
+                            attributeThreshold: Int)
     extends Collector.Builder[XmlEvent, String] {
 
   private val builder = new StringBuilder
@@ -33,7 +37,7 @@ private[xml] class Renderer(collapseEmpty: Boolean, resetOnChunk: Boolean, inden
   private var skipClose = false
 
   private def indentation(): Unit =
-    if (newline) {
+    if (pretty && newline) {
       builder.append('\n')
       builder.append(indent * level)
     }
@@ -80,7 +84,10 @@ private[xml] class Renderer(collapseEmpty: Boolean, resetOnChunk: Boolean, inden
         }
 
         if (isEmpty && collapseEmpty) {
-          builder ++= " />"
+          if (pretty)
+            builder ++= " />"
+          else
+            builder ++= "/>"
           skipClose = true
         } else {
           builder += '>'
@@ -102,7 +109,7 @@ private[xml] class Renderer(collapseEmpty: Boolean, resetOnChunk: Boolean, inden
         builder ++= show"<![CDATA[$content]]>"
         newline = true
 
-      case XmlEvent.XmlString(content, false) =>
+      case XmlEvent.XmlString(content, false) if pretty =>
         content.linesIterator.foreach { line =>
           indentation()
           if (newline)
@@ -128,13 +135,17 @@ private[xml] class Renderer(collapseEmpty: Boolean, resetOnChunk: Boolean, inden
 
 private[xml] object Renderer {
 
-  def pipe[F[_]](collapseEmpty: Boolean, indent: String, attributeThreshold: Int): Pipe[F, XmlEvent, String] =
+  def pipe[F[_]](pretty: Boolean,
+                 collapseEmpty: Boolean,
+                 indent: String,
+                 attributeThreshold: Int): Pipe[F, XmlEvent, String] =
     in =>
-      Stream.suspend(Stream.emit(new Renderer(collapseEmpty, true, indent, attributeThreshold))).flatMap { builder =>
-        in.mapChunks { chunk =>
-          builder += chunk
-          Chunk.singleton(builder.result)
-        }
+      Stream.suspend(Stream.emit(new Renderer(pretty, collapseEmpty, true, indent, attributeThreshold))).flatMap {
+        builder =>
+          in.mapChunks { chunk =>
+            builder += chunk
+            Chunk.singleton(builder.result)
+          }
 
       }
 
