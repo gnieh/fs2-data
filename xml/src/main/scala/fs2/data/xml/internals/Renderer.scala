@@ -96,9 +96,9 @@ private[xml] class Renderer(pretty: Boolean,
         newline = true
 
       case XmlEvent.EndTag(name) =>
-        level -= 1
         newline = true
         if (!skipClose) {
+          level -= 1
           indentation()
           builder ++= show"</$name>"
         }
@@ -111,12 +111,16 @@ private[xml] class Renderer(pretty: Boolean,
 
       case XmlEvent.XmlString(content, false) if pretty =>
         content.linesIterator.foreach { line =>
-          indentation()
-          if (newline)
-            builder ++= line.stripLeading()
-          else
-            builder ++= line
-          newline = true
+          if (line.matches("\\s*")) {
+            // empty line, ignore it
+          } else {
+            indentation()
+            if (newline)
+              builder ++= line.stripLeading()
+            else
+              builder ++= line
+            newline = true
+          }
         }
         newline = content.matches("^.*\n\\s*$")
 

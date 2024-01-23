@@ -84,14 +84,13 @@ The `filter.raw` emits a stream of all matches.
 Each match is represented as a nested stream of XML events which must be consumed.
 
 ```scala mdoc
-import cats.Show
 import cats.effect._
 import cats.effect.unsafe.implicits.global
 
 stream
   .lift[IO]
   .through(filter.raw(path))
-  .parEvalMapUnbounded(_.map(Show[XmlEvent].show(_)).compile.foldMonoid)
+  .parEvalMapUnbounded(_.through(render.raw()).compile.foldMonoid)
   .compile
   .toList
   .unsafeRunSync()
@@ -105,7 +104,7 @@ The library offers `filter.collect` to collect each match for any collector.
 ```scala mdoc
 stream
   .lift[IO]
-  .through(filter.collect(path, collector.show))
+  .through(filter.collect(path, collector.raw()))
   .compile
   .toList
   .unsafeRunSync()
@@ -116,7 +115,7 @@ If you want to have results emitted as early as possible instead of in order, yo
 ```scala mdoc
 stream
   .lift[IO]
-  .through(filter.collect(path, collector.show, deterministic = false))
+  .through(filter.collect(path, collector.raw(), deterministic = false))
   .compile
   .toList
   .unsafeRunSync()

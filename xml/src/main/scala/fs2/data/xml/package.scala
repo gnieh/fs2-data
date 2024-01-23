@@ -167,7 +167,7 @@ package object xml {
     }
 
     /** Renders all events without extra formatting. */
-    def raw(collapseEmpty: Boolean = true): Collector[XmlEvent] =
+    def raw(collapseEmpty: Boolean = true): Collector.Aux[XmlEvent, String] =
       new Collector[XmlEvent] {
         type Out = String
         def newBuilder: Collector.Builder[XmlEvent, Out] =
@@ -182,7 +182,9 @@ package object xml {
       * @param indent THe indentation string
       * @param attributeThreshold Number of attributes above which each attribute is rendered on a new line
       */
-    def pretty(collapseEmpty: Boolean = true, indent: String = "  ", attributeThreshold: Int = 3): Collector[XmlEvent] =
+    def pretty(collapseEmpty: Boolean = true,
+               indent: String = "  ",
+               attributeThreshold: Int = 3): Collector.Aux[XmlEvent, String] =
       new Collector[XmlEvent] {
         type Out = String
         def newBuilder: Collector.Builder[XmlEvent, Out] =

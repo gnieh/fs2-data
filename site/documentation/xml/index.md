@@ -8,7 +8,7 @@ The `fs2-data-xml` module provides tools to parse XML data in a streaming manner
 
 To create a stream of XML events from an input stream, use the `events` pipe in `fs2.data.xml` package.
 
-```scala mdoc
+```scala mdoc:height=500
 import cats.effect._
 import cats.effect.unsafe.implicits.global
 
@@ -33,14 +33,14 @@ The pipe validates the XML structure while parsing. It reads all the XML element
 
 Namespace can be resolved by using the `namespaceResolver` pipe.
 
-```scala mdoc
+```scala mdoc:height=500
 val nsResolved = stream.through(namespaceResolver[IO])
 nsResolved.compile.toList.unsafeRunSync()
 ```
 
 Using the `referenceResolver` pipe, entity and character references can be resolved. By defaut the standard `xmlEntities` mapping is used, but it can be replaced by any mapping you see fit.
 
-```scala mdoc
+```scala mdoc:height=500
 val entityResolved = stream.through(referenceResolver[IO]())
 entityResolved.compile.toList.unsafeRunSync()
 ```
@@ -49,7 +49,7 @@ entityResolved.compile.toList.unsafeRunSync()
 
 Once entites and namespaces are resolved, the events might be numerous and can be normalized to avoid emitting too many of them. For instance, after reference resolution, consecutive text events can be merged. This is achieved by using the `normalize` pipe.
 
-```scala mdoc
+```scala mdoc:height=500
 val normalized = entityResolved.through(normalize)
 normalized.compile.toList.unsafeRunSync()
 ```
@@ -81,4 +81,31 @@ implicit val eventifier: DocumentEventifier[SomeDocType] = ???
 
 stream.through(documents[IO, SomeDocType])
       .through(eventify[IO, SomeDocType])
+```
+
+## XML Renderers
+
+Once you got an XML event stream, selected and transformed what you needed in it, you can then write the resulting event stream to some storage. This can be achieved using renderers.
+
+For instance, let's say you want to write the resulting XML stream to a file in raw form (i.e. without trying to format the nested tags and text), you can do:
+
+```scala mdoc:compile-only
+import fs2.io.file.{Files, Flags, Path}
+
+stream
+  .through(render.raw())
+  .through(text.utf8.encode)
+  .through(Files[IO].writeAll(Path("/some/path/to/file.xml"), Flags.Write))
+  .compile
+  .drain
+```
+
+There exists also a `pretty()` renderer, that indents inner tags and text by the given indent string.
+
+If you are interested in the String rendering as a value, the library also provides `Collector`s:
+
+```scala mdoc
+stream.compile.to(collector.raw()).unsafeRunSync()
+
+stream.compile.to(collector.pretty()).unsafeRunSync()
 ```
