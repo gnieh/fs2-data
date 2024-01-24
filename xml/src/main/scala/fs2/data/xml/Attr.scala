@@ -18,4 +18,17 @@ package fs2
 package data
 package xml
 
+import cats.Show
+import cats.syntax.all._
+
+import scala.runtime.AbstractFunction2
+
 case class Attr(name: QName, value: List[XmlEvent.XmlTexty])
+
+object Attr extends AbstractFunction2[QName, List[XmlEvent.XmlTexty], Attr] {
+
+  implicit val show: Show[Attr] = Show.show { case Attr(name, value) =>
+    show"""$name="${value.foldMap[String](_.render)}""""
+  }
+
+}
