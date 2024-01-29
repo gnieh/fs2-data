@@ -60,7 +60,7 @@ object JqLike extends CommandIOApp(name = "fs2-jq", header = "A streaming implem
             // execute the compiled query on the input
             .through(compiled)
             // render the query result
-            .through(render.pretty())
+            .through(render.prettyPrint())
             // encode the result
             .through(fs2.text.utf8.encode[IO])
             // and save it to the output

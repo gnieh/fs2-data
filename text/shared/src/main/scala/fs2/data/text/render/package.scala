@@ -16,13 +16,12 @@
 
 package fs2.data.text
 
+import fs2.Pipe
 import fs2.data.text.render.internal.StreamPrinter
-import fs2.{Pipe, RaiseThrowable}
 
 package object render {
 
   def pretty[F[_], Event](width: Int = 100, indent: Int = 2)(implicit
-      F: RaiseThrowable[F],
       render: Renderable[Event]): Pipe[F, Event, String] =
     new StreamPrinter[F, Event](width, indent)
 

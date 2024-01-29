@@ -128,17 +128,17 @@ stream
   .drain
 ```
 
-There exists also a `pretty()` renderer, that indents inner elements by the given indent string.
+There exists also a `prettyPrint()` renderer, that indents inner elements by the given indent size (in spaces) and for a given page width.
 
-If you are interested in the String rendering as a value, the library also provides `Collector`s:
+If you are interested in the String rendering as a value, you can use the `string` `Collector`:
 
 ```scala mdoc
-stream.compile.to(collector.compact)
+stream.through(render.compact).compile.string
 
 // default indentation is 2 spaces
-stream.compile.to(collector.pretty())
-// if you are more into tabs (or any other indentation size) you can change the indentation string
-stream.compile.to(collector.pretty("\t"))
+stream.through(render.prettyPrint(width = 10)).compile.string
+// if you are more into 4 spaces (or any other indentation size) you can change the indentation size
+stream.through(render.prettyPrint(indent = 4, width = 10)).compile.string
 ```
 
 ## Generating JSON streams

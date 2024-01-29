@@ -19,11 +19,9 @@ package internal
 
 import cats.collections.Dequeue
 import cats.data.{Chain, NonEmptyList}
-import fs2.{Chunk, Pipe, Pull, RaiseThrowable, Stream}
+import fs2.{Chunk, Pipe, Pull, Stream}
 
-private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(implicit
-    F: RaiseThrowable[F],
-    render: Renderable[Event])
+private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(implicit render: Renderable[Event])
     extends Pipe[F, Event, String] {
 
   private val emptyGroups = (0, Dequeue.empty[(Int, Chain[Annotated])])
@@ -74,12 +72,7 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
     if (idx >= chunk.size) {
       rest.pull.uncons.flatMap {
         case Some((hd, tl)) => annotate(hd, 0, tl, pos, aligns, hpl, groups)
-        case None =>
-          if (!groups.isEmpty) {
-            Pull.raiseError(RenderException("Document stream malformed (unclosed group)"))
-          } else {
-            Pull.done
-          }
+        case None           => Pull.done
       }
     } else {
       val evt = chunk(idx)
