@@ -120,6 +120,9 @@ lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .settings(
     name := "fs2-data-text",
     description := "Utilities for textual data format",
+    libraryDependencies ++= List(
+      "org.typelevel" %%% "cats-collections-core" % "0.9.8"
+    ),
     mimaBinaryIssueFilters ++= List(
       // private class
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("fs2.data.text.CharLikeCharChunks.create"),
