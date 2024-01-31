@@ -32,7 +32,10 @@ object XmlRenderTest extends SimpleIOSuite {
 
   test("renders xml with self-closing tags prettily") {
     val result =
-      xml"""<?xml version="1.0" encoding="utf-8"?><doc><no-content/></doc>""".through(render.pretty()).compile.string
+      xml"""<?xml version="1.0" encoding="utf-8"?><doc><no-content/></doc>"""
+        .through(render.prettyPrint(width = 0))
+        .compile
+        .string
     result.liftTo[IO].map { result =>
       expect.eql(
         """<?xml version="1.0" encoding="utf-8"?>
@@ -52,28 +55,10 @@ object XmlRenderTest extends SimpleIOSuite {
     }
   }
 
-  test("renders xml without self-closing tags prettily") {
-    val result =
-      xml"""<?xml version="1.0" encoding="utf-8"?><doc><no-content/></doc>"""
-        .through(render.pretty(false))
-        .compile
-        .string
-    result.liftTo[IO].map { result =>
-      expect.eql(
-        """<?xml version="1.0" encoding="utf-8"?>
-          |<doc>
-          |  <no-content>
-          |  </no-content>
-          |</doc>""".stripMargin,
-        result
-      )
-    }
-  }
-
-  test("renders xml with attributes prettily if below threshold") {
+  test("renders xml with attributes prettily if it fits on one line") {
     val result =
       xml"""<?xml version="1.0" encoding="utf-8"?><doc a1="value1" a2="value2"><no-content/></doc>"""
-        .through(render.pretty())
+        .through(render.prettyPrint(width = 30))
         .compile
         .string
     result.liftTo[IO].map { result =>
@@ -87,13 +72,13 @@ object XmlRenderTest extends SimpleIOSuite {
     }
   }
 
-  test("renders xml with attributes prettily if above threshold") {
+  test("renders xml with attributes prettily if it doesn't fit on one line") {
     val result =
       xml"""<?xml version="1.0" encoding="utf-8"?><doc a1="value1" a2="value2" a3="value3" a4="value4"><no-content/></doc>"""
-        .through(render.pretty())
+        .through(render.prettyPrint(width = 0))
         .compile
         .string
-    result.liftTo[IO].map { result =>
+    result.liftTo[IO].flatTap(IO.println(_)).map { result =>
       expect.eql(
         """<?xml version="1.0" encoding="utf-8"?>
           |<doc a1="value1"
@@ -110,13 +95,15 @@ object XmlRenderTest extends SimpleIOSuite {
   test("renders text prettily") {
     val result =
       xml"""<?xml version="1.0" encoding="utf-8"?><doc>This is a test.
-The text is not originally formatted.</doc>""".through(render.pretty()).compile.string
+The text is not originally formatted.</doc>""".through(render.prettyPrint(width = 20)).compile.string
     result.liftTo[IO].map { result =>
       expect.eql(
         """<?xml version="1.0" encoding="utf-8"?>
           |<doc>
-          |  This is a test.
-          |  The text is not originally formatted.
+          |  This is a test. The
+          |  text is not
+          |  originally
+          |  formatted.
           |</doc>""".stripMargin,
         result
       )
@@ -127,14 +114,15 @@ The text is not originally formatted.</doc>""".through(render.pretty()).compile.
     val result =
       xml"""<?xml version="1.0" encoding="utf-8"?><doc>This is a test.
 The text is not originally formatted but contains &amp; and
-&acute; as entities.</doc>""".through(render.pretty()).compile.string
+&acute; as entities.</doc>""".through(render.prettyPrint(width = 30)).compile.string
     result.liftTo[IO].map { result =>
       expect.eql(
         """<?xml version="1.0" encoding="utf-8"?>
           |<doc>
-          |  This is a test.
-          |  The text is not originally formatted but contains &amp; and
-          |  &acute; as entities.
+          |  This is a test. The text is
+          |  not originally formatted but
+          |  contains &amp; and &acute;
+          |  as entities.
           |</doc>""".stripMargin,
         result
       )
@@ -144,7 +132,7 @@ The text is not originally formatted but contains &amp; and
   test("renders CDATA as-is") {
     val result =
       xml"""<?xml version="1.0" encoding="utf-8"?><doc><![CDATA[This is a test.
-The text is not originally formatted.]]></doc>""".through(render.pretty()).compile.string
+The text is not originally formatted.]]></doc>""".through(render.prettyPrint(width = 0)).compile.string
     result.liftTo[IO].map { result =>
       expect.eql(
         """<?xml version="1.0" encoding="utf-8"?>
@@ -160,7 +148,7 @@ The text is not originally formatted.]]></doc>""".through(render.pretty()).compi
   test("renders comments prettily") {
     val result =
       rawxml"""<?xml version="1.0" encoding="utf-8"?><doc><!-- This is a comment. --></doc>"""
-        .through(render.pretty())
+        .through(render.prettyPrint(width = 0))
         .compile
         .string
     result.liftTo[IO].map { result =>

@@ -20,6 +20,15 @@ import fs2.{Chunk, Pure, Stream}
 
 trait Renderer[Event] {
 
+  /** Behaves like a space if it fits on the page, otherwise
+    * as a new line. */
+  val softline: Stream[Pure, DocEvent] =
+    Stream.emits(DocEvent.GroupBegin :: DocEvent.Line :: DocEvent.GroupEnd :: Nil)
+
+  /** Empty if it fits on the page, otherwise renders a new line. */
+  val softbreak: Stream[Pure, DocEvent] =
+    Stream.emits(DocEvent.GroupBegin :: DocEvent.LineBreak :: DocEvent.GroupEnd :: Nil)
+
   /**
     * Splits words in the given text into a stream of document events.
     * This is a utility method, when you want to reformat a text using
@@ -27,18 +36,31 @@ trait Renderer[Event] {
     * `DocEvent.Text` is an atomic value, so if it contains new lines it
     * can break the computations.
     *
-    * Between 2 words, it adds a `DocEvent.Line` event. Empty lines are not
-    * Generated.
+    * Between 2 words, it adds a `DocEvent.Line` event. Empty lines are
+    * represented as two consecutive line breaks.
     *
     * @param text The text to split
     * @param wordBoundary The regular expression on which to split words
     */
   def words(text: String, wordBoundary: String = raw"\s+"): Stream[Pure, DocEvent] =
     Stream
-      .chunk(Chunk.array(text.split(wordBoundary)))
-      .filter(_.nonEmpty)
-      .map(DocEvent.Text(_))
-      .intersperse(DocEvent.Line)
+      .emit(text)
+      .through(fs2.text.lines)
+      .map { line =>
+        if (line.matches(raw"\s*")) {
+          // empty line
+          Stream.emit(DocEvent.LineBreak)
+        } else {
+          // split line words
+          Stream
+            .chunk(Chunk.array(line.split(wordBoundary)))
+            .map(w => Stream.emit(DocEvent.Text(w)))
+            .intersperse(softline)
+            .flatten
+        }
+      }
+      .intersperse(softline)
+      .flatten
 
   /** Transforms the event into a stream of document events.
     * The stream may be partial (e.g. opening a group when the event describes a new tree node).

@@ -22,6 +22,7 @@ import xml.internals._
 
 import cats._
 import cats.syntax.all._
+import fs2.data.text.render.Renderable
 
 package object xml {
 
@@ -103,15 +104,10 @@ package object xml {
       *
       * This pipe can be used when whitespace characters are not relevant to the application
       * and to make it more readable to human beings.
-      *
-      * @param collapseEmpty Whether empty tags are collapsed in a single self closing tag
-      * @param indent THe indentation string
-      * @param attributeThreshold Number of attributes above which each attribute is rendered on a new line
       */
-    def pretty[F[_]](collapseEmpty: Boolean = true,
-                     indent: String = "  ",
-                     attributeThreshold: Int = 3): Pipe[F, XmlEvent, String] =
-      Renderer.pipe(true, collapseEmpty, indent, attributeThreshold)
+    def prettyPrint[F[_]](width: Int = 80, indent: Int = 2)(implicit
+        renderable: Renderable[XmlEvent]): Pipe[F, XmlEvent, String] =
+      _.through(fs2.data.text.render.pretty(width = width, indent = indent))
 
   }
 

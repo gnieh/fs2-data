@@ -232,7 +232,7 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
           case Annotated.IndentEnd(_) =>
             ((fit, hpl, NonEmptyList(lines.head.drop(indentSize), lines.tail)), None)
           case Annotated.AlignBegin(pos) =>
-            ((fit, hpl, (" " * pos) :: lines), None)
+            ((fit, hpl, (" " * (pos - hpl)) :: lines), None)
           case Annotated.AlignEnd(_) =>
             ((fit, hpl, NonEmptyList.fromList(lines.tail).getOrElse(NonEmptyList.one(""))), None)
         }
