@@ -166,7 +166,7 @@ package object json {
       */
     @deprecated(message = "Consider using `fs2.data.json.render.prettyPrint` instead.", since = "fs2-data 1.11.0")
     def pretty[F[_]](indent: String = "  "): Pipe[F, Token, String] =
-      _.through(fs2.data.text.render.pretty(width = 0)(Token.compact))
+      Renderer.pipe[F](true, indent)
 
     /** Renders a pretty-printed representation of the token stream with the given
       * indentation size and page width.
