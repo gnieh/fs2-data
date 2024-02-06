@@ -12,7 +12,7 @@ We are currently providing security updates to the following versions:
 
 ## Reporting a Vulnerability
 
-We will use [github vulnerability reporting feature](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability#privately-reporting-a-security-vulnerability) [matrix](https://matrix.org/) (at your convenience) as the vehicle for reporting security issues as that gives us a forum to discuss, analyze, and remediate the threat before an exploit is published.
+We will use [github vulnerability reporting feature](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability#privately-reporting-a-security-vulnerability) or [matrix](https://matrix.org/) (at your convenience) as the vehicle for reporting security issues as that gives us a forum to discuss, analyze, and remediate the threat before an exploit is published.
 [Responsible disclosure](https://en.wikipedia.org/wiki/Responsible_disclosure) enhances security for the entire community.
 
 If the issue is deemed a vulnerability, we will release a patch version of our software
