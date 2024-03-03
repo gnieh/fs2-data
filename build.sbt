@@ -17,9 +17,9 @@ import laika.config._
 import sbt.Def._
 import scala.scalanative.build._
 
-val scala212 = "2.12.18"
+val scala212 = "2.12.19"
 val scala213 = "2.13.13"
-val scala3 = "3.3.1"
+val scala3 = "3.3.3"
 val fs2Version = "3.9.4"
 val circeVersion = "0.14.6"
 val circeExtrasVersion = "0.14.2"
@@ -65,7 +65,7 @@ val commonSettings = List(
   ) ++ PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
       List(
-        compilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
+        compilerPlugin("org.typelevel" % "kind-projector" % "0.13.3" cross CrossVersion.full),
         compilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary)
       )
     }
