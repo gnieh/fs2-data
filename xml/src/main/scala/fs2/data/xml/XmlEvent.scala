@@ -22,6 +22,7 @@ import cats.Show
 import cats.syntax.all._
 import fs2.Pure
 import fs2.data.text.render.{DocEvent, Renderable, Renderer}
+import scala.annotation.switch
 
 sealed trait XmlEvent
 
@@ -81,41 +82,72 @@ object XmlEvent {
 
   implicit object renderable extends Renderable[XmlEvent] {
 
+    private final val TOP = 0
+    private final val TEXT = 1
+    private final val OTHER = 2
+
     override def newRenderer(): Renderer[XmlEvent] = new Renderer[XmlEvent] {
 
+      private var state = TOP
       private var skipClose = false
+
+      private def prefix(st: Int, close: Boolean = false): Stream[Pure, DocEvent] =
+        (state: @switch) match {
+          case TOP =>
+            state = st
+            Stream.empty
+          case TEXT if st == TEXT =>
+            state = st
+            softline
+          case _ =>
+            state = st
+            if (close)
+              Stream.emit(DocEvent.GroupEnd) ++ unindent ++ linebreak
+            else
+              linebreak
+        }
 
       override def doc(evt: XmlEvent): Stream[Pure, DocEvent] =
         evt match {
           case StartDocument =>
             Stream.empty
           case XmlDecl(version, encoding, standalone) =>
-            Stream.empty
+            val v = DocEvent.Text(s"""version="$version"""")
+            val e = encoding.fold(Stream.empty.covaryOutput[DocEvent])(e =>
+              Stream.emits(DocEvent.Line :: DocEvent.Text(s"""encoding="$e"""") :: Nil))
+            val s = standalone.fold(Stream.empty.covaryOutput[DocEvent]) { s =>
+              val bool = if (s) "yes" else "no"
+              Stream.emits(DocEvent.Line :: DocEvent.Text(s"""standalone="$bool"""") :: Nil)
+            }
+            prefix(OTHER) ++ Stream.emits(
+              DocEvent.GroupBegin :: DocEvent.Text("<?xml ") :: DocEvent.AlignBegin :: v :: Nil) ++ e ++ s ++ Stream
+              .emits(DocEvent.AlignEnd :: DocEvent.Text("?>") :: DocEvent.GroupEnd :: Nil)
           case StartTag(name, Nil, true) =>
             skipClose = true
-            Stream.emits(DocEvent.LineBreak :: DocEvent.Text(show"<$name />") :: Nil)
+            prefix(OTHER) ++ Stream.emit(DocEvent.Text(show"<$name />"))
           case StartTag(name, Nil, false) =>
             skipClose = false
-            Stream.emits(
-              DocEvent.LineBreak :: DocEvent.GroupBegin :: DocEvent.IndentBegin :: DocEvent.Text(show"<$name>") :: Nil)
+            prefix(OTHER) ++ Stream.emits(
+              DocEvent.GroupBegin :: DocEvent.Text(show"<$name>") :: DocEvent.IndentBegin :: DocEvent.GroupBegin :: Nil)
           case StartTag(name, as, isEmpty) =>
             skipClose = isEmpty
-            val prefix =
+            val pfx =
               if (isEmpty)
-                Stream.emit(DocEvent.LineBreak)
+                prefix(OTHER)
               else
-                Stream.emits(DocEvent.LineBreak :: DocEvent.GroupBegin :: DocEvent.IndentBegin :: Nil)
+                prefix(OTHER) ++ Stream.emits(DocEvent.GroupBegin :: Nil)
 
-            prefix ++ Stream.emits(
+            pfx ++ Stream.emits(
               DocEvent.GroupBegin :: DocEvent.Text(show"<$name ") :: DocEvent.AlignBegin :: Nil) ++ Stream
               .emits(as)
               .map(a => DocEvent.Text(a.show))
-              .intersperse(DocEvent.Line) ++ Stream.emits(
-              DocEvent.AlignEnd :: DocEvent.Text(if (isEmpty) " />" else ">") :: DocEvent.GroupEnd :: Nil)
+              .intersperse(DocEvent.Line) ++ Stream.emits(DocEvent.AlignEnd :: DocEvent.Text(if (isEmpty) " />"
+            else ">") :: DocEvent.GroupEnd :: (if (isEmpty) Nil
+                                               else DocEvent.IndentBegin :: DocEvent.GroupBegin :: Nil))
           case XmlString(s, false) =>
-            softbreak ++ words(s)
+            prefix(TEXT) ++ words(s)
           case texty: XmlTexty =>
-            Stream.emit(DocEvent.Text(texty.render))
+            prefix(TEXT) ++ Stream.emit(DocEvent.Text(texty.render))
           case XmlPI(target, content) =>
             Stream.empty
           case XmlDoctype(name, docname, systemid) =>
@@ -125,18 +157,16 @@ object XmlEvent {
               if (skipClose)
                 Stream.empty
               else
-                Stream.emits(
-                  DocEvent.IndentEnd :: DocEvent.LineBreak ::
-                    DocEvent.Text(show"</$name>") :: DocEvent.GroupEnd :: Nil)
+                prefix(OTHER, true) ++ Stream.emits(DocEvent.Text(show"</$name>") :: DocEvent.GroupEnd :: Nil)
             skipClose = false
             res
           case EndDocument =>
             Stream.empty
           case Comment(comment) =>
-            Stream.emits(
-              DocEvent.GroupBegin :: DocEvent.IndentBegin :: DocEvent.Text("<!--") :: DocEvent.Line :: Nil) ++ words(
-              comment) ++ Stream.emits(
-              DocEvent.IndentEnd :: DocEvent.Line :: DocEvent.Text("-->") :: DocEvent.GroupEnd :: Nil)
+            prefix(OTHER) ++
+              Stream.emits(DocEvent.GroupBegin :: DocEvent.Text("<!--") :: DocEvent.Line :: Nil) ++
+              words(comment) ++
+              Stream.emits(DocEvent.Line :: DocEvent.Text("-->") :: DocEvent.GroupEnd :: Nil)
         }
 
     }
