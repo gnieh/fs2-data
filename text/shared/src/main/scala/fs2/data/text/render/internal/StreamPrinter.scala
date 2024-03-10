@@ -24,41 +24,42 @@ import fs2.{Chunk, Pipe, Pull, Stream}
 private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(implicit render: Renderable[Event])
     extends Pipe[F, Event, String] {
 
-  private val emptyGroups = (0, Dequeue.empty[(Int, Chain[Annotated])])
+  private val emptyGroups = (0, 0, Dequeue.empty[(Int, Int, Chain[Annotated])])
 
-  private def push(groups: Dequeue[(Int, Chain[Annotated])], evt: Annotated): Dequeue[(Int, Chain[Annotated])] =
+  private def push(groups: Dequeue[(Int, Int, Chain[Annotated])],
+                   evt: Annotated): Dequeue[(Int, Int, Chain[Annotated])] =
     groups.unsnoc match {
-      case Some(((ghpl, group), groups)) => groups.snoc((ghpl, group.append(evt)))
-      case None                          => Dequeue.empty // should never happen
+      case Some(((ghpl, gindent, group), groups)) => groups.snoc((ghpl, gindent, group.append(evt)))
+      case None                                   => Dequeue.empty // should never happen
     }
 
-  private def pop(hpl: Int,
-                  groups: Dequeue[(Int, Chain[Annotated])],
-                  buffer: Chain[Annotated]): Pull[F, Annotated, (Int, Dequeue[(Int, Chain[Annotated])])] =
+  private def pop(groups: Dequeue[(Int, Int, Chain[Annotated])],
+                  buffer: Chain[Annotated]): Pull[F, Annotated, (Dequeue[(Int, Int, Chain[Annotated])])] =
     groups.unsnoc match {
-      case Some(((ghpl, group), groups)) =>
-        Pull.pure((hpl, groups.snoc((ghpl, group.concat(buffer)))))
+      case Some(((ghpl, gindent, group), groups)) =>
+        Pull.pure((groups.snoc((ghpl, gindent, group.concat(buffer)))))
       case None =>
-        Pull.output(Chunk.chain(buffer)).as(emptyGroups)
+        Pull.output(Chunk.chain(buffer)).as(Dequeue.empty)
     }
 
   private def check(hpl: Int,
-                    groups: Dequeue[(Int, Chain[Annotated])],
-                    ghpl: Int): Pull[F, Annotated, (Int, Dequeue[(Int, Chain[Annotated])])] =
-    if (ghpl <= hpl && groups.size <= width) {
+                    indent: Int,
+                    groups: Dequeue[(Int, Int, Chain[Annotated])],
+                    ghpl: Int): Pull[F, Annotated, (Int, Int, Dequeue[(Int, Int, Chain[Annotated])])] =
+    if (ghpl <= hpl - indent && groups.size <= width - indent) {
       // groups still fits
-      Pull.pure((hpl, groups))
+      println(s"ghpl: $ghpl, hpl - indent: ${hpl - indent}, groups: ${groups.size}, width - indent: ${width - indent}")
+      Pull.pure((hpl, indent, groups))
     } else {
       // group does not fit, uncons first buffer
       groups.uncons match {
-        case Some(((_, buffer), groups)) =>
+        case Some(((_, _, buffer), groups)) =>
           Pull.output(Chunk.chain(buffer.prepend(Annotated.GroupBegin(Position.TooFar)))) >> (groups.uncons match {
-            case Some(((hpl, _), _)) => check(hpl, groups, ghpl) // check inner groups recursively
-            case None                => Pull.pure(emptyGroups)
+            case Some(((hpl, indent, _), _)) => check(hpl, indent, groups, ghpl) // check inner groups recursively
+            case None                        => Pull.pure(emptyGroups)
           })
         case None =>
           Pull.pure(emptyGroups) // should never happen
-
       }
     }
 
@@ -68,10 +69,11 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
                        pos: Int,
                        aligns: NonEmptyList[Int],
                        hpl: Int,
-                       groups: Dequeue[(Int, Chain[Annotated])]): Pull[F, Annotated, Unit] =
+                       indent: Int,
+                       groups: Dequeue[(Int, Int, Chain[Annotated])]): Pull[F, Annotated, Unit] =
     if (idx >= chunk.size) {
       rest.pull.uncons.flatMap {
-        case Some((hd, tl)) => annotate(hd, 0, tl, pos, aligns, hpl, groups)
+        case Some((hd, tl)) => annotate(hd, 0, tl, pos, aligns, hpl, indent, groups)
         case None           => Pull.done
       }
     } else {
@@ -82,58 +84,68 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
           val pos1 = pos + size
           if (groups.isEmpty) {
             // no open group we can emit immediately
-            Pull.output1(Annotated.Text(text, pos1)) >> annotate(chunk, idx + 1, rest, pos1, aligns, hpl, groups)
+            Pull
+              .output1(Annotated.Text(text, pos1)) >> annotate(chunk, idx + 1, rest, pos1, aligns, hpl, indent, groups)
           } else {
             // there is an open group, append the event to the current group
-            check(hpl, push(groups, Annotated.Text(text, pos1)), pos1).flatMap { case (hpl, groups) =>
-              annotate(chunk, idx + 1, rest, pos1, aligns, hpl, groups)
+            check(hpl, indent, push(groups, Annotated.Text(text, pos1)), pos1).flatMap { case (hpl, gindent, groups) =>
+              annotate(chunk, idx + 1, rest, pos1, aligns, hpl, gindent, groups)
             }
           }
 
         case DocEvent.Line =>
           if (groups.isEmpty) {
             // no open group we can emit immediately a new line
-            Pull.output1(Annotated.Line(pos + 1)) >> annotate(chunk, idx + 1, rest, pos + 1, aligns, hpl, groups)
+            Pull
+              .output1(Annotated.Line(pos + 1)) >> annotate(chunk, idx + 1, rest, pos + 1, aligns, hpl, indent, groups)
           } else {
             // there is an open group, append the event to the current group
-            check(hpl, push(groups, Annotated.Line(pos + 1)), pos + 1).flatMap { case (hpl, groups) =>
-              annotate(chunk, idx + 1, rest, pos + 1, aligns, hpl, groups)
+            check(hpl, indent, push(groups, Annotated.Line(pos + 1)), pos + 1).flatMap { case (hpl, indent, groups) =>
+              annotate(chunk, idx + 1, rest, pos + 1, aligns, hpl, indent, groups)
             }
           }
 
         case DocEvent.LineBreak =>
           if (groups.isEmpty) {
             // no open group we can emit immediately a new line
-            Pull.output1(Annotated.LineBreak(pos)) >> annotate(chunk, idx + 1, rest, pos, aligns, hpl, groups)
+            Pull.output1(Annotated.LineBreak(pos)) >> annotate(chunk, idx + 1, rest, pos, aligns, hpl, indent, groups)
           } else {
             // there is an open group, append the event to the current group
-            check(hpl, push(groups, Annotated.LineBreak(pos)), pos).flatMap { case (hpl, groups) =>
-              annotate(chunk, idx + 1, rest, pos, aligns, hpl, groups)
+            check(hpl, indent, push(groups, Annotated.LineBreak(pos)), pos).flatMap { case (hpl, indent, groups) =>
+              annotate(chunk, idx + 1, rest, pos, aligns, hpl, indent, groups)
             }
           }
 
         case DocEvent.GroupBegin =>
-          val hpl1 = pos + width + aligns.head
+          val hpl1 = pos + width - aligns.head
           if (groups.isEmpty)
             // this is the top-level group, turn on the buffer mechanism
-            annotate(chunk, idx + 1, rest, pos, aligns, hpl1, groups.snoc((hpl1, Chain.empty)))
+            annotate(chunk,
+                     idx + 1,
+                     rest,
+                     pos,
+                     aligns,
+                     hpl1,
+                     aligns.head,
+                     groups.snoc((hpl1, aligns.head, Chain.empty)))
           else
             // starting a new group, puts a new empty buffer in the group dequeue, and check for overflow
-            check(hpl, groups.snoc((hpl1, Chain.empty)), pos).flatMap { case (hpl, groups) =>
-              annotate(chunk, idx + 1, rest, pos, aligns, hpl, groups)
+            check(hpl, indent, groups.snoc((hpl1, aligns.head, Chain.empty)), pos).flatMap {
+              case (hpl, indent, groups) =>
+                annotate(chunk, idx + 1, rest, pos, aligns, hpl, indent, groups)
             }
 
         case DocEvent.GroupEnd =>
           groups.unsnoc match {
             case None =>
               // closing unknown group, just ignore it
-              annotate(chunk, idx + 1, rest, pos, aligns, hpl, groups)
+              annotate(chunk, idx + 1, rest, pos, aligns, hpl, indent, groups)
 
-            case Some(((_, group), groups)) =>
+            case Some(((hpl, indent, group), groups)) =>
               // closing a group, pop it from the buffer dequeue, and continue
-              pop(hpl, groups, group.prepend(Annotated.GroupBegin(Position.Small(pos))).append(Annotated.GroupEnd(pos)))
-                .flatMap { case (hpl, groups) =>
-                  annotate(chunk, idx + 1, rest, pos, aligns, hpl, groups)
+              pop(groups, group.prepend(Annotated.GroupBegin(Position.Small(pos))).append(Annotated.GroupEnd(pos)))
+                .flatMap { groups =>
+                  annotate(chunk, idx + 1, rest, pos, aligns, hpl, indent, groups)
                 }
 
           }
@@ -148,11 +160,12 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
                                                                  pos,
                                                                  NonEmptyList(aligns.head + 1, aligns.tail),
                                                                  hpl,
+                                                                 indent+1,
                                                                  groups)
           } else {
             // there is an open group, append the event to the current group
-            check(hpl, push(groups, Annotated.IndentBegin(pos)), pos).flatMap { case (hpl, groups) =>
-              annotate(chunk, idx + 1, rest, pos, NonEmptyList(aligns.head + 1, aligns.tail), hpl, groups)
+            check(hpl, indent, push(groups, Annotated.IndentBegin(pos)), pos).flatMap { case (hpl, indent, groups) =>
+              annotate(chunk, idx + 1, rest, pos, NonEmptyList(aligns.head + 1, aligns.tail), hpl, indent, groups)
             }
           }
 
@@ -166,11 +179,12 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
                                                                pos,
                                                                NonEmptyList(aligns.head - 1, aligns.tail),
                                                                hpl,
+                                                               indent,
                                                                groups)
           } else {
             // there is an open group, append the event to the current group
-            check(hpl, push(groups, Annotated.IndentEnd(pos)), pos).flatMap { case (hpl, groups) =>
-              annotate(chunk, idx + 1, rest, pos, NonEmptyList(aligns.head - 1, aligns.tail), hpl, groups)
+            check(hpl, indent, push(groups, Annotated.IndentEnd(pos)), pos).flatMap { case (hpl, indent, groups) =>
+              annotate(chunk, idx + 1, rest, pos, NonEmptyList(aligns.head - 1, aligns.tail), hpl, indent, groups)
             }
           }
 
@@ -178,11 +192,18 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
           // push new indentation level
           if (groups.isEmpty) {
             // no open group we can emit immediately a new line
-            Pull.output1(Annotated.AlignBegin(pos)) >> annotate(chunk, idx + 1, rest, pos, pos :: aligns, hpl, groups)
+            Pull.output1(Annotated.AlignBegin(pos)) >> annotate(chunk,
+                                                                idx + 1,
+                                                                rest,
+                                                                pos,
+                                                                pos :: aligns,
+                                                                hpl,
+                                                                indent,
+                                                                groups)
           } else {
             // there is an open group, append the event to the current group
-            check(hpl, push(groups, Annotated.AlignBegin(pos)), pos).flatMap { case (hpl, groups) =>
-              annotate(chunk, idx + 1, rest, pos, pos :: aligns, hpl, groups)
+            check(hpl, indent, push(groups, Annotated.AlignBegin(pos)), pos).flatMap { case (hpl, indent, groups) =>
+              annotate(chunk, idx + 1, rest, pos, pos :: aligns, hpl, indent, groups)
             }
           }
 
@@ -195,11 +216,11 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
             }
           if (groups.isEmpty) {
             // no open group we can emit immediately a new line
-            Pull.output1(Annotated.AlignEnd(pos)) >> annotate(chunk, idx + 1, rest, pos, aligns1, hpl, groups)
+            Pull.output1(Annotated.AlignEnd(pos)) >> annotate(chunk, idx + 1, rest, pos, aligns1, hpl, indent, groups)
           } else {
             // there is an open group, append the event to the current group
-            check(hpl, push(groups, Annotated.AlignEnd(pos)), pos).flatMap { case (hpl, groups) =>
-              annotate(chunk, idx + 1, rest, pos, aligns1, hpl, groups)
+            check(hpl, indent, push(groups, Annotated.AlignEnd(pos)), pos).flatMap { case (hpl, indent, groups) =>
+              annotate(chunk, idx + 1, rest, pos, aligns1, hpl, indent, groups)
             }
           }
       }
@@ -213,28 +234,32 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
       0,
       NonEmptyList.one(0),
       0,
+      0,
       Dequeue.empty
     ).stream
-      .mapAccumulate((0, width, NonEmptyList.one(""))) { case (acc @ (fit, hpl, lines), evt) =>
+      .debug()
+      .mapAccumulate((0, width, NonEmptyList.one(""), 0)) { case (acc @ (fit, hpl, lines, col), evt) =>
         evt match {
-          case Annotated.Text(text, _)                           => (acc, Some(text))
-          case Annotated.Line(pos) if fit == 0                   => ((fit, pos + width, lines), Some("\n" + lines.head))
-          case Annotated.Line(_)                                 => (acc, Some(" "))
-          case Annotated.LineBreak(pos) if fit == 0              => ((fit, pos + width, lines), Some("\n" + lines.head))
+          case Annotated.Text(text, _)         => ((fit, hpl, lines, col + text.size), Some(text))
+          case Annotated.Line(pos) if fit == 0 => ((fit, pos + width, lines, lines.head.size), Some("\n" + lines.head))
+          case Annotated.Line(_)               => ((fit, hpl, lines, col + 1), Some(" "))
+          case Annotated.LineBreak(pos) if fit == 0 =>
+            ((fit, pos + width, lines, lines.head.size), Some("\n" + lines.head))
           case Annotated.LineBreak(_)                            => (acc, None)
-          case Annotated.GroupBegin(Position.TooFar) if fit == 0 => ((0, hpl, lines), None)
-          case Annotated.GroupBegin(Position.Small(pos)) if fit == 0 => ((if (pos <= hpl) 1 else 0, hpl, lines), None)
-          case Annotated.GroupBegin(_)                               => ((fit + 1, hpl, lines), None)
-          case Annotated.GroupEnd(_) if fit == 0                     => (acc, None)
-          case Annotated.GroupEnd(_)                                 => ((fit - 1, hpl, lines), None)
+          case Annotated.GroupBegin(Position.TooFar) if fit == 0 => ((0, hpl, lines, col), None)
+          case Annotated.GroupBegin(Position.Small(pos)) if fit == 0 =>
+            ((if (pos <= hpl) 1 else 0, hpl, lines, col), None)
+          case Annotated.GroupBegin(_)           => ((fit + 1, hpl, lines, col), None)
+          case Annotated.GroupEnd(_) if fit == 0 => (acc, None)
+          case Annotated.GroupEnd(_)             => ((fit - 1, hpl, lines, col), None)
           case Annotated.IndentBegin(_) =>
-            ((fit, hpl, NonEmptyList(lines.head + (" " * indentSize), lines.tail)), None)
+            ((fit, hpl, NonEmptyList(lines.head + (" " * indentSize), lines.tail), col), None)
           case Annotated.IndentEnd(_) =>
-            ((fit, hpl, NonEmptyList(lines.head.drop(indentSize), lines.tail)), None)
-          case Annotated.AlignBegin(pos) =>
-            ((fit, hpl, (" " * (pos - hpl)) :: lines), None)
+            ((fit, hpl, NonEmptyList(lines.head.drop(indentSize), lines.tail), col), None)
+          case Annotated.AlignBegin(_) =>
+            ((fit, hpl, (" " * col) :: lines, col), None)
           case Annotated.AlignEnd(_) =>
-            ((fit, hpl, NonEmptyList.fromList(lines.tail).getOrElse(NonEmptyList.one(""))), None)
+            ((fit, hpl, NonEmptyList.fromList(lines.tail).getOrElse(NonEmptyList.one("")), col), None)
         }
 
       }

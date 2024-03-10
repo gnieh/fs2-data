@@ -20,6 +20,14 @@ import fs2.{Chunk, Pure, Stream}
 
 trait Renderer[Event] {
 
+  /** Behaves like a new line, or as a space if undone by a group. */
+  val line: Stream[Pure, DocEvent] =
+    Stream.emit(DocEvent.Line)
+
+  /** Behaves like a new line, or as empty if undone by a group. */
+  val linebreak: Stream[Pure, DocEvent] =
+    Stream.emit(DocEvent.LineBreak)
+
   /** Behaves like a space if it fits on the page, otherwise
     * as a new line. */
   val softline: Stream[Pure, DocEvent] =
@@ -28,6 +36,14 @@ trait Renderer[Event] {
   /** Empty if it fits on the page, otherwise renders a new line. */
   val softbreak: Stream[Pure, DocEvent] =
     Stream.emits(DocEvent.GroupBegin :: DocEvent.LineBreak :: DocEvent.GroupEnd :: Nil)
+
+  /** Increment current indentation level by one. */
+  val indent: Stream[Pure, DocEvent] =
+    Stream.emit(DocEvent.IndentBegin)
+
+  /** Decrement current indentation level by one. */
+  val unindent: Stream[Pure, DocEvent] =
+    Stream.emit(DocEvent.IndentEnd)
 
   /**
     * Splits words in the given text into a stream of document events.
@@ -44,7 +60,7 @@ trait Renderer[Event] {
     */
   def words(text: String, wordBoundary: String = raw"\s+"): Stream[Pure, DocEvent] =
     Stream
-      .emit(text)
+      .emit(text.trim())
       .through(fs2.text.lines)
       .map { line =>
         if (line.matches(raw"\s*")) {
