@@ -46,9 +46,6 @@ ThisBuild / crossScalaVersions := Seq(scala212, scala213, scala3)
 ThisBuild / scalaVersion := scala213
 ThisBuild / tlJdkRelease := Some(11)
 
-ThisBuild / tlSitePublishBranch := None
-ThisBuild / tlSitePublishTags := true
-
 val commonSettings = List(
   versionScheme := Some("early-semver"),
   libraryDependencies ++= List(
@@ -521,21 +518,6 @@ val chatLink: IconLink = IconLink.external("https://discord.gg/XF3CXcMzqD", Heli
 val mastodonLink: IconLink =
   IconLink.external("https://fosstodon.org/@lucassatabin", HeliumIcon.mastodon)
 
-val sonatypeApiUrl = setting {
-  CrossVersion(
-    crossVersion.value,
-    scalaVersion.value,
-    scalaBinaryVersion.value
-  ).map { cross =>
-    val host = sonatypeCredentialHost.value
-    val repo = if (isSnapshot.value) "snapshots" else "releases"
-    val org = organization.value.replace('.', '/')
-    val mod = cross("fs2-data-docs")
-    val ver = version.value
-    url(s"https://$host/service/local/repositories/$repo/archive/$org/$mod/$ver/$mod-$ver-javadoc.jar/!/index.html")
-  }
-}
-
 lazy val site = project
   .in(file("msite"))
   .enablePlugins(TypelevelSitePlugin)
@@ -583,7 +565,6 @@ lazy val site = project
     ),
     scalacOptions += "-Ymacro-annotations",
     mdocIn := file("site"),
-    tlSiteApiUrl := sonatypeApiUrl.value,
     laikaConfig := tlSiteApiUrl.value
       .fold(LaikaConfig.defaults)(url =>
         LaikaConfig.defaults

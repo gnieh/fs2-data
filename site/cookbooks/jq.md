@@ -122,7 +122,7 @@ It compiles for all three supported platforms:
 @:choice(jvm)
 
 ```shell
-$ LC_ALL=C.UTF-8 sbt exampleJqJVM/assembly
+$ sbt exampleJqJVM/assembly
 $ java -jar examples/jqlike/.jvm/target/scala-2.13/jq-like.jar -q '.[] | { "full_name": .name, "language": .language }' -f site/cookbooks/data/json/sample.json
 ```
 
