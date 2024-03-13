@@ -164,10 +164,16 @@ window.addEventListener('DOMContentLoaded', (event) => {
         
         <h2 id="reading-json-lines-data" class="section"><a class="anchor-link left" href="#reading-json-lines-data"><i class="icofont-laika link">&#xef71;</i></a>Reading JSON Lines data</h2>
         <p>The <code>fs2-data</code> <a href="../../documentation/json/">JSON module</a> can natively read concatenated JSON values in an input stream This means that we can naively read data from the input stream and we will get the token stream out of it.</p>
-        <p>However, this way, we will not check that the input is actually respecting the JSON lines format. The format actually only has a few rules:
-         - Input must be UTF-8 encoded.
-         - Each line is a valid JSON value.
-         - Lines are separated by <code>\n</code>.</p>
+        <p>However, this way, we will not check that the input is actually respecting the JSON lines format. The format actually only has a few rules:</p>
+        <ul>
+          <li>Input must be UTF-8 encoded.</li>
+        </ul>
+        <ul>
+          <li>Each line is a valid JSON value.</li>
+        </ul>
+        <ul>
+          <li>Lines are separated by <code>\n</code>.</li>
+        </ul>
         <p>We can leverage the operators provided by <code>fs2</code> and <code>fs2-data</code> to enforce these constraints when reading data.</p>
         <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="identifier">unsafe</span><span>.</span><span class="identifier">implicits</span><span>.</span><span class="identifier">global</span><span>
 
