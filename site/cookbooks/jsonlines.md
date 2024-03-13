@@ -80,8 +80,6 @@ Similarly, using `fs2` and `fs2-data` operators, we can generate a stream that w
 ```scala mdoc
 def writeJsonLines(input: Stream[IO, Json]): Stream[IO, Byte] =
   input
-    .chunkLimit(1)
-    .unchunks
     .flatMap { data =>
       // rule #2: values must be encoded on single lines
       Stream.emit(data).through(fs2.data.json.ast.tokenize).through(fs2.data.json.render.compact)
@@ -101,8 +99,7 @@ Files[IO]
   .readAll(Path("site/cookbooks/data/json/sample.json"))
   .through(fs2.text.utf8.decode)
   .through(fs2.data.json.tokens)
-  .through(fs2.data.json.jsonpath.filter.values(jsonpath"$$[*]"))
-  .take(5)
+  .through(fs2.data.json.jsonpath.filter.values(jsonpath"$$[0:4]"))
   .through(writeJsonLines)
   .through(fs2.text.utf8.decode)
   .compile
