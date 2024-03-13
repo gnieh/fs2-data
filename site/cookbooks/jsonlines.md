@@ -8,6 +8,7 @@ In this cookbook, we will demonstrate how such data can be read and produced usi
 The `fs2-data` [JSON module][json] can natively read concatenated JSON values in an input stream This means that we can naively read data from the input stream and we will get the token stream out of it.
 
 However, this way, we will not check that the input is actually respecting the JSON lines format. The format actually only has a few rules:
+
  - Input must be UTF-8 encoded.
  - Each line is a valid JSON value.
  - Lines are separated by `\n`.
