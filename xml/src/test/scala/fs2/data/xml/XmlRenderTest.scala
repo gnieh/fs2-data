@@ -17,151 +17,168 @@
 package fs2.data.xml
 
 import cats.effect.IO
-import cats.syntax.all._
 import weaver._
 
 object XmlRenderTest extends SimpleIOSuite {
 
   test("renders xml with self-closing tags") {
-    val result =
-      xml"""<?xml version="1.0" encoding="utf-8"?><doc><no-content/></doc>""".through(render.raw()).compile.string
-    result.liftTo[IO].map { result =>
-      expect.eql("""<?xml version="1.0" encoding="utf-8"?><doc><no-content/></doc>""", result)
-    }
+    xml"""<?xml version="1.0" encoding="utf-8"?><doc><no-content/></doc>"""
+      .lift[IO]
+      .through(render.raw())
+      .compile
+      .string
+      .map { result =>
+        expect.eql("""<?xml version="1.0" encoding="utf-8"?><doc><no-content/></doc>""", result)
+      }
   }
 
   test("renders xml with self-closing tags prettily") {
-    val result =
-      xml"""<?xml version="1.0" encoding="utf-8"?><doc><no-content/></doc>"""
-        .through(render.prettyPrint(width = 0))
-        .compile
-        .string
-    result.liftTo[IO].map { result =>
-      expect.eql(
-        """<?xml version="1.0" encoding="utf-8"?>
+    xml"""<?xml version="1.0" encoding="utf-8"?><doc><no-content/></doc>"""
+      .lift[IO]
+      .through(render.prettyPrint(width = 0))
+      .compile
+      .string
+      .map { result =>
+        expect.eql(
+          """<?xml version="1.0"
+          |      encoding="utf-8"?>
           |<doc>
           |  <no-content />
           |</doc>""".stripMargin,
-        result
-      )
-    }
+          result
+        )
+      }
   }
 
   test("renders xml without self-closing tags if disabled") {
-    val result =
-      xml"""<?xml version="1.0" encoding="utf-8"?><doc><no-content/></doc>""".through(render.raw(false)).compile.string
-    result.liftTo[IO].map { result =>
-      expect.eql("""<?xml version="1.0" encoding="utf-8"?><doc><no-content></no-content></doc>""", result)
-    }
+    xml"""<?xml version="1.0" encoding="utf-8"?><doc><no-content/></doc>"""
+      .lift[IO]
+      .through(render.raw(false))
+      .compile
+      .string
+      .map { result =>
+        expect.eql("""<?xml version="1.0" encoding="utf-8"?><doc><no-content></no-content></doc>""", result)
+      }
   }
 
   test("renders xml with attributes prettily if it fits on one line") {
-    val result =
-      xml"""<?xml version="1.0" encoding="utf-8"?><doc a1="value1" a2="value2"><no-content/></doc>"""
-        .through(render.prettyPrint(width = 30))
-        .compile
-        .string
-    result.liftTo[IO].map { result =>
-      expect.eql(
-        """<?xml version="1.0" encoding="utf-8"?>
+    xml"""<?xml version="1.0" encoding="utf-8"?><doc a1="value1" a2="value2"><no-content/></doc>"""
+      .lift[IO]
+      .through(render.prettyPrint(width = 40))
+      .compile
+      .string
+      .map { result =>
+        expect.eql(
+          """<?xml version="1.0" encoding="utf-8"?>
           |<doc a1="value1" a2="value2">
           |  <no-content />
           |</doc>""".stripMargin,
-        result
-      )
-    }
+          result
+        )
+      }
   }
 
   test("renders xml with attributes prettily if it doesn't fit on one line") {
-    val result =
-      xml"""<?xml version="1.0" encoding="utf-8"?><doc a1="value1" a2="value2" a3="value3" a4="value4"><no-content/></doc>"""
-        .through(render.prettyPrint(width = 0))
-        .compile
-        .string
-    result.liftTo[IO].flatTap(IO.println(_)).map { result =>
-      expect.eql(
-        """<?xml version="1.0" encoding="utf-8"?>
+    xml"""<?xml version="1.0" encoding="utf-8"?><doc a1="value1" a2="value2" a3="value3" a4="value4"><no-content/></doc>"""
+      .lift[IO]
+      .through(render.prettyPrint(width = 0))
+      .compile
+      .string
+      .map { result =>
+        expect.eql(
+          """<?xml version="1.0"
+          |      encoding="utf-8"?>
           |<doc a1="value1"
           |     a2="value2"
           |     a3="value3"
           |     a4="value4">
           |  <no-content />
           |</doc>""".stripMargin,
-        result
-      )
-    }
+          result
+        )
+      }
   }
 
   test("renders text prettily") {
-    val result =
-      xml"""<?xml version="1.0" encoding="utf-8"?><doc>This is a test.
-The text is not originally formatted.</doc>""".through(render.prettyPrint(width = 20)).compile.string
-    result.liftTo[IO].map { result =>
-      expect.eql(
-        """<?xml version="1.0" encoding="utf-8"?>
+    xml"""<?xml version="1.0" encoding="utf-8"?><doc>This is a test.
+The text is not originally formatted.</doc>"""
+      .lift[IO]
+      .through(render.prettyPrint(width = 20))
+      .compile
+      .string
+      .map { result =>
+        expect.eql(
+          """<?xml version="1.0"
+          |      encoding="utf-8"?>
           |<doc>
-          |  This is a test. The
-          |  text is not
-          |  originally
-          |  formatted.
+          |  This is a test. The text
+          |  is not originally formatted.
           |</doc>""".stripMargin,
-        result
-      )
-    }
+          result
+        )
+      }
   }
 
   test("renders text with entities prettily") {
-    val result =
-      xml"""<?xml version="1.0" encoding="utf-8"?><doc>This is a test.
+    xml"""<?xml version="1.0" encoding="utf-8"?><doc>This is a test.
 The text is not originally formatted but contains &amp; and
-&acute; as entities.</doc>""".through(render.prettyPrint(width = 30)).compile.string
-    result.liftTo[IO].map { result =>
-      expect.eql(
-        """<?xml version="1.0" encoding="utf-8"?>
+&acute; as entities.</doc>"""
+      .lift[IO]
+      .through(render.prettyPrint(width = 30))
+      .compile
+      .string
+      .map { result =>
+        expect.eql(
+          """<?xml version="1.0"
+          |      encoding="utf-8"?>
           |<doc>
-          |  This is a test. The text is
-          |  not originally formatted but
-          |  contains &amp; and &acute;
-          |  as entities.
+          |  This is a test. The text is not
+          |  originally formatted but contains
+          |  &amp; and &acute; as entities.
           |</doc>""".stripMargin,
-        result
-      )
-    }
+          result
+        )
+      }
   }
 
   test("renders CDATA as-is") {
-    val result =
-      xml"""<?xml version="1.0" encoding="utf-8"?><doc><![CDATA[This is a test.
-The text is not originally formatted.]]></doc>""".through(render.prettyPrint(width = 0)).compile.string
-    result.liftTo[IO].map { result =>
-      expect.eql(
-        """<?xml version="1.0" encoding="utf-8"?>
+    xml"""<?xml version="1.0" encoding="utf-8"?><doc><![CDATA[This is a test.
+The text is not originally formatted.]]></doc>"""
+      .lift[IO]
+      .through(render.prettyPrint(width = 0))
+      .compile
+      .string
+      .map { result =>
+        expect.eql(
+          """<?xml version="1.0"
+          |      encoding="utf-8"?>
           |<doc>
           |  <![CDATA[This is a test.
           |The text is not originally formatted.]]>
           |</doc>""".stripMargin,
-        result
-      )
-    }
+          result
+        )
+      }
   }
 
   test("renders comments prettily") {
-    val result =
-      rawxml"""<?xml version="1.0" encoding="utf-8"?><doc><!-- This is a comment. --></doc>"""
-        .through(render.prettyPrint(width = 0))
-        .compile
-        .string
-    result.liftTo[IO].map { result =>
-      expect.eql(
-        """<?xml version="1.0" encoding="utf-8"?>
+    rawxml"""<?xml version="1.0" encoding="utf-8"?><doc><!-- This is a comment. --></doc>"""
+      .lift[IO]
+      .through(render.prettyPrint(width = 20))
+      .compile
+      .string
+      .map { result =>
+        expect.eql(
+          """<?xml version="1.0"
+          |      encoding="utf-8"?>
           |<doc>
           |  <!--
           |  This is a comment.
           |  -->
           |</doc>""".stripMargin,
-        result
-      )
-    }
+          result
+        )
+      }
   }
 
 }

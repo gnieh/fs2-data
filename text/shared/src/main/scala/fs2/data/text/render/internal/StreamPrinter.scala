@@ -46,9 +46,8 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
                     indent: Int,
                     groups: Dequeue[(Int, Int, Chain[Annotated])],
                     ghpl: Int): Pull[F, Annotated, (Int, Int, Dequeue[(Int, Int, Chain[Annotated])])] =
-    if (ghpl <= hpl - indent && groups.size <= width - indent) {
+    if (ghpl <= hpl - (indent * indentSize) && groups.size <= width - (indent * indentSize)) {
       // groups still fits
-      println(s"ghpl: $ghpl, hpl - indent: ${hpl - indent}, groups: ${groups.size}, width - indent: ${width - indent}")
       Pull.pure((hpl, indent, groups))
     } else {
       // group does not fit, uncons first buffer
@@ -160,7 +159,7 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
                                                                  pos,
                                                                  NonEmptyList(aligns.head + 1, aligns.tail),
                                                                  hpl,
-                                                                 indent+1,
+                                                                 indent + 1,
                                                                  groups)
           } else {
             // there is an open group, append the event to the current group
