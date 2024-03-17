@@ -236,7 +236,6 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
       0,
       Dequeue.empty
     ).stream
-      .debug()
       .mapAccumulate((0, width, NonEmptyList.one(""), 0)) { case (acc @ (fit, hpl, lines, col), evt) =>
         evt match {
           case Annotated.Text(text, _)         => ((fit, hpl, lines, col + text.size), Some(text))
