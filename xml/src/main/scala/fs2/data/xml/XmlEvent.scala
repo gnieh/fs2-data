@@ -141,16 +141,19 @@ object XmlEvent {
               DocEvent.GroupBegin :: DocEvent.Text(show"<$name ") :: DocEvent.AlignBegin :: Nil) ++ Stream
               .emits(as)
               .map(a => DocEvent.Text(a.show))
-              .intersperse(DocEvent.Line) ++ Stream.emits(DocEvent.AlignEnd :: DocEvent.Text(if (isEmpty) " />"
-            else ">") :: DocEvent.GroupEnd :: (if (isEmpty) Nil
-                                               else DocEvent.IndentBegin :: DocEvent.GroupBegin :: Nil))
+              .intersperse(DocEvent.Line) ++ Stream.emits(
+              DocEvent.AlignEnd :: DocEvent.Text(if (isEmpty) " />"
+              else ">") :: DocEvent.GroupEnd :: (if (isEmpty) Nil
+                                                 else DocEvent.IndentBegin :: DocEvent.GroupBegin :: Nil))
           case XmlString(s, false) =>
             prefix(TEXT) ++ words(s)
           case texty: XmlTexty =>
             prefix(TEXT) ++ Stream.emit(DocEvent.Text(texty.render))
-          case XmlPI(target, content) =>
+          case XmlPI(_, _) =>
+            // TODO: add support for proper PI parsing so that we can render it properly
             Stream.empty
-          case XmlDoctype(name, docname, systemid) =>
+          case XmlDoctype(_, _, _) =>
+            // TODO: add support for proper Doctype parsing so that we can render it properly
             Stream.empty
           case EndTag(name) =>
             val res =
