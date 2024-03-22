@@ -71,7 +71,7 @@ object Token {
     }
   }
 
-  private final val hex = "0123456789abcdef"
+  private final val hex = "0123456789abcdef".toArray
 
   @tailrec
   def renderString(s: String, idx: Int, builder: StringBuilder): Unit =
