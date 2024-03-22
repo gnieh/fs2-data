@@ -194,7 +194,7 @@ Reading(Reading) --&gt; Parsing --&gt; Transforming --&gt; Printing --&gt; Writi
           <li>The <a class="api" href="https://www.javadoc.io/doc/org.gnieh/fs2-data-docs_2.13/1.10.0/fs2/data/fs2/data/json/jq/Compiler.html">Compiler</a> class to compile a query into a pipe (see <a href="../../documentation/json/jq/#using-queries">the documentation</a> for more details).</li>
         </ul>
         <ul>
-          <li>The <code>render.pretty</code> pipe to render the query result into a pretty-printed JSON string (see <a href="../../documentation/json/#json-renderers">the documentation</a> for more details).</li>
+          <li>The <code>render.prettyPrint</code> pipe to render the query result into a pretty-printed JSON string (see <a href="../../documentation/json/#json-renderers">the documentation</a> for more details).</li>
         </ul>
         <p>In general the <em>Transforming</em> step can use whatever operator fits your purpose, from <code>fs2</code> or any other <code>fs2</code>-based library. But in our case the only transformation will be performed by the query.</p>
         
@@ -226,7 +226,7 @@ Reading(Reading) --&gt; Parsing --&gt; Transforming --&gt; Printing --&gt; Writi
 </span><span class="type-name">Files</span><span>[</span><span class="type-name">IO</span><span>]
   .</span><span class="identifier">readUtf8</span><span>(</span><span class="type-name">Path</span><span>(</span><span class="string-literal">&quot;site/cookbooks/data/json/sample.json&quot;</span><span>))
   .</span><span class="identifier">through</span><span>(</span><span class="identifier">json</span><span>.</span><span class="identifier">tokens</span><span>) </span><span class="comment">// parsing JSON input
-</span><span>  .</span><span class="identifier">through</span><span>(</span><span class="identifier">json</span><span>.</span><span class="identifier">render</span><span>.</span><span class="identifier">pretty</span><span>()) </span><span class="comment">// pretty printing JSON stream
+</span><span>  .</span><span class="identifier">through</span><span>(</span><span class="identifier">json</span><span>.</span><span class="identifier">render</span><span>.</span><span class="identifier">prettyPrint</span><span>()) </span><span class="comment">// pretty printing JSON stream
 </span><span>  .</span><span class="identifier">through</span><span>(</span><span class="identifier">utf8</span><span>.</span><span class="identifier">encode</span><span>[</span><span class="type-name">IO</span><span>])
   .</span><span class="identifier">through</span><span>(</span><span class="identifier">stdout</span><span>)
   .</span><span class="identifier">compile</span><span>
@@ -256,7 +256,7 @@ Reading(Reading) --&gt; Parsing --&gt; Transforming --&gt; Printing --&gt; Writi
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">jq</span><span>.</span><span class="type-name">Compiler</span><span>
 
 </span><span class="keyword">val</span><span> </span><span class="identifier">queryCompiler</span><span> = </span><span class="type-name">Compiler</span><span>[</span><span class="type-name">IO</span><span>]
-</span><span class="comment">// queryCompiler: Compiler[IO] = fs2.data.json.jq.internal.ESPJqCompiler@3f30b7d1
+</span><span class="comment">// queryCompiler: Compiler[IO] = fs2.data.json.jq.internal.ESPJqCompiler@4e8190bc
 </span><span>
 </span><span class="keyword">val</span><span> </span><span class="identifier">queryPipe</span><span> = </span><span class="identifier">queryCompiler</span><span>.</span><span class="identifier">compile</span><span>(</span><span class="identifier">query</span><span>).</span><span class="identifier">unsafeRunSync</span><span>()
 </span><span class="comment">// queryPipe: fs2.package.Pipe[IO, json.Token, json.Token] = &lt;function1&gt;</span></code></pre>
@@ -265,7 +265,7 @@ Reading(Reading) --&gt; Parsing --&gt; Transforming --&gt; Printing --&gt; Writi
   .</span><span class="identifier">readUtf8</span><span>(</span><span class="type-name">Path</span><span>(</span><span class="string-literal">&quot;site/cookbooks/data/json/sample.json&quot;</span><span>))
   .</span><span class="identifier">through</span><span>(</span><span class="identifier">json</span><span>.</span><span class="identifier">tokens</span><span>)
   .</span><span class="identifier">through</span><span>(</span><span class="identifier">queryPipe</span><span>) </span><span class="comment">// the transformation using the query pipe
-</span><span>  .</span><span class="identifier">through</span><span>(</span><span class="identifier">json</span><span>.</span><span class="identifier">render</span><span>.</span><span class="identifier">pretty</span><span>())
+</span><span>  .</span><span class="identifier">through</span><span>(</span><span class="identifier">json</span><span>.</span><span class="identifier">render</span><span>.</span><span class="identifier">prettyPrint</span><span>())
   .</span><span class="identifier">through</span><span>(</span><span class="identifier">utf8</span><span>.</span><span class="identifier">encode</span><span>[</span><span class="type-name">IO</span><span>])
   .</span><span class="identifier">through</span><span>(</span><span class="identifier">stdout</span><span>)
   .</span><span class="identifier">compile</span><span>

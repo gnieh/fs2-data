@@ -287,15 +287,15 @@ window.addEventListener('DOMContentLoaded', (event) => {
   .</span><span class="identifier">through</span><span>(</span><span class="type-name">Files</span><span>[</span><span class="type-name">IO</span><span>].</span><span class="identifier">writeAll</span><span>(</span><span class="type-name">Path</span><span>(</span><span class="string-literal">&quot;/some/path/to/file.json&quot;</span><span>), </span><span class="type-name">Flags</span><span>.</span><span class="type-name">Write</span><span>))
   .</span><span class="identifier">compile</span><span>
   .</span><span class="identifier">drain</span></code></pre>
-        <p>There exists also a <code>pretty()</code> renderer, that indents inner elements by the given indent string.</p>
-        <p>If you are interested in the String rendering as a value, the library also provides <code>Collector</code>s:</p>
-        <pre><code class="nohighlight"><span class="identifier">stream</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">to</span><span>(</span><span class="identifier">collector</span><span>.</span><span class="identifier">compact</span><span>)
-</span><span class="comment">// res7: Either[Throwable, collector.compact.Out] = Right(
+        <p>There exists also a <code>prettyPrint()</code> renderer, that indents inner elements by the given indent size (in spaces) and for a given page width.</p>
+        <p>If you are interested in the String rendering as a value, you can use the <code>string</code> <code>Collector</code>:</p>
+        <pre><code class="nohighlight"><span class="identifier">stream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">render</span><span>.</span><span class="identifier">compact</span><span>).</span><span class="identifier">compile</span><span>.</span><span class="identifier">string</span><span>
+</span><span class="comment">// res7: Either[Throwable, String] = Right(
 //   value = &quot;{\&quot;field1\&quot;:0,\&quot;field2\&quot;:\&quot;test\&quot;,\&quot;field3\&quot;:[1,2,3]}{\&quot;field1\&quot;:2,\&quot;field3\&quot;:[]}&quot;
 // )
 </span><span>
 </span><span class="comment">// default indentation is 2 spaces
-</span><span class="identifier">stream</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">to</span><span>(</span><span class="identifier">collector</span><span>.</span><span class="identifier">pretty</span><span>())
+</span><span class="identifier">stream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">render</span><span>.</span><span class="identifier">prettyPrint</span><span>(</span><span class="identifier">width</span><span> = </span><span class="number-literal">10</span><span>)).</span><span class="identifier">compile</span><span>.</span><span class="identifier">string</span><span>
 </span><span class="comment">// res8: Either[Throwable, String] = Right(
 //   value = &quot;&quot;&quot;{
 //   &quot;field1&quot;: 0,
@@ -305,27 +305,25 @@ window.addEventListener('DOMContentLoaded', (event) => {
 //     2,
 //     3
 //   ]
-// }
-// {
+// }{
 //   &quot;field1&quot;: 2,
 //   &quot;field3&quot;: []
 // }&quot;&quot;&quot;
 // )
-// if you are more into tabs (or any other indentation size) you can change the indentation string
-</span><span class="identifier">stream</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">to</span><span>(</span><span class="identifier">collector</span><span>.</span><span class="identifier">pretty</span><span>(</span><span class="string-literal">&quot;</span><span class="escape-sequence">\t</span><span class="string-literal">&quot;</span><span>))
+// if you are more into 4 spaces (or any other indentation size) you can change the indentation size
+</span><span class="identifier">stream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">render</span><span>.</span><span class="identifier">prettyPrint</span><span>(</span><span class="identifier">indent</span><span> = </span><span class="number-literal">4</span><span>, </span><span class="identifier">width</span><span> = </span><span class="number-literal">10</span><span>)).</span><span class="identifier">compile</span><span>.</span><span class="identifier">string</span><span>
 </span><span class="comment">// res9: Either[Throwable, String] = Right(
 //   value = &quot;&quot;&quot;{
-// 	&quot;field1&quot;: 0,
-// 	&quot;field2&quot;: &quot;test&quot;,
-// 	&quot;field3&quot;: [
-// 		1,
-// 		2,
-// 		3
-// 	]
-// }
-// {
-// 	&quot;field1&quot;: 2,
-// 	&quot;field3&quot;: []
+//     &quot;field1&quot;: 0,
+//     &quot;field2&quot;: &quot;test&quot;,
+//     &quot;field3&quot;: [
+//         1,
+//         2,
+//         3
+//     ]
+// }{
+//     &quot;field1&quot;: 2,
+//     &quot;field3&quot;: []
 // }&quot;&quot;&quot;
 // )</span></code></pre>
         
@@ -362,15 +360,48 @@ window.addEventListener('DOMContentLoaded', (event) => {
 </span><span class="keyword">val</span><span> </span><span class="identifier">wrappedTokens</span><span> = </span><span class="identifier">events</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">ast</span><span>.</span><span class="identifier">tokenize</span><span>).</span><span class="identifier">through</span><span>(</span><span class="identifier">wrap</span><span>.</span><span class="identifier">asArrayInObject</span><span>(</span><span class="identifier">at</span><span> = </span><span class="string-literal">&quot;events&quot;</span><span>))
 </span><span class="comment">// wrappedTokens: Stream[[x]Pure[x], Token] = Stream(..)</span></code></pre>
         <p>You can use the renderers described above to generate the rendered chunks to send to the client.</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">wrappedTokens</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">render</span><span>.</span><span class="identifier">compact</span><span>).</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>
+        <pre><code class="nohighlight"><span class="identifier">wrappedTokens</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">render</span><span>.</span><span class="identifier">compact</span><span>).</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>
 </span><span class="comment">// res10: cats.package.Id[List[String]] = List(
 //   &quot;{&quot;,
 //   &quot;\&quot;events\&quot;:&quot;,
 //   &quot;[&quot;,
-//   &quot;{\&quot;name\&quot;:\&quot;counter1\&quot;,\&quot;initialValue\&quot;:0,\&quot;type\&quot;:\&quot;CreateCounter\&quot;}&quot;,
-//   &quot;,{\&quot;name\&quot;:\&quot;counter1\&quot;,\&quot;type\&quot;:\&quot;IncreaseCounter\&quot;}&quot;,
-//   &quot;,{\&quot;name\&quot;:\&quot;counter2\&quot;,\&quot;initialValue\&quot;:0,\&quot;type\&quot;:\&quot;CreateCounter\&quot;}&quot;,
-//   &quot;,{\&quot;name\&quot;:\&quot;counter2\&quot;,\&quot;type\&quot;:\&quot;RemoveCounter\&quot;}&quot;,
+//   &quot;{&quot;,
+//   &quot;\&quot;name\&quot;:&quot;,
+//   &quot;\&quot;counter1\&quot;&quot;,
+//   &quot;,&quot;,
+//   &quot;\&quot;initialValue\&quot;:&quot;,
+//   &quot;0&quot;,
+//   &quot;,&quot;,
+//   &quot;\&quot;type\&quot;:&quot;,
+//   &quot;\&quot;CreateCounter\&quot;&quot;,
+//   &quot;}&quot;,
+//   &quot;,&quot;,
+//   &quot;{&quot;,
+//   &quot;\&quot;name\&quot;:&quot;,
+//   &quot;\&quot;counter1\&quot;&quot;,
+//   &quot;,&quot;,
+//   &quot;\&quot;type\&quot;:&quot;,
+//   &quot;\&quot;IncreaseCounter\&quot;&quot;,
+//   &quot;}&quot;,
+//   &quot;,&quot;,
+//   &quot;{&quot;,
+//   &quot;\&quot;name\&quot;:&quot;,
+//   &quot;\&quot;counter2\&quot;&quot;,
+//   &quot;,&quot;,
+//   &quot;\&quot;initialValue\&quot;:&quot;,
+//   &quot;0&quot;,
+//   &quot;,&quot;,
+//   &quot;\&quot;type\&quot;:&quot;,
+//   &quot;\&quot;CreateCounter\&quot;&quot;,
+//   &quot;}&quot;,
+//   &quot;,&quot;,
+//   &quot;{&quot;,
+//   &quot;\&quot;name\&quot;:&quot;,
+//   &quot;\&quot;counter2\&quot;&quot;,
+//   &quot;,&quot;,
+//   &quot;\&quot;type\&quot;:&quot;,
+//   &quot;\&quot;RemoveCounter\&quot;&quot;,
+//   &quot;}&quot;,
 //   &quot;]&quot;,
 //   &quot;}&quot;
 // )</span></code></pre>
@@ -385,13 +416,48 @@ window.addEventListener('DOMContentLoaded', (event) => {
   .</span><span class="identifier">toList</span><span>
 </span><span class="comment">// res11: cats.package.Id[List[String]] = List(
 //   &quot;{&quot;,
-//   &quot;\&quot;size\&quot;:4&quot;,
-//   &quot;,\&quot;events\&quot;:&quot;,
+//   &quot;\&quot;size\&quot;:&quot;,
+//   &quot;4&quot;,
+//   &quot;,&quot;,
+//   &quot;\&quot;events\&quot;:&quot;,
 //   &quot;[&quot;,
-//   &quot;{\&quot;name\&quot;:\&quot;counter1\&quot;,\&quot;initialValue\&quot;:0,\&quot;type\&quot;:\&quot;CreateCounter\&quot;}&quot;,
-//   &quot;,{\&quot;name\&quot;:\&quot;counter1\&quot;,\&quot;type\&quot;:\&quot;IncreaseCounter\&quot;}&quot;,
-//   &quot;,{\&quot;name\&quot;:\&quot;counter2\&quot;,\&quot;initialValue\&quot;:0,\&quot;type\&quot;:\&quot;CreateCounter\&quot;}&quot;,
-//   &quot;,{\&quot;name\&quot;:\&quot;counter2\&quot;,\&quot;type\&quot;:\&quot;RemoveCounter\&quot;}&quot;,
+//   &quot;{&quot;,
+//   &quot;\&quot;name\&quot;:&quot;,
+//   &quot;\&quot;counter1\&quot;&quot;,
+//   &quot;,&quot;,
+//   &quot;\&quot;initialValue\&quot;:&quot;,
+//   &quot;0&quot;,
+//   &quot;,&quot;,
+//   &quot;\&quot;type\&quot;:&quot;,
+//   &quot;\&quot;CreateCounter\&quot;&quot;,
+//   &quot;}&quot;,
+//   &quot;,&quot;,
+//   &quot;{&quot;,
+//   &quot;\&quot;name\&quot;:&quot;,
+//   &quot;\&quot;counter1\&quot;&quot;,
+//   &quot;,&quot;,
+//   &quot;\&quot;type\&quot;:&quot;,
+//   &quot;\&quot;IncreaseCounter\&quot;&quot;,
+//   &quot;}&quot;,
+//   &quot;,&quot;,
+//   &quot;{&quot;,
+//   &quot;\&quot;name\&quot;:&quot;,
+//   &quot;\&quot;counter2\&quot;&quot;,
+//   &quot;,&quot;,
+//   &quot;\&quot;initialValue\&quot;:&quot;,
+//   &quot;0&quot;,
+//   &quot;,&quot;,
+//   &quot;\&quot;type\&quot;:&quot;,
+//   &quot;\&quot;CreateCounter\&quot;&quot;,
+//   &quot;}&quot;,
+//   &quot;,&quot;,
+//   &quot;{&quot;,
+//   &quot;\&quot;name\&quot;:&quot;,
+//   &quot;\&quot;counter2\&quot;&quot;,
+//   &quot;,&quot;,
+//   &quot;\&quot;type\&quot;:&quot;,
+//   &quot;\&quot;RemoveCounter\&quot;&quot;,
+//   &quot;}&quot;,
 //   &quot;]&quot;,
 //   &quot;}&quot;
 // )</span></code></pre>
