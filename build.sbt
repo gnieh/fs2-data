@@ -31,7 +31,7 @@ val diffsonVersion = "4.5.0"
 val literallyVersion = "1.1.0"
 val weaverVersion = "0.8.4"
 
-ThisBuild / tlBaseVersion := "1.10"
+ThisBuild / tlBaseVersion := "1.11"
 
 ThisBuild / organization := "org.gnieh"
 ThisBuild / organizationName := "fs2-data Project"
