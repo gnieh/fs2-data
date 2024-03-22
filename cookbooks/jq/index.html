@@ -256,7 +256,7 @@ Reading(Reading) --&gt; Parsing --&gt; Transforming --&gt; Printing --&gt; Writi
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">jq</span><span>.</span><span class="type-name">Compiler</span><span>
 
 </span><span class="keyword">val</span><span> </span><span class="identifier">queryCompiler</span><span> = </span><span class="type-name">Compiler</span><span>[</span><span class="type-name">IO</span><span>]
-</span><span class="comment">// queryCompiler: Compiler[IO] = fs2.data.json.jq.internal.ESPJqCompiler@1688d3c1
+</span><span class="comment">// queryCompiler: Compiler[IO] = fs2.data.json.jq.internal.ESPJqCompiler@3d27713d
 </span><span>
 </span><span class="keyword">val</span><span> </span><span class="identifier">queryPipe</span><span> = </span><span class="identifier">queryCompiler</span><span>.</span><span class="identifier">compile</span><span>(</span><span class="identifier">query</span><span>).</span><span class="identifier">unsafeRunSync</span><span>()
 </span><span class="comment">// queryPipe: fs2.package.Pipe[IO, json.Token, json.Token] = &lt;function1&gt;</span></code></pre>
