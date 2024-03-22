@@ -19,12 +19,8 @@ package data
 package json
 package internals
 
-import scala.annotation.{switch, tailrec}
-
 private[json] class Renderer(pretty: Boolean, resetOnChunk: Boolean, indent: String)
     extends Collector.Builder[Token, String] {
-
-  import Renderer._
 
   private val builder = new StringBuilder
 
@@ -41,51 +37,9 @@ private[json] class Renderer(pretty: Boolean, resetOnChunk: Boolean, indent: Str
     }
 
   private def jsonString(s: String, key: Boolean): Unit = {
-    @tailrec
-    def loop(idx: Int): Unit =
-      if (idx < s.length) {
-        val nextEscape = s.indexWhere(c => c > 127 || Character.isISOControl(c) || "\\/\b\f\n\r\t\"".contains(c), idx)
-        if (nextEscape >= 0) {
-          if (nextEscape > 0) {
-            builder.append(s.substring(idx, nextEscape))
-          }
-          val c = s(nextEscape)
-          (c: @switch) match {
-            case '\\' =>
-              builder.append("\\\\")
-            case '/' =>
-              builder.append("\\/")
-            case '\b' =>
-              builder.append("\\b")
-            case '\f' =>
-              builder.append("\\f")
-            case '\n' =>
-              builder.append("\\n")
-            case '\r' =>
-              builder.append("\\r")
-            case '\t' =>
-              builder.append("\\t")
-            case '"' =>
-              builder.append("\\\"")
-            case _ =>
-              // escape non ascii or control characters
-              builder
-                .append("\\u")
-                .append(hex((c >> 12) & 0x0f))
-                .append(hex((c >> 8) & 0x0f))
-                .append(hex((c >> 4) & 0x0f))
-                .append(hex(c & 0x0f))
-          }
-          loop(nextEscape + 1)
-        } else {
-          // append the rest of the string and we are done
-          builder.append(s.substring(idx))
-        }
-      }
-
     prefixValue()
     builder.append('"')
-    loop(0)
+    Token.renderString(s, 0, builder)
     builder.append('"')
 
     if (key) {
@@ -171,8 +125,6 @@ private[json] class Renderer(pretty: Boolean, resetOnChunk: Boolean, indent: Str
 }
 
 private[json] object Renderer {
-
-  private val hex = "0123456789abcdef"
 
   def pipe[F[_]](pretty: Boolean, indent: String): Pipe[F, Token, String] =
     in =>

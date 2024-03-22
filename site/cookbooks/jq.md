@@ -15,7 +15,7 @@ The _Reading_ and _Writing_ steps are not specific to `fs2-data` but rely on pur
 
  - The `tokens` pipe to parse the input stream into JSON @:api(fs2.data.json.Token)s (see [the documentation][json-doc] for more details).
  - The @:api(fs2.data.json.jq.Compiler) class to compile a query into a pipe (see [the documentation][jq-doc] for more details).
- - The `render.pretty` pipe to render the query result into a pretty-printed JSON string (see [the documentation][render-doc] for more details).
+ - The `render.prettyPrint` pipe to render the query result into a pretty-printed JSON string (see [the documentation][render-doc] for more details).
 
 In general the _Transforming_ step can use whatever operator fits your purpose, from `fs2` or any other `fs2`-based library. But in our case the only transformation will be performed by the query.
 
@@ -55,7 +55,7 @@ import fs2.data.json
 Files[IO]
   .readUtf8(Path("site/cookbooks/data/json/sample.json"))
   .through(json.tokens) // parsing JSON input
-  .through(json.render.pretty()) // pretty printing JSON stream
+  .through(json.render.prettyPrint()) // pretty printing JSON stream
   .through(utf8.encode[IO])
   .through(stdout)
   .compile
@@ -95,7 +95,7 @@ Files[IO]
   .readUtf8(Path("site/cookbooks/data/json/sample.json"))
   .through(json.tokens)
   .through(queryPipe) // the transformation using the query pipe
-  .through(json.render.pretty())
+  .through(json.render.prettyPrint())
   .through(utf8.encode[IO])
   .through(stdout)
   .compile

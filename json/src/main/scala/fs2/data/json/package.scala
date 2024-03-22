@@ -22,6 +22,7 @@ import json.ast._
 import json.internals._
 
 import cats._
+import fs2.data.text.render.Renderable
 
 /** Handles stream parsing and traversing of json documents.
   */
@@ -153,7 +154,7 @@ package object json {
       * You can use this to write the Json stream to a file.
       */
     def compact[F[_]]: Pipe[F, Token, String] =
-      Renderer.pipe[F](false, "")
+      _.through(fs2.data.text.render.pretty(width = Int.MaxValue)(Token.compact))
 
     /** Renders a pretty-printed representation of the token stream with the given
       * indentation size.
@@ -163,8 +164,25 @@ package object json {
       *
       * You can use this to write the Json stream to a file.
       */
+    @deprecated(message = "Consider using `fs2.data.json.render.prettyPrint` instead.", since = "fs2-data 1.11.0")
     def pretty[F[_]](indent: String = "  "): Pipe[F, Token, String] =
       Renderer.pipe[F](true, indent)
+
+    /** Renders a pretty-printed representation of the token stream with the given
+      * indentation size and page width.
+      *
+      * Chunks can be concatenated to render all values in the stream,
+      * separated by new lines.
+      *
+      * You can use this to write the Json stream to a file.
+      *
+      * You can configure how the stream is rendered by providing an instance of
+      * [[fs2.data.text.render.Renderable Renderable]] in scope. A default one is automatically
+      * provided if you do not need specific formatting.
+      */
+    def prettyPrint[F[_]](width: Int = 100, indent: Int = 2)(implicit
+        renderable: Renderable[Token]): Pipe[F, Token, String] =
+      _.through(fs2.data.text.render.pretty(width = width, indent = indent))
 
   }
 
@@ -187,6 +205,8 @@ package object json {
       *
       * Top-level values are separated by new lines.
       */
+    @deprecated(message = "Consider using `.through(fs2.data.json.render.prettyPrint()).compile.string` instead.",
+                since = "fs2-data 1.11.0")
     def pretty(indent: String = "  "): Collector.Aux[Token, String] =
       new Collector[Token] {
         type Out = String
