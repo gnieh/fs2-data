@@ -53,7 +53,7 @@ val array =
     .through(readJsonLines)
     .through(fs2.data.json.ast.tokenize)
     .through(fs2.data.json.wrap.asTopLevelArray)
-    .through(fs2.data.json.render.pretty())
+    .through(fs2.data.json.render.prettyPrint(width = 35))
 
 array
   .compile
@@ -80,9 +80,13 @@ Similarly, using `fs2` and `fs2-data` operators, we can generate a stream that w
 ```scala mdoc
 def writeJsonLines(input: Stream[IO, Json]): Stream[IO, Byte] =
   input
-    .flatMap { data =>
+    .map { data =>
       // rule #2: values must be encoded on single lines
-      Stream.emit(data).through(fs2.data.json.ast.tokenize).through(fs2.data.json.render.compact)
+      Stream.emit(data)
+            .through(fs2.data.json.ast.tokenize)
+            .through(fs2.data.json.render.compact)
+            .compile
+            .string
     }
     // rule #3: new line delimiter is '\n'
     .intersperse("\n")
