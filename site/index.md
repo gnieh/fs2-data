@@ -42,4 +42,4 @@ Here's a (non-exhaustive) list of companies and projects that use `fs2-data`. Do
 [diffson]: https://github.com/gnieh/diffson
 [literally]: https://github.com/typelevel/literally
 [scala-xml]: https://github.com/scala/scala-xml
-[add-adopter]: https://github.com/gnieh/fs2/edit/main/site/index.md
+[add-adopter]: https://github.com/gnieh/fs2-data/edit/main/site/index.md
