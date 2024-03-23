@@ -21,6 +21,19 @@ Following modules are available:
   - `fs2-data-cbor`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-cbor_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-cbor_2.13) CBOR parser and trasformation
   - `fs2-data-cbor-json`: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-data-cbor-json_2.13.svg)](https://mvnrepository.com/artifact/org.gnieh/fs2-data-cbor-json_2.13) CBOR/JSON interoperability library
 
+## Adopters
+
+Here's a (non-exhaustive) list of companies and projects that use `fs2-data`. Don't see yours? You can [add it in a PR][add-adopter]!
+
+### Projects
+
+ - [typelevel-toolkit](https://typelevel.org/toolkit/) - A toolkit of great libraries to start building Typelevel apps on JVM, Node.js, and Native!
+ - [http4s-fs2-data](https://http4s.github.io/http4s-fs2-data/) - Provides a set of integration libraries that integrate http4s with the streaming parsers offered by fs2-data.
+ - [smithy4s](https://disneystreaming.github.io/smithy4s/) - An interface definition language (IDL) provided by AWS.
+
+### Companies
+
+ _Add your own_.
 
 [doc]: /documentation/index.md
 [fs2]: https://fs2.io
@@ -29,3 +42,4 @@ Following modules are available:
 [diffson]: https://github.com/gnieh/diffson
 [literally]: https://github.com/typelevel/literally
 [scala-xml]: https://github.com/scala/scala-xml
+[add-adopter]: https://github.com/gnieh/fs2/edit/main/site/index.md
