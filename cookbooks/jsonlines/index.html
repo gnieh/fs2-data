@@ -207,7 +207,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
     .</span><span class="identifier">through</span><span>(</span><span class="identifier">readJsonLines</span><span>)
     .</span><span class="identifier">through</span><span>(</span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">ast</span><span>.</span><span class="identifier">tokenize</span><span>)
     .</span><span class="identifier">through</span><span>(</span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">wrap</span><span>.</span><span class="identifier">asTopLevelArray</span><span>)
-    .</span><span class="identifier">through</span><span>(</span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">render</span><span>.</span><span class="identifier">pretty</span><span>())
+    .</span><span class="identifier">through</span><span>(</span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">render</span><span>.</span><span class="identifier">prettyPrint</span><span>(</span><span class="identifier">width</span><span> = </span><span class="number-literal">35</span><span>))
 </span><span class="comment">// array: Stream[[x]IO[x], String] = Stream(..)
 </span><span>
 </span><span class="identifier">array</span><span>
@@ -218,33 +218,18 @@ window.addEventListener('DOMContentLoaded', (event) => {
 //   {
 //     &quot;name&quot;: &quot;Gilbert&quot;,
 //     &quot;wins&quot;: [
-//       [
-//         &quot;straight&quot;,
-//         &quot;7\u2663&quot;
-//       ],
-//       [
-//         &quot;one pair&quot;,
-//         &quot;10\u2665&quot;
-//       ]
+//       [&quot;straight&quot;, &quot;7\u2663&quot;],
+//       [&quot;one pair&quot;, &quot;10\u2665&quot;]
 //     ]
 //   },
 //   {
 //     &quot;name&quot;: &quot;Alexa&quot;,
 //     &quot;wins&quot;: [
-//       [
-//         &quot;two pair&quot;,
-//         &quot;4\u2660&quot;
-//       ],
-//       [
-//         &quot;two pair&quot;,
-//         &quot;9\u2660&quot;
-//       ]
+//       [&quot;two pair&quot;, &quot;4\u2660&quot;],
+//       [&quot;two pair&quot;, &quot;9\u2660&quot;]
 //     ]
 //   },
-//   {
-//     &quot;name&quot;: &quot;May&quot;,
-//     &quot;wins&quot;: []
-//   },
+//   {&quot;name&quot;: &quot;May&quot;, &quot;wins&quot;: []},
 //   {
 //     &quot;name&quot;: &quot;Deloise&quot;,
 //     &quot;wins&quot;: [
@@ -277,11 +262,15 @@ window.addEventListener('DOMContentLoaded', (event) => {
         
         <h2 id="producing-json-lines-data" class="section"><a class="anchor-link left" href="#producing-json-lines-data"><i class="icofont-laika link">&#xef71;</i></a>Producing JSON Lines data</h2>
         <p>Similarly, using <code>fs2</code> and <code>fs2-data</code> operators, we can generate a stream that will emit each record on a single line.</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">def</span><span> </span><span class="declaration-name">writeJsonLines</span><span>(</span><span class="identifier">input</span><span>: </span><span class="type-name">Stream</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">Json</span><span>]): </span><span class="type-name">Stream</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">Byte</span><span>] =
+        <pre><code class="nohighlight"><span class="keyword">def</span><span> </span><span class="declaration-name">writeJsonLines</span><span>(</span><span class="identifier">input</span><span>: </span><span class="type-name">Stream</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">Json</span><span>]): </span><span class="type-name">Stream</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">Byte</span><span>] =
   </span><span class="identifier">input</span><span>
-    .</span><span class="identifier">flatMap</span><span> { </span><span class="identifier">data</span><span> =&gt;
+    .</span><span class="identifier">map</span><span> { </span><span class="identifier">data</span><span> =&gt;
       </span><span class="comment">// rule #2: values must be encoded on single lines
-</span><span>      </span><span class="type-name">Stream</span><span>.</span><span class="identifier">emit</span><span>(</span><span class="identifier">data</span><span>).</span><span class="identifier">through</span><span>(</span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">ast</span><span>.</span><span class="identifier">tokenize</span><span>).</span><span class="identifier">through</span><span>(</span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">render</span><span>.</span><span class="identifier">compact</span><span>)
+</span><span>      </span><span class="type-name">Stream</span><span>.</span><span class="identifier">emit</span><span>(</span><span class="identifier">data</span><span>)
+            .</span><span class="identifier">through</span><span>(</span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">ast</span><span>.</span><span class="identifier">tokenize</span><span>)
+            .</span><span class="identifier">through</span><span>(</span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">render</span><span>.</span><span class="identifier">compact</span><span>)
+            .</span><span class="identifier">compile</span><span>
+            .</span><span class="identifier">string</span><span>
     }
     </span><span class="comment">// rule #3: new line delimiter is &#39;\n&#39;
 </span><span>    .</span><span class="identifier">intersperse</span><span>(</span><span class="string-literal">&quot;</span><span class="escape-sequence">\n</span><span class="string-literal">&quot;</span><span>)
@@ -300,50 +289,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
   .</span><span class="identifier">compile</span><span>
   .</span><span class="identifier">string</span><span>
   .</span><span class="identifier">unsafeRunSync</span><span>()
-</span><span class="comment">// res2: String = &quot;&quot;&quot;{
-// &quot;name&quot;:
-// &quot;Adeel Solangi&quot;
-// ,
-// &quot;language&quot;:
-// &quot;Sindhi&quot;
-// ,
-// &quot;id&quot;:
-// &quot;V59OF92YF627HFY0&quot;
-// ,
-// &quot;bio&quot;:
-// &quot;Donec lobortis eleifend condimentum. Cras dictum dolor lacinia lectus vehicula rutrum. Maecenas quis nisi nunc. Nam tristique feugiat est vitae mollis. Maecenas quis nisi nunc.&quot;
-// ,
-// &quot;version&quot;:
-// 6.1
-// }
-// {
-// &quot;name&quot;:
-// &quot;Afzal Ghaffar&quot;
-// ,
-// &quot;language&quot;:
-// &quot;Sindhi&quot;
-// ,
-// &quot;id&quot;:
-// &quot;ENTOCR13RSCLZ6KU&quot;
-// ,
-// &quot;bio&quot;:
-// &quot;Aliquam sollicitudin ante ligula, eget malesuada nibh efficitur et. Pellentesque massa sem, scelerisque sit amet odio id, cursus tempor urna. Etiam congue dignissim volutpat. Vestibulum pharetra libero et velit gravida euismod.&quot;
-// ,
-// &quot;version&quot;:
-// 1.88
-// }
-// {
-// &quot;name&quot;:
-// &quot;Aamir Solangi&quot;
-// ,
-// &quot;language&quot;:
-// &quot;Sindhi&quot;
-// ,
-// &quot;id&quot;:
-// &quot;IAKPO3R4761JDRVG&quot;
-// ,
-// &quot;bio&quot;:
-// &quot;Vestibulum pharetra libero et velit gravida euismod. Quisque mauris ligula, efficitur porttitor sodales ac, lacinia non ex. Fusce eu ultrices elit, vel posuere...</span></code></pre>
+</span><span class="comment">// res2: String = &quot;&quot;&quot;{&quot;name&quot;:&quot;Adeel Solangi&quot;,&quot;language&quot;:&quot;Sindhi&quot;,&quot;id&quot;:&quot;V59OF92YF627HFY0&quot;,&quot;bio&quot;:&quot;Donec lobortis eleifend condimentum. Cras dictum dolor lacinia lectus vehicula rutrum. Maecenas quis nisi nunc. Nam tristique feugiat est vitae mollis. Maecenas quis nisi nunc.&quot;,&quot;version&quot;:6.1}
+// {&quot;name&quot;:&quot;Afzal Ghaffar&quot;,&quot;language&quot;:&quot;Sindhi&quot;,&quot;id&quot;:&quot;ENTOCR13RSCLZ6KU&quot;,&quot;bio&quot;:&quot;Aliquam sollicitudin ante ligula, eget malesuada nibh efficitur et. Pellentesque massa sem, scelerisque sit amet odio id, cursus tempor urna. Etiam congue dignissim volutpat. Vestibulum pharetra libero et velit gravida euismod.&quot;,&quot;version&quot;:1.88}
+// {&quot;name&quot;:&quot;Aamir Solangi&quot;,&quot;language&quot;:&quot;Sindhi&quot;,&quot;id&quot;:&quot;IAKPO3R4761JDRVG&quot;,&quot;bio&quot;:&quot;Vestibulum pharetra libero et velit gravida euismod. Quisque mauris ligula, efficitur porttitor sodales ac, lacinia non ex. Fusce eu ultrices elit, vel posuere neque.&quot;,&quot;version&quot;:7.27}
+// {&quot;name&quot;:&quot;Abla Dilmurat&quot;,&quot;language&quot;:&quot;Uyghur&quot;,&quot;id&quot;:&quot;5ZVOEPMJUI4MB4EN&quot;,&quot;bio&quot;:&quot;Donec lobortis eleifend condimentum. Morbi ac tellus erat.&quot;,&quot;version&quot;:2.53}
+// {&quot;name&quot;:&quot;Adil Eli&quot;,&quot;language&quot;:&quot;Uyghur&quot;,&quot;id&quot;:&quot;6VTI8X6LL0MMPJCC&quot;,&quot;bio&quot;:&quot;Vivamus id faucibus velit, id posuere leo. Morbi vitae nisi lacinia, laoreet lorem nec, egestas orci. Suspendisse potenti.&quot;,&quot;version&quot;:6.49}&quot;&quot;&quot;</span></code></pre>
         
         <h2 id="running-the-full-example" class="section"><a class="anchor-link left" href="#running-the-full-example"><i class="icofont-laika link">&#xef71;</i></a>Running the full example</h2>
         <p>The full code can be found in the repository as a <a href="https://scala-cli.virtuslab.org/">Scala CLI</a> <a href="../scripts/jsonlines.scala">script</a>.

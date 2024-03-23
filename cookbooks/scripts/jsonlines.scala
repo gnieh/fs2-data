@@ -40,9 +40,13 @@ object JsonLines
 
   def writeJsonLines(input: Stream[IO, Json]): Stream[IO, Byte] =
     input
-      .flatMap { data =>
+      .map { data =>
         // rule #2: values must be encoded on single lines
-        Stream.emit(data).through(fs2.data.json.ast.tokenize).through(fs2.data.json.render.compact)
+        Stream.emit(data)
+          .through(fs2.data.json.ast.tokenize)
+          .through(fs2.data.json.render.compact)
+          .compile
+          .string
       }
       // rule #3: new line delimiter is '\n'
       .intersperse("\n")
@@ -67,7 +71,7 @@ object JsonLines
           .through(readJsonLines)
           .through(fs2.data.json.ast.tokenize)
           .through(fs2.data.json.wrap.asTopLevelArray)
-          .through(fs2.data.json.render.pretty())
+          .through(fs2.data.json.render.prettyPrint())
           .through(fs2.text.utf8.encode)
           .through(fs2.io.stdout)
           .compile
