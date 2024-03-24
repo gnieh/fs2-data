@@ -32,8 +32,10 @@ Here's a (non-exhaustive) list of companies and projects that use `fs2-data`. Do
  - [smithy4s](https://disneystreaming.github.io/smithy4s/) - An interface definition language (IDL) provided by AWS.
 
 ### Companies
+ 
+ - [lichess.org](https://lichess.org) - The forever free, adless and open source chess server
 
- _Add your own_.
+_Add your own_.
 
 [doc]: /documentation/index.md
 [fs2]: https://fs2.io
