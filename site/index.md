@@ -34,6 +34,7 @@ Here's a (non-exhaustive) list of companies and projects that use `fs2-data`. Do
 ### Companies
  
  - [lichess.org](https://lichess.org) - The forever free, adless and open source chess server
+ - [Mobimeo](https://mobimeo.com) – Building apps and services for public transport in Germany
 
 _Add your own_.
 
