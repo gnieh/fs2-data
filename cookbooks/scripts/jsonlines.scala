@@ -42,7 +42,8 @@ object JsonLines
     input
       .map { data =>
         // rule #2: values must be encoded on single lines
-        Stream.emit(data)
+        Stream
+          .emit(data)
           .through(fs2.data.json.ast.tokenize)
           .through(fs2.data.json.render.compact)
           .compile
