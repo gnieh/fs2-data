@@ -19,10 +19,8 @@ package generic
 
 import weaver._
 
-import scala.annotation.nowarn
-
 // ignore some warnings about unused stuff
-@nowarn object CellDecoderTest extends SimpleIOSuite {
+object CellDecoderTest extends SimpleIOSuite {
 
   pureTest("derivation for coproducts should work out of the box for enum-style sealed traits") {
     val simpleDecoder: CellDecoder[Simple] = semiauto.deriveCellDecoder

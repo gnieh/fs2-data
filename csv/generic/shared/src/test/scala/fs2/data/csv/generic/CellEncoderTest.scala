@@ -19,11 +19,9 @@ package fs2.data.csv.generic
 import fs2.data.csv.CellEncoder
 import weaver._
 
-import scala.annotation.nowarn
-
 case class WithDef(a: Int = 1, b: String = "BBBB")
 
-@nowarn object CellEncoderTest extends SimpleIOSuite {
+object CellEncoderTest extends SimpleIOSuite {
 
   pureTest("derivation for coproducts should work out of the box for enum-style sealed traits") {
     val simpleEncoder: CellEncoder[Simple] = semiauto.deriveCellEncoder
