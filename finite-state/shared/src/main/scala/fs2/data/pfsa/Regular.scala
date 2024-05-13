@@ -169,10 +169,10 @@ sealed abstract class Regular[CharSet] {
         case Some(c) =>
           val tgt = re.derive(c)
           val equivalent = qs.zipWithIndex.collectFirst {
-            case (q, idx) if tgt === q => idx
+            case (q1, idx) if tgt === q1 => idx
           }
           equivalent match {
-            case Some(tgt) => (qs, transitions.combine(Map(q -> List(cs -> tgt))))
+            case Some(tgt1) => (qs, transitions.combine(Map(q -> List(cs -> tgt1))))
             case None =>
               val qs1 = qs.append(tgt)
               val q1 = qs.size.toInt

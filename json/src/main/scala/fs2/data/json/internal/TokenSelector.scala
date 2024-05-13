@@ -47,8 +47,8 @@ private[json] object TokenSelector {
               Pull.raiseError(JsonException("An error occurred while transforming Json data", Some(context), e))
             case Right(v) =>
               val chunkAcc1 = fromB(f(v)) match {
-                case Some(json) => chunkAcc ++= key.map(Token.Key(_)) ++= tokenizer.tokenize(json).toList
-                case None       => chunkAcc
+                case Some(newjson) => chunkAcc ++= key.map(Token.Key(_)) ++= tokenizer.tokenize(newjson).toList
+                case None          => chunkAcc
               }
               Pull.pure(Some((chunk, idx, rest, chunkAcc1)))
           }

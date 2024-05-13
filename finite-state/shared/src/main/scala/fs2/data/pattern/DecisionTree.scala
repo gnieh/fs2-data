@@ -29,17 +29,17 @@ sealed trait DecisionTree[Expr, Tag, Out] {
           skel.select(on) match {
             case Some(c) =>
               branches.get(c.tag) match {
-                case Some(tree) => loop(tree)
+                case Some(tree1) => loop(tree1)
                 case None =>
                   fallBack match {
-                    case Some(tree) => loop(tree)
-                    case None       => None
+                    case Some(tree1) => loop(tree1)
+                    case None        => None
                   }
               }
             case None =>
               fallBack match {
-                case Some(tree) => loop(tree)
-                case None       => None
+                case Some(tree1) => loop(tree1)
+                case None        => None
               }
           }
         case _ => None

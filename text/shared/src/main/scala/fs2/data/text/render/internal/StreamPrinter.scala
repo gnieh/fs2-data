@@ -54,8 +54,9 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
       groups.uncons match {
         case Some(((_, _, buffer), groups)) =>
           Pull.output(Chunk.chain(buffer.prepend(Annotated.GroupBegin(Position.TooFar)))) >> (groups.uncons match {
-            case Some(((hpl, indent, _), _)) => check(hpl, indent, groups, ghpl) // check inner groups recursively
-            case None                        => Pull.pure(emptyGroups)
+            case Some(((newhpl, newindent, _), _)) =>
+              check(newhpl, newindent, groups, ghpl) // check inner groups recursively
+            case None => Pull.pure(emptyGroups)
           })
         case None =>
           Pull.pure(emptyGroups) // should never happen
@@ -140,11 +141,11 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
               // closing unknown group, just ignore it
               annotate(chunk, idx + 1, rest, pos, aligns, hpl, indent, groups)
 
-            case Some(((hpl, indent, group), groups)) =>
+            case Some(((newhpl, newindent, group), groups)) =>
               // closing a group, pop it from the buffer dequeue, and continue
               pop(groups, group.prepend(Annotated.GroupBegin(Position.Small(pos))).append(Annotated.GroupEnd(pos)))
                 .flatMap { groups =>
-                  annotate(chunk, idx + 1, rest, pos, aligns, hpl, indent, groups)
+                  annotate(chunk, idx + 1, rest, pos, aligns, newhpl, newindent, groups)
                 }
 
           }

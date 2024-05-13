@@ -30,7 +30,7 @@ private[data] class PDFA[P, T](val init: Int,
     if (q >= transitions.length)
       None
     else
-      transitions(q).collectFirst { case (p, q) if p.satisfies(t) => q }
+      transitions(q).collectFirst { case (p, q1) if p.satisfies(t) => q1 }
 
   def recognizes[S[_]: Foldable](input: S[T]): Boolean =
     input
@@ -38,8 +38,8 @@ private[data] class PDFA[P, T](val init: Int,
         transitions
           .lift(q)
           .flatMap(_.collectFirst {
-            case (p, q) if p.satisfies(c) =>
-              (q, idx + 1)
+            case (p, q1) if p.satisfies(c) =>
+              (q1, idx + 1)
           })
       }
       .exists { case (q, idx) =>
