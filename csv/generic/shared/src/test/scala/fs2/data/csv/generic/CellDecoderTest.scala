@@ -21,7 +21,7 @@ import org.typelevel.scalaccompat.annotation._
 import weaver._
 
 // ignore some warnings about unused stuff
-@nowarn212 object CellDecoderTest extends SimpleIOSuite {
+@nowarn212 @nowarn3 object CellDecoderTest extends SimpleIOSuite {
 
   pureTest("derivation for coproducts should work out of the box for enum-style sealed traits") {
     val simpleDecoder: CellDecoder[Simple] = semiauto.deriveCellDecoder

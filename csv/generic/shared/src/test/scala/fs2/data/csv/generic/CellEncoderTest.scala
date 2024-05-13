@@ -22,7 +22,7 @@ import weaver._
 
 case class WithDef(a: Int = 1, b: String = "BBBB")
 
-@nowarn212 object CellEncoderTest extends SimpleIOSuite {
+@nowarn212 @nowarn3 object CellEncoderTest extends SimpleIOSuite {
 
   pureTest("derivation for coproducts should work out of the box for enum-style sealed traits") {
     val simpleEncoder: CellEncoder[Simple] = semiauto.deriveCellEncoder
