@@ -86,8 +86,8 @@ private[data] class PNFA[P, T](val init: Int, val finals: Set[Int], val transiti
             val newStates1 = newStates.updated(q, newQ)
             val ts = q.toList
               .flatMap(transitions.get(_))
-              .flatMap(_.collect { case (Some(p), q) =>
-                (p, q)
+              .flatMap(_.collect { case (Some(p), q1) =>
+                (p, q1)
               })
               .groupBy(_._1)
               .fmap(_.map(_._2))

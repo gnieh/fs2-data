@@ -193,12 +193,12 @@ object ValueParser {
       chunk(idx) match {
         case CborItem.Break =>
           Pull.pure((chunk, idx + 1, rest, chunkAcc, CborValue.TextString(acc.result())))
-        case CborItem.TextString(text) =>
-          if (acc.size + text.size < 0) {
+        case CborItem.TextString(txt) =>
+          if (acc.size + txt.size < 0) {
             raise(new CborParsingException(s"text string size is limited to max int (${Int.MaxValue}) characters"),
                   chunkAcc)
           } else {
-            parseTextStrings(chunk, idx + 1, rest, acc.append(text), chunkAcc)
+            parseTextStrings(chunk, idx + 1, rest, acc.append(txt), chunkAcc)
           }
         case item =>
           raise(new CborParsingException(s"unexpected item $item"), chunkAcc)

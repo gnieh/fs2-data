@@ -125,8 +125,8 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
           findAllCalls(rhs).flatMap { case Rhs.Call(q1, _, args) =>
             val usedInQ1 = usedParams.getOrElse(q1, Set())
             args.zipWithIndex.collect {
-              case (rhs, i) if usedInQ1.contains(i) =>
-                bareOccurences(rhs)
+              case (rhs1, i) if usedInQ1.contains(i) =>
+                bareOccurences(rhs1)
             }
           }
         }.combineAll
@@ -198,8 +198,8 @@ private[data] class MFT[Guard, InTag, OutTag](init: Int, val rules: Map[Int, Rul
       rhs match {
         case Rhs.Call(q, x, args) =>
           stayStates.get(q) match {
-            case Some(rhs) =>
-              subst(rhs, x, args.map(inlineStayCalls(_)))
+            case Some(rhs1) =>
+              subst(rhs1, x, args.map(inlineStayCalls(_)))
             case None => rhs
           }
         case Rhs.Node(t, children)  => Rhs.Node(t, inlineStayCalls(children))
