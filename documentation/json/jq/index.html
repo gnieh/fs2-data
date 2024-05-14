@@ -325,7 +325,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         <p>A query must first be compiled to be usable. Compiling a query can be a quite expensive computation, but a compiled query can be reused any number of time, so you usually will compile it only once.</p>
         <p>To use a query, make your stream pass though the compiled query obtained above. A compiled query is a <code>Pipe[F, Token, Token]</code>.</p>
         <pre><code class="nohighlight"><span class="keyword">val</span><span> </span><span class="identifier">qCompiler</span><span> = </span><span class="identifier">jq</span><span>.</span><span class="type-name">Compiler</span><span>[</span><span class="type-name">SyncIO</span><span>]
-</span><span class="comment">// qCompiler: jq.Compiler[SyncIO] = fs2.data.json.jq.internal.ESPJqCompiler@50171696
+</span><span class="comment">// qCompiler: jq.Compiler[SyncIO] = fs2.data.json.jq.internal.ESPJqCompiler@44d2a9ec
 </span><span>
 </span><span class="keyword">val</span><span> </span><span class="identifier">compiled</span><span> = </span><span class="identifier">qCompiler</span><span>.</span><span class="identifier">compile</span><span>(</span><span class="identifier">query</span><span>).</span><span class="identifier">unsafeRunSync</span><span>()
 </span><span class="comment">// compiled: Pipe[SyncIO, Token, Token] = &lt;function1&gt;
