@@ -202,18 +202,6 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
       case None                  => missing(header)
     }
 
-  /** Returns a representation of this row as Map from headers to corresponding cell values.
-    */
-  def toMap(implicit @unused hasHeaders: HasHeaders[H, Header]): Map[Header, String] =
-    byHeader: @nowarn("msg=HasHeaders")
-
-  /** Returns a representation of this row as NonEmptyMap from headers to corresponding cell values.
-    */
-  def toNonEmptyMap(implicit
-      @unused hasHeaders: HasHeaders[H, Header],
-      order: Order[Header]): NonEmptyMap[Header, String] =
-    headers.get.zip(values).toNem
-
   /** Drop all headers (if any).
     * @return a row without headers, but same values
     */
