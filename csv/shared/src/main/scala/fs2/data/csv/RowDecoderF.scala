@@ -131,18 +131,10 @@ object RowDecoderF extends ExportedRowDecoderFs {
   implicit val toNelRowDecoder: RowDecoder[NonEmptyList[String]] =
     RowDecoder.instance(_.values.asRight)
 
-  // the following two can't be unified va RowDecoderF because type inference fails us
-  implicit def decodeResultCsvRowDecoder[Header, T](implicit
-      dec: CsvRowDecoder[T, Header]): CsvRowDecoder[DecoderResult[T], Header] =
-    r => Right(dec(r))
-
   implicit def decodeResultRowDecoder[T](implicit dec: RowDecoder[T]): RowDecoder[DecoderResult[T]] =
     r => Right(dec(r))
 }
 
 trait ExportedRowDecoderFs {
   implicit def exportedRowDecoders[A](implicit exported: Exported[RowDecoder[A]]): RowDecoder[A] = exported.instance
-
-  implicit def exportedCsvRowDecoders[A](implicit
-      exported: Exported[CsvRowDecoder[A, String]]): CsvRowDecoder[A, String] = exported.instance
 }

@@ -31,7 +31,7 @@ import scala.annotation.{implicitNotFound, unused}
   def contramap[B](f: B => T): RowEncoderF[H, B, Header] = elem => apply(f(elem))
 }
 
-object RowEncoderF extends ExportedRowEncoderFs {
+object RowEncoderF extends ExportedRowEncoders {
 
   implicit def identityRowEncoderF[H[+a] <: Option[a], Header]: RowEncoderF[H, RowF[H, Header], Header] = identity
 
@@ -48,21 +48,11 @@ object RowEncoderF extends ExportedRowEncoderFs {
   @inline
   def instance[H[+a] <: Option[a], T, Header](f: T => RowF[H, Header]): RowEncoderF[H, T, Header] = f(_)
 
-  @deprecated("retained for bincompat", "1.6.0")
-  private[csv] implicit def fromNonEmptyMapCsvRowEncoder[Header](implicit
-      @unused ev1: Order[Header]): CsvRowEncoder[NonEmptyMap[Header, String], Header] =
-    CsvRowEncoder.instance(_.toNel)
-
-  implicit def fromNonEmptyMapCsvRowEncoder[Header]: CsvRowEncoder[NonEmptyMap[Header, String], Header] =
-    CsvRowEncoder.instance(_.toNel)
-
   implicit val fromNelRowEncoder: RowEncoder[NonEmptyList[String]] =
     RowEncoder.instance(r => r)
 }
 
-trait ExportedRowEncoderFs {
+trait ExportedRowEncoders {
   implicit def exportedRowEncoder[A](implicit exported: Exported[RowEncoder[A]]): RowEncoder[A] = exported.instance
 
-  implicit def exportedCsvRowEncoderF[A](implicit
-      exported: Exported[CsvRowEncoder[A, String]]): CsvRowEncoder[A, String] = exported.instance
 }

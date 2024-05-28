@@ -64,24 +64,6 @@ package object csv {
     "No implicit RowEncoder found for type ${T}.\nYou can define one using RowEncoder.instance, by calling contramap on another RowEncoder or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val rowEncoder: RowEncoder[${T}] = deriveRowEncoder\nMake sure to have instances of CellEncoder for every member type in scope.\n")
   type RowEncoder[T] = RowEncoderF[NoneF, T, Nothing]
 
-  /** Describes how a row can be decoded to the given type.
-    *
-    * `CsvRowDecoder` provides convenient methods such as `map`, `emap`, or `flatMap`
-    * to build new decoders out of more basic one.
-    *
-    * Actually, `CsvRowDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
-    * instance. To get the full power of it, import `cats.syntax.all._`.
-    */
-  @implicitNotFound(
-    "No implicit CsvRowDecoder found for type ${T}.\nYou can define one using CsvRowDecoder.instance, by calling map on another CsvRowDecoder or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val csvRowDecoder: CsvRowDecoder[${T}] = deriveCsvRowDecoder\nMake sure to have instances of CellDecoder for every member type in scope.\n")
-  type CsvRowDecoder[T, Header] = RowDecoderF[Some, T, Header]
-
-  /** Describes how a row can be encoded from a value of the given type.
-    */
-  @implicitNotFound(
-    "No implicit CsvRowEncoderF[H,  found for type ${T}.\nYou can define one using CsvRowEncoderF[H, .instance, by calling contramap on another CsvRowEncoderF[H,  or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val csvRowEncoder: CsvRowEncoderF[H, [${T}] = deriveCsvRowEncoderF[H, \nMake sure to have instances of CellEncoder for every member type in scope.\n")
-  type CsvRowEncoder[T, Header] = RowEncoderF[Some, T, Header]
-
   @nowarn
   sealed trait QuoteHandling
 
@@ -135,51 +117,6 @@ package object csv {
       lowlevel.rows(separator, quoteHandling) andThen lowlevel.skipHeaders andThen lowlevel.decode
   }
 
-  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type,
-    * assuming the file contains headers and they need to be taken into account for decoding.
-    */
-  def decodeUsingHeaders[T]: PartiallyAppliedDecodeUsingHeaders[T] =
-    new PartiallyAppliedDecodeUsingHeaders[T](dummy = true)
-
-  @nowarn
-  class PartiallyAppliedDecodeUsingHeaders[T](val dummy: Boolean) extends AnyVal {
-    def apply[F[_], C, Header](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(
-        implicit
-        F: RaiseThrowable[F],
-        C: CharLikeChunks[F, C],
-        T: CsvRowDecoder[T, Header],
-        H: ParseableHeader[Header]): Pipe[F, C, T] =
-      lowlevel.rows(separator, quoteHandling) andThen lowlevel.headers andThen lowlevel.decodeRow
-  }
-
-  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type.
-    *
-    * Scenarios:
-    * - If skipHeaders is false, then the file contains no headers.
-    * - If skipHeaders is true, then the headers in the file will be skipped.
-    *
-    * For both scenarios the file is assumed to be compliant with the set of headers given.
-    */
-  def decodeGivenHeaders[T]: PartiallyAppliedDecodeGivenHeaders[T] =
-    new PartiallyAppliedDecodeGivenHeaders(dummy = true)
-
-  @nowarn
-  class PartiallyAppliedDecodeGivenHeaders[T](val dummy: Boolean) extends AnyVal {
-    def apply[F[_], C, Header](headers: NonEmptyList[Header],
-                               skipHeaders: Boolean = false,
-                               separator: Char = ',',
-                               quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
-        F: RaiseThrowable[F],
-        C: CharLikeChunks[F, C],
-        T: CsvRowDecoder[T, Header]): Pipe[F, C, T] = {
-      if (skipHeaders)
-        lowlevel.rows(separator, quoteHandling) andThen lowlevel.skipHeaders andThen
-          lowlevel.withHeaders(headers) andThen lowlevel.decodeRow
-      else
-        lowlevel.rows(separator, quoteHandling) andThen lowlevel.withHeaders(headers) andThen lowlevel.decodeRow
-    }
-  }
-
   /** Encode a specified type into a CSV that contains no headers. */
   def encodeWithoutHeaders[T]: PartiallyAppliedEncodeWithoutHeaders[T] =
     new PartiallyAppliedEncodeWithoutHeaders[T](dummy = true)
@@ -214,25 +151,6 @@ package object csv {
         if (fullRows) lowlevel.toRowStrings[F](separator, newline, escape)
         else lowlevel.toStrings[F](separator, newline, escape)
       lowlevel.encode[F, T] andThen lowlevel.writeWithHeaders(headers) andThen stringPipe
-    }
-  }
-
-  /** Encode a specified type into a CSV that contains the headers determined by encoding the first element. Empty if input is. */
-  def encodeUsingFirstHeaders[T]: PartiallyAppliedEncodeUsingFirstHeaders[T] =
-    new PartiallyAppliedEncodeUsingFirstHeaders(dummy = true)
-
-  @nowarn
-  class PartiallyAppliedEncodeUsingFirstHeaders[T](val dummy: Boolean) extends AnyVal {
-    def apply[F[_], Header](fullRows: Boolean = false,
-                            separator: Char = ',',
-                            newline: String = "\n",
-                            escape: EscapeMode = EscapeMode.Auto)(implicit
-        T: CsvRowEncoder[T, Header],
-        H: WriteableHeader[Header]): Pipe[F, T, String] = {
-      val stringPipe =
-        if (fullRows) lowlevel.toRowStrings[F](separator, newline, escape)
-        else lowlevel.toStrings[F](separator, newline, escape)
-      lowlevel.encodeRow[F, Header, T] andThen lowlevel.encodeRowWithFirstHeaders[F, Header] andThen stringPipe
     }
   }
 
@@ -298,23 +216,6 @@ package object csv {
     def attemptDecode[F[_], R](implicit R: RowDecoder[R]): Pipe[F, Row, DecoderResult[R]] =
       _.map(R(_))
 
-    /** Decodes [[CsvRow]]s (with headers) into a specified type using a suitable [[CsvRowDecoder]]. */
-    def decodeRow[F[_], Header, R](implicit
-        F: RaiseThrowable[F],
-        R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], R] =
-      _.map(R(_)).rethrow
-
-    /** Decodes [[CsvRow]]s (with headers) into a specified type using a suitable [[CsvRowDecoder]], but signal errors as values. */
-    def attemptDecodeRow[F[_], Header, R](implicit
-        R: CsvRowDecoder[R, Header]): Pipe[F, CsvRow[Header], DecoderResult[R]] =
-      _.map(R(_))
-
-    /** Decodes [[CsvRow]]s (with headers) into a specified type using a suitable [[CsvRowDecoder]], but signal errors as values from both header as well as rows. */
-    def attemptFlatMapDecodeRow[F[_], Header, R](implicit R: CsvRowDecoder[R, Header])
-        : Stream[F, Either[CsvException, CsvRow[Header]]] => Stream[F, Either[CsvException, R]] = {
-      _.map(_.flatMap(R(_)))
-    }
-
     /** Encode a given type into CSV rows using a set of explicitly given headers. */
     def writeWithHeaders[F[_], Header](headers: NonEmptyList[Header])(implicit
         H: WriteableHeader[Header]): Pipe[F, Row, NonEmptyList[String]] =
@@ -349,10 +250,6 @@ package object csv {
     def encode[F[_], R](implicit R: RowEncoder[R]): Pipe[F, R, Row] =
       _.map(R(_))
 
-    /** Encode a given type into CSV rows with headers. */
-    def encodeRow[F[_], Header, R](implicit R: CsvRowEncoder[R, Header]): Pipe[F, R, CsvRow[Header]] =
-      _.map(R(_))
-
     /** Encode a given type into CSV row with headers taken from the first element.
       * If the input stream is empty, the output is as well.
       */
@@ -369,56 +266,6 @@ package object csv {
   }
 
   object lenient {
-
-    /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type, with failures at the
-      * element level instead of failing the stream.
-      *
-      * Scenarios:
-      * - If skipHeaders is false, then the file contains no headers.
-      * - If skipHeaders is true, then the headers in the file will be skipped.
-      *
-      * For both scenarios the file is assumed to be compliant with the set of headers given.
-      */
-    def attemptDecodeGivenHeaders[T]: PartiallyAppliedDecodeAttemptGivenHeaders[T] =
-      new PartiallyAppliedDecodeAttemptGivenHeaders[T](dummy = true)
-
-    class PartiallyAppliedDecodeAttemptGivenHeaders[T](val dummy: Boolean) extends AnyVal {
-      def apply[F[_], C, Header](headers: NonEmptyList[Header],
-                                 skipHeaders: Boolean = false,
-                                 separator: Char = ',',
-                                 quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
-          F: RaiseThrowable[F],
-          C: CharLikeChunks[F, C],
-          T: CsvRowDecoder[T, Header]): Pipe[F, C, Either[CsvException, T]] = {
-        if (skipHeaders)
-          lowlevel.rows(separator, quoteHandling) andThen lowlevel.skipHeaders andThen
-            lowlevel.attemptWithHeaders(headers) andThen lowlevel.attemptFlatMapDecodeRow
-        else
-          lowlevel.rows(separator, quoteHandling) andThen lowlevel.attemptWithHeaders(
-            headers) andThen lowlevel.attemptFlatMapDecodeRow
-      }
-    }
-
-    /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type, with failures at the
-      * element level instead of failing the stream.
-      *
-      * This function assumes the file contains headers and they need to be taken into account for decoding.
-      */
-    def attemptDecodeUsingHeaders[T]: PartiallyAppliedDecodeAttemptUsingHeaders[T] =
-      new PartiallyAppliedDecodeAttemptUsingHeaders[T](dummy = true)
-
-    class PartiallyAppliedDecodeAttemptUsingHeaders[T](val dummy: Boolean) extends AnyVal {
-      def apply[F[_], C, Header](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(
-          implicit
-          F: RaiseThrowable[F],
-          C: CharLikeChunks[F, C],
-          T: CsvRowDecoder[T, Header],
-          H: ParseableHeader[Header]): Pipe[F, C, Either[CsvException, T]] = {
-        lowlevel.rows(separator, quoteHandling) andThen lowlevel.headersAttempt(
-          H) andThen lowlevel.attemptFlatMapDecodeRow
-      }
-    }
-
     /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type, with failures at the
       * element level instead of failing the stream.
       *
