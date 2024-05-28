@@ -20,8 +20,6 @@ import cats._
 import cats.data._
 import cats.syntax.all._
 
-import scala.annotation.{nowarn, unused}
-
 /** A CSV row with or without headers. The presence of headers is encoded via the first type param
   * which is a subtype of [[scala.Option]]. By preserving this information in types, it's possible to define
   * [[Row]] and [[CsvRow]] aliases as if they were plain case classes while keeping the code DRY.
@@ -94,42 +92,9 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     else
       new RowF[H, Header](values.zipWithIndex.map { case (cell, i) => if (i === idx) f(cell) else cell }, headers)
 
-  /** Modifies the cell content at the given `header` using the function `f`.
-    *
-    * **Note:** Only the first occurrence of the values with the given header
-    * will be modified. It shouldn't be a problem in the general case as headers
-    * should not be duplicated.
-    */
-  def modify(header: Header)(f: String => String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] =
-    hasHeaders(modifyAt(headers.get.toList.indexOf(header))(f))
-
   /** Returns the row with the cell at `idx` modified to `value`. */
   def updatedAt(idx: Int, value: String): RowF[H, Header] =
     modifyAt(idx)(_ => value)
-
-  /** Returns the row with the cell at `header` modified to `value`.
-    *
-    * **Note:** Only the first occurrence of the values with the given header
-    * will be modified. It shouldn't be a problem in the general case as headers
-    * should not be duplicated.
-    */
-  def updated(header: Header, value: String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] =
-    hasHeaders(updatedAt(headers.get.toList.indexOf(header), value))
-
-  /** Returns the row with the cell at `header` modified to `value`.
-    * If the header wasn't present in the row, it is added to the end of the fields.
-    *
-    * **Note:** Only the first occurrence of the values with the given header
-    * will be modified. It shouldn't be a problem in the general case as headers
-    * should not be duplicated.
-    */
-  def set(header: Header, value: String)(implicit hasHeaders: HasHeaders[H, Header]): CsvRow[Header] = {
-    val idx = headers.get.toList.indexOf(header)
-    if (idx < 0)
-      hasHeaders(new RowF(values :+ value, headers.map(_ :+ header).asInstanceOf[H[NonEmptyList[Header]]]))
-    else
-      hasHeaders(updatedAt(idx, value))
-  }
 
   /** Returns the row without the cell at the given `idx`.
     * If the resulting row is empty, returns `None`.
@@ -146,76 +111,6 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
       (NonEmptyList.fromList(before ++ after.tail), nh).mapN(new RowF[H, Header](_, _))
     }
 
-  /** Returns the row without the cell at the given `header`.
-    * If the resulting row is empty, returns `None`.
-    *
-    * **Note:** Only the first occurrence of the values with the given header
-    * will be deleted. It shouldn't be a problem in the general case as headers
-    * should not be duplicated.
-    */
-  def delete(header: Header)(implicit hasHeaders: HasHeaders[H, Header]): Option[CsvRow[Header]] =
-    deleteAt(headers.get.toList.indexOf(header)).map(hasHeaders)
-
-  /** Returns the content of the cell at `header` if it exists.
-    * Returns `None` if `header` does not exist for the row.
-    * An empty cell value results in `Some("")`.
-    */
-  def apply(header: Header)(implicit @unused hasHeaders: HasHeaders[H, Header]): Option[String] =
-    byHeader.get(header): @nowarn("msg=HasHeaders")
-
-  /** Returns the decoded content of the cell at `header`.
-    * Fails if the field doesn't exist or cannot be decoded
-    * to the expected type.
-    */
-  def as[T](
-      header: Header)(implicit @unused hasHeaders: HasHeaders[H, Header], decoder: CellDecoder[T]): DecoderResult[T] =
-    (byHeader: @nowarn("msg=HasHeaders")).get(header) match {
-      case Some(v) => decoder(v)
-      case None    => Left(new DecoderError(s"unknown field $header"))
-    }
-
-  /** Returns the decoded content of the cell at `header` wrapped in Some if the cell is non-empty, None otherwise.
-    * Fails if the field doesn't exist or cannot be decoded
-    * to the expected type.
-    */
-  @deprecated(message =
-                "Use `RowF.asOptional` instead, as it gives more flexibility and has the same default behavior.",
-              since = "fs2-data 1.7.0")
-  def asNonEmpty[T](
-      header: Header)(implicit hasHeaders: HasHeaders[H, Header], decoder: CellDecoder[T]): DecoderResult[Option[T]] =
-    asOptional(header)
-
-  /** Returns the decoded content of the cell at `header` wrapped in Some if the cell is non-empty, `None` otherwise.
-    * The meaning of _empty_ can be tuned by setting providing a custom `isEmpty` predicate (by default, matches the empty string).
-    * In case the field does not exist, the `missing` parameter defines the behavior (by default, it faile)
-    * Fails if the index cannot be decoded to the expected type.
-    */
-  def asOptional[T](header: Header,
-                    missing: Header => DecoderResult[Option[T]] = (header: Header) =>
-                      Left(new DecoderError(s"unknown field $header")),
-                    isEmpty: String => Boolean = _.isEmpty)(implicit
-      @unused hasHeaders: HasHeaders[H, Header],
-      decoder: CellDecoder[T]): DecoderResult[Option[T]] =
-    (byHeader: @nowarn("msg=HasHeaders")).get(header) match {
-      case Some(v) if isEmpty(v) => Right(None)
-      case Some(v)               => decoder(v).map(Some(_))
-      case None                  => missing(header)
-    }
-
-  /** Drop all headers (if any).
-    * @return a row without headers, but same values
-    */
-  def dropHeaders: Row = Row(values)
-
-  // let's cache this to avoid recomputing it for every call to `as` or similar method
-  // the `Option.get` call is safe since this field is only called in a context where a `HasHeaders`
-  // instance is provided, meaning that the `Option` is `Some`
-  // of course using a lazy val prevents us to make this constraint statistically checked, but
-  // the gain is significant enough to allow for this local unsafety
-  @deprecated("Have you checked that you have a `HasHeaders` instance in scope?", "fs2-data 1.5.0")
-  private lazy val byHeader: Map[Header, String] =
-    headers.get.toList.zip(values.toList).toMap
-
   // Like Traverse[Option], but preserves the H type
   private def htraverse[G[_]: Applicative, A, B](h: H[A])(f: A => G[B]): G[H[B]] = h match {
     case Some(a) => f(a).map(Some(_)).asInstanceOf[G[H[B]]]
@@ -223,8 +118,3 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
   }
 }
 
-object RowF {
-  implicit object functor extends Functor[CsvRow[*]] {
-    override def map[A, B](fa: CsvRow[A])(f: A => B): CsvRow[B] = fa.copy(headers = Some(fa.headers.get.map(f)))
-  }
-}

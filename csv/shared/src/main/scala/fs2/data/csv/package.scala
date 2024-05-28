@@ -23,7 +23,7 @@ import csv.internals._
 import cats.data._
 import cats.syntax.all._
 
-import scala.annotation.{implicitNotFound, unused}
+import scala.annotation.implicitNotFound
 import scala.annotation.nowarn
 
 package object csv {
@@ -35,12 +35,6 @@ package object csv {
   /** A CSV row without headers.
     */
   type Row = RowF[NoneF, Nothing]
-
-  /** A CSV row with headers, that can be used to access the cell values.
-    *
-    * '''Note:''' the following invariant holds when using this class: `values` and `headers` have the same size.
-    */
-  type CsvRow[Header] = RowF[Some, Header]
 
   type HeaderResult[T] = Either[HeaderError, NonEmptyList[T]]
 
@@ -174,33 +168,6 @@ package object csv {
         T: CharLikeChunks[F, T]): Pipe[F, T, Row] =
       RowParser.pipe[F, T](separator, quoteHandling)
 
-    /** Transforms a stream of raw CSV rows into parsed CSV rows with headers. */
-    def headers[F[_], Header](implicit
-        F: RaiseThrowable[F],
-        Header: ParseableHeader[Header]): Pipe[F, Row, CsvRow[Header]] =
-      CsvRowParser.pipe[F, Header]
-
-    /** Transforms a stream of raw CSV rows into parsed CSV rows with headers, with failures at the element level instead of failing the stream */
-    def headersAttempt[F[_], Header](implicit
-        Header: ParseableHeader[Header]): Pipe[F, Row, Either[CsvException, CsvRow[Header]]] =
-      CsvRowParser.pipeAttempt[F, Header]
-
-    // left here for bincompat
-    private[csv] def headersAttempt[F[_], Header](implicit
-        @unused F: RaiseThrowable[F],
-        Header: ParseableHeader[Header]): Pipe[F, Row, Either[CsvException, CsvRow[Header]]] =
-      CsvRowParser.pipeAttempt[F, Header]
-
-    /** Transforms a stream of raw CSV rows into parsed CSV rows with given headers. */
-    def withHeaders[F[_], Header](headers: NonEmptyList[Header])(implicit
-        F: RaiseThrowable[F]): Pipe[F, Row, CsvRow[Header]] =
-      _.map(CsvRow.liftRow(headers)).rethrow
-
-    /** Transforms a stream of raw CSV rows into parsed CSV rows with given headers. */
-    def attemptWithHeaders[F[_], Header](
-        headers: NonEmptyList[Header]): Pipe[F, Row, Either[CsvException, CsvRow[Header]]] =
-      _.map(CsvRow.liftRow(headers))
-
     /** Transforms a stream of raw CSV rows into rows. */
     def noHeaders[F[_]]: Pipe[F, Row, Row] = identity
 
@@ -249,20 +216,6 @@ package object csv {
     /** Encode a given type into simple CSV rows without headers. */
     def encode[F[_], R](implicit R: RowEncoder[R]): Pipe[F, R, Row] =
       _.map(R(_))
-
-    /** Encode a given type into CSV row with headers taken from the first element.
-      * If the input stream is empty, the output is as well.
-      */
-    def encodeRowWithFirstHeaders[F[_], Header](implicit
-        H: WriteableHeader[Header]): Pipe[F, CsvRow[Header], NonEmptyList[String]] =
-      _.pull.peek1
-        .flatMap {
-          case Some((CsvRow(_, headers), stream)) =>
-            Pull.output1(H(headers)) >> stream.map(_.values).pull.echo
-          case None => Pull.done
-        }
-        .stream
-
   }
 
   object lenient {
