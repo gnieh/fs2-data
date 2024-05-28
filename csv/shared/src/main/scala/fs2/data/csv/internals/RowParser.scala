@@ -47,14 +47,14 @@ private[csv] object RowParser {
             state match {
               case State.BeginningOfField =>
                 if (tail.nonEmpty)
-                  Pull.output1(RowF[NoneF](NonEmptyList("", tail).reverse, Some(line))) >> Pull.done
+                  Pull.output1(RowF(NonEmptyList("", tail).reverse, Some(line))) >> Pull.done
                 else
                   Pull.done
               case State.InUnquoted | State.InQuotedSeenQuote | State.ExpectNewLine =>
-                Pull.output1(RowF[NoneF](NonEmptyList(currentField.result(), tail).reverse, Some(line))) >> Pull.done
+                Pull.output1(RowF(NonEmptyList(currentField.result(), tail).reverse, Some(line))) >> Pull.done
               case State.InUnquotedSeenCr =>
                 Pull.output1(
-                  RowF[NoneF](NonEmptyList(currentField.append('\r').result(), tail).reverse, Some(line))) >> Pull.done
+                  RowF(NonEmptyList(currentField.append('\r').result(), tail).reverse, Some(line))) >> Pull.done
               case State.InQuoted =>
                 Pull.raiseError[F](new CsvException("unexpected end of input", Some(line)))
             }

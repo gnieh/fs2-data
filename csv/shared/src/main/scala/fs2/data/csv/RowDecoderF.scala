@@ -30,15 +30,15 @@ import scala.annotation.tailrec
   * Actually, `RowDecoderF` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
   * instance. To get the full power of it, import `cats.syntax.all._`.
   */
-@FunctionalInterface trait RowDecoderF[H[+a] <: Option[a], T] {
-  def apply(row: RowF[H]): DecoderResult[T]
+@FunctionalInterface trait RowDecoderF[T] {
+  def apply(row: RowF): DecoderResult[T]
 
   /** Map the parsed value.
     * @param f the mapping function
     * @tparam T2 the result type
     * @return a row decoder reading the mapped type
     */
-  def map[T2](f: T => T2): RowDecoderF[H, T2] =
+  def map[T2](f: T => T2): RowDecoderF[T2] =
     row => apply(row).map(f)
 
   /** Map the parsed value to a new decoder, which in turn will be applied to
@@ -47,7 +47,7 @@ import scala.annotation.tailrec
     * @tparam T2 the result type
     * @return a row decoder reading the mapped type
     */
-  def flatMap[T2](f: T => RowDecoderF[H, T2]): RowDecoderF[H, T2] =
+  def flatMap[T2](f: T => RowDecoderF[T2]): RowDecoderF[T2] =
     row => apply(row).flatMap(f(_)(row))
 
   /** Map the parsed value, potentially failing.
@@ -55,7 +55,7 @@ import scala.annotation.tailrec
     * @tparam T2 the result type
     * @return a row decoder reading the mapped type
     */
-  def emap[T2](f: T => DecoderResult[T2]): RowDecoderF[H, T2] =
+  def emap[T2](f: T => DecoderResult[T2]): RowDecoderF[T2] =
     row => apply(row).flatMap(f)
 
   /** Fail-over. If this decoder fails, try the supplied other decoder.
@@ -63,7 +63,7 @@ import scala.annotation.tailrec
     * @tparam TT the return type
     * @return a decoder combining this and the other decoder
     */
-  def or[TT >: T](cd: => RowDecoderF[H, TT]): RowDecoderF[H, TT] =
+  def or[TT >: T](cd: => RowDecoderF[TT]): RowDecoderF[TT] =
     row =>
       apply(row) match {
         case Left(_)      => cd(row)
@@ -76,7 +76,7 @@ import scala.annotation.tailrec
     * @tparam B the type the alternative decoder returns
     * @return a decoder combining both decoders
     */
-  def either[B](cd: RowDecoderF[H, B]): RowDecoderF[H, Either[T, B]] =
+  def either[B](cd: RowDecoderF[B]): RowDecoderF[Either[T, B]] =
     row =>
       apply(row) match {
         case Left(_) =>
@@ -96,30 +96,30 @@ object RowDecoderF extends ExportedRowDecoderFs {
   @inline
   def instance[T](f: Row => DecoderResult[T]): RowDecoder[T] = row => f(row)
 
-  implicit def identityRowDecoderF[H[+a] <: Option[a]]: RowDecoderF[H, RowF[H]] = _.asRight
+  implicit def identityRowDecoderF[H[+a] <: Option[a]]: RowDecoderF[RowF] = _.asRight
 
   implicit def RowDecoderFInstances[H[+a] <: Option[a]]
-      : MonadError[RowDecoderF[H, *], DecoderError] with SemigroupK[RowDecoderF[H, *]] =
-    new MonadError[RowDecoderF[H, *], DecoderError] with SemigroupK[RowDecoderF[H, *]] {
-      override def map[A, B](fa: RowDecoderF[H, A])(f: A => B): RowDecoderF[H, B] =
+      : MonadError[RowDecoderF[*], DecoderError] with SemigroupK[RowDecoderF[*]] =
+    new MonadError[RowDecoderF[*], DecoderError] with SemigroupK[RowDecoderF[*]] {
+      override def map[A, B](fa: RowDecoderF[A])(f: A => B): RowDecoderF[B] =
         fa.map(f)
 
-      def flatMap[A, B](fa: RowDecoderF[H, A])(f: A => RowDecoderF[H, B]): RowDecoderF[H, B] =
+      def flatMap[A, B](fa: RowDecoderF[A])(f: A => RowDecoderF[B]): RowDecoderF[B] =
         fa.flatMap(f)
 
-      def handleErrorWith[A](fa: RowDecoderF[H, A])(
-          f: DecoderError => RowDecoderF[H, A]): RowDecoderF[H, A] =
+      def handleErrorWith[A](fa: RowDecoderF[A])(
+          f: DecoderError => RowDecoderF[A]): RowDecoderF[A] =
         row => fa(row).leftFlatMap(f(_)(row))
 
-      def pure[A](x: A): RowDecoderF[H, A] =
+      def pure[A](x: A): RowDecoderF[A] =
         _ => Right(x)
 
-      def raiseError[A](e: DecoderError): RowDecoderF[H, A] =
+      def raiseError[A](e: DecoderError): RowDecoderF[A] =
         _ => Left(e)
 
-      def tailRecM[A, B](a: A)(f: A => RowDecoderF[H, Either[A, B]]): RowDecoderF[H, B] = {
+      def tailRecM[A, B](a: A)(f: A => RowDecoderF[Either[A, B]]): RowDecoderF[B] = {
         @tailrec
-        def step(row: RowF[H], a: A): DecoderResult[B] =
+        def step(row: RowF, a: A): DecoderResult[B] =
           f(a)(row) match {
             case left @ Left(_)          => left.rightCast[B]
             case Right(Left(a))          => step(row, a)
@@ -128,7 +128,7 @@ object RowDecoderF extends ExportedRowDecoderFs {
         row => step(row, a)
       }
 
-      def combineK[A](x: RowDecoderF[H, A], y: RowDecoderF[H, A]): RowDecoderF[H, A] = x or y
+      def combineK[A](x: RowDecoderF[A], y: RowDecoderF[A]): RowDecoderF[A] = x or y
     }
 
   implicit val toListRowDecoder: RowDecoder[List[String]] =

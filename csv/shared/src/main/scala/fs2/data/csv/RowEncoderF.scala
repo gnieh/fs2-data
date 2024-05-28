@@ -24,11 +24,11 @@ import scala.annotation.implicitNotFound
 /** Describes how a row can be encoded from a value of the given type.
   */
 @implicitNotFound(
-  "No implicit RowEncoderF[H,  found for type ${T}.\nYou can define one using RowEncoderF[H, .instance, by calling contramap on another RowEncoderF[H,  or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val csvRowEncoder: RowEncoderF[H, [${T}] = deriveRowEncoderF[H, \nMake sure to have instances of CellEncoder for every member type in scope.\n")
-@FunctionalInterface trait RowEncoderF[H[+a] <: Option[a], T] {
-  def apply(elem: T): RowF[H]
+  "No implicit RowEncoderF[ found for type ${T}.\nYou can define one using RowEncoderF[.instance, by calling contramap on another RowEncoderF[ or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val csvRowEncoder: RowEncoderF[[${T}] = deriveRowEncoderF[\nMake sure to have instances of CellEncoder for every member type in scope.\n")
+@FunctionalInterface trait RowEncoderF[T] {
+  def apply(elem: T): RowF
 
-  def contramap[B](f: B => T): RowEncoderF[H, B] = elem => apply(f(elem))
+  def contramap[B](f: B => T): RowEncoderF[B] = elem => apply(f(elem))
 }
 
 object RowEncoderF extends ExportedRowEncoders {
@@ -38,11 +38,11 @@ object RowEncoderF extends ExportedRowEncoders {
   @inline
   def instance[T](f: T => NonEmptyList[String]): RowEncoder[T] = (t: T) => RowF(f(t))
 
-  implicit def identityRowEncoderF[H[+a] <: Option[a]]: RowEncoderF[H, RowF[H]] = identity
+  implicit def identityRowEncoderF[H[+a] <: Option[a]]: RowEncoderF[RowF] = identity
 
-  implicit def RowEncoderF[H[+a] <: Option[a]]: Contravariant[RowEncoderF[H, *]] =
-    new Contravariant[RowEncoderF[H, *]] {
-      override def contramap[A, B](fa: RowEncoderF[H, A])(f: B => A): RowEncoderF[H, B] =
+  implicit def RowEncoderF[H[+a] <: Option[a]]: Contravariant[RowEncoderF[*]] =
+    new Contravariant[RowEncoderF[*]] {
+      override def contramap[A, B](fa: RowEncoderF[A])(f: B => A): RowEncoderF[B] =
         fa.contramap(f)
     }
 
