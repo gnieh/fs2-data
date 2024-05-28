@@ -88,7 +88,7 @@ import scala.annotation.tailrec
       }
 }
 
-object RowDecoder extends ExportedRowDecoderFs {
+object RowDecoder extends ExportedRowDecoders {
 
   @inline
   def apply[T: RowDecoder]: RowDecoder[T] = implicitly[RowDecoder[T]]
@@ -98,7 +98,7 @@ object RowDecoder extends ExportedRowDecoderFs {
 
   implicit def identityRowDecoder: RowDecoder[Row] = _.asRight
 
-  implicit def RowDecoderFInstances
+  implicit def RowDecoderInstances
       : MonadError[RowDecoder[*], DecoderError] with SemigroupK[RowDecoder[*]] =
     new MonadError[RowDecoder[*], DecoderError] with SemigroupK[RowDecoder[*]] {
       override def map[A, B](fa: RowDecoder[A])(f: A => B): RowDecoder[B] =
@@ -141,6 +141,6 @@ object RowDecoder extends ExportedRowDecoderFs {
     r => Right(dec(r))
 }
 
-trait ExportedRowDecoderFs {
+trait ExportedRowDecoders {
   implicit def exportedRowDecoders[A](implicit exported: Exported[RowDecoder[A]]): RowDecoder[A] = exported.instance
 }
