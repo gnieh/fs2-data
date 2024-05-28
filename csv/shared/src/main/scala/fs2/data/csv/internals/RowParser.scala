@@ -47,14 +47,14 @@ private[csv] object RowParser {
             state match {
               case State.BeginningOfField =>
                 if (tail.nonEmpty)
-                  Pull.output1(RowF(NonEmptyList("", tail).reverse, Some(line))) >> Pull.done
+                  Pull.output1(Row(NonEmptyList("", tail).reverse, Some(line))) >> Pull.done
                 else
                   Pull.done
               case State.InUnquoted | State.InQuotedSeenQuote | State.ExpectNewLine =>
-                Pull.output1(RowF(NonEmptyList(currentField.result(), tail).reverse, Some(line))) >> Pull.done
+                Pull.output1(Row(NonEmptyList(currentField.result(), tail).reverse, Some(line))) >> Pull.done
               case State.InUnquotedSeenCr =>
                 Pull.output1(
-                  RowF(NonEmptyList(currentField.append('\r').result(), tail).reverse, Some(line))) >> Pull.done
+                  Row(NonEmptyList(currentField.append('\r').result(), tail).reverse, Some(line))) >> Pull.done
               case State.InQuoted =>
                 Pull.raiseError[F](new CsvException("unexpected end of input", Some(line)))
             }
@@ -87,7 +87,7 @@ private[csv] object RowParser {
                    Nil,
                    State.BeginningOfField,
                    line + 1,
-                   chunkAcc += RowF(NonEmptyList(field, tail).reverse, Some(line)))
+                   chunkAcc += Row(NonEmptyList(field, tail).reverse, Some(line)))
             } else if (c == '\r') {
               rows(T.advance(context), currentField, tail, State.ExpectNewLine, line, chunkAcc)
             } else {
@@ -104,7 +104,7 @@ private[csv] object RowParser {
                    Nil,
                    State.BeginningOfField,
                    line + 1,
-                   chunkAcc += RowF(NonEmptyList(field, tail).reverse, Some(line)))
+                   chunkAcc += Row(NonEmptyList(field, tail).reverse, Some(line)))
             } else {
               // this is an error
               Pull.output(Chunk.from(chunkAcc.result())) >> Pull.raiseError[F](
@@ -125,7 +125,7 @@ private[csv] object RowParser {
                      Nil,
                      State.BeginningOfField,
                      line + 1,
-                     chunkAcc += RowF(NonEmptyList("", tail).reverse, Some(line)))
+                     chunkAcc += Row(NonEmptyList("", tail).reverse, Some(line)))
               } else {
                 rows(T.advance(context), currentField, Nil, State.BeginningOfField, line + 1, chunkAcc)
               }
@@ -149,7 +149,7 @@ private[csv] object RowParser {
                    Nil,
                    State.BeginningOfField,
                    line + 1,
-                   chunkAcc += RowF(NonEmptyList(field, tail).reverse, Some(line)))
+                   chunkAcc += Row(NonEmptyList(field, tail).reverse, Some(line)))
             } else if (c == '\r') {
               rows(T.advance(context), currentField, tail, State.InUnquotedSeenCr, line, chunkAcc)
             } else {
@@ -165,7 +165,7 @@ private[csv] object RowParser {
                    Nil,
                    State.BeginningOfField,
                    line + 1,
-                   chunkAcc += RowF(NonEmptyList(field, tail).reverse, Some(line)))
+                   chunkAcc += Row(NonEmptyList(field, tail).reverse, Some(line)))
             } else {
               currentField.append('\r')
               if (c == separator) {

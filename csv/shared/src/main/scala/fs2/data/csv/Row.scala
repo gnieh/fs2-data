@@ -28,7 +28,7 @@ import cats.syntax.all._
   *
   * '''Note:''' the following invariant holds when using this class: `values` and `headers` have the same size if headers are present.
   */
-case class RowF(values: NonEmptyList[String],
+case class Row(values: NonEmptyList[String],
                                             line: Option[Long] = None) {
 
   /** Number of cells in the row. */
@@ -37,7 +37,7 @@ case class RowF(values: NonEmptyList[String],
   /**
     * Set the line number for this row.
     */
-  def withLine(line: Option[Long]): RowF =
+  def withLine(line: Option[Long]): Row =
     copy(line = line)
 
   /** Returns the content of the cell at `idx` if it exists.
@@ -84,25 +84,25 @@ case class RowF(values: NonEmptyList[String],
 
   /** Modifies the cell content at the given `idx` using the function `f`.
     */
-  def modifyAt(idx: Int)(f: String => String): RowF =
+  def modifyAt(idx: Int)(f: String => String): Row =
     if (idx < 0 || idx >= values.size)
       this
     else
-      new RowF(values.zipWithIndex.map { case (cell, i) => if (i === idx) f(cell) else cell })
+      new Row(values.zipWithIndex.map { case (cell, i) => if (i === idx) f(cell) else cell })
 
   /** Returns the row with the cell at `idx` modified to `value`. */
-  def updatedAt(idx: Int, value: String): RowF =
+  def updatedAt(idx: Int, value: String): Row =
     modifyAt(idx)(_ => value)
 
   /** Returns the row without the cell at the given `idx`.
     * If the resulting row is empty, returns `None`.
     */
-  def deleteAt(idx: Int): Option[RowF] =
+  def deleteAt(idx: Int): Option[Row] =
     if (idx < 0 || idx >= values.size) {
       Some(this)
     } else {
       val (before, after) = values.toList.splitAt(idx)
-      (NonEmptyList.fromList(before ++ after.tail)).map(new RowF(_))
+      (NonEmptyList.fromList(before ++ after.tail)).map(new Row(_))
     }
 
 }

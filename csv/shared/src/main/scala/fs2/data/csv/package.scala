@@ -23,18 +23,9 @@ import csv.internals._
 import cats.data._
 import cats.syntax.all._
 
-import scala.annotation.implicitNotFound
 import scala.annotation.nowarn
 
 package object csv {
-
-  /** Higher kinded version of [[scala.None]]. Ignores the type param.
-    */
-  type NoneF[+A] = None.type
-
-  /** A CSV row without headers.
-    */
-  type Row = RowF
 
   type HeaderResult[T] = Either[HeaderError, NonEmptyList[T]]
 
@@ -48,15 +39,6 @@ package object csv {
     * Actually, `RowDecoder` has a [[https://typelevel.org/cats/api/cats/MonadError.html cats `MonadError`]]
     * instance. To get the full power of it, import `cats.syntax.all._`.
     */
-  @implicitNotFound(
-    "No implicit RowDecoder found for type ${T}.\nYou can define one using RowDecoder.instance, by calling map on another RowDecoder or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val rowDecoder: RowDecoder[${T}] = deriveRowDecoder\nMake sure to have instances of CellDecoder for every member type in scope.\n")
-  type RowDecoder[T] = RowDecoderF[T]
-
-  /** Describes how a row can be encoded from a value of the given type.
-    */
-  @implicitNotFound(
-    "No implicit RowEncoder found for type ${T}.\nYou can define one using RowEncoder.instance, by calling contramap on another RowEncoder or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val rowEncoder: RowEncoder[${T}] = deriveRowEncoder\nMake sure to have instances of CellEncoder for every member type in scope.\n")
-  type RowEncoder[T] = RowEncoderF[T]
 
   @nowarn
   sealed trait QuoteHandling

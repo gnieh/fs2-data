@@ -33,7 +33,7 @@ object CsvParserTest extends SimpleIOSuite {
   case class Test(i: Int = 0, s: String, j: Option[Int])
   case class TestData(name: String, age: Int, description: String)
 
-  implicit val testDataCsvRowDecoder: CsvRowDecoder[TestData, String] = (row: RowF[Some, String]) => {
+  implicit val testDataCsvRowDecoder: CsvRowDecoder[TestData, String] = (row: Row[Some, String]) => {
     (
       row.as[String]("name"),
       row.as[Int]("age"),
@@ -44,7 +44,7 @@ object CsvParserTest extends SimpleIOSuite {
   }
 
   implicit val testDataRowDecoder: RowDecoder[TestData] = new RowDecoder[TestData] {
-    override def apply(row: RowF[NoneF, Nothing]): DecoderResult[TestData] = {
+    override def apply(row: Row[NoneF, Nothing]): DecoderResult[TestData] = {
       (
         row.asAt[String](0),
         row.asAt[Int](1),

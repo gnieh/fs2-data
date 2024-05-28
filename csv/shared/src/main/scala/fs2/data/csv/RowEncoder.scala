@@ -25,24 +25,24 @@ import scala.annotation.implicitNotFound
   */
 @implicitNotFound(
   "No implicit RowEncoderF[ found for type ${T}.\nYou can define one using RowEncoderF[.instance, by calling contramap on another RowEncoderF[ or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val csvRowEncoder: RowEncoderF[[${T}] = deriveRowEncoderF[\nMake sure to have instances of CellEncoder for every member type in scope.\n")
-@FunctionalInterface trait RowEncoderF[T] {
-  def apply(elem: T): RowF
+@FunctionalInterface trait RowEncoder[T] {
+  def apply(elem: T): Row
 
-  def contramap[B](f: B => T): RowEncoderF[B] = elem => apply(f(elem))
+  def contramap[B](f: B => T): RowEncoder[B] = elem => apply(f(elem))
 }
 
-object RowEncoderF extends ExportedRowEncoders {
+object RowEncoder extends ExportedRowEncoders {
   @inline
   def apply[T: RowEncoder]: RowEncoder[T] = implicitly[RowEncoder[T]]
 
   @inline
-  def instance[T](f: T => NonEmptyList[String]): RowEncoder[T] = (t: T) => RowF(f(t))
+  def instance[T](f: T => NonEmptyList[String]): RowEncoder[T] = (t: T) => Row(f(t))
 
-  implicit def identityRowEncoderF[H[+a] <: Option[a]]: RowEncoderF[RowF] = identity
+  implicit def identityRowEncoder: RowEncoder[Row] = identity
 
-  implicit def RowEncoderF[H[+a] <: Option[a]]: Contravariant[RowEncoderF[*]] =
-    new Contravariant[RowEncoderF[*]] {
-      override def contramap[A, B](fa: RowEncoderF[A])(f: B => A): RowEncoderF[B] =
+  implicit def RowEncoder: Contravariant[RowEncoder[*]] =
+    new Contravariant[RowEncoder[*]] {
+      override def contramap[A, B](fa: RowEncoder[A])(f: B => A): RowEncoder[B] =
         fa.contramap(f)
     }
 
