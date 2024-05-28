@@ -36,7 +36,7 @@ object RowEncoderF extends ExportedRowEncoders {
   def apply[T: RowEncoder]: RowEncoder[T] = implicitly[RowEncoder[T]]
 
   @inline
-  def instance[T](f: T => NonEmptyList[String]): RowEncoder[T] = (t: T) => Row(f(t))
+  def instance[T](f: T => NonEmptyList[String]): RowEncoder[T] = (t: T) => RowF(f(t))
 
   implicit def identityRowEncoderF[H[+a] <: Option[a], Header]: RowEncoderF[H, RowF[H, Header], Header] = identity
 

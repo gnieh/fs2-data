@@ -30,7 +30,6 @@ import cats.syntax.all._
   * '''Note:''' the following invariant holds when using this class: `values` and `headers` have the same size if headers are present.
   */
 case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
-                                            headers: H[NonEmptyList[Header]],
                                             line: Option[Long] = None) {
 
   /** Number of cells in the row. */
@@ -90,7 +89,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     if (idx < 0 || idx >= values.size)
       this
     else
-      new RowF[H, Header](values.zipWithIndex.map { case (cell, i) => if (i === idx) f(cell) else cell }, headers)
+      new RowF[H, Header](values.zipWithIndex.map { case (cell, i) => if (i === idx) f(cell) else cell })
 
   /** Returns the row with the cell at `idx` modified to `value`. */
   def updatedAt(idx: Int, value: String): RowF[H, Header] =
@@ -104,17 +103,7 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
       Some(this)
     } else {
       val (before, after) = values.toList.splitAt(idx)
-      val nh = htraverse(headers) { headers =>
-        val (h1, h2) = headers.toList.splitAt(idx)
-        NonEmptyList.fromList(h1 ::: h2.tail)
-      }
-      (NonEmptyList.fromList(before ++ after.tail), nh).mapN(new RowF[H, Header](_, _))
+      (NonEmptyList.fromList(before ++ after.tail)).map(new RowF[H, Header](_))
     }
 
-  // Like Traverse[Option], but preserves the H type
-  private def htraverse[G[_]: Applicative, A, B](h: H[A])(f: A => G[B]): G[H[B]] = h match {
-    case Some(a) => f(a).map(Some(_)).asInstanceOf[G[H[B]]]
-    case _       => Applicative[G].pure(None).asInstanceOf[G[H[B]]]
-  }
 }
-
