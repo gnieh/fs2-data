@@ -90,6 +90,12 @@ import scala.annotation.tailrec
 
 object RowDecoderF extends ExportedRowDecoderFs {
 
+  @inline
+  def apply[T: RowDecoder]: RowDecoder[T] = implicitly[RowDecoder[T]]
+
+  @inline
+  def instance[T](f: Row => DecoderResult[T]): RowDecoder[T] = row => f(row)
+
   implicit def identityRowDecoderF[H[+a] <: Option[a], Header]: RowDecoderF[H, RowF[H, Header], Header] = _.asRight
 
   implicit def RowDecoderFInstances[H[+a] <: Option[a], Header]
@@ -126,10 +132,10 @@ object RowDecoderF extends ExportedRowDecoderFs {
     }
 
   implicit val toListRowDecoder: RowDecoder[List[String]] =
-    RowDecoder.instance(_.values.toList.asRight)
+    RowDecoderF.instance(_.values.toList.asRight)
 
   implicit val toNelRowDecoder: RowDecoder[NonEmptyList[String]] =
-    RowDecoder.instance(_.values.asRight)
+    RowDecoderF.instance(_.values.asRight)
 
   implicit def decodeResultRowDecoder[T](implicit dec: RowDecoder[T]): RowDecoder[DecoderResult[T]] =
     r => Right(dec(r))

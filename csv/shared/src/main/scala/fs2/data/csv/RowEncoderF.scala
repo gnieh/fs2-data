@@ -17,9 +17,9 @@
 package fs2.data.csv
 
 import cats._
-import cats.data.{NonEmptyList, NonEmptyMap}
+import cats.data.NonEmptyList
 
-import scala.annotation.{implicitNotFound, unused}
+import scala.annotation.implicitNotFound
 
 /** Describes how a row can be encoded from a value of the given type.
   */
@@ -32,6 +32,11 @@ import scala.annotation.{implicitNotFound, unused}
 }
 
 object RowEncoderF extends ExportedRowEncoders {
+  @inline
+  def apply[T: RowEncoder]: RowEncoder[T] = implicitly[RowEncoder[T]]
+
+  @inline
+  def instance[T](f: T => NonEmptyList[String]): RowEncoder[T] = (t: T) => Row(f(t))
 
   implicit def identityRowEncoderF[H[+a] <: Option[a], Header]: RowEncoderF[H, RowF[H, Header], Header] = identity
 
@@ -41,15 +46,8 @@ object RowEncoderF extends ExportedRowEncoders {
         fa.contramap(f)
     }
 
-  @inline
-  def apply[H[+a] <: Option[a], T: RowEncoderF[H, *, Header], Header]: RowEncoderF[H, T, Header] =
-    implicitly[RowEncoderF[H, T, Header]]
-
-  @inline
-  def instance[H[+a] <: Option[a], T, Header](f: T => RowF[H, Header]): RowEncoderF[H, T, Header] = f(_)
-
   implicit val fromNelRowEncoder: RowEncoder[NonEmptyList[String]] =
-    RowEncoder.instance(r => r)
+    instance[NonEmptyList[String]](r => r)
 }
 
 trait ExportedRowEncoders {
