@@ -21,6 +21,7 @@ import scodec.bits.*
 import weaver.SimpleIOSuite
 import fs2.*
 import fs2.data.msgpack.low.MsgpackItem
+import java.nio.charset.StandardCharsets
 
 object ParserSpec extends SimpleIOSuite {
   test("MessagePack value parser should correctly parse all formats") {
@@ -230,27 +231,27 @@ object ParserSpec extends SimpleIOSuite {
         """,
        List(
          MsgpackItem.Map(8),
-         MsgpackItem.Str(ByteVector.encodeUtf8("int").toOption.get),
+         MsgpackItem.Str(ByteVector("int".getBytes(StandardCharsets.UTF_8))),
          MsgpackItem.SignedInt(hex"01"),
-         MsgpackItem.Str(ByteVector.encodeUtf8("float").toOption.get),
+         MsgpackItem.Str(ByteVector("float".getBytes(StandardCharsets.UTF_8))),
          MsgpackItem.Float32(hex"3f 00 00 00"), // 0.5 single prec.
-         MsgpackItem.Str(ByteVector.encodeUtf8("boolean").toOption.get),
+         MsgpackItem.Str(ByteVector("boolean".getBytes(StandardCharsets.UTF_8))),
          MsgpackItem.True,
-         MsgpackItem.Str(ByteVector.encodeUtf8("null").toOption.get),
+         MsgpackItem.Str(ByteVector("null".getBytes(StandardCharsets.UTF_8))),
          MsgpackItem.Nil,
-         MsgpackItem.Str(ByteVector.encodeUtf8("string").toOption.get),
-         MsgpackItem.Str(ByteVector.encodeUtf8("foo bar").toOption.get),
-         MsgpackItem.Str(ByteVector.encodeUtf8("array").toOption.get),
+         MsgpackItem.Str(ByteVector("string".getBytes(StandardCharsets.UTF_8))),
+         MsgpackItem.Str(ByteVector("foo bar".getBytes(StandardCharsets.UTF_8))),
+         MsgpackItem.Str(ByteVector("array".getBytes(StandardCharsets.UTF_8))),
          MsgpackItem.Array(2),
-         MsgpackItem.Str(ByteVector.encodeUtf8("foo").toOption.get),
-         MsgpackItem.Str(ByteVector.encodeUtf8("bar").toOption.get),
-         MsgpackItem.Str(ByteVector.encodeUtf8("object").toOption.get),
+         MsgpackItem.Str(ByteVector("foo".getBytes(StandardCharsets.UTF_8))),
+         MsgpackItem.Str(ByteVector("bar".getBytes(StandardCharsets.UTF_8))),
+         MsgpackItem.Str(ByteVector("object".getBytes(StandardCharsets.UTF_8))),
          MsgpackItem.Map(2),
-         MsgpackItem.Str(ByteVector.encodeUtf8("foo").toOption.get),
+         MsgpackItem.Str(ByteVector("foo".getBytes(StandardCharsets.UTF_8))),
          MsgpackItem.SignedInt(hex"01"),
-         MsgpackItem.Str(ByteVector.encodeUtf8("baz").toOption.get),
+         MsgpackItem.Str(ByteVector("baz".getBytes(StandardCharsets.UTF_8))),
          MsgpackItem.Float64(hex"3f e0 00 00 00 00 00 00"), // 0.5 double prec.
-         MsgpackItem.Str(ByteVector.encodeUtf8("timestamp").toOption.get),
+         MsgpackItem.Str(ByteVector("timestamp".getBytes(StandardCharsets.UTF_8))),
          MsgpackItem.Timestamp64(hex"004488c", hex"0344556677") // 9:02:47 pm UTC + 280716ns, August 20, 2414
        ))
     )
