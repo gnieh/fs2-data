@@ -464,7 +464,7 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   )
 
 lazy val msgpack = crossProject(JVMPlatform, JSPlatform, NativePlatform)
-  .crossType(CrossType.Full)
+  .crossType(CrossType.Pure)
   .in(file("msgpack"))
   .settings(commonSettings)
   .settings(
