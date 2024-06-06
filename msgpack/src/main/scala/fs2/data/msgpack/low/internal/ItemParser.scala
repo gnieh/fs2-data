@@ -30,8 +30,11 @@ private[low] object ItemParser {
     */
   private def parseItem[F[_]](ctx: ParserContext[F])(implicit
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
-    requireOneByte(ctx) flatMap { case (ctx, result) =>
-      result match {
+    requireOneByte(ctx) flatMap { res => {
+      val byte = res.result
+      val ctx = res.toContext
+
+      byte match {
         case Headers.Nil       => Pull.pure(ctx.prepend(MsgpackItem.Nil))
         case Headers.NeverUsed => Pull.raiseError(new MsgpackParsingException("Reserved value 0xc1 used"))
         case Headers.False     => Pull.pure(ctx.prepend(MsgpackItem.False))
@@ -65,41 +68,41 @@ private[low] object ItemParser {
         case Headers.Map32     => parseMap(4, ctx)
         case _ => {
           // Positive fixint
-          if ((result & 0x80) == 0) {
-            Pull.pure(ctx.prepend(MsgpackItem.SignedInt(ByteVector(result))))
+          if ((byte & 0x80) == 0) {
+            Pull.pure(ctx.prepend(MsgpackItem.SignedInt(ByteVector(byte))))
           }
 
           // fixmap
-          else if ((result & 0xf0) == 0x80) {
-            val length = result & 0x0f // 0x8f- 0x80
+          else if ((byte & 0xf0) == 0x80) {
+            val length = byte & 0x0f // 0x8f- 0x80
             Pull.pure(ctx.prepend(MsgpackItem.Map(length)))
           }
 
           // fixarray
-          else if ((result & 0xf0) == 0x90) {
-            val length = result & 0x0f // 0x9f- 0x90
+          else if ((byte & 0xf0) == 0x90) {
+            val length = byte & 0x0f // 0x9f- 0x90
             Pull.pure(ctx.prepend(MsgpackItem.Array(length)))
 
           }
 
           // fixstr
-          else if ((result & 0xe0) == 0xa0) {
-            val length = result & 0x1f
-            requireBytes(length, ctx) map { case (ctx, str) =>
-              ctx.prepend(MsgpackItem.Str(str))
+          else if ((byte & 0xe0) == 0xa0) {
+            val length = byte & 0x1f
+            requireBytes(length, ctx) map { res =>
+              res.accumulate(MsgpackItem.Str)
             }
           }
 
           // Negative fixint
-          else if ((result & 0xe0) == 0xe0) {
-            Pull.pure(ctx.prepend(MsgpackItem.SignedInt(ByteVector(result))))
+          else if ((byte & 0xe0) == 0xe0) {
+            Pull.pure(ctx.prepend(MsgpackItem.SignedInt(ByteVector(byte))))
           } else {
-            Pull.raiseError(new MsgpackParsingException(s"Invalid type ${result}"))
+            Pull.raiseError(new MsgpackParsingException(s"Invalid type ${byte}"))
           }
         }
       }
     }
-  }
+  }}
 
   def pipe[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, MsgpackItem] = { stream =>
     def go(ctx: ParserContext[F]): Pull[F, MsgpackItem, Unit] = {

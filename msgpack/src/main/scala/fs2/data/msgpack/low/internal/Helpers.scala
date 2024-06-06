@@ -34,10 +34,13 @@ private[internal] object Helpers {
   case class ParserContext[F[_]](chunk: Chunk[Byte], idx: Int, rest: Stream[F, Byte], acc: List[MsgpackItem]) {
     def prepend(item: MsgpackItem) = ParserContext(chunk, idx, rest, item :: acc)
     def next = ParserContext(chunk, idx + 1, rest, acc)
-    def toResult[T](result: T) = (this, result)
+    def toResult[T](result: T) = ParserResult(chunk, idx, rest, acc, result)
   }
 
-  type ParserResult[F[_], T] = (ParserContext[F], T)
+  case class ParserResult[F[_], T](chunk: Chunk[Byte], idx: Int, rest: Stream[F, Byte], acc: List[MsgpackItem], result: T) {
+    def toContext = ParserContext(chunk, idx, rest, acc)
+    def accumulate(op: T => MsgpackItem) = ParserContext(chunk, idx, rest, op(result) :: acc)
+  }
 
   /** Ensures that a computation `cont` will happen inside a valid context.
     * @param cont function to be run with a chunk ensured
@@ -59,7 +62,7 @@ private[internal] object Helpers {
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserResult[F, Byte]] = {
     ensureChunk(ctx) { ctx =>
       // Inbounds chunk access is guaranteed by `ensureChunk`
-      Pull.pure((ctx.next, ctx.chunk(ctx.idx)))
+      Pull.pure(ctx.next.toResult(ctx.chunk(ctx.idx)))
     } {
       Pull.raiseError(new MsgpackParsingException("Unexpected end of input"))
     }
@@ -71,8 +74,8 @@ private[internal] object Helpers {
       if (count <= 0) {
         Pull.pure(ctx.toResult(bytes.reverse))
       } else {
-        requireOneByte(ctx) flatMap { case (ctx, byte) =>
-          go(count - 1, ctx, byte +: bytes)
+        requireOneByte(ctx) flatMap { res =>
+          go(count - 1, res.toContext, res.result +: bytes)
         }
       }
     }
