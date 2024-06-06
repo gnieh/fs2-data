@@ -74,8 +74,10 @@ private[internal] object Helpers {
       if (count <= 0) {
         Pull.pure(ctx.toResult(bytes.reverse))
       } else {
-        requireOneByte(ctx) flatMap { res =>
-          go(count - 1, res.toContext, res.result +: bytes)
+        ensureChunk(ctx) { ctx =>
+          go(count - 1, ctx.next, ctx.chunk(ctx.idx) +: bytes)
+        } {
+          Pull.raiseError(new MsgpackParsingException("Unexpected end of input"))
         }
       }
     }
