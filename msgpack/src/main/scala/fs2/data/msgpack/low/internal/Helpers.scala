@@ -37,7 +37,11 @@ private[internal] object Helpers {
     def toResult[T](result: T) = ParserResult(chunk, idx, rest, acc, result)
   }
 
-  case class ParserResult[F[_], T](chunk: Chunk[Byte], idx: Int, rest: Stream[F, Byte], acc: List[MsgpackItem], result: T) {
+  case class ParserResult[F[_], T](chunk: Chunk[Byte],
+                                   idx: Int,
+                                   rest: Stream[F, Byte],
+                                   acc: List[MsgpackItem],
+                                   result: T) {
     def toContext = ParserContext(chunk, idx, rest, acc)
     def accumulate(op: T => MsgpackItem) = ParserContext(chunk, idx, rest, op(result) :: acc)
   }
@@ -71,17 +75,33 @@ private[internal] object Helpers {
   def requireBytes[F[_]](count: Int, ctx: ParserContext[F])(implicit
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserResult[F, ByteVector]] = {
     def go(count: Int, ctx: ParserContext[F], bytes: ByteVector): Pull[F, MsgpackItem, ParserResult[F, ByteVector]] = {
-      if (count <= 0) {
-        Pull.pure(ctx.toResult(bytes.reverse))
-      } else {
-        ensureChunk(ctx) { ctx =>
-          go(count - 1, ctx.next, ctx.chunk(ctx.idx) +: bytes)
-        } {
-          Pull.raiseError(new MsgpackParsingException("Unexpected end of input"))
+      ensureChunk(ctx) { case ParserContext(chunk, idx, rest, acc) =>
+        // Array slice has O(1) `drop` and `take`.
+        val slice = chunk.toArraySlice
+
+        // How much chunk do we have left.
+        val available = slice.size - idx
+
+        // We accumulate either what is available, or the count.
+        val accumulated = Math.min(count, available)
+        val newBytes = bytes ++ slice.drop(idx).take(accumulated).toByteVector
+
+        if (available >= count) {
+          // We have enough bytes
+          Pull.pure(ParserResult(slice, idx + count, rest, acc, newBytes))
+        } else {
+          // Too short, append current bytes and continue.
+          go(count - available, ParserContext(chunk, slice.size, rest, acc), newBytes)
         }
+      } {
+        Pull.raiseError(new MsgpackParsingException("Unexpected end of input"))
       }
     }
 
-    go(count, ctx, ByteVector.empty)
+    if (count <= 0) {
+      Pull.pure(ctx.toResult(ByteVector.empty))
+    } else {
+      go(count, ctx, ByteVector.empty)
+    }
   }
 }
