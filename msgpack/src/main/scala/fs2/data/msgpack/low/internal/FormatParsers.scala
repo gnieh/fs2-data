@@ -32,9 +32,6 @@ private[internal] object FormatParsers {
     }
   }
 
-  def parseUnsignedInt[F[_]](length: Int, ctx: ParserContext[F])(implicit F: RaiseThrowable[F]) =
-    parseSimpleType(MsgpackItem.UnsignedInt)(length, ctx)
-
   def parseArray[F[_]](length: Int, ctx: ParserContext[F])(implicit
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
     requireBytes(length, ctx).map { res =>
