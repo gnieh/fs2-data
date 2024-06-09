@@ -471,6 +471,9 @@ lazy val msgpack = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     name := "fs2-data-msgpack",
     description := "Streaming MessagePack library"
   )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
 
 lazy val benchmarks = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
