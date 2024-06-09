@@ -53,7 +53,7 @@ private[internal] object Helpers {
   def ensureChunk[F[_], T](ctx: ParserContext[F])(cont: ParserContext[F] => Pull[F, MsgpackItem, T])(
       onEos: => Pull[F, MsgpackItem, T]): Pull[F, MsgpackItem, T] = {
     if (ctx.idx >= ctx.chunk.size) {
-      Pull.output(Chunk.from(ctx.acc.reverse)) >> ctx.rest.pull.uncons flatMap {
+      Pull.output(Chunk.from(ctx.acc.reverse)) >> ctx.rest.pull.uncons.flatMap {
         case Some((hd, tl)) => ensureChunk(ParserContext(hd, 0, tl, Nil))(cont)(onEos)
         case None           => onEos
       }

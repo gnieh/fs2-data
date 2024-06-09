@@ -27,7 +27,7 @@ import scodec.bits._
 private[internal] object FormatParsers {
   def parseSimpleType[F[_]](lift: ByteVector => MsgpackItem)(length: Int, ctx: ParserContext[F])(implicit
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
-    requireBytes(length, ctx) map { res =>
+    requireBytes(length, ctx).map { res =>
       res.accumulate(bytes => lift(bytes))
     }
   }
@@ -37,14 +37,14 @@ private[internal] object FormatParsers {
 
   def parseArray[F[_]](length: Int, ctx: ParserContext[F])(implicit
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
-    requireBytes(length, ctx) map { res =>
+    requireBytes(length, ctx).map { res =>
       res.accumulate(v => MsgpackItem.Array(v.toInt(false, ByteOrdering.BigEndian)))
     }
   }
 
   def parseMap[F[_]](length: Int, ctx: ParserContext[F])(implicit
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
-    requireBytes(length, ctx) map { res =>
+    requireBytes(length, ctx).map { res =>
       res.accumulate(v => MsgpackItem.Map(v.toInt(false, ByteOrdering.BigEndian)))
     }
   }
@@ -53,18 +53,16 @@ private[internal] object FormatParsers {
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
     length match {
       case 4 =>
-        requireBytes(4, ctx) map { res =>
+        requireBytes(4, ctx).map { res =>
           res.accumulate(v => MsgpackItem.Timestamp32(v))
         }
       case 8 =>
-        requireBytes(8, ctx) map {
-          case res => {
-            val result = res.result
-            val seconds = result & hex"00000003ffffffff"
-            val nanosec = result >> 34
+        requireBytes(8, ctx).map { res =>
+          val result = res.result
+          val seconds = result & hex"00000003ffffffff"
+          val nanosec = result >> 34
 
-            res.toContext.prepend(MsgpackItem.Timestamp64(nanosec.drop(4), seconds.drop(3)))
-          }
+          res.toContext.prepend(MsgpackItem.Timestamp64(nanosec.drop(4), seconds.drop(3)))
         }
       case 12 =>
         for {
@@ -79,15 +77,13 @@ private[internal] object FormatParsers {
 
   def parseFixExt[F[_]](length: Int, ctx: ParserContext[F])(implicit
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
-    requireOneByte(ctx) flatMap {
-      res => {
-        val header = res.result
-        if (header == Headers.Timestamp) {
-          parseTimestamp(length, res.toContext)
-        } else {
-          requireBytes(length, res.toContext) map { res =>
-            res.accumulate(bytes => MsgpackItem.Extension(header, bytes))
-          }
+    requireOneByte(ctx).flatMap { res =>
+      val header = res.result
+      if (header == Headers.Timestamp) {
+        parseTimestamp(length, res.toContext)
+      } else {
+        requireBytes(length, res.toContext).map { res =>
+          res.accumulate(bytes => MsgpackItem.Extension(header, bytes))
         }
       }
     }
@@ -104,7 +100,7 @@ private[internal] object FormatParsers {
         if (header == Headers.Timestamp) {
           parseTimestamp(size, res.toContext)
         } else {
-          requireBytes(size, res.toContext) map { res =>
+          requireBytes(size, res.toContext).map { res =>
             res.accumulate(bytes => MsgpackItem.Extension(header, bytes))
           }
         }
@@ -113,8 +109,8 @@ private[internal] object FormatParsers {
 
   def parseBin[F[_]](length: Int, ctx: ParserContext[F])(implicit
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
-    requireBytes(length, ctx) flatMap { res =>
-      requireBytes(res.result.toInt(false, ByteOrdering.BigEndian), res.toContext) map { res =>
+    requireBytes(length, ctx).flatMap { res =>
+      requireBytes(res.result.toInt(false, ByteOrdering.BigEndian), res.toContext).map { res =>
         res.accumulate(bytes => MsgpackItem.Bin(bytes))
       }
     }
@@ -122,8 +118,8 @@ private[internal] object FormatParsers {
 
   def parseString[F[_]](length: Int, ctx: ParserContext[F])(implicit
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
-    requireBytes(length, ctx) flatMap { res =>
-      requireBytes(res.result.toInt(false, ByteOrdering.BigEndian), res.toContext) map { res =>
+    requireBytes(length, ctx).flatMap { res =>
+      requireBytes(res.result.toInt(false, ByteOrdering.BigEndian), res.toContext).map { res =>
         res.accumulate(bytes => MsgpackItem.Str(bytes))
       }
     }

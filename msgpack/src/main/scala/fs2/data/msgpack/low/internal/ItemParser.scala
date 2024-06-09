@@ -30,7 +30,7 @@ private[low] object ItemParser {
     */
   private def parseItem[F[_]](ctx: ParserContext[F])(implicit
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
-    requireOneByte(ctx) flatMap { res => {
+    requireOneByte(ctx).flatMap { res =>
       val byte = res.result
       val ctx = res.toContext
 
@@ -102,11 +102,11 @@ private[low] object ItemParser {
         }
       }
     }
-  }}
+  }
 
   def pipe[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, MsgpackItem] = { stream =>
     def go(ctx: ParserContext[F]): Pull[F, MsgpackItem, Unit] = {
-      ensureChunk(ctx)(parseItem(_) flatMap go)(Pull.done)
+      ensureChunk(ctx)(parseItem(_).flatMap(go))(Pull.done)
     }
 
     go(ParserContext(Chunk.empty, 0, stream, Nil)).stream
