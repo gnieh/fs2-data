@@ -23,6 +23,7 @@ package internal
 import fs2.data.msgpack.low.internal.Helpers._
 import fs2.data.msgpack.low.internal.FormatParsers._
 import scodec.bits._
+import scala.annotation.switch
 
 private[low] object ItemParser {
 
@@ -34,7 +35,7 @@ private[low] object ItemParser {
       val byte = res.result
       val ctx = res.toContext
 
-      byte match {
+      ((byte & 0xff): @switch) match {
         case Headers.Nil       => Pull.pure(ctx.prepend(MsgpackItem.Nil))
         case Headers.NeverUsed => Pull.raiseError(new MsgpackParsingException("Reserved value 0xc1 used"))
         case Headers.False     => Pull.pure(ctx.prepend(MsgpackItem.False))
