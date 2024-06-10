@@ -26,7 +26,7 @@ val circeExtrasVersion = "0.14.2"
 val playVersion = "3.0.3"
 val shapeless2Version = "2.3.11"
 val shapeless3Version = "3.4.1"
-val scalaJavaTimeVersion = "2.5.0"
+val scalaJavaTimeVersion = "2.6.0"
 val diffsonVersion = "4.6.0"
 val literallyVersion = "1.1.0"
 val weaverVersion = "0.8.4"
@@ -58,7 +58,7 @@ val commonSettings = List(
     "com.disneystreaming" %%% "weaver-cats" % weaverVersion % "test",
     "com.disneystreaming" %%% "weaver-scalacheck" % weaverVersion % Test,
     "com.eed3si9n.expecty" %%% "expecty" % "0.16.0" % "test",
-    "org.portable-scala" %%% "portable-scala-reflect" % "1.1.2" cross CrossVersion.for3Use2_13
+    "org.portable-scala" %%% "portable-scala-reflect" % "1.1.3" cross CrossVersion.for3Use2_13
   ) ++ PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
       List(
