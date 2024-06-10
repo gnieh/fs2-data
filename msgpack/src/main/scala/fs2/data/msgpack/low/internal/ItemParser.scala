@@ -46,16 +46,16 @@ private[low] object ItemParser {
         case Headers.Ext8      => parsePlainExt(1, ctx)
         case Headers.Ext16     => parsePlainExt(2, ctx)
         case Headers.Ext32     => parsePlainExt(4, ctx)
-        case Headers.Float32   => parseSimpleType(MsgpackItem.Float32.apply)(4, ctx)
-        case Headers.Float64   => parseSimpleType(MsgpackItem.Float64.apply)(8, ctx)
-        case Headers.Uint8     => parseSimpleType(MsgpackItem.UnsignedInt.apply)(1, ctx)
-        case Headers.Uint16    => parseSimpleType(MsgpackItem.UnsignedInt.apply)(2, ctx)
-        case Headers.Uint32    => parseSimpleType(MsgpackItem.UnsignedInt.apply)(4, ctx)
-        case Headers.Uint64    => parseSimpleType(MsgpackItem.UnsignedInt.apply)(8, ctx)
-        case Headers.Int8      => parseSimpleType(MsgpackItem.SignedInt.apply)(1, ctx)
-        case Headers.Int16     => parseSimpleType(MsgpackItem.SignedInt.apply)(2, ctx)
-        case Headers.Int32     => parseSimpleType(MsgpackItem.SignedInt.apply)(4, ctx)
-        case Headers.Int64     => parseSimpleType(MsgpackItem.SignedInt.apply)(8, ctx)
+        case Headers.Float32   => parseSimpleType(MsgpackItem.Float32(_))(4, ctx)
+        case Headers.Float64   => parseSimpleType(MsgpackItem.Float64(_))(8, ctx)
+        case Headers.Uint8     => parseSimpleType(MsgpackItem.UnsignedInt(_))(1, ctx)
+        case Headers.Uint16    => parseSimpleType(MsgpackItem.UnsignedInt(_))(2, ctx)
+        case Headers.Uint32    => parseSimpleType(MsgpackItem.UnsignedInt(_))(4, ctx)
+        case Headers.Uint64    => parseSimpleType(MsgpackItem.UnsignedInt(_))(8, ctx)
+        case Headers.Int8      => parseSimpleType(MsgpackItem.SignedInt(_))(1, ctx)
+        case Headers.Int16     => parseSimpleType(MsgpackItem.SignedInt(_))(2, ctx)
+        case Headers.Int32     => parseSimpleType(MsgpackItem.SignedInt(_))(4, ctx)
+        case Headers.Int64     => parseSimpleType(MsgpackItem.SignedInt(_))(8, ctx)
         case Headers.FixExt1   => parseFixExt(1, ctx)
         case Headers.FixExt2   => parseFixExt(2, ctx)
         case Headers.FixExt4   => parseFixExt(4, ctx)
@@ -86,7 +86,7 @@ private[low] object ItemParser {
         case x if ((x & 0xe0) == 0xa0) =>
           val length = byte & 0x1f
           requireBytes(length, ctx) map { res =>
-            res.accumulate(MsgpackItem.Str.apply)
+            res.accumulate(MsgpackItem.Str(_))
           }
 
         // Negatve fixint
