@@ -20,7 +20,6 @@ package msgpack
 package low
 package internal
 
-import fs2.data.msgpack.low.MsgpackItem
 import fs2.data.msgpack.low.internal.Helpers._
 import scodec.bits._
 

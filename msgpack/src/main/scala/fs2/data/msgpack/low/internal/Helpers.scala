@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package fs2.data.msgpack.low.internal
+package fs2
+package data
+package msgpack
+package low
+package internal
 
-import fs2.Chunk
-import fs2.Pull
-import fs2.RaiseThrowable
-import fs2.Stream
-import fs2.data.msgpack.low.MsgpackItem
 import scodec.bits.ByteVector
 
 private[internal] object Helpers {
