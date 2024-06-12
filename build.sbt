@@ -469,7 +469,8 @@ lazy val msgpack = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .settings(commonSettings)
   .settings(
     name := "fs2-data-msgpack",
-    description := "Streaming MessagePack library"
+    description := "Streaming MessagePack library",
+    tlVersionIntroduced := Map("3" -> "1.12.0", "2.13" -> "1.12.0", "2.12" -> "1.12.0")
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
