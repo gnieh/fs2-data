@@ -106,6 +106,7 @@ val root = tlCrossRootProject
     scalaXml,
     cbor,
     cborJson,
+    msgpack,
     finiteState,
     unidocs,
     exampleJq
@@ -462,6 +463,19 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     tlVersionIntroduced := Map("3" -> "1.5.1", "2.13" -> "1.5.1", "2.12" -> "1.5.1")
   )
 
+lazy val msgpack = crossProject(JVMPlatform, JSPlatform, NativePlatform)
+  .crossType(CrossType.Pure)
+  .in(file("msgpack"))
+  .settings(commonSettings)
+  .settings(
+    name := "fs2-data-msgpack",
+    description := "Streaming MessagePack library",
+    tlVersionIntroduced := Map("3" -> "1.12.0", "2.13" -> "1.12.0", "2.12" -> "1.12.0")
+  )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+
 lazy val benchmarks = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("benchmarks"))
@@ -474,7 +488,7 @@ lazy val benchmarks = crossProject(JVMPlatform)
       "io.circe" %%% "circe-fs2" % "0.14.1"
     )
   )
-  .dependsOn(csv, scalaXml, jsonCirce)
+  .dependsOn(csv, scalaXml, jsonCirce, msgpack)
 
 lazy val exampleJq = crossProject(JVMPlatform, NativePlatform, JSPlatform)
   .crossType(CrossType.Pure)
