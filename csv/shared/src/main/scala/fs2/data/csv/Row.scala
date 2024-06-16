@@ -19,14 +19,10 @@ package fs2.data.csv
 import cats.data._
 import cats.syntax.all._
 
-/** A CSV row with or without headers. The presence of headers is encoded via the first type param
-  * which is a subtype of [[scala.Option]]. By preserving this information in types, it's possible to define
-  * [[Row]] and [[CsvRow]] aliases as if they were plain case classes while keeping the code DRY.
-  *
+/** A CSV row without headers.
+  * 
   * Operations on columns can always be performed using 0-based indices and additionally using a specified header value
   * if headers are present (and this fact statically known).
-  *
-  * '''Note:''' the following invariant holds when using this class: `values` and `headers` have the same size if headers are present.
   */
 case class Row(values: NonEmptyList[String],
                                             line: Option[Long] = None) {
