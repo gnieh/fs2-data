@@ -25,7 +25,6 @@ import cats.effect.SyncIO
 import scodec.bits._
 import fs2._
 
-
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @BenchmarkMode(Array(Mode.AverageTime))
 @State(org.openjdk.jmh.annotations.Scope.Benchmark)
@@ -35,14 +34,16 @@ import fs2._
 class MsgPackItemParserBenchmarks {
 
   // The file contains hex representation of the values so we have to convert it
-  val msgpackBytes: ByteVector = ByteVector.fromHex(
-    fs2.io
-      .readClassLoaderResource[SyncIO]("twitter_msgpack.txt", 4096)
-      .through(fs2.text.utf8.decode)
-      .compile
-      .string
-      .unsafeRunSync()
-  ).get
+  val msgpackBytes: ByteVector = ByteVector
+    .fromHex(
+      fs2.io
+        .readClassLoaderResource[SyncIO]("twitter_msgpack.txt", 4096)
+        .through(fs2.text.utf8.decode)
+        .compile
+        .string
+        .unsafeRunSync()
+    )
+    .get
 
   @Benchmark
   def parseMsgpackItems() =
