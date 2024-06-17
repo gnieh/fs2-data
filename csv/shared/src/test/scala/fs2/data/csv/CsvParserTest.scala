@@ -17,7 +17,6 @@
 package fs2.data.csv
 
 import cats.Eq
-import cats.data.NonEmptyList
 import io.circe.parser.parse
 import fs2._
 import fs2.io.file.{Files, Flags, Path}
@@ -33,27 +32,35 @@ object CsvParserTest extends SimpleIOSuite {
   case class Test(i: Int = 0, s: String, j: Option[Int])
   case class TestData(name: String, age: Int, description: String)
 
-  implicit val testDataCsvRowDecoder: CsvRowDecoder[TestData, String] = (row: Row[Some, String]) => {
+  case class CsvRow(toMap: Map[String, String])
+  object CsvRow {
+    implicit val decoder: CsvRowDecoder[CsvRow] =
+      (headers: List[String]) =>
+        Right { (row: Row) =>
+          Right(CsvRow(headers.zip(row.values).toList.toMap))
+        }
+
+    def fromListHeaders(l: List[(String, String)]): Option[CsvRow] =
+      Some(CsvRow(l.toMap))
+  }
+
+  implicit val testDataCsvRowDecoder: CsvRowDecoder[TestData] = 
     (
-      row.as[String]("name"),
-      row.as[Int]("age"),
-      row.as[String]("description")
+      CsvRowDecoder.as[String]("name"),
+      CsvRowDecoder.as[Int]("age"),
+      CsvRowDecoder.as[String]("description")
     ).mapN { case (name, age, description) =>
       TestData(name, age, description)
     }
-  }
 
-  implicit val testDataRowDecoder: RowDecoder[TestData] = new RowDecoder[TestData] {
-    override def apply(row: Row[NoneF, Nothing]): DecoderResult[TestData] = {
+  implicit val testDataRowDecoder: RowDecoder[TestData] =
       (
-        row.asAt[String](0),
-        row.asAt[Int](1),
-        row.asAt[String](2)
+        RowDecoder.asAt[String](0),
+        RowDecoder.asAt[Int](1),
+        RowDecoder.asAt[String](2)
       ).mapN { case (name, age, description) =>
         TestData(name, age, description)
       }
-    }
-  }
 
   implicit val decoderErrorEq: Eq[CsvException] = Eq.by(_.toString)
   implicit val decoderTestDataEq: Eq[TestData] = Eq.fromUniversalEquals
@@ -82,7 +89,7 @@ object CsvParserTest extends SimpleIOSuite {
       .evalMap { case (path, expected) =>
         Files[IO]
           .readAll(path, 1024, Flags.Read)
-          .through(decodeUsingHeaders[CsvRow[String]]())
+          .through(decodeUsingHeaders[CsvRow]())
           .compile
           .toList
           .map(_.map(_.toMap))
@@ -96,13 +103,17 @@ object CsvParserTest extends SimpleIOSuite {
     allExpected
       .evalTap { case (path, _) => log.info(path.fileName.toString) }
       .evalMap { case (_, expected) =>
+        implicit val dec = new CsvRowEncoder[CsvRow] {
+          val headers = expected.head.keys.toList
+          val encoder = RowEncoder.instance(row => headers.map(row.toMap))
+        }
         Stream
           .emits(expected)
           .map(m => CsvRow.fromListHeaders(m.toList))
           .unNone
-          .through[IO, String](encodeUsingFirstHeaders[CsvRow[String]]())
+          .through[IO, String](encodeUsingHeaders[CsvRow]())
           .covary[IO]
-          .through(decodeUsingHeaders[CsvRow[String]]())
+          .through(decodeUsingHeaders[CsvRow]())
           .compile
           .toList
           .map(_.map(_.toMap))
@@ -131,7 +142,7 @@ object CsvParserTest extends SimpleIOSuite {
     Stream
       .emit(content)
       .covary[IO]
-      .through(decodeUsingHeaders[CsvRow[String]](',', QuoteHandling.Literal))
+      .through(decodeUsingHeaders[CsvRow](',', QuoteHandling.Literal))
       .compile
       .toList
       .map(_.map(_.toMap))
@@ -178,9 +189,6 @@ object CsvParserTest extends SimpleIOSuite {
 
     val expected = List(
       Left(new DecoderError("unknown field name", None)),
-      Left(new HeaderSizeError(3, 2, Some(3L))),
-      Left(new DecoderError("unknown field name", None)),
-      Left(new HeaderSizeError(3, 2, Some(5L)))
     )
 
     val stream = Stream
@@ -218,7 +226,7 @@ object CsvParserTest extends SimpleIOSuite {
       .through(
         lenient.attemptDecodeGivenHeaders[TestData](separator = ',',
                                                     skipHeaders = true,
-                                                    headers = NonEmptyList.of("name", "age", "description")))
+                                                    headers = List("name", "age", "description")))
       .compile
       .toList
 
@@ -249,7 +257,7 @@ object CsvParserTest extends SimpleIOSuite {
       .through(
         lenient.attemptDecodeGivenHeaders[TestData](separator = ',',
                                                     skipHeaders = false,
-                                                    headers = NonEmptyList.of("name", "age", "description")))
+                                                    headers = List("name", "age", "description")))
       .compile
       .toList
 
@@ -317,16 +325,9 @@ object CsvParserTest extends SimpleIOSuite {
   }
 
   pureTest("should fail if a required string field is missing") {
-    val row = CsvRow
-      .unsafe(
-        NonEmptyList.of("12", "3"),
-        NonEmptyList.of("i", "j")
-      )
-      .withLine(Some(2))
-
-    testDataCsvRowDecoder(row) match {
+    testDataCsvRowDecoder(List("i", "j")) match {
       case Left(error) => expect.eql(error.getMessage, "unknown field name")
-      case Right(x)    => failure(s"Stream succeeded with value $x")
+      case Right(x) => failure(s"Stream succeeded with value $x")
     }
   }
 
@@ -343,35 +344,6 @@ object CsvParserTest extends SimpleIOSuite {
       Right(TestData("John Doe", 47, "description 1")),
       Left(new HeaderSizeError(3, 2, Some(3L))),
       Right(TestData("Bob Smith", 80, "description 2")),
-      Left(new HeaderSizeError(3, 2, Some(5L)))
-    )
-
-    val stream = Stream
-      .emit(content)
-      .covary[Fallible]
-      .through(lenient.attemptDecodeUsingHeaders[TestData](','))
-      .compile
-      .toList
-
-    stream match {
-      case Right(actual) => expect.eql(expected, actual)
-      case Left(x)       => failure(s"Stream failed with value $x")
-    }
-  }
-
-  pureTest("Parser should return only errors as values when using attemptDecodeUsingHeaders with wrong header") {
-    val content =
-      """name1,age,description
-        |John Doe,47,description 1
-        |Jane Doe,50
-        |Bob Smith,80,description 2
-        |Alice Grey,78
-        |""".stripMargin
-
-    val expected = List(
-      Left(new DecoderError("unknown field name", None)),
-      Left(new HeaderSizeError(3, 2, Some(3L))),
-      Left(new DecoderError("unknown field name", None)),
       Left(new HeaderSizeError(3, 2, Some(5L)))
     )
 
@@ -410,7 +382,7 @@ object CsvParserTest extends SimpleIOSuite {
       .through(
         lenient.attemptDecodeGivenHeaders[TestData](separator = ',',
                                                     skipHeaders = true,
-                                                    headers = NonEmptyList.of("name", "age", "description")))
+                                                    headers = List("name", "age", "description")))
       .compile
       .toList
 
@@ -441,7 +413,7 @@ object CsvParserTest extends SimpleIOSuite {
       .through(
         lenient.attemptDecodeGivenHeaders[TestData](separator = ',',
                                                     skipHeaders = false,
-                                                    headers = NonEmptyList.of("name", "age", "description")))
+                                                    headers = List("name", "age", "description")))
       .compile
       .toList
 

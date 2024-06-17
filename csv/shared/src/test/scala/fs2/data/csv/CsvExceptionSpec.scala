@@ -16,7 +16,6 @@
 
 package fs2.data.csv
 
-import cats.data.NonEmptyList
 import fs2.{Fallible, Stream}
 
 import weaver._
@@ -33,8 +32,8 @@ object CsvExceptionSpec extends SimpleIOSuite {
 
     expect(stream.compile.toList match {
       case Right(
-            List(Right(Row(NonEmptyList("1", List("2", "3")))),
-                 Right(Row(NonEmptyList("a", List("b", "c")))),
+            List(Right(Row(List("1", "2", "3"))),
+                 Right(Row(List("a", "b", "c"))),
                  Left(e: CsvException))) =>
         e.line.contains(3L) // check that we have the correct line number here
       case _ => false

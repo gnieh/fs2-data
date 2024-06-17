@@ -17,7 +17,6 @@
 package fs2.data.csv
 
 import cats._
-import cats.data.NonEmptyList
 
 import scala.annotation.implicitNotFound
 
@@ -36,18 +35,27 @@ object RowEncoder extends ExportedRowEncoders {
   def apply[T: RowEncoder]: RowEncoder[T] = implicitly[RowEncoder[T]]
 
   @inline
-  def instance[T](f: T => NonEmptyList[String]): RowEncoder[T] = (t: T) => Row(f(t))
+  def instance[T](f: T => List[String]): RowEncoder[T] = (t: T) => Row(f(t))
 
   implicit def identityRowEncoder: RowEncoder[Row] = identity
 
-  implicit def RowEncoder: Contravariant[RowEncoder[*]] =
-    new Contravariant[RowEncoder[*]] {
+  implicit def RowEncoder: ContravariantMonoidal[RowEncoder] =
+    new ContravariantMonoidal[RowEncoder] {
+      override def product[A, B](fa: RowEncoder[A], fb: RowEncoder[B]): RowEncoder[(A, B)] =
+        ContravariantMonoidal[RowEncoder].product(fa, fb)
+
+      override def unit: RowEncoder[Unit] = new RowEncoder[Unit] {
+
+        override def apply(elem: Unit): Row = Row(Nil, None)
+
+      }
+
       override def contramap[A, B](fa: RowEncoder[A])(f: B => A): RowEncoder[B] =
         fa.contramap(f)
     }
 
-  implicit val fromNelRowEncoder: RowEncoder[NonEmptyList[String]] =
-    instance[NonEmptyList[String]](r => r)
+  implicit val fromNelRowEncoder: RowEncoder[List[String]] =
+    instance[List[String]](r => r)
 }
 
 trait ExportedRowEncoders {

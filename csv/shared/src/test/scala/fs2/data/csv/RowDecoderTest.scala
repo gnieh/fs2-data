@@ -20,8 +20,10 @@ package csv
 
 import cats.effect.IO
 import weaver._
+import cats.syntax.all._
+import fs2.data.csv.lenient.attemptDecodeUsingHeaders
 
-object RowDecoderFTest extends SimpleIOSuite {
+object RowDecoderTest extends SimpleIOSuite {
 
   case class TwoNumbers(a: Int, b: Int)
 
@@ -32,12 +34,13 @@ object RowDecoderFTest extends SimpleIOSuite {
     } yield TwoNumbers(a, b)
   }
 
-  implicit val csvRowDecoder: CsvRowDecoder[TwoNumbers, String] = CsvRowDecoder.instance { row =>
-    for {
-      a <- row.as[Int]("a")
-      b <- row.as[Int]("b")
-    } yield TwoNumbers(a, b)
-  }
+  implicit val csvRowDecoder: CsvRowDecoder[TwoNumbers] =
+    (
+      CsvRowDecoder.as[Int]("a"),
+      CsvRowDecoder.as[Int]("b")
+    ).mapN(
+      TwoNumbers(_, _)
+    )
 
   test("can parse CSV with rows that do not convert by an attempting RowDecoder") {
     val rows = List(
@@ -62,12 +65,11 @@ object RowDecoderFTest extends SimpleIOSuite {
     )
     Stream
       .emits[IO, String](rows)
-      .through(decodeUsingHeaders[DecoderResult[TwoNumbers]]())
+      .through(attemptDecodeUsingHeaders[TwoNumbers]())
       .compile
       .toList
       .map { result =>
         expect(result.head.isRight) and expect(result.tail.head.isLeft)
       }
   }
-
 }

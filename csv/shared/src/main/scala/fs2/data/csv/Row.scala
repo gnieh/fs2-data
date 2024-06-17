@@ -16,15 +16,13 @@
 
 package fs2.data.csv
 
-import cats.data._
 import cats.syntax.all._
 
-/** A CSV row without headers.
+/** A CSV row
   * 
-  * Operations on columns can always be performed using 0-based indices and additionally using a specified header value
-  * if headers are present (and this fact statically known).
+  * Operations on columns can be performed using 0-based indices
   */
-case class Row(values: NonEmptyList[String],
+case class Row(values: List[String],
                                             line: Option[Long] = None) {
 
   /** Number of cells in the row. */
@@ -93,12 +91,17 @@ case class Row(values: NonEmptyList[String],
   /** Returns the row without the cell at the given `idx`.
     * If the resulting row is empty, returns `None`.
     */
-  def deleteAt(idx: Int): Option[Row] =
+  def deleteAt(idx: Int): Row =
     if (idx < 0 || idx >= values.size) {
-      Some(this)
+      this
     } else {
       val (before, after) = values.toList.splitAt(idx)
-      (NonEmptyList.fromList(before ++ after.tail)).map(new Row(_))
+      this.copy(values = before ++ after.tail)
     }
 
+}
+
+object Row {
+  def unapply(row: Row): Option[List[String]] =
+    Some(row.values)
 }

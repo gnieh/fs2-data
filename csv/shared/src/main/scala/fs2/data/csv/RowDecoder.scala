@@ -17,7 +17,6 @@
 package fs2.data.csv
 
 import cats._
-import cats.data.NonEmptyList
 import cats.syntax.all._
 
 import scala.annotation.tailrec
@@ -134,11 +133,17 @@ object RowDecoder extends ExportedRowDecoders {
   implicit val toListRowDecoder: RowDecoder[List[String]] =
     RowDecoder.instance(_.values.toList.asRight)
 
-  implicit val toNelRowDecoder: RowDecoder[NonEmptyList[String]] =
+  implicit val toNelRowDecoder: RowDecoder[List[String]] =
     RowDecoder.instance(_.values.asRight)
 
   implicit def decodeResultRowDecoder[T](implicit dec: RowDecoder[T]): RowDecoder[DecoderResult[T]] =
     r => Right(dec(r))
+
+  def asAt[T: CellDecoder](idx: Int): RowDecoder[T] =
+    (row: Row) =>
+      row.values.toList.lift(idx).toRight {
+        new DecoderError(s"unknown index $idx")
+      }.flatMap(CellDecoder[T].apply)
 }
 
 trait ExportedRowDecoders {
