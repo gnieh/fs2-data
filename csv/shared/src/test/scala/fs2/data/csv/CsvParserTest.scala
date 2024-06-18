@@ -35,11 +35,12 @@ object CsvParserTest extends SimpleIOSuite {
   case class CsvRow(toMap: Map[String, String])
   object CsvRow {
     implicit val decoder: CsvRowDecoder[CsvRow] =
-      (headers: List[String]) =>
-        Right { (row: Row) =>
-          Right(CsvRow(headers.zip(row.values).toList.toMap))
-        }
-
+      CsvRowDecoder.instance {
+        (headers: List[String]) =>
+          Right { RowDecoder.instance { (row: Row) =>
+            Right(CsvRow(headers.zip(row.values).toList.toMap))
+          }}
+      }
     def fromListHeaders(l: List[(String, String)]): Option[CsvRow] =
       Some(CsvRow(l.toMap))
   }
@@ -103,10 +104,12 @@ object CsvParserTest extends SimpleIOSuite {
     allExpected
       .evalTap { case (path, _) => log.info(path.fileName.toString) }
       .evalMap { case (_, expected) =>
-        implicit val dec = new CsvRowEncoder[CsvRow] {
-          val headers = expected.head.keys.toList
-          val encoder = RowEncoder.instance(row => headers.map(row.toMap))
-        }
+        val headers = expected.head.keys.toList
+        implicit val dec = 
+          CsvRowEncoder.instance[CsvRow](
+            headers,
+            RowEncoder.instance(row => headers.map(row.toMap))
+          )
         Stream
           .emits(expected)
           .map(m => CsvRow.fromListHeaders(m.toList))

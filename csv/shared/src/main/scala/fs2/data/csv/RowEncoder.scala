@@ -17,6 +17,7 @@
 package fs2.data.csv
 
 import cats._
+import cats.syntax.all._
 
 import scala.annotation.implicitNotFound
 
@@ -42,13 +43,10 @@ object RowEncoder extends ExportedRowEncoders {
   implicit def RowEncoder: ContravariantMonoidal[RowEncoder] =
     new ContravariantMonoidal[RowEncoder] {
       override def product[A, B](fa: RowEncoder[A], fb: RowEncoder[B]): RowEncoder[(A, B)] =
-        ContravariantMonoidal[RowEncoder].product(fa, fb)
+        (fa, fb).tupled
 
-      override def unit: RowEncoder[Unit] = new RowEncoder[Unit] {
-
-        override def apply(elem: Unit): Row = Row(Nil, None)
-
-      }
+      override def unit: RowEncoder[Unit] =
+        _ => Row(Nil, None)
 
       override def contramap[A, B](fa: RowEncoder[A])(f: B => A): RowEncoder[B] =
         fa.contramap(f)

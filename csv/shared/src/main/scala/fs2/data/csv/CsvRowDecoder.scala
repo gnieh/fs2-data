@@ -3,22 +3,28 @@ package fs2.data.csv
 import cats.syntax.all._
 import cats._
 
-trait CsvRowDecoder[T] {
+sealed trait CsvRowDecoder[T] {
   def apply(headers: List[String]): Either[DecoderError, RowDecoder[T]]
 }
 
 object CsvRowDecoder {
-  def as[T: CellDecoder](name: String): CsvRowDecoder[T] = {
-    (headers: List[String]) =>
+  def as[T: CellDecoder](name: String): CsvRowDecoder[T] = new CsvRowDecoder[T] {
+    def apply(headers: List[String]) = {
       val i = headers.toList.indexOf(name)
       Either.cond(
         i >= 0,
-        (row: Row) =>
+        RowDecoder.instance { (row: Row) =>
           row.values.toList.lift(i).toRight {
             new HeaderSizeError(headers.size, row.values.size, row.line)
-          }.flatMap(CellDecoder[T].apply),
+          }.flatMap(CellDecoder[T].apply)
+        },
         new DecoderError(s"unknown field $name")
       )
+    }
+  }
+
+  private[csv] def instance[T](f: List[String] => Either[DecoderError, RowDecoder[T]]): CsvRowDecoder[T] = new CsvRowDecoder[T] {
+    def apply(headers: List[String]) = f(headers)
   }
 
   implicit def decodeResultCsvRowDecoder[T](implicit
@@ -30,19 +36,18 @@ object CsvRowDecoder {
 
   implicit val CsvRowDecoderInstances: Applicative[CsvRowDecoder] with SemigroupK[CsvRowDecoder] =
     new Applicative[CsvRowDecoder] with SemigroupK[CsvRowDecoder] {
-
+      val a = Applicative[List[String] => *].compose(Applicative[Either[DecoderError, *]].compose(Applicative[RowDecoder]))
       override def combineK[A](x: CsvRowDecoder[A], y: CsvRowDecoder[A]): CsvRowDecoder[A] =
-        headers =>
-          (x(headers), y(headers)).mapN(SemigroupK[RowDecoder].combineK)
-
+        instance((x.apply, y.apply).mapN(_ <+> _))
+        
       override def map[A, B](fa: CsvRowDecoder[A])(f: A => B): CsvRowDecoder[B] =
-        headers => fa(headers).map(_.map(f))
+        instance(a.map(fa.apply)(f))
 
       def pure[A](x: A): CsvRowDecoder[A] =
-        _ => Right(x.pure[RowDecoder])
+        instance(a.pure(x))
       
-      def ap[A, B](ff: CsvRowDecoder[A => B])(fa: CsvRowDecoder[A]): CsvRowDecoder[B] =
-        headers =>
-          (ff(headers), fa(headers)).mapN((a, b) => Applicative[RowDecoder].ap(a)(b))
+      def ap[A, B](ff: CsvRowDecoder[A => B])(fa: CsvRowDecoder[A]): CsvRowDecoder[B] = {
+        instance(a.ap(ff.apply)(fa.apply))
+      }
     }
 }
