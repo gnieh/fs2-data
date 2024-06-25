@@ -53,7 +53,7 @@ object CellEncoderTest extends SimpleIOSuite {
   CellEncoder[java.time.ZoneId]
   CellEncoder[java.time.ZoneOffset]
 
-  pureTest("CellEncoder should decode standard types correctly") {
+  pureTest("CellEncoder should encode standard types correctly") {
     expect(CellEncoder[Unit].apply(()) == "") and
       expect(CellEncoder[Int].apply(78) == "78") and
       expect(CellEncoder[Boolean].apply(true) == "true") and
