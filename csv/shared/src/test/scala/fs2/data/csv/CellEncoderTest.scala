@@ -75,10 +75,13 @@ object CellEncoderTest extends SimpleIOSuite {
           .apply(java.time.LocalTime.of(13, 4, 29)) == "13:04:29")
   }
 
-  pureTest("CellEncoder instance can be built from correct cats.Show instance") {
+  pureTest("CellEncoder instance can be built from native cats.Show instance") {
+    expect(CellEncoder.fromShow[Unit].apply(()) == "()")
+  }
+
+  pureTest("CellEncoder instance can be built from local cats.Show instance") {
     implicit val showInt42: Show[Int] = Show.show(_ => "42")
-    expect(CellEncoder.fromShow[Unit].apply(()) == "()") and
-      expect(CellEncoder.fromShow[Int].apply(78) == "42")
+    expect(CellEncoder.fromShow[Int].apply(78) == "42")
   }
 
 }
