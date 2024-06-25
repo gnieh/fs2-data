@@ -58,6 +58,9 @@ object CellEncoder
   @inline
   def fromToString[A]: CellEncoder[A] = _.toString
 
+  @inline
+  def fromShow[A](implicit ev: Show[A]): CellEncoder[A] = instance(ev.show)
+
   // Primitives
   implicit val unitEncoder: CellEncoder[Unit] = _ => ""
   implicit val booleanEncoder: CellEncoder[Boolean] = fromToString(_)

@@ -22,6 +22,8 @@ import weaver._
 
 import scala.concurrent.duration._
 
+import cats.Show
+
 object CellEncoderTest extends SimpleIOSuite {
 
   // CellEncoder should have implicit instances available for standard types
@@ -53,7 +55,7 @@ object CellEncoderTest extends SimpleIOSuite {
   CellEncoder[java.time.ZoneId]
   CellEncoder[java.time.ZoneOffset]
 
-  pureTest("CellEncoder should decode standard types correctly") {
+  pureTest("CellEncoder should encode standard types correctly") {
     expect(CellEncoder[Unit].apply(()) == "") and
       expect(CellEncoder[Int].apply(78) == "78") and
       expect(CellEncoder[Boolean].apply(true) == "true") and
@@ -71,6 +73,15 @@ object CellEncoderTest extends SimpleIOSuite {
       expect(
         CellEncoder[java.time.LocalTime]
           .apply(java.time.LocalTime.of(13, 4, 29)) == "13:04:29")
+  }
+
+  pureTest("CellEncoder instance can be built from native cats.Show instance") {
+    expect(CellEncoder.fromShow[Double].apply(3.54) == "3.54")
+  }
+
+  pureTest("CellEncoder instance can be built from local cats.Show instance") {
+    implicit val showInt42: Show[Int] = Show.show(_ => "42")
+    expect(CellEncoder.fromShow[Int].apply(78) == "42")
   }
 
 }
