@@ -16,7 +16,11 @@ This project builds using [sbt][sbt].
 * build the documentation: `sbt ;documentation/mdoc; makeSite`
 * run benchmarks (you can provide [JMH][jmh] arguments in the end): `sbt benchmarksJVM/jmh:run`
 
+If you don't already have `sbt`, or if you'd like an isolated environment for development on this project, you may use the Nix shell. 
+For that, you just need to have the [Nix package manager][nix] installed on your machine, and then from this project's root folder run `nix-shell`.
+
 [fs2]: https://fs2.io/
 [sbt]: https://scala-sbt.org
 [jmh]: https://openjdk.java.net/projects/code-tools/jmh/
 [website]: https://fs2-data.gnieh.org
+[nix]: https://nixos.org/download/
