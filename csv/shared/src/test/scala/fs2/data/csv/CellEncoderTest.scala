@@ -76,7 +76,7 @@ object CellEncoderTest extends SimpleIOSuite {
   }
 
   pureTest("CellEncoder instance can be built from native cats.Show instance") {
-    expect(CellEncoder.fromShow[Unit].apply(()) == "()")
+    expect(CellEncoder.fromShow[Double].apply(3.54) == "3.54")
   }
 
   pureTest("CellEncoder instance can be built from local cats.Show instance") {
