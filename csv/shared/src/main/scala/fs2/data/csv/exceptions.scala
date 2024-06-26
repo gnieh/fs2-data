@@ -27,7 +27,7 @@ class DecoderError(msg: String, override val line: Option[Long] = None, inner: T
 }
 
 class HeaderError(msg: String, override val line: Option[Long] = None, inner: Throwable = null)
-    extends CsvException(msg, line, inner) {
+    extends DecoderError(msg, line, inner) {
   override def withLine(line: Option[Long]): HeaderError = new HeaderError(msg, line, inner)
 }
 

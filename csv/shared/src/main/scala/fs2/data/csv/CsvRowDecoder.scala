@@ -1,27 +1,53 @@
-/*
- * Copyright 2024 fs2-data Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package fs2.data.csv
 
+import cats.syntax.all._
+import cats._
+
+sealed trait CsvRowDecoder[T] {
+  def apply(headers: List[String]): Either[DecoderError, RowDecoder[T]]
+}
+
 object CsvRowDecoder {
+  def as[T: CellDecoder](name: String): CsvRowDecoder[T] = new CsvRowDecoder[T] {
+    def apply(headers: List[String]) = {
+      val i = headers.toList.indexOf(name)
+      Either.cond(
+        i >= 0,
+        RowDecoder.instance { (row: Row) =>
+          row.values.toList.lift(i).toRight {
+            new HeaderSizeError(headers.size, row.values.size, row.line)
+          }.flatMap(CellDecoder[T].apply)
+        },
+        new DecoderError(s"unknown field $name")
+      )
+    }
+  }
 
-  @inline
-  def apply[T: CsvRowDecoder[*, Header], Header]: CsvRowDecoder[T, Header] = implicitly[CsvRowDecoder[T, Header]]
+  private[csv] def instance[T](f: List[String] => Either[DecoderError, RowDecoder[T]]): CsvRowDecoder[T] = new CsvRowDecoder[T] {
+    def apply(headers: List[String]) = f(headers)
+  }
 
-  @inline
-  def instance[T, Header](f: CsvRow[Header] => DecoderResult[T]): CsvRowDecoder[T, Header] = f(_)
+  implicit def decodeResultCsvRowDecoder[T](implicit
+      dec: CsvRowDecoder[T]): CsvRowDecoder[DecoderResult[T]] =
+    new CsvRowDecoder[DecoderResult[T]] {
+      override def apply(headers: List[String]): Either[DecoderError,RowDecoder[DecoderResult[T]]] =
+        dec(headers).map(_.map(_.asRight))
+    }
 
+  implicit val CsvRowDecoderInstances: Applicative[CsvRowDecoder] with SemigroupK[CsvRowDecoder] =
+    new Applicative[CsvRowDecoder] with SemigroupK[CsvRowDecoder] {
+      val a = Applicative[List[String] => *].compose(Applicative[Either[DecoderError, *]].compose(Applicative[RowDecoder]))
+      override def combineK[A](x: CsvRowDecoder[A], y: CsvRowDecoder[A]): CsvRowDecoder[A] =
+        instance((x.apply, y.apply).mapN(_ <+> _))
+        
+      override def map[A, B](fa: CsvRowDecoder[A])(f: A => B): CsvRowDecoder[B] =
+        instance(a.map(fa.apply)(f))
+
+      def pure[A](x: A): CsvRowDecoder[A] =
+        instance(a.pure(x))
+      
+      def ap[A, B](ff: CsvRowDecoder[A => B])(fa: CsvRowDecoder[A]): CsvRowDecoder[B] = {
+        instance(a.ap(ff.apply)(fa.apply))
+      }
+    }
 }

@@ -17,10 +17,9 @@
 package fs2.data.csv
 
 import cats.Contravariant
-import cats.data.NonEmptyList
 
 trait WriteableHeader[Header] {
-  def apply(headers: NonEmptyList[Header]): NonEmptyList[String]
+  def apply(headers: List[Header]): List[String]
 
   def contramap[B](f: B => Header): WriteableHeader[B] = headers => apply(headers.map(f))
 }
@@ -37,7 +36,7 @@ object WriteableHeader {
     _.map(encode)
 
   implicit object StringWriteableHeader extends WriteableHeader[String] {
-    def apply(names: NonEmptyList[String]): NonEmptyList[String] = names
+    def apply(names: List[String]): List[String] = names
   }
 
   implicit object WriteableHeaderInstances extends Contravariant[WriteableHeader] {
