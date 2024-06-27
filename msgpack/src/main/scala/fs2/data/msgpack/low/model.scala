@@ -40,9 +40,18 @@ object MsgpackItem {
   case class Extension(tpe: Byte, bytes: ByteVector) extends MsgpackItem
 
   // Predefined extension types
-  case class Timestamp32(seconds: ByteVector) extends MsgpackItem
-  case class Timestamp64(nanoseconds: ByteVector, seconds: ByteVector) extends MsgpackItem
-  case class Timestamp96(nanoseconds: ByteVector, seconds: ByteVector) extends MsgpackItem
+  case class Timestamp32(seconds: Int) extends MsgpackItem
+
+  /** Stores data in a 30-bit [[nanoseconds]] and a 34-bit [[seconds]] fields, both of which are accessible as class
+    * attributes. To ensure valid data length at the type level, both fields are stored in a single 64-bit
+    * [[combined]] variable.
+    * @param combined [[nanoseconds]] and [[seconds]] combined into a signle 64-bit value
+    */
+  case class Timestamp64(combined: Long) extends MsgpackItem {
+    lazy val nanoseconds: Int = (combined >> 34).toInt // we are sure that (x: Long) >> 34 fits in an int
+    lazy val seconds: Long = combined & 0x00000003ffffffffL
+  }
+  case class Timestamp96(nanoseconds: Int, seconds: Long) extends MsgpackItem
 
   case object Nil extends MsgpackItem
   case object True extends MsgpackItem

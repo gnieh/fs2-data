@@ -50,22 +50,18 @@ private[internal] object FormatParsers {
     length match {
       case 4 =>
         requireBytes(4, ctx).map { res =>
-          res.accumulate(v => MsgpackItem.Timestamp32(v))
+          res.accumulate(v => MsgpackItem.Timestamp32(v.toInt(false)))
         }
       case 8 =>
         requireBytes(8, ctx).map { res =>
-          val result = res.result
-          val seconds = result & hex"00000003ffffffff"
-          val nanosec = result >> 34
-
-          res.toContext.prepend(MsgpackItem.Timestamp64(nanosec.drop(4), seconds.drop(3)))
+          res.accumulate(v =>  MsgpackItem.Timestamp64(v.toLong(false)))
         }
       case 12 =>
         for {
           res <- requireBytes(4, ctx)
-          nanosec = res.result
+          nanosec = res.result.toInt(false)
           res <- requireBytes(8, res.toContext)
-          seconds = res.result
+          seconds = res.result.toLong(false)
         } yield res.toContext.prepend(MsgpackItem.Timestamp96(nanosec, seconds))
       case _ => Pull.raiseError(new MsgpackParsingException(s"Invalid timestamp length: ${length}"))
     }

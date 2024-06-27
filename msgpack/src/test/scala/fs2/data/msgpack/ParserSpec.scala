@@ -97,9 +97,9 @@ object ParserSpec extends SimpleIOSuite {
       (hex"f7", List(MsgpackItem.SignedInt(hex"f7"))), // -9
 
       // timestamp
-      (hex"0xd6ff12341234", List(MsgpackItem.Timestamp32(hex"12341234"))),
-      (hex"0xd7ff1234123412341234", List(MsgpackItem.Timestamp64(hex"48D048D", hex"0012341234"))),
-      (hex"0xc70cff123412341234123412341234", List(MsgpackItem.Timestamp96(hex"12341234", hex"1234123412341234")))
+      (hex"0xd6ff12341234", List(MsgpackItem.Timestamp32(0x12341234))),
+      (hex"0xd7ff1234123412341234", List(MsgpackItem.Timestamp64(0x1234123412341234L))),
+      (hex"0xc70cff123412341234123412341234", List(MsgpackItem.Timestamp96(0x12341234, 0x1234123412341234L)))
     )
 
     Stream
@@ -252,7 +252,7 @@ object ParserSpec extends SimpleIOSuite {
          MsgpackItem.Str(ByteVector("baz".getBytes(StandardCharsets.UTF_8))),
          MsgpackItem.Float64(hex"3f e0 00 00 00 00 00 00"), // 0.5 double prec.
          MsgpackItem.Str(ByteVector("timestamp".getBytes(StandardCharsets.UTF_8))),
-         MsgpackItem.Timestamp64(hex"004488c", hex"0344556677") // 9:02:47 pm UTC + 280716ns, August 20, 2414
+         MsgpackItem.Timestamp64(0x0011223344556677L) // 9:02:47 pm UTC + 280716ns, August 20, 2414
        ))
     )
 
