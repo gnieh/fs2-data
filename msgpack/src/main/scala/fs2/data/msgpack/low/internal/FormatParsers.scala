@@ -54,7 +54,7 @@ private[internal] object FormatParsers {
         }
       case 8 =>
         requireBytes(8, ctx).map { res =>
-          res.accumulate(v =>  MsgpackItem.Timestamp64(v.toLong(false)))
+          res.accumulate(v => MsgpackItem.Timestamp64(v.toLong(false)))
         }
       case 12 =>
         for {
@@ -113,6 +113,66 @@ private[internal] object FormatParsers {
     requireBytes(length, ctx).flatMap { res =>
       requireBytes(res.result.toInt(false, ByteOrdering.BigEndian), res.toContext).map { res =>
         res.accumulate(bytes => MsgpackItem.Str(bytes))
+      }
+    }
+  }
+
+  def parseFloat32[F[_]](ctx: ParserContext[F])(implicit
+      F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
+    requireBytes(4, ctx).map {
+      _.accumulate { v =>
+        MsgpackItem.Float32 {
+          val raw = v.toInt(false)
+          val sign = if ((raw & 0x80000000) == 0x80000000) -1 else 1
+          val biasedExponent = (raw & 0x7f800000) >>> 23
+
+          // subnormal or zero
+          if (biasedExponent == 0) {
+            val mantissa = (raw & 0x007fffff).toFloat
+            if (mantissa == 0) 0F
+            else sign * Math.pow(2, -126).toFloat * (mantissa / 0x800000)
+            // Inf or NaN
+          } else if (biasedExponent == 0xff) {
+            val mantissa = raw & 0x007fffff
+            if (mantissa == 0) sign * Float.PositiveInfinity
+            else Float.NaN
+            // normal
+          } else {
+            val exponent = (biasedExponent - 127).toDouble
+            val mantissa = (raw & 0x007fffff).toFloat + 0x800000
+            sign * Math.pow(2, exponent).toFloat * (mantissa / 0x800000)
+          }
+        }
+      }
+    }
+  }
+
+  def parseFloat64[F[_]](ctx: ParserContext[F])(implicit
+      F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
+    requireBytes(8, ctx).map {
+      _.accumulate { v =>
+        MsgpackItem.Float64 {
+          val raw = v.toLong(false)
+          val sign = if ((raw & 0x8000000000000000L) == 0x8000000000000000L) -1 else 1
+          val biasedExponent = (raw & 0x7ff0000000000000L) >>> 52
+
+          // subnormal or zero
+          if (biasedExponent == 0) {
+            val mantissa = (raw & 0xfffffffffffffL).toDouble
+            if (mantissa == 0) 0D
+            else sign * Math.pow(2, -1022) * (mantissa / 0x10000000000000L)
+            // Inf or NaN
+          } else if (biasedExponent == 0x7ff) {
+            val mantissa = raw & 0xfffffffffffffL
+            if (mantissa == 0) sign * Double.PositiveInfinity
+            else Double.NaN
+            // normal
+          } else {
+            val exponent = (biasedExponent - 1023).toDouble
+            val mantissa = (raw & 0xfffffffffffffL).toDouble + 0x10000000000000L
+            sign * Math.pow(2, exponent) * (mantissa / 0x10000000000000L)
+          }
+        }
       }
     }
   }

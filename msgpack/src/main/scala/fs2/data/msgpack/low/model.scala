@@ -25,10 +25,10 @@ object MsgpackItem {
   case class SignedInt(bytes: ByteVector) extends MsgpackItem
 
   /** Single precision IEE 754 float */
-  case class Float32(bytes: ByteVector) extends MsgpackItem
+  case class Float32(v: Float) extends MsgpackItem
 
   /** Double precision IEE 754 float */
-  case class Float64(bytes: ByteVector) extends MsgpackItem
+  case class Float64(v: Double) extends MsgpackItem
 
   /** UTF-8 encoded string */
   case class Str(bytes: ByteVector) extends MsgpackItem
