@@ -39,24 +39,31 @@ object CsvRowDecoderTest extends SimpleIOSuite {
   case class TestRename(s: String, @CsvName("j") k: Int, i: Int)
   case class TestOptionRename(s: String, @CsvName("j") k: Option[Int], i: Int)
   case class TestOptionalString(i: Int, s: Option[String], j: Int)
+  case class TestDefaults(i: Int = 7, j: String = "foo")
 
   val testDecoder = deriveCsvRowDecoder[Test]
   val testOrderDecoder = deriveCsvRowDecoder[TestOrder]
   val testRenameDecoder = deriveCsvRowDecoder[TestRename]
   val testOptionRenameDecoder = deriveCsvRowDecoder[TestOptionRename]
   val testOptionalStringDecoder = deriveCsvRowDecoder[TestOptionalString]
+  val testDefaultsDecoder = deriveCsvRowDecoder[TestDefaults]
 
   pureTest("case classes should be decoded properly by header name and not position") {
     expect(testDecoder(csvRow) == Right(Test(1, "test", Some(42)))) and
       expect(testOrderDecoder(csvRow) == Right(TestOrder("test", 42, 1)))
   }
 
+  // TODO: Re-enable once Scala 3 supports defaults, remove CsvRowDecoderDefaultsTest
   /*pureTest("case classes should be handled properly with default value and empty cell") {
     expect(testDecoder(csvRowDefaultI) == Right(Test(0, "test", Some(42))))
-  }*/
+  }
 
-  /*pureTest("case classes should be handled properly with default value and missing column") {
+  pureTest("case classes should be handled properly with default value and missing column") {
     expect(testDecoder(csvRowNoI) == Right(Test(0, "test", Some(42))))
+  }
+
+  pureTest("case classes should be handled properly with default string value and empty cell") {
+    expect(testDefaultsDecoder(csvRowEmptyJ) == Right(TestDefaults(1, "foo")))
   }*/
 
   pureTest("case classes should be handled properly with optional value and empty cell") {
