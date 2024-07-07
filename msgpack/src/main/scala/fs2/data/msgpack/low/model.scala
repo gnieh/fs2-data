@@ -43,7 +43,7 @@ object MsgpackItem {
   case class Timestamp32(seconds: Int) extends MsgpackItem
 
   /** Stores data in a 30-bit [[nanoseconds]] and a 34-bit [[seconds]] fields, both of which are accessible as class
-    * attributes. To ensure valid data length at the type level, both fields are stored in a single 64-bit
+    * attributes. To ensure valid data length at the type level, both fields are constructed from a single 64-bit
     * [[combined]] variable.
     * @param combined [[nanoseconds]] and [[seconds]] combined into a signle 64-bit value
     */
