@@ -48,8 +48,8 @@ object MsgpackItem {
     * @param combined [[nanoseconds]] and [[seconds]] combined into a signle 64-bit value
     */
   case class Timestamp64(combined: Long) extends MsgpackItem {
-    lazy val nanoseconds: Int = (combined >> 34).toInt // we are sure that (x: Long) >> 34 fits in an int
-    lazy val seconds: Long = combined & 0x00000003ffffffffL
+    val nanoseconds: Int = (combined >> 34).toInt // we are sure that (x: Long) >> 34 fits in an int
+    val seconds: Long = combined & 0x00000003ffffffffL
   }
   case class Timestamp96(nanoseconds: Int, seconds: Long) extends MsgpackItem
 
