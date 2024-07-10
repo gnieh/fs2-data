@@ -21,6 +21,7 @@ import scodec.bits.*
 import weaver.SimpleIOSuite
 import fs2.*
 import fs2.data.msgpack.low.MsgpackItem
+
 import java.nio.charset.StandardCharsets
 
 object ParserSpec extends SimpleIOSuite {
@@ -322,5 +323,13 @@ object ParserSpec extends SimpleIOSuite {
         }
 
     (s1 ++ s2).compile.foldMonoid
+  }
+
+  pureTest("Timestamp64 nanoseconds field should always be positive") {
+    val nums = List(
+      0xFFFFFFFFFFFFFFFFL,
+      0b1000000000000000000000000000000000000000000000000000000000000000L
+    )
+    forEach(nums)(x => expect(MsgpackItem.Timestamp64(x).nanoseconds > 0))
   }
 }

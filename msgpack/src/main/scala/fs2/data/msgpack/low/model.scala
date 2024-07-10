@@ -48,7 +48,10 @@ object MsgpackItem {
     * @param combined [[nanoseconds]] and [[seconds]] combined into a signle 64-bit value
     */
   case class Timestamp64(combined: Long) extends MsgpackItem {
-    val nanoseconds: Int = (combined >> 34).toInt // we are sure that (x: Long) >> 34 fits in an int
+    /* We are sure that (x: Long) >> 34 fits in an int but we also need to add a mask so that we don't end up with
+     * a negative number.
+     */
+    val nanoseconds: Int = (0x000000003fffffffL & (combined >> 34)).toInt
     val seconds: Long = combined & 0x00000003ffffffffL
   }
   case class Timestamp96(nanoseconds: Int, seconds: Long) extends MsgpackItem
