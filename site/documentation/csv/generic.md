@@ -4,7 +4,7 @@ Module: [![Maven Central](https://img.shields.io/maven-central/v/org.gnieh/fs2-d
 
 The `fs2-data-csv-generic` module provides automatic (Scala 2-only) and semi-automatic derivation for `RowDecoder` and `CsvRowDecoder`. 
 
-It makes it easier to support custom row types but is based on [shapeless][shapeless], which can have a significant impact on compilation time on Scala 2. On Scala 3, it relies on mix of hand-written derivation on top of `scala.deriving.Mirror` and the more light-weight [shapeless-3][shapeless-3], so that compile times shouldn't be problematic as on Scala 2. Note that auto derivation is currently not yet supported on Scala, same goes for using default constructor arguments of `case class`es (for background see [dotty#11667][dotty#11667]).  
+It makes it easier to support custom row types but is based on [shapeless][shapeless], which can have a significant impact on compilation time on Scala 2. On Scala 3, it relies on mix of hand-written derivation on top of `scala.deriving.Mirror` and the more light-weight [shapeless-3][shapeless-3], so that compile times shouldn't be problematic as on Scala 2. Note that auto derivation is currently not yet supported on Scala 3, same goes for using default constructor arguments of `case class`es (for background see [dotty#11667][dotty#11667]).  
 
 To demonstrate how it works, let's work again with the CSV data from the [core][csv-doc] module documentation.
 
@@ -122,6 +122,8 @@ case class MyRowDefault(i: Int = 42, j: Int, s: String)
 val decoded = stream.through(decodeUsingHeaders[MyRowDefault]())
 decoded.compile.toList
 ```
+
+It's important to note that by the limitations of the CSV file format, there's no clear notion of when default values would apply. `fs2-data-csv-generic` treats values as missing if there's no column with the expected name or if the value is empty. This implies that cells with an empty value won't be parsed of there's a default present, even if the corresponding `CellDecoder` instance could handle empty input, like `CellDecoder[String]`. If you need to handle empty inputs explicitly, refrain from defining a (non-empty) default or define the `CsvRowDecoder` instance manually. 
 
 [csv-doc]: /documentation/csv/index.md
 [shapeless]: https://github.com/milessabin/shapeless
