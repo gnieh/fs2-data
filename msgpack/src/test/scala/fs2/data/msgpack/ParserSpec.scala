@@ -327,7 +327,7 @@ object ParserSpec extends SimpleIOSuite {
 
   pureTest("Timestamp64 nanoseconds field should always be positive") {
     val nums = List(
-      0xFFFFFFFFFFFFFFFFL,
+      0xffffffffffffffffL,
       0b1000000000000000000000000000000000000000000000000000000000000000L
     )
     forEach(nums)(x => expect(MsgpackItem.Timestamp64(x).nanoseconds > 0))
