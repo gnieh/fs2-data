@@ -25,10 +25,10 @@ object MsgpackItem {
   case class SignedInt(bytes: ByteVector) extends MsgpackItem
 
   /** Single precision IEE 754 float */
-  case class Float32(bytes: ByteVector) extends MsgpackItem
+  case class Float32(v: Float) extends MsgpackItem
 
   /** Double precision IEE 754 float */
-  case class Float64(bytes: ByteVector) extends MsgpackItem
+  case class Float64(v: Double) extends MsgpackItem
 
   /** UTF-8 encoded string */
   case class Str(bytes: ByteVector) extends MsgpackItem
@@ -40,9 +40,21 @@ object MsgpackItem {
   case class Extension(tpe: Byte, bytes: ByteVector) extends MsgpackItem
 
   // Predefined extension types
-  case class Timestamp32(seconds: ByteVector) extends MsgpackItem
-  case class Timestamp64(nanoseconds: ByteVector, seconds: ByteVector) extends MsgpackItem
-  case class Timestamp96(nanoseconds: ByteVector, seconds: ByteVector) extends MsgpackItem
+  case class Timestamp32(seconds: Int) extends MsgpackItem
+
+  /** Stores data in a 30-bit [[nanoseconds]] and a 34-bit [[seconds]] fields, both of which are accessible as class
+    * attributes. To ensure valid data length at the type level, both fields are constructed from a single 64-bit
+    * [[combined]] variable.
+    * @param combined [[nanoseconds]] and [[seconds]] combined into a signle 64-bit value
+    */
+  case class Timestamp64(combined: Long) extends MsgpackItem {
+    /* We are sure that (x: Long) >> 34 fits in an int but we also need to add a mask so that we don't end up with
+     * a negative number.
+     */
+    val nanoseconds: Int = (0x000000003fffffffL & (combined >> 34)).toInt
+    val seconds: Long = combined & 0x00000003ffffffffL
+  }
+  case class Timestamp96(nanoseconds: Int, seconds: Long) extends MsgpackItem
 
   case object Nil extends MsgpackItem
   case object True extends MsgpackItem

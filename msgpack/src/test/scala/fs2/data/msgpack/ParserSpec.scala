@@ -21,6 +21,7 @@ import scodec.bits.*
 import weaver.SimpleIOSuite
 import fs2.*
 import fs2.data.msgpack.low.MsgpackItem
+
 import java.nio.charset.StandardCharsets
 
 object ParserSpec extends SimpleIOSuite {
@@ -60,8 +61,8 @@ object ParserSpec extends SimpleIOSuite {
       (hex"0xc90000000312123456", List(MsgpackItem.Extension(0x12, hex"123456"))),
 
       // float32, float64
-      (hex"0xca3e800000", List(MsgpackItem.Float32(hex"3e800000"))),
-      (hex"0xcb3fd0000000000000", List(MsgpackItem.Float64(hex"0x3fd0000000000000"))),
+      (hex"0xca3e800000", List(MsgpackItem.Float32(0.25F))),
+      (hex"0xcb3fd0000000000000", List(MsgpackItem.Float64(0.25))),
 
       // uint8, uint16, uint32, uint64
       (hex"0xcc13", List(MsgpackItem.UnsignedInt(hex"13"))),
@@ -97,9 +98,9 @@ object ParserSpec extends SimpleIOSuite {
       (hex"f7", List(MsgpackItem.SignedInt(hex"f7"))), // -9
 
       // timestamp
-      (hex"0xd6ff12341234", List(MsgpackItem.Timestamp32(hex"12341234"))),
-      (hex"0xd7ff1234123412341234", List(MsgpackItem.Timestamp64(hex"48D048D", hex"0012341234"))),
-      (hex"0xc70cff123412341234123412341234", List(MsgpackItem.Timestamp96(hex"12341234", hex"1234123412341234")))
+      (hex"0xd6ff12341234", List(MsgpackItem.Timestamp32(0x12341234))),
+      (hex"0xd7ff1234123412341234", List(MsgpackItem.Timestamp64(0x1234123412341234L))),
+      (hex"0xc70cff123412341234123412341234", List(MsgpackItem.Timestamp96(0x12341234, 0x1234123412341234L)))
     )
 
     Stream
@@ -234,7 +235,7 @@ object ParserSpec extends SimpleIOSuite {
          MsgpackItem.Str(ByteVector("int".getBytes(StandardCharsets.UTF_8))),
          MsgpackItem.SignedInt(hex"01"),
          MsgpackItem.Str(ByteVector("float".getBytes(StandardCharsets.UTF_8))),
-         MsgpackItem.Float32(hex"3f 00 00 00"), // 0.5 single prec.
+         MsgpackItem.Float32(0.5F), // 0.5 single prec.
          MsgpackItem.Str(ByteVector("boolean".getBytes(StandardCharsets.UTF_8))),
          MsgpackItem.True,
          MsgpackItem.Str(ByteVector("null".getBytes(StandardCharsets.UTF_8))),
@@ -250,9 +251,9 @@ object ParserSpec extends SimpleIOSuite {
          MsgpackItem.Str(ByteVector("foo".getBytes(StandardCharsets.UTF_8))),
          MsgpackItem.SignedInt(hex"01"),
          MsgpackItem.Str(ByteVector("baz".getBytes(StandardCharsets.UTF_8))),
-         MsgpackItem.Float64(hex"3f e0 00 00 00 00 00 00"), // 0.5 double prec.
+         MsgpackItem.Float64(0.5), // 0.5 double prec.
          MsgpackItem.Str(ByteVector("timestamp".getBytes(StandardCharsets.UTF_8))),
-         MsgpackItem.Timestamp64(hex"004488c", hex"0344556677") // 9:02:47 pm UTC + 280716ns, August 20, 2414
+         MsgpackItem.Timestamp64(0x0011223344556677L) // 9:02:47 pm UTC + 280716ns, August 20, 2414
        ))
     )
 
@@ -271,5 +272,64 @@ object ParserSpec extends SimpleIOSuite {
       }
       .compile
       .foldMonoid
+  }
+
+  test("Msgpack value parser should correctly parse floating point values") {
+    val cases = List(
+      // float32, normal
+      (hex"ca3f200000", MsgpackItem.Float32(0.625F)),
+      // float32, subnormal
+      (hex"ca00400000", MsgpackItem.Float32(5.877472e-39.toFloat)),
+      // float64 normal
+      (hex"cb3fc8000000000000", MsgpackItem.Float64(0.1875)),
+      // float64 subnormal
+      (hex"cb000ccccccccccccc", MsgpackItem.Float64(1.78005908680576071121966950087e-308)),
+      // float32, float64 Inf
+      (hex"ca7f800000", MsgpackItem.Float32(Float.PositiveInfinity)),
+      (hex"caff800000", MsgpackItem.Float32(Float.NegativeInfinity)),
+      (hex"cb7ff0000000000000", MsgpackItem.Float64(Double.PositiveInfinity)),
+      (hex"cbfff0000000000000", MsgpackItem.Float64(Double.NegativeInfinity))
+    )
+
+    val nans = hex"""
+      ca7f80000a
+      caff80000a
+      cb7ff000000000000a
+      cbfff000000000000a
+    """
+
+    val s1 =
+      Stream
+        .emits(cases)
+        .evalMap {
+          case (hex, repr) => {
+            Stream
+              .chunk(Chunk.byteVector((hex)))
+              .through(low.items[IO])
+              .compile
+              .toList
+              .attempt
+              .map(encoded => expect.same(encoded, Right(List(repr))))
+          }
+        }
+    val s2 =
+      Stream
+        .chunk(Chunk.byteVector(nans))
+        .through(low.items[IO])
+        .map {
+          case MsgpackItem.Float32(v) => expect(v.isNaN)
+          case MsgpackItem.Float64(v) => expect(v.isNaN)
+          case m                      => failure(s"Expected NaN but found: ${m}")
+        }
+
+    (s1 ++ s2).compile.foldMonoid
+  }
+
+  pureTest("Timestamp64 nanoseconds field should always be positive") {
+    val nums = List(
+      0xffffffffffffffffL,
+      0x8000000000000000L
+    )
+    forEach(nums)(x => expect(MsgpackItem.Timestamp64(x).nanoseconds > 0))
   }
 }
