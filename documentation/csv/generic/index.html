@@ -161,7 +161,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         <h1 id="generic" class="title">Generic</h1>
         <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-csv-generic_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-csv-generic_2.13.svg" alt="Maven Central"></a></p>
         <p>The <code>fs2-data-csv-generic</code> module provides automatic (Scala 2-only) and semi-automatic derivation for <code>RowDecoder</code> and <code>CsvRowDecoder</code>. </p>
-        <p>It makes it easier to support custom row types but is based on <a href="https://github.com/milessabin/shapeless">shapeless</a>, which can have a significant impact on compilation time on Scala 2. On Scala 3, it relies on mix of hand-written derivation on top of <code>scala.deriving.Mirror</code> and the more light-weight <a href="https://github.com/typelevel/shapeless-3">shapeless-3</a>, so that compile times shouldn&#39;t be problematic as on Scala 2. Note that auto derivation is currently not yet supported on Scala, same goes for using default constructor arguments of <code>case class</code>es (for background see <a href="https://github.com/lampepfl/dotty/pull/11667">dotty#11667</a>).<br></p>
+        <p>It makes it easier to support custom row types but is based on <a href="https://github.com/milessabin/shapeless">shapeless</a>, which can have a significant impact on compilation time on Scala 2. On Scala 3, it relies on mix of hand-written derivation on top of <code>scala.deriving.Mirror</code> and the more light-weight <a href="https://github.com/typelevel/shapeless-3">shapeless-3</a>, so that compile times shouldn&#39;t be problematic as on Scala 2. Note that auto derivation is currently not yet supported on Scala 3, same goes for using default constructor arguments of <code>case class</code>es (for background see <a href="https://github.com/lampepfl/dotty/pull/11667">dotty#11667</a>).<br></p>
         <p>To demonstrate how it works, let&#39;s work again with the CSV data from the <a href="../">core</a> module documentation.</p>
         <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">_</span><span>
 </span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">csv</span><span>.</span><span class="identifier">_</span><span>
@@ -190,7 +190,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 }
 
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">stateDecoder</span><span> = </span><span class="identifier">deriveCellDecoder</span><span>[</span><span class="type-name">State</span><span>]
-</span><span class="comment">// stateDecoder: CellDecoder[State] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@3663a7f1
+</span><span class="comment">// stateDecoder: CellDecoder[State] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@106ad84f
 // use stateDecoder to derive decoders for rows...or just test:
 </span><span class="identifier">stateDecoder</span><span>(</span><span class="string-literal">&quot;On&quot;</span><span>)
 </span><span class="comment">// res1: DecoderResult[State] = Right(value = On)
@@ -199,7 +199,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 </span><span>
 </span><span class="comment">// same goes for the encoder
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">stateEncoder</span><span> = </span><span class="identifier">deriveCellEncoder</span><span>[</span><span class="type-name">State</span><span>]
-</span><span class="comment">// stateEncoder: CellEncoder[State] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@4bcbd0af
+</span><span class="comment">// stateEncoder: CellEncoder[State] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@8ae5d0f
 </span><span class="identifier">stateEncoder</span><span>(</span><span class="type-name">State</span><span>.</span><span class="type-name">On</span><span>)
 </span><span class="comment">// res3: String = &quot;On&quot;</span></code></pre>
         <p>The generic derivation for cell decoders also supports renaming and deriving instances for unary product types (case classes with one field):</p>
@@ -213,9 +213,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 </span><span class="comment">// works as we have an implicit CellDecoder[String]
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">unknownDecoder</span><span> = </span><span class="identifier">deriveCellDecoder</span><span>[</span><span class="type-name">Advanced</span><span>.</span><span class="type-name">Unknown</span><span>]
-</span><span class="comment">// unknownDecoder: CellDecoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$unaryProductDecoder$3@30789b8a
+</span><span class="comment">// unknownDecoder: CellDecoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$unaryProductDecoder$3@37f1da47
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">advancedDecoder</span><span> = </span><span class="identifier">deriveCellDecoder</span><span>[</span><span class="type-name">Advanced</span><span>]
-</span><span class="comment">// advancedDecoder: CellDecoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@7ffca382
+</span><span class="comment">// advancedDecoder: CellDecoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@6c60d479
 </span><span>
 </span><span class="identifier">advancedDecoder</span><span>(</span><span class="string-literal">&quot;Active&quot;</span><span>)
 </span><span class="comment">// res4: DecoderResult[Advanced] = Right(value = On)
@@ -223,9 +223,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 </span><span class="comment">// res5: DecoderResult[Advanced] = Right(value = Unknown(name = &quot;Off&quot;))
 </span><span>
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">unknownEncoder</span><span> = </span><span class="identifier">deriveCellEncoder</span><span>[</span><span class="type-name">Advanced</span><span>.</span><span class="type-name">Unknown</span><span>]
-</span><span class="comment">// unknownEncoder: CellEncoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$unaryProductEncoder$3@540bdfa3
+</span><span class="comment">// unknownEncoder: CellEncoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$unaryProductEncoder$3@2a0ec11a
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">advancedEncoder</span><span> = </span><span class="identifier">deriveCellEncoder</span><span>[</span><span class="type-name">Advanced</span><span>]
-</span><span class="comment">// advancedEncoder: CellEncoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@41502325
+</span><span class="comment">// advancedEncoder: CellEncoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@5032a771
 </span><span>
 </span><span class="identifier">advancedEncoder</span><span>(</span><span class="type-name">Advanced</span><span>.</span><span class="type-name">On</span><span>)
 </span><span class="comment">// res6: String = &quot;Active&quot;
@@ -269,7 +269,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">csv</span><span>.</span><span class="identifier">generic</span><span>.</span><span class="identifier">semiauto</span><span>.</span><span class="identifier">_</span><span>
 
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="type-name">MyRowDecoder</span><span>: </span><span class="type-name">CsvRowDecoder</span><span>[</span><span class="type-name">MyRow</span><span>, </span><span class="type-name">String</span><span>] = </span><span class="identifier">deriveCsvRowDecoder</span><span>[</span><span class="type-name">MyRow</span><span>]
-</span><span class="comment">// MyRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@529ae911
+</span><span class="comment">// MyRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@30f33530
 </span><span>
 </span><span class="keyword">val</span><span> </span><span class="identifier">decoded</span><span> = </span><span class="identifier">stream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">decodeUsingHeaders</span><span>[</span><span class="type-name">MyRow</span><span>]())
 </span><span class="comment">// decoded: Stream[[x]Fallible[x], MyRow] = Stream(..)
@@ -281,16 +281,20 @@ window.addEventListener('DOMContentLoaded', (event) => {
 //   )
 // )</span></code></pre>
         <p>Both automatic and semi-automatic decoders support also default values when decoding, so instead of an <code>Option[Int]</code> for <code>i</code>, you can define this class:</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">csv</span><span>.</span><span class="identifier">generic</span><span>.</span><span class="identifier">auto</span><span>.</span><span class="identifier">_</span><span>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">csv</span><span>.</span><span class="identifier">generic</span><span>.</span><span class="identifier">auto</span><span>.</span><span class="identifier">_</span><span>
 
 </span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">MyRowDefault</span><span>(</span><span class="identifier">i</span><span>: </span><span class="type-name">Int</span><span> = </span><span class="number-literal">42</span><span>, </span><span class="identifier">j</span><span>: </span><span class="type-name">Int</span><span>, </span><span class="identifier">s</span><span>: </span><span class="type-name">String</span><span>)
 
 </span><span class="keyword">val</span><span> </span><span class="identifier">decoded</span><span> = </span><span class="identifier">stream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">decodeUsingHeaders</span><span>[</span><span class="type-name">MyRowDefault</span><span>]())
 </span><span class="comment">// decoded: Stream[[x]Fallible[x], MyRowDefault] = Stream(..)
 </span><span class="identifier">decoded</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>
-</span><span class="comment">// res11: Either[Throwable, List[MyRowDefault]] = Left(
-//   value = fs2.data.csv.DecoderError: unable to decode &#39;&#39; as an integer in line 3
+</span><span class="comment">// res11: Either[Throwable, List[MyRowDefault]] = Right(
+//   value = List(
+//     MyRowDefault(i = 1, j = 2, s = &quot;test&quot;),
+//     MyRowDefault(i = 42, j = -3, s = &quot;other&quot;)
+//   )
 // )</span></code></pre>
+        <p>It&#39;s important to note that by the limitations of the CSV file format, there&#39;s no clear notion of when default values would apply. <code>fs2-data-csv-generic</code> treats values as missing if there&#39;s no column with the expected name or if the value is empty. This implies that cells with an empty value won&#39;t be parsed of there&#39;s a default present, even if the corresponding <code>CellDecoder</code> instance could handle empty input, like <code>CellDecoder[String]</code>. If you need to handle empty inputs explicitly, refrain from defining a (non-empty) default or define the <code>CsvRowDecoder</code> instance manually. </p>
 
         
 <hr class="footer-rule"/>
