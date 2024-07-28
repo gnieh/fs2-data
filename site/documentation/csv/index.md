@@ -51,7 +51,7 @@ More high-level pipes are available for the following use cases:
 * `decodeGivenHeaders` for CSV parsing that requires headers, but they aren't present in the input
 * `decodeUsingHeaders` for CSV parsing that requires headers and they're present in the input
 * `encodeWithoutHeaders` for CSV encoding that works entirely without headers (Note: requires `RowEncoder` instead of `CsvRowEncoder`)
-* `encodeGivenHeaders` for CSV encoding that works without headers, but they should be added to the output
+* `encodeWithGivenHeaders` for CSV encoding that works without headers, but they should be added to the output
 * `encodeUsingFirstHeaders` for CSV encoding that works with headers. Uses the headers of the first row for the output.
 
 ### Dealing with erroneous files
@@ -219,7 +219,7 @@ testRows
   .string
 ```
 
-If you want to write headers, use `writeWithHeaders` or, in case you use `CsvRow`, `encodeRowWithFirstHeaders`. For writing non-String headers, you'll need to provide an instance of `WritableHeader`, a type class analog to `ParseableHeader`.
+If you want to write headers, use `writeWithGivenHeaders` or, in case you use `CsvRow`, `encodeRowWithFirstHeaders`. For writing non-String headers, you'll need to provide an instance of `WritableHeader`, a type class analog to `ParseableHeader`.
 
 ## The type classes: Decoders and Encoders
 
