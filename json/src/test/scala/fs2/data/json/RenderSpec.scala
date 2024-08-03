@@ -108,4 +108,37 @@ object RenderSpec extends SimpleIOSuite {
 
   }
 
+  pureTest("Compact pipe must emit in a streaming fashion") {
+    // single chunk as input
+    val input = Stream.emit("""true {"field1": "test", "field2": [23, [true, null]]}""")
+
+    val toks: Stream[Fallible, Token] = input.through(tokens[Fallible, String])
+
+    // check that tokens are also emitted as a single chunk
+    expect(toks.chunks.compile.toList.map((_.size)) == Right(1))
+
+    val rendered: Stream[Fallible, String] = toks.through(render.compact)
+
+    // still emit as early as possible
+    expect(
+      rendered.chunks.compile.toList == Right(List(
+        Chunk.singleton("true"),
+        Chunk.singleton("{"),
+        Chunk.singleton("\"field1\":"),
+        Chunk.singleton("\"test\""),
+        Chunk.singleton(","),
+        Chunk.singleton("\"field2\":"),
+        Chunk.singleton("["),
+        Chunk.singleton("23"),
+        Chunk.singleton(","),
+        Chunk.singleton("["),
+        Chunk.singleton("true"),
+        Chunk.singleton(","),
+        Chunk.singleton("null"),
+        Chunk.singleton("]"),
+        Chunk.singleton("]"),
+        Chunk.singleton("}")
+      )))
+  }
+
 }
