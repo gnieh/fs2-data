@@ -1,5 +1,5 @@
 //> using toolkit typelevel:default
-//> using dep org.gnieh::fs2-data-json-circe::1.11.0
+//> using dep org.gnieh::fs2-data-json-circe::1.11.1
 
 import cats.effect.{ExitCode, IO, IOApp}
 import com.monovore.decline.{Command, Opts}
