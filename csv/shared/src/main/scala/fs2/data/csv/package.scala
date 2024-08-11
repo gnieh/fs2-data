@@ -198,6 +198,10 @@ package object csv {
   }
 
   /** Encode a specified type into a CSV prepending the given headers. */
+  @deprecated(
+    message =
+      "Emits incorrect data if rows have a different length than headers. Please use `encodeWithGivenHeaders` instead.",
+    since = "fs2-data 1.11.1")
   def encodeGivenHeaders[T]: PartiallyAppliedEncodeGivenHeaders[T] =
     new PartiallyAppliedEncodeGivenHeaders[T](dummy = true)
 
@@ -214,6 +218,27 @@ package object csv {
         if (fullRows) lowlevel.toRowStrings[F](separator, newline, escape)
         else lowlevel.toStrings[F](separator, newline, escape)
       lowlevel.encode[F, T] andThen lowlevel.writeWithHeaders(headers) andThen stringPipe
+    }
+  }
+
+  /** Encode a specified type into a CSV prepending the given headers. */
+  def encodeWithGivenHeaders[T]: PartiallyAppliedEncodeWithGivenHeaders[T] =
+    new PartiallyAppliedEncodeWithGivenHeaders[T](dummy = true)
+
+  @nowarn
+  class PartiallyAppliedEncodeWithGivenHeaders[T](val dummy: Boolean) extends AnyVal {
+    def apply[F[_], Header](headers: NonEmptyList[Header],
+                            fullRows: Boolean = false,
+                            separator: Char = ',',
+                            newline: String = "\n",
+                            escape: EscapeMode = EscapeMode.Auto)(implicit
+        F: RaiseThrowable[F],
+        T: RowEncoder[T],
+        H: WriteableHeader[Header]): Pipe[F, T, String] = {
+      val stringPipe =
+        if (fullRows) lowlevel.toRowStrings[F](separator, newline, escape)
+        else lowlevel.toStrings[F](separator, newline, escape)
+      lowlevel.encode[F, T] andThen lowlevel.writeWithGivenHeaders(headers) andThen stringPipe
     }
   }
 
@@ -316,9 +341,29 @@ package object csv {
     }
 
     /** Encode a given type into CSV rows using a set of explicitly given headers. */
+    @deprecated(
+      message =
+        "Emits incorrect data if rows have a different length than headers. Please use `writeWithGivenHeaders` instead.",
+      since = "fs2-data 1.11.1")
     def writeWithHeaders[F[_], Header](headers: NonEmptyList[Header])(implicit
         H: WriteableHeader[Header]): Pipe[F, Row, NonEmptyList[String]] =
       Stream(H(headers)) ++ _.map(_.values)
+
+    /** Encode a given type into CSV rows using a set of explicitly given headers. */
+    def writeWithGivenHeaders[F[_], Header](headers: NonEmptyList[Header])(implicit
+        F: RaiseThrowable[F],
+        H: WriteableHeader[Header]): Pipe[F, Row, NonEmptyList[String]] =
+      attemptWriteWithGivenHeaders(headers).apply(_).rethrow
+
+    /** Encode a given type into CSV rows using a set of explicitly given headers, but signals errors as values. */
+    def attemptWriteWithGivenHeaders[F[_], Header](headers: NonEmptyList[Header])(implicit
+        H: WriteableHeader[Header]): Pipe[F, Row, Either[CsvException, NonEmptyList[String]]] = {
+      val headerSize = headers.size
+      Stream(Right(H(headers))) ++ _.map { row =>
+        val rowSize = row.size
+        if (rowSize == headerSize) Right(row.values) else Left(new HeaderSizeError(headerSize, rowSize, row.line))
+      }
+    }
 
     /** Encode a given type into CSV rows without headers. */
     def writeWithoutHeaders[F[_]]: Pipe[F, Row, NonEmptyList[String]] =
