@@ -121,7 +121,7 @@ private[low] object ItemValidator {
       if (idx >= chunk.size)
         Pull.output(chunk).as((Chunk.empty, 0, position, state))
       else
-        step1(chunk, idx, position, state).flatMap { el =>
+        step1(chunk, idx, position).flatMap { el =>
           val stateNew: List[Expect] =
             if (state.isEmpty)
               state
