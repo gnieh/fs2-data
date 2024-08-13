@@ -157,10 +157,6 @@ object SerializerSpec extends SimpleIOSuite {
               .through(low.bytes(true, false))
               .compile
               .fold(ByteVector.empty)(_ :+ _)
-              .flatTap { got =>
-                if (got != compressed) IO.println((got(0), compressed(0)))
-                else IO.unit
-              }
               .map(expect.same(_, compressed))
 
           e2 <-
