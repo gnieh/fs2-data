@@ -30,27 +30,121 @@ import java.nio.charset.StandardCharsets
 object SerializerSpec extends SimpleIOSuite {
   test("MessagePack item serializer should correctly serialize all formats") {
     val cases = List(
-      // positive fixint
-      (List(MsgpackItem.SignedInt(hex"7b")), hex"7b", hex"0xd3000000000000007b"),
-      // fixmap
-      (List(MsgpackItem.Map(1)), hex"81", hex"0xdf00000001"),
-      // fixarray
-      (List(MsgpackItem.Array(1)), hex"91", hex"0xdd00000001"),
-      // fixstr
-      (List(MsgpackItem.Str(ByteVector("foobar".getBytes(StandardCharsets.UTF_8)))),
-       hex"a6666f6f626172",
-       hex"0xdb00000006666f6f626172"),
       // nil, false, true
       (List(MsgpackItem.Nil, MsgpackItem.False, MsgpackItem.True), hex"c0c2c3", hex"c0c2c3"),
-      // bin8, bin16, bin32
-      (List(MsgpackItem.Bin(hex"abc")), hex"c4020abc", hex"c6000000020abc"),
-      (List(MsgpackItem.Bin(hex"abc".padLeft(Math.pow(2, 8).toLong))),
-       ByteVector(Headers.Bin16) ++ hex"0100" ++ hex"0abc".padLeft(Math.pow(2, 8).toLong),
-       ByteVector(Headers.Bin32) ++ hex"00000100" ++ hex"0abc".padLeft(Math.pow(2, 8).toLong)),
-      (List(MsgpackItem.Bin(hex"abc".padLeft(Math.pow(2, 16).toLong))),
-       ByteVector(Headers.Bin32) ++ hex"00010000" ++ ByteVector.empty.padLeft(Math.pow(2, 16).toLong - 2) ++ hex"0abc",
-       ByteVector(Headers.Bin32) ++ hex"00010000" ++ ByteVector.empty.padLeft(Math.pow(2, 16).toLong - 2) ++ hex"0abc")
-      // ext8, ext16, ext32
+
+      // positive fixint
+      (List(MsgpackItem.SignedInt(hex"7b")), hex"7b", hex"0xd3000000000000007b"),
+      // negative fixint
+      (List(MsgpackItem.SignedInt(hex"d6")), hex"d6", hex"0xd300000000000000d6"),
+
+      // uint 8, uint 16, uint 32, uint 64
+      (List(MsgpackItem.UnsignedInt(hex"ab")), hex"ccab", hex"cf00000000000000ab"),
+      (List(MsgpackItem.UnsignedInt(hex"abcd")), hex"cdabcd", hex"cf000000000000abcd"),
+      (List(MsgpackItem.UnsignedInt(hex"abcdef01")), hex"ceabcdef01", hex"cf00000000abcdef01"),
+      (List(MsgpackItem.UnsignedInt(hex"abcdef0123456789")), hex"cfabcdef0123456789", hex"cfabcdef0123456789"),
+
+      // int 8, int 16, int 32, int 64
+      (List(MsgpackItem.SignedInt(hex"80")), hex"d080", hex"d30000000000000080"),
+      (List(MsgpackItem.SignedInt(hex"80ab")), hex"d180ab", hex"d300000000000080ab"),
+      (List(MsgpackItem.SignedInt(hex"80abcdef")), hex"d280abcdef", hex"d30000000080abcdef"),
+      (List(MsgpackItem.SignedInt(hex"80abcddef0123456")), hex"d380abcddef0123456", hex"d380abcddef0123456"),
+
+      // float 32, float 64
+      (List(MsgpackItem.Float32(0.125F)), hex"ca3e000000", hex"ca3e000000"),
+      (List(MsgpackItem.Float64(0.125)), hex"cb3fc0000000000000", hex"cb3fc0000000000000"),
+
+      // fixstr
+      (List(MsgpackItem.Str(ByteVector("abc".getBytes(StandardCharsets.UTF_8)))),
+       hex"a3616263",
+       hex"0xdb00000003616263"),
+
+      // str 8
+      (List(MsgpackItem.Str(ByteVector("abcd".repeat(8).getBytes(StandardCharsets.UTF_8)))),
+       hex"d920" ++ ByteVector("abcd".repeat(8).getBytes(StandardCharsets.UTF_8)),
+       hex"db00000020" ++ ByteVector("abcd".repeat(8).getBytes(StandardCharsets.UTF_8))),
+
+      // str 16
+      (List(MsgpackItem.Str(ByteVector("a".repeat(Math.pow(2, 8).toInt).getBytes(StandardCharsets.UTF_8)))),
+       hex"da0100" ++ ByteVector("a".repeat(Math.pow(2, 8).toInt).getBytes(StandardCharsets.UTF_8)),
+       hex"db00000100" ++ ByteVector("a".repeat(Math.pow(2, 8).toInt).getBytes(StandardCharsets.UTF_8))),
+
+      // str 32
+      (List(MsgpackItem.Str(ByteVector("a".repeat(Math.pow(2, 16).toInt).getBytes(StandardCharsets.UTF_8)))),
+       hex"db00010000" ++ ByteVector("a".repeat(Math.pow(2, 16).toInt).getBytes(StandardCharsets.UTF_8)),
+       hex"db00010000" ++ ByteVector("a".repeat(Math.pow(2, 16).toInt).getBytes(StandardCharsets.UTF_8))),
+
+      // bin 8
+      (List(MsgpackItem.Bin(ByteVector("abcd".repeat(8).getBytes(StandardCharsets.UTF_8)))),
+       hex"c420" ++ ByteVector("abcd".repeat(8).getBytes(StandardCharsets.UTF_8)),
+       hex"c600000020" ++ ByteVector("abcd".repeat(8).getBytes(StandardCharsets.UTF_8))),
+
+      // bin 16
+      (List(MsgpackItem.Bin(ByteVector("a".repeat(Math.pow(2, 8).toInt).getBytes(StandardCharsets.UTF_8)))),
+       hex"c50100" ++ ByteVector("a".repeat(Math.pow(2, 8).toInt).getBytes(StandardCharsets.UTF_8)),
+       hex"c600000100" ++ ByteVector("a".repeat(Math.pow(2, 8).toInt).getBytes(StandardCharsets.UTF_8))),
+
+      // bin 32
+      (List(MsgpackItem.Bin(ByteVector("a".repeat(Math.pow(2, 16).toInt).getBytes(StandardCharsets.UTF_8)))),
+       hex"c600010000" ++ ByteVector("a".repeat(Math.pow(2, 16).toInt).getBytes(StandardCharsets.UTF_8)),
+       hex"c600010000" ++ ByteVector("a".repeat(Math.pow(2, 16).toInt).getBytes(StandardCharsets.UTF_8))),
+
+      // fixarray
+      (List(MsgpackItem.Array(0)), hex"90", hex"dd00000000"),
+      (List(MsgpackItem.Array(1)), hex"91", hex"dd00000001"),
+      // array 16
+      (List(MsgpackItem.Array(16)), hex"dc0010", hex"dd00000010"),
+      // array 32
+      (List(MsgpackItem.Array(Math.pow(2, 16).toInt)), hex"dd00010000", hex"dd00010000"),
+
+      // fixmap
+      (List(MsgpackItem.Map(0)), hex"80", hex"df00000000"),
+      (List(MsgpackItem.Map(1)), hex"81", hex"df00000001"),
+      // map 16
+      (List(MsgpackItem.Map(16)), hex"de0010", hex"df00000010"),
+      // map 32
+      (List(MsgpackItem.Map(Math.pow(2, 16).toInt)), hex"df00010000", hex"df00010000"),
+
+      // fixext 1
+      (List(MsgpackItem.Extension(0x54.toByte, hex"ab")), hex"d454ab", hex"c90000000154ab"),
+      // fixext 2
+      (List(MsgpackItem.Extension(0x54.toByte, hex"abcd")), hex"d554abcd", hex"c90000000254abcd"),
+      // fixext 4
+      (List(MsgpackItem.Extension(0x54.toByte, hex"abcdef01")), hex"d654abcdef01", hex"c90000000454abcdef01"),
+      // fixext 8
+      (List(MsgpackItem.Extension(0x54.toByte, hex"abcdef0123456789")),
+       hex"d754abcdef0123456789",
+       hex"c90000000854abcdef0123456789"),
+      // fixext 8
+      (List(MsgpackItem.Extension(0x54.toByte, hex"abcdef0123456789abcdef0123456789")),
+       hex"d854abcdef0123456789abcdef0123456789",
+       hex"c90000001054abcdef0123456789abcdef0123456789"),
+
+      // ext 8
+      (List(MsgpackItem.Extension(0x54, hex"ab".padLeft(17))),
+       hex"c71154" ++ hex"ab".padLeft(17),
+       hex"c90000001154" ++ hex"ab".padLeft(17)),
+
+      // ext 16
+      (List(MsgpackItem.Extension(0x54, hex"ab".padLeft(Math.pow(2, 8).toLong))),
+       hex"c8010054" ++ hex"ab".padLeft(Math.pow(2, 8).toLong),
+       hex"c90000010054" ++ hex"ab".padLeft(Math.pow(2, 8).toLong)),
+
+      // ext 32
+      (List(MsgpackItem.Extension(0x54, hex"ab".padLeft(Math.pow(2, 16).toLong))),
+       hex"c90001000054" ++ hex"ab".padLeft(Math.pow(2, 16).toLong),
+       hex"c90001000054" ++ hex"ab".padLeft(Math.pow(2, 16).toLong)),
+
+      // timestamp 32
+      (List(MsgpackItem.Timestamp32(0x0123abcd)), hex"d6ff0123abcd", hex"d6ff0123abcd"),
+
+      // timestamp 64
+      (List(MsgpackItem.Timestamp64(0x0123456789abcdefL)), hex"d7ff0123456789abcdef", hex"d7ff0123456789abcdef"),
+
+      // timestamp 96
+      (List(MsgpackItem.Timestamp96(0x0123abcd, 0x0123456789abcdefL)),
+       hex"c70cff0123abcd0123456789abcdef",
+       hex"c70cff0123abcd0123456789abcdef")
     )
 
     Stream
@@ -63,6 +157,10 @@ object SerializerSpec extends SimpleIOSuite {
               .through(low.bytes(true, false))
               .compile
               .fold(ByteVector.empty)(_ :+ _)
+              .flatTap { got =>
+                if (got != compressed) IO.println((got(0), compressed(0)))
+                else IO.unit
+              }
               .map(expect.same(_, compressed))
 
           e2 <-

@@ -56,9 +56,10 @@ private[low] object ItemSerializer {
 
     case MsgpackItem.Str(bytes) =>
       if (bytes.size <= 31) {
-        ByteVector(0xa0 | bytes.size).buffer ++ bytes
+        ByteVector.fromByte((0xa0 | bytes.size).toByte).buffer ++ bytes
       } else if (bytes.size <= Math.pow(2, 8) - 1) {
-        ByteVector(Headers.Str8).buffer ++ ByteVector(bytes.size) ++ bytes
+        val size = ByteVector.fromByte(bytes.size.toByte)
+        ByteVector(Headers.Str8).buffer ++ size ++ bytes
       } else if (bytes.size <= Math.pow(2, 16) - 1) {
         val size = ByteVector.fromShort(bytes.size.toShort)
         ByteVector(Headers.Str16).buffer ++ size ++ bytes
@@ -69,7 +70,8 @@ private[low] object ItemSerializer {
 
     case MsgpackItem.Bin(bytes) =>
       if (bytes.size <= Math.pow(2, 8) - 1) {
-        ByteVector(Headers.Bin8).buffer ++ ByteVector(bytes.size) ++ bytes
+        val size = ByteVector.fromByte(bytes.size.toByte)
+        ByteVector(Headers.Bin8).buffer ++ size ++ bytes
       } else if (bytes.size <= Math.pow(2, 16) - 1) {
         val size = ByteVector.fromShort(bytes.size.toShort)
         ByteVector(Headers.Bin16).buffer ++ size ++ bytes
@@ -79,38 +81,48 @@ private[low] object ItemSerializer {
       }
 
     case MsgpackItem.Array(size) =>
-      if (size <= 15)
-        ByteVector(0x90 | size)
-      else if (size <= Math.pow(2, 16) - 1)
-        ByteVector(Headers.Array16).buffer ++ ByteVector(size).padLeft(2)
-      else
-        ByteVector(Headers.Array32).buffer ++ ByteVector(size).padLeft(4)
+      if (size <= 15) {
+        ByteVector.fromByte((0x90 | size).toByte)
+      } else if (size <= Math.pow(2, 16) - 1) {
+        val s = ByteVector.fromShort(size.toShort)
+        ByteVector(Headers.Array16).buffer ++ s
+      } else {
+        val s = ByteVector.fromInt(size)
+        ByteVector(Headers.Array32).buffer ++ s
+      }
 
     case MsgpackItem.Map(size) =>
-      if (size <= 15)
-        ByteVector(0x80 | size)
-      else if (size <= Math.pow(2, 16) - 1)
-        ByteVector(Headers.Map16).buffer ++ ByteVector(size).padLeft(2)
-      else
-        ByteVector(Headers.Map32).buffer ++ ByteVector(size).padLeft(4)
+      if (size <= 15) {
+        ByteVector.fromByte((0x80 | size).toByte)
+      } else if (size <= Math.pow(2, 16) - 1) {
+        val s = ByteVector.fromShort(size.toShort)
+        ByteVector(Headers.Map16).buffer ++ s
+      } else {
+        val s = ByteVector.fromInt(size)
+        ByteVector(Headers.Map32).buffer ++ s
+      }
 
     case MsgpackItem.Extension(tpe, bytes) =>
-      if (bytes.size <= 1)
+      if (bytes.size <= 1) {
         (ByteVector(Headers.FixExt1).buffer :+ tpe) ++ bytes.padLeft(1)
-      else if (bytes.size <= 2)
+      } else if (bytes.size <= 2) {
         (ByteVector(Headers.FixExt2).buffer :+ tpe) ++ bytes.padLeft(2)
-      else if (bytes.size <= 4)
+      } else if (bytes.size <= 4) {
         (ByteVector(Headers.FixExt4).buffer :+ tpe) ++ bytes.padLeft(4)
-      else if (bytes.size <= 8)
+      } else if (bytes.size <= 8) {
         (ByteVector(Headers.FixExt8).buffer :+ tpe) ++ bytes.padLeft(8)
-      else if (bytes.size <= 16)
+      } else if (bytes.size <= 16) {
         (ByteVector(Headers.FixExt16).buffer :+ tpe) ++ bytes.padLeft(16)
-      else if (bytes.size <= Math.pow(2, 8) - 1)
-        (ByteVector(Headers.Ext8).buffer ++ ByteVector(bytes.size) :+ tpe) ++ bytes
-      else if (bytes.size <= Math.pow(2, 16) - 1)
-        (ByteVector(Headers.Ext16).buffer ++ ByteVector(bytes.size) :+ tpe) ++ bytes.padLeft(2)
-      else
-        (ByteVector(Headers.Ext32).buffer ++ ByteVector(bytes.size) :+ tpe) ++ bytes.padLeft(4)
+      } else if (bytes.size <= Math.pow(2, 8) - 1) {
+        val size = ByteVector.fromByte(bytes.size.toByte)
+        (ByteVector(Headers.Ext8).buffer ++ size :+ tpe) ++ bytes
+      } else if (bytes.size <= Math.pow(2, 16) - 1) {
+        val size = ByteVector.fromShort(bytes.size.toShort)
+        (ByteVector(Headers.Ext16).buffer ++ size :+ tpe) ++ bytes
+      } else {
+        val size = ByteVector.fromInt(bytes.size.toInt)
+        (ByteVector(Headers.Ext32).buffer ++ size :+ tpe) ++ bytes
+      }
 
     case MsgpackItem.Timestamp32(seconds) =>
       (ByteVector(Headers.FixExt4).buffer :+ Headers.Timestamp.toByte) ++ ByteVector.fromInt(seconds)
@@ -121,7 +133,7 @@ private[low] object ItemSerializer {
     case MsgpackItem.Timestamp96(nanoseconds, seconds) =>
       val ns = ByteVector.fromInt(nanoseconds)
       val s = ByteVector.fromLong(seconds)
-      (ByteVector(Headers.Ext8).buffer :+ Headers.Timestamp.toByte) ++ ns ++ s
+      (ByteVector(Headers.Ext8).buffer :+ 12 :+ Headers.Timestamp.toByte) ++ ns ++ s
 
     case MsgpackItem.Nil =>
       ByteVector(Headers.Nil)
@@ -141,10 +153,10 @@ private[low] object ItemSerializer {
       ByteVector(Headers.Int64) ++ item.bytes.padLeft(8)
 
     case item: MsgpackItem.Float32 =>
-      ByteVector.fromInt(java.lang.Float.floatToIntBits(item.v))
+      ByteVector(Headers.Float32) ++ ByteVector.fromInt(java.lang.Float.floatToIntBits(item.v))
 
     case item: MsgpackItem.Float64 =>
-      ByteVector.fromLong(java.lang.Double.doubleToLongBits(item.v))
+      ByteVector(Headers.Float64) ++ ByteVector.fromLong(java.lang.Double.doubleToLongBits(item.v))
 
     case item: MsgpackItem.Str =>
       val size = ByteVector.fromInt(item.bytes.size.toInt)
