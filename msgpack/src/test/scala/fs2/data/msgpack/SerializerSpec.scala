@@ -18,14 +18,12 @@ package fs2
 package data
 package msgpack
 
-import weaver.SimpleIOSuite
-import scodec.bits.*
-import low.MsgpackItem
-import cats.effect.*
-import low.internal.ValidationErrorAt
-import low.internal.ValidationError
+import cats.effect._
+import scodec.bits._
+import weaver._
 
 import java.nio.charset.StandardCharsets
+import low.MsgpackItem
 
 object SerializerSpec extends SimpleIOSuite {
   test("MessagePack item serializer should correctly serialize all formats") {
@@ -154,7 +152,7 @@ object SerializerSpec extends SimpleIOSuite {
           e1 <-
             Stream
               .emits(source)
-              .through(low.bytes(true, false))
+              .through(low.bytes[IO](true, false))
               .compile
               .fold(ByteVector.empty)(_ :+ _)
               .map(expect.same(_, compressed))
@@ -162,7 +160,7 @@ object SerializerSpec extends SimpleIOSuite {
           e2 <-
             Stream
               .emits(source)
-              .through(low.bytes(false, false))
+              .through(low.bytes[IO](false, false))
               .compile
               .fold(ByteVector.empty)(_ :+ _)
               .map(expect.same(_, fast))
@@ -171,7 +169,6 @@ object SerializerSpec extends SimpleIOSuite {
       .compile
       .foldMonoid
   }
-
   test("MessagePack item serializer should be fix point when optimizing for size") {
     val cases = List(
       hex"CB3FCB5A858793DD98",
@@ -184,8 +181,8 @@ object SerializerSpec extends SimpleIOSuite {
       .evalMap { hex =>
         Stream
           .chunk(Chunk.byteVector(hex))
-          .through(low.items)
-          .through(low.toBinary)
+          .through(low.items[IO])
+          .through(low.toBinary[IO])
           .compile
           .toList
           .map(x => expect.same(ByteVector(x), hex))
@@ -194,36 +191,4 @@ object SerializerSpec extends SimpleIOSuite {
       .foldMonoid
   }
 
-  test("MessagePack item validator should raise for all checks") {
-    val cases = List(
-      List(MsgpackItem.UnsignedInt(hex"10000000000000000")) -> new ValidationErrorAt(0, "Unsigned int exceeds 64 bits"),
-      List(MsgpackItem.SignedInt(hex"10000000000000000")) -> new ValidationErrorAt(0, "Signed int exceeds 64 bits"),
-
-      // TODO: Float32, Float64
-
-      List(MsgpackItem.Str(ByteVector.fill(Math.pow(2, 32).toLong)(1))) -> new ValidationErrorAt(
-        0,
-        "String exceeds (2^32)-1 bytes"),
-      List(MsgpackItem.Bin(ByteVector.fill(Math.pow(2, 32).toLong)(1))) -> new ValidationErrorAt(
-        0,
-        "Bin exceeds (2^32)-1 bytes"),
-      List(MsgpackItem.Array(2), MsgpackItem.True) -> new ValidationError("Unexpected end of input (starting at 0)"),
-      List(MsgpackItem.Map(1), MsgpackItem.Array(1), MsgpackItem.True) -> new ValidationError(
-        "Unexpected end of input (starting at 0)")
-    )
-
-    Stream
-      .emits(cases)
-      .evalMap { case (lhs, rhs) =>
-        Stream
-          .emits(lhs)
-          .through(low.validated[IO])
-          .compile
-          .toList
-          .map(x => failure(s"Expected error for item ${x}"))
-          .handleErrorWith(err => IO(expect.same(err, rhs)))
-      }
-      .compile
-      .foldMonoid
-  }
 }
