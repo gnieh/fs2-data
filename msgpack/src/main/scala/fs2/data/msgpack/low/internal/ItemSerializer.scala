@@ -78,7 +78,7 @@ private[low] object ItemSerializer {
         val size = ByteVector.fromShort(bytes.size.toShort)
         ByteVector(Headers.Bin16).buffer ++ size ++ bytes
       } else {
-        val size = ByteVector.fromInt(bytes.size.toInt).padLeft(4)
+        val size = ByteVector.fromInt(bytes.size.toInt)
         ByteVector(Headers.Bin32).buffer ++ size ++ bytes
       }
 
@@ -170,10 +170,10 @@ private[low] object ItemSerializer {
       ByteVector(Headers.Bin32) ++ size ++ item.bytes
 
     case item: MsgpackItem.Array =>
-      ByteVector(Headers.Array32) ++ ByteVector.fromInt(item.size).padLeft(4)
+      ByteVector(Headers.Array32) ++ ByteVector.fromInt(item.size)
 
     case item: MsgpackItem.Map =>
-      ByteVector(Headers.Map32) ++ ByteVector.fromInt(item.size).padLeft(4)
+      ByteVector(Headers.Map32) ++ ByteVector.fromInt(item.size)
 
     case item: MsgpackItem.Extension =>
       val size = ByteVector.fromInt(item.bytes.size.toInt)
