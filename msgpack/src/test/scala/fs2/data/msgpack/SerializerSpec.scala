@@ -119,19 +119,19 @@ object SerializerSpec extends SimpleIOSuite {
        hex"c90000001054abcdef0123456789abcdef0123456789"),
 
       // ext 8
-      (List(MsgpackItem.Extension(0x54, hex"ab".padLeft(17))),
-       hex"c71154" ++ hex"ab".padLeft(17),
-       hex"c90000001154" ++ hex"ab".padLeft(17)),
+      (List(MsgpackItem.Extension(0x54, ByteVector.fill(17)(0xab))),
+       hex"c71154" ++ ByteVector.fill(17)(0xab),
+       hex"c90000001154" ++ ByteVector.fill(17)(0xab)),
 
       // ext 16
-      (List(MsgpackItem.Extension(0x54, hex"ab".padLeft(Math.pow(2, 8).toLong))),
-       hex"c8010054" ++ hex"ab".padLeft(Math.pow(2, 8).toLong),
-       hex"c90000010054" ++ hex"ab".padLeft(Math.pow(2, 8).toLong)),
+      (List(MsgpackItem.Extension(0x54, ByteVector.fill(Math.pow(2, 8).toLong)(0xab))),
+       hex"c8010054" ++ ByteVector.fill(Math.pow(2, 8).toLong)(0xab),
+       hex"c90000010054" ++ ByteVector.fill(Math.pow(2, 8).toLong)(0xab)),
 
       // ext 32
-      (List(MsgpackItem.Extension(0x54, hex"ab".padLeft(Math.pow(2, 16).toLong))),
-       hex"c90001000054" ++ hex"ab".padLeft(Math.pow(2, 16).toLong),
-       hex"c90001000054" ++ hex"ab".padLeft(Math.pow(2, 16).toLong)),
+      (List(MsgpackItem.Extension(0x54, ByteVector.fill(Math.pow(2, 16).toLong)(0xab))),
+       hex"c90001000054" ++ ByteVector.fill(Math.pow(2, 16).toLong)(0xab),
+       hex"c90001000054" ++ ByteVector.fill(Math.pow(2, 16).toLong)(0xab)),
 
       // timestamp 32
       (List(MsgpackItem.Timestamp32(0x0123abcd)), hex"d6ff0123abcd", hex"d6ff0123abcd"),

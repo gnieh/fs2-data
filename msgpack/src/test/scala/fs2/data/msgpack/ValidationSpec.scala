@@ -88,7 +88,7 @@ object ValidationSpec extends SimpleIOSuite {
     )
   }
 
-  test("validator should raise if extension data exceeds 2^32 - 1 bytes") {
+  test("should raise if extension data exceeds 2^32 - 1 bytes") {
     validation1(
       MsgpackItem.Extension(0x54, ByteVector.empty.padLeft(Math.pow(2, 32).toLong)) -> new ValidationErrorAt(0, "Extension data exceeds (2^32)-1 bytes"),
     )
