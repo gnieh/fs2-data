@@ -34,8 +34,6 @@ private[low] object ItemValidator {
   def none[F[_]]: Pipe[F, MsgpackItem, MsgpackItem] = in => in
 
   def simple[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, MsgpackItem] = { in =>
-    /** Validates one item from a stream
-      */
     def step1(chunk: Chunk[MsgpackItem], idx: Int, position: Long): Pull[F, MsgpackItem, Option[Expect]] =
       chunk(idx) match {
         case MsgpackItem.UnsignedInt(bytes) =>
