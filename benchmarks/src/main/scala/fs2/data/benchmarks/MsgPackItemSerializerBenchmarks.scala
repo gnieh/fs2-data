@@ -52,19 +52,19 @@ class MsgPackItemSerializerBenchmarks {
 
 
   @Benchmark
-  def compressed() =
+  def serialize() =
     Stream
       .emits(msgpackItems)
-      .through(fs2.data.msgpack.low.bytes[SyncIO](true, false))
+      .through(fs2.data.msgpack.low.bytes[SyncIO](false))
       .compile
       .drain
       .unsafeRunSync()
 
   @Benchmark
-  def fast() =
+  def withValidation() =
     Stream
       .emits(msgpackItems)
-      .through(fs2.data.msgpack.low.bytes[SyncIO](false, false))
+      .through(fs2.data.msgpack.low.bytes[SyncIO](true))
       .compile
       .drain
       .unsafeRunSync()

@@ -63,9 +63,7 @@ private[low] object ItemValidator {
             Pull.pure(None)
 
         case MsgpackItem.Array(size) =>
-          if (size < 0)
-            Pull.raiseError(new ValidationErrorAt(position, s"Array has a negative size ${size}"))
-          else if (size == 0)
+          if (size == 0)
             Pull.pure(None)
           else
             Pull.pure(Some(Expect(size, position)))
