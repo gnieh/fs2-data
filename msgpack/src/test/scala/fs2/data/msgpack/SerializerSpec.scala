@@ -146,7 +146,7 @@ object SerializerSpec extends SimpleIOSuite {
   test("MessagePack item serializer should be fixpoint for a subset of ByteVector") {
     /* The parser mapping ByteVector to MsgpackItem can be seen as a not injective morphism, that is, there
      * are many ByteVectors that will map to the same MsgpackItem. Because of this, we cannot possibly guarantee that
-     * `serialize(parse(bs))` is fixpoint for an arbitrary `bs`. However, currently implemented serializers *are*
+     * `serialize(parse(bs))` is fixpoint for an arbitrary `bs`. However, currently implemented serializer *is*
      * injective (if we exclude the Timestamp format family as it can be represented with Extension types) and so, we
      * can guarantee `serialize(parse(bs)) == bs` if `bs` is a member of a subset of ByteVector that is emitted by a
      * serializer.
