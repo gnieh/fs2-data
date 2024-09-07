@@ -55,7 +55,7 @@ class MsgPackItemSerializerBenchmarks {
   def serialize() =
     Stream
       .emits(msgpackItems)
-      .through(fs2.data.msgpack.low.bytes[SyncIO](false))
+      .through(fs2.data.msgpack.low.toNonValidatedBinary[SyncIO])
       .compile
       .drain
       .unsafeRunSync()
@@ -64,7 +64,7 @@ class MsgPackItemSerializerBenchmarks {
   def withValidation() =
     Stream
       .emits(msgpackItems)
-      .through(fs2.data.msgpack.low.bytes[SyncIO](true))
+      .through(fs2.data.msgpack.low.toBinary[SyncIO])
       .compile
       .drain
       .unsafeRunSync()

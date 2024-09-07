@@ -133,7 +133,7 @@ object SerializerSpec extends SimpleIOSuite {
       .evalMap { case (source, serialized) =>
         Stream
           .emits(source)
-          .through(low.bytes[IO](false))
+          .through(low.toNonValidatedBinary)
           .compile
           .fold(ByteVector.empty)(_ :+ _)
           .map(expect.same(_, serialized))
@@ -170,7 +170,7 @@ object SerializerSpec extends SimpleIOSuite {
       Stream
         .chunk(Chunk.byteVector(data))
         .through(low.items[IO])
-        .through(low.bytes[IO](false))
+        .through(low.toNonValidatedBinary)
         .fold(ByteVector.empty)(_ :+ _)
 
     val out = for {

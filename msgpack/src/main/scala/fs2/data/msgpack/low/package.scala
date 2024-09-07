@@ -29,15 +29,11 @@ package object low {
   /** Alias for `bytes(validated = true)`
     */
   def toBinary[F[_]: RaiseThrowable]: Pipe[F, MsgpackItem, Byte] =
-    bytes(true)
+    _.through(ItemValidator.pipe).through(ItemSerializer.pipe)
 
-  def bytes[F[_]: RaiseThrowable](validated: Boolean): Pipe[F, MsgpackItem, Byte] = {
-    if (validated)
-      ItemValidator.simple.andThen(ItemSerializer.pipe)
-    else
-      ItemSerializer.pipe
-  }
+  def toNonValidatedBinary[F[_]: RaiseThrowable]: Pipe[F, MsgpackItem, Byte] =
+    ItemSerializer.pipe
 
-  def validated[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, MsgpackItem] =
-    ItemValidator.simple[F]
+  def validate[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, MsgpackItem] =
+    ItemValidator.pipe[F]
 }

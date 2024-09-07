@@ -31,9 +31,7 @@ private[low] object ItemValidator {
 
   type ValidationContext = (Chunk[MsgpackItem], Int, Long, List[Expect])
 
-  def none[F[_]]: Pipe[F, MsgpackItem, MsgpackItem] = in => in
-
-  def simple[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, MsgpackItem] = { in =>
+  def pipe[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, MsgpackItem] = { in =>
     def step1(chunk: Chunk[MsgpackItem], idx: Int, position: Long): Pull[F, MsgpackItem, Option[Expect]] =
       chunk(idx) match {
         case MsgpackItem.UnsignedInt(bytes) =>
@@ -150,5 +148,4 @@ private[low] object ItemValidator {
 
     go(in, 0, 0, List.empty).stream
   }
-
 }
