@@ -25,7 +25,7 @@ import weaver._
 import java.nio.charset.StandardCharsets
 import low.MsgpackItem
 
-object SerializerSpec extends SimpleIOSuite with Checkers {
+object SerializerSpec extends SimpleIOSuite {
   test("MessagePack item serializer should correctly serialize all formats") {
     val cases: List[(List[MsgpackItem], ByteVector)] = List(
       // nil, false, true
