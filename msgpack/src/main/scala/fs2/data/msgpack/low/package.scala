@@ -26,7 +26,9 @@ package object low {
   def items[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, MsgpackItem] =
     ItemParser.pipe[F]
 
-  /** Alias for `bytes(validated = true)`
+  /** Transforms a stream of [[MsgpackItem]]s into a stream of [[Byte]]s.
+    *
+    * Will fail with an error if the stream is malformed.
     */
   def toBinary[F[_]: RaiseThrowable]: Pipe[F, MsgpackItem, Byte] =
     _.through(ItemValidator.pipe).through(ItemSerializer.pipe)
