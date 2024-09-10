@@ -26,7 +26,7 @@ package object low {
   def items[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, MsgpackItem] =
     ItemParser.pipe[F]
 
-  /** Transforms a stream of [[MsgpackItem]]s into a stream of [[Byte]]s.
+  /** Transforms a stream of [[MsgpackItem]]s into a stream of [[scala.Byte]]s.
     *
     * Will fail with an error if the stream is malformed.
     */
