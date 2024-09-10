@@ -23,6 +23,7 @@ import low.internal.{ItemParser, ItemSerializer, ItemValidator}
 /** A low-level representation of the MessagePack format.
   */
 package object low {
+
   /** Transforms a stream of [[scala.Byte]]s into a stream of [[MsgpackItem]]s.
     */
   def items[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, MsgpackItem] =
