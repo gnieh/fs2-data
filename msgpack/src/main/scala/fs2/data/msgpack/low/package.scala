@@ -23,6 +23,8 @@ import low.internal.{ItemParser, ItemSerializer, ItemValidator}
 /** A low-level representation of the MessagePack format.
   */
 package object low {
+  /** Transforms a stream of [[scala.Byte]]s into a stream of [[MsgpackItem]]s.
+    */
   def items[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, MsgpackItem] =
     ItemParser.pipe[F]
 
@@ -33,9 +35,15 @@ package object low {
   def toBinary[F[_]: RaiseThrowable]: Pipe[F, MsgpackItem, Byte] =
     _.through(ItemValidator.pipe).through(ItemSerializer.pipe)
 
+  /** Transforms a stream of [[MsgpackItem]]s into a stream of [[scala.Byte]]s.
+    *
+    * Will not validate the input stream and can potentially produce malformed data. Consider using [[toBinary]].
+    */
   def toNonValidatedBinary[F[_]: RaiseThrowable]: Pipe[F, MsgpackItem, Byte] =
     ItemSerializer.pipe
 
+  /** Validates a stream of [[MsgpackItem]]s, fails when the stream is malformed.
+    */
   def validate[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, MsgpackItem] =
     ItemValidator.pipe[F]
 }
