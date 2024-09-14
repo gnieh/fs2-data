@@ -34,7 +34,7 @@ object SerializerSpec extends SimpleIOSuite {
       // positive fixint
       (List(MsgpackItem.SignedInt(hex"7b")), hex"7b"),
       // negative fixint
-      (List(MsgpackItem.SignedInt(hex"d6")), hex"d6"),
+      (List(MsgpackItem.SignedInt(hex"e6")), hex"e6"),
 
       // uint 8, uint 16, uint 32, uint 64
       (List(MsgpackItem.UnsignedInt(hex"ab")), hex"ccab"),
