@@ -29,6 +29,13 @@ private[low] object ItemSerializer {
   class MalformedIntError extends MalformedItemError
   class MalformedUintError extends MalformedItemError
 
+  private final val positiveIntMask = hex"7f"
+  private final val negativeIntMask = hex"e0"
+
+  private final val mapMask = 0x80
+  private final val arrayMask = 0x90
+  private final val strMask = 0xa0
+
   /** Checks whether integer `x` fits in `n` bytes. */
   @inline
   private def fitsIn(x: Int, n: Long): Boolean =
@@ -100,7 +107,7 @@ private[low] object ItemSerializer {
       val bs = bytes.dropWhile(_ == 0)
       if (bs.size <= 1)
         // positive fixint or negative fixint
-        if ((bs & hex"7f") == bs || (bs & hex"c0") == hex"c0")
+        if ((bs & positiveIntMask) == bs || (bs & negativeIntMask) == negativeIntMask)
           o.push(bs.padLeft(1))
         else
           o.push(ByteVector(Headers.Int8) ++ bs.padLeft(1))
@@ -121,7 +128,7 @@ private[low] object ItemSerializer {
 
     case MsgpackItem.Str(bytes) =>
       if (bytes.size <= 31) {
-        o.push(ByteVector.fromByte((0xa0 | bytes.size).toByte) ++ bytes)
+        o.push(ByteVector.fromByte((strMask | bytes.size).toByte) ++ bytes)
       } else if (bytes.size <= Math.pow(2, 8) - 1) {
         val size = ByteVector.fromByte(bytes.size.toByte)
         o.push(ByteVector(Headers.Str8) ++ size ++ bytes)
@@ -157,7 +164,7 @@ private[low] object ItemSerializer {
 
     case MsgpackItem.Array(size) =>
       if (fitsIn(size, 4)) {
-        o.push(ByteVector.fromByte((0x90 | size).toByte))
+        o.push(ByteVector.fromByte((arrayMask | size).toByte))
       } else if (size <= Math.pow(2, 16) - 1) {
         val s = ByteVector.fromShort(size.toShort)
         o.push(ByteVector(Headers.Array16) ++ s)
@@ -168,7 +175,7 @@ private[low] object ItemSerializer {
 
     case MsgpackItem.Map(size) =>
       if (size <= 15) {
-        o.push(ByteVector.fromByte((0x80 | size).toByte))
+        o.push(ByteVector.fromByte((mapMask | size).toByte))
       } else if (size <= Math.pow(2, 16) - 1) {
         val s = ByteVector.fromShort(size.toShort)
         o.push(ByteVector(Headers.Map16) ++ s)
