@@ -163,13 +163,13 @@ private[low] object ItemSerializer {
       }
 
     case MsgpackItem.Array(size) =>
-      if (fitsIn(size, 4)) {
+      if (size <= 15) {
         o.push(ByteVector.fromByte((arrayMask | size).toByte))
       } else if (size <= Math.pow(2, 16) - 1) {
         val s = ByteVector.fromShort(size.toShort)
         o.push(ByteVector(Headers.Array16) ++ s)
       } else {
-        val s = ByteVector.fromInt(size)
+        val s = ByteVector.fromLong(size, 4)
         o.push(ByteVector(Headers.Array32) ++ s)
       }
 
@@ -180,7 +180,7 @@ private[low] object ItemSerializer {
         val s = ByteVector.fromShort(size.toShort)
         o.push(ByteVector(Headers.Map16) ++ s)
       } else {
-        val s = ByteVector.fromInt(size)
+        val s = ByteVector.fromLong(size, 4)
         o.push(ByteVector(Headers.Map32) ++ s)
       }
 

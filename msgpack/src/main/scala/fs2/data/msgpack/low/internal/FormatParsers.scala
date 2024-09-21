@@ -34,14 +34,14 @@ private[internal] object FormatParsers {
   def parseArray[F[_]](length: Int, ctx: ParserContext[F])(implicit
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
     requireBytes(length, ctx).map { res =>
-      res.accumulate(v => MsgpackItem.Array(v.toInt(false, ByteOrdering.BigEndian)))
+      res.accumulate(v => MsgpackItem.Array(v.toLong(false)))
     }
   }
 
   def parseMap[F[_]](length: Int, ctx: ParserContext[F])(implicit
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
     requireBytes(length, ctx).map { res =>
-      res.accumulate(v => MsgpackItem.Map(v.toInt(false, ByteOrdering.BigEndian)))
+      res.accumulate(v => MsgpackItem.Map(v.toLong(false)))
     }
   }
 

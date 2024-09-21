@@ -77,13 +77,13 @@ private[low] object ItemParser {
           // fixmap
           else if ((byte & 0xf0) == 0x80) {
             val length = byte & 0x0f // 0x8f- 0x80
-            Pull.pure(ctx.prepend(MsgpackItem.Map(length)))
+            Pull.pure(ctx.prepend(MsgpackItem.Map(length.toLong)))
           }
 
           // fixarray
           else if ((byte & 0xf0) == 0x90) {
             val length = byte & 0x0f // 0x9f- 0x90
-            Pull.pure(ctx.prepend(MsgpackItem.Array(length)))
+            Pull.pure(ctx.prepend(MsgpackItem.Array(length.toLong)))
           }
 
           // fixstr

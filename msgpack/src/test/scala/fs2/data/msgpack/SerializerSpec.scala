@@ -85,7 +85,7 @@ object SerializerSpec extends SimpleIOSuite {
       // array 16
       (List(MsgpackItem.Array(16)), hex"dc0010"),
       // array 32
-      (List(MsgpackItem.Array(Math.pow(2, 16).toInt)), hex"dd00010000"),
+      (List(MsgpackItem.Array(Math.pow(2, 16).toLong)), hex"dd00010000"),
 
       // fixmap
       (List(MsgpackItem.Map(0)), hex"80"),
@@ -93,7 +93,7 @@ object SerializerSpec extends SimpleIOSuite {
       // map 16
       (List(MsgpackItem.Map(16)), hex"de0010"),
       // map 32
-      (List(MsgpackItem.Map(Math.pow(2, 16).toInt)), hex"df00010000"),
+      (List(MsgpackItem.Map(Math.pow(2, 16).toLong)), hex"df00010000"),
 
       // fixext 1
       (List(MsgpackItem.Extension(0x54.toByte, hex"ab")), hex"d454ab"),

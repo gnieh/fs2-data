@@ -25,7 +25,7 @@ case class ValidationError(msg: String) extends Exception(msg)
 
 private[low] object ItemValidator {
 
-  case class Expect(n: Int, from: Long) {
+  case class Expect(n: Long, from: Long) {
     def dec = Expect(n - 1, from)
   }
 
@@ -61,7 +61,11 @@ private[low] object ItemValidator {
             Pull.pure(None)
 
         case MsgpackItem.Array(size) =>
-          if (size == 0)
+          if (size < 0)
+            Pull.raiseError(new ValidationErrorAt(position, s"Array has a negative size ${size}"))
+          else if (size >= (1L << 32))
+            Pull.raiseError(new ValidationErrorAt(position, s"Array size exceeds (2^32)-1"))
+          else if (size == 0)
             Pull.pure(None)
           else
             Pull.pure(Some(Expect(size, position)))
@@ -69,6 +73,8 @@ private[low] object ItemValidator {
         case MsgpackItem.Map(size) =>
           if (size < 0)
             Pull.raiseError(new ValidationErrorAt(position, s"Map has a negative size ${size}"))
+          else if (size >= (1L << 32))
+            Pull.raiseError(new ValidationErrorAt(position, s"Map size exceeds (2^32)-1"))
           else if (size == 0)
             Pull.pure(None)
           else
