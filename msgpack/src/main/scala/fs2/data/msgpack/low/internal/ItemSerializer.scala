@@ -23,12 +23,6 @@ package internal
 import scodec.bits._
 
 private[low] object ItemSerializer {
-  class MalformedItemError extends Error("item exceeds the maximum size of it's format")
-  class MalformedStringError extends MalformedItemError
-  class MalformedBinError extends MalformedItemError
-  class MalformedIntError extends MalformedItemError
-  class MalformedUintError extends MalformedItemError
-
   private final val positiveIntMask = hex"7f"
   private final val negativeIntMask = hex"e0"
 
@@ -101,7 +95,7 @@ private[low] object ItemSerializer {
       else if (bs.size <= 8)
         o.push(ByteVector(Headers.Uint64) ++ bs.padLeft(8))
       else
-        Pull.raiseError(new MalformedUintError)
+        Pull.raiseError(MsgpackMalformedItemException("Unsigned int exceeds 64 bits"))
 
     case MsgpackItem.SignedInt(bytes) =>
       val bs = bytes.dropWhile(_ == 0)
@@ -118,7 +112,7 @@ private[low] object ItemSerializer {
       else if (bs.size <= 8)
         o.push(ByteVector(Headers.Int64) ++ bs.padLeft(8))
       else
-        Pull.raiseError(new MalformedIntError)
+        Pull.raiseError(MsgpackMalformedItemException("Signed int exceeds 64 bits"))
 
     case MsgpackItem.Float32(float) =>
       o.push(ByteVector(Headers.Float32) ++ ByteVector.fromInt(java.lang.Float.floatToIntBits(float)))
@@ -142,7 +136,7 @@ private[low] object ItemSerializer {
          */
         o.pushBuffered(ByteVector(Headers.Str32) ++ size ++ bytes)
       } else {
-        Pull.raiseError(new MalformedStringError)
+        Pull.raiseError(MsgpackMalformedItemException("String exceeds (2^32)-1 bytes"))
       }
 
     case MsgpackItem.Bin(bytes) =>
@@ -159,7 +153,7 @@ private[low] object ItemSerializer {
          */
         o.pushBuffered(ByteVector(Headers.Bin32) ++ size ++ bytes)
       } else {
-        Pull.raiseError(new MalformedBinError)
+        Pull.raiseError(MsgpackMalformedItemException("Binary data exceeds (2^32)-1 bytes"))
       }
 
     case MsgpackItem.Array(size) =>
@@ -168,9 +162,11 @@ private[low] object ItemSerializer {
       } else if (size <= Math.pow(2, 16) - 1) {
         val s = ByteVector.fromShort(size.toShort)
         o.push(ByteVector(Headers.Array16) ++ s)
-      } else {
+      } else if (size <= (1L << 32) - 1) {
         val s = ByteVector.fromLong(size, 4)
         o.push(ByteVector(Headers.Array32) ++ s)
+      } else {
+        Pull.raiseError(MsgpackMalformedItemException("Array size exceeds (2^32)-1"))
       }
 
     case MsgpackItem.Map(size) =>
@@ -179,9 +175,11 @@ private[low] object ItemSerializer {
       } else if (size <= Math.pow(2, 16) - 1) {
         val s = ByteVector.fromShort(size.toShort)
         o.push(ByteVector(Headers.Map16) ++ s)
-      } else {
+      } else if (size <= (1L << 32) - 1) {
         val s = ByteVector.fromLong(size, 4)
         o.push(ByteVector(Headers.Map32) ++ s)
+      } else {
+        Pull.raiseError(MsgpackMalformedItemException("Map size exceeds (2^32)-1 pairs"))
       }
 
     case MsgpackItem.Extension(tpe, bytes) =>

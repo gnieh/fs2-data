@@ -63,7 +63,7 @@ private[internal] object FormatParsers {
           res <- requireBytes(8, res.toContext)
           seconds = res.result.toLong(false)
         } yield res.toContext.prepend(MsgpackItem.Timestamp96(nanosec, seconds))
-      case _ => Pull.raiseError(new MsgpackParsingException(s"Invalid timestamp length: ${length}"))
+      case _ => Pull.raiseError(MsgpackMalformedByteStreamException(s"Invalid timestamp length: ${length}"))
     }
   }
 
