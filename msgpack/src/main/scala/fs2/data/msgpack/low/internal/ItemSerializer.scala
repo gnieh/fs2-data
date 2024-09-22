@@ -30,11 +30,6 @@ private[low] object ItemSerializer {
   private final val arrayMask = 0x90
   private final val strMask = 0xa0
 
-  /** Checks whether integer `x` fits in `n` bytes. */
-  @inline
-  private def fitsIn(x: Int, n: Long): Boolean =
-    java.lang.Integer.compareUnsigned(x, (Math.pow(2, n.toDouble).toLong - 1).toInt) <= 0
-
   private case class SerializationContext[F[_]](out: Out[F],
                                                 chunk: Chunk[MsgpackItem],
                                                 idx: Int,
@@ -123,13 +118,13 @@ private[low] object ItemSerializer {
     case MsgpackItem.Str(bytes) =>
       if (bytes.size <= 31) {
         o.push(ByteVector.fromByte((strMask | bytes.size).toByte) ++ bytes)
-      } else if (bytes.size <= Math.pow(2, 8) - 1) {
+      } else if (bytes.size <= (1 << 8) - 1) {
         val size = ByteVector.fromByte(bytes.size.toByte)
         o.push(ByteVector(Headers.Str8) ++ size ++ bytes)
-      } else if (bytes.size <= Math.pow(2, 16) - 1) {
+      } else if (bytes.size <= (1 << 16) - 1) {
         val size = ByteVector.fromShort(bytes.size.toShort)
         o.push(ByteVector(Headers.Str16) ++ size ++ bytes)
-      } else if (fitsIn(bytes.size.toInt, 32)) {
+      } else if (bytes.size <= (1L << 32) - 1) {
         val size = ByteVector.fromInt(bytes.size.toInt)
         /* Max length of str32 (incl. type and length info) is 2^32 + 4 bytes
          * which is more than Chunk can handle at once
@@ -140,13 +135,13 @@ private[low] object ItemSerializer {
       }
 
     case MsgpackItem.Bin(bytes) =>
-      if (bytes.size <= Math.pow(2, 8) - 1) {
+      if (bytes.size <= (1 << 8) - 1) {
         val size = ByteVector.fromByte(bytes.size.toByte)
         o.push(ByteVector(Headers.Bin8) ++ size ++ bytes)
-      } else if (bytes.size <= Math.pow(2, 16) - 1) {
+      } else if (bytes.size <= (1 << 16) - 1) {
         val size = ByteVector.fromShort(bytes.size.toShort)
         o.push(ByteVector(Headers.Bin16) ++ size ++ bytes)
-      } else if (fitsIn(bytes.size.toInt, 32)) {
+      } else if (bytes.size <= (1L << 32) - 1) {
         val size = ByteVector.fromInt(bytes.size.toInt)
         /* Max length of str32 (incl. type and length info) is 2^32 + 4 bytes
          * which is more than Chunk can handle at once
@@ -159,7 +154,7 @@ private[low] object ItemSerializer {
     case MsgpackItem.Array(size) =>
       if (size <= 15) {
         o.push(ByteVector.fromByte((arrayMask | size).toByte))
-      } else if (size <= Math.pow(2, 16) - 1) {
+      } else if (size <= (1L << 16) - 1) {
         val s = ByteVector.fromShort(size.toShort)
         o.push(ByteVector(Headers.Array16) ++ s)
       } else if (size <= (1L << 32) - 1) {
@@ -172,7 +167,7 @@ private[low] object ItemSerializer {
     case MsgpackItem.Map(size) =>
       if (size <= 15) {
         o.push(ByteVector.fromByte((mapMask | size).toByte))
-      } else if (size <= Math.pow(2, 16) - 1) {
+      } else if (size <= (1L << 16) - 1) {
         val s = ByteVector.fromShort(size.toShort)
         o.push(ByteVector(Headers.Map16) ++ s)
       } else if (size <= (1L << 32) - 1) {
@@ -194,10 +189,10 @@ private[low] object ItemSerializer {
         o.push((ByteVector(Headers.FixExt8) :+ tpe) ++ bs.padLeft(8))
       } else if (bs.size <= 16) {
         o.push((ByteVector(Headers.FixExt16) :+ tpe) ++ bs.padLeft(16))
-      } else if (bs.size <= Math.pow(2, 8) - 1) {
+      } else if (bs.size <= (1 << 8) - 1) {
         val size = ByteVector.fromByte(bs.size.toByte)
         o.push((ByteVector(Headers.Ext8) ++ size :+ tpe) ++ bs)
-      } else if (bs.size <= Math.pow(2, 16) - 1) {
+      } else if (bs.size <= (1 << 16) - 1) {
         val size = ByteVector.fromShort(bs.size.toShort)
         o.push((ByteVector(Headers.Ext16) ++ size :+ tpe) ++ bs)
       } else {

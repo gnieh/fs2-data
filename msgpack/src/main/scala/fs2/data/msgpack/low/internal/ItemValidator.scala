@@ -50,13 +50,13 @@ private[low] object ItemValidator {
           PullNone
 
         case MsgpackItem.Str(bytes) =>
-          if (bytes.size > Math.pow(2, 32) - 1)
+          if (bytes.size > (1L << 32) - 1)
             Pull.raiseError(MsgpackMalformedItemException("String exceeds (2^32)-1 bytes", Some(position)))
           else
             PullNone
 
         case MsgpackItem.Bin(bytes) =>
-          if (bytes.size > Math.pow(2, 32) - 1)
+          if (bytes.size > (1L << 32) - 1)
             Pull.raiseError(MsgpackMalformedItemException("Bin exceeds (2^32)-1 bytes", Some(position)))
           else
             PullNone
@@ -82,7 +82,7 @@ private[low] object ItemValidator {
             Pull.pure(Some(Expect(size * 2, position)))
 
         case MsgpackItem.Extension(_, bytes) =>
-          if (bytes.size > Math.pow(2, 32) - 1)
+          if (bytes.size > (1L << 32) - 1)
             Pull.raiseError(MsgpackMalformedItemException("Extension data exceeds (2^32)-1 bytes", Some(position)))
           else
             PullNone
