@@ -26,6 +26,8 @@ private[low] object ItemValidator {
     def dec = Expect(n - 1, from)
   }
 
+  private val PullNone = Pull.pure(None)
+
   type ValidationContext = (Chunk[MsgpackItem], Int, Long, List[Expect])
 
   def pipe[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, MsgpackItem] = { in =>
@@ -34,30 +36,30 @@ private[low] object ItemValidator {
         case MsgpackItem.UnsignedInt(bytes) =>
           if (bytes.size > 8)
             Pull.raiseError(MsgpackMalformedItemException("Unsigned int exceeds 64 bits", Some(position)))
-          else Pull.pure(None)
+          else PullNone
 
         case MsgpackItem.SignedInt(bytes) =>
           if (bytes.size > 8)
             Pull.raiseError(MsgpackMalformedItemException("Signed int exceeds 64 bits", Some(position)))
-          else Pull.pure(None)
+          else PullNone
 
         case MsgpackItem.Float32(_) =>
-          Pull.pure(None)
+          PullNone
 
         case MsgpackItem.Float64(_) =>
-          Pull.pure(None)
+          PullNone
 
         case MsgpackItem.Str(bytes) =>
           if (bytes.size > Math.pow(2, 32) - 1)
             Pull.raiseError(MsgpackMalformedItemException("String exceeds (2^32)-1 bytes", Some(position)))
           else
-            Pull.pure(None)
+            PullNone
 
         case MsgpackItem.Bin(bytes) =>
           if (bytes.size > Math.pow(2, 32) - 1)
             Pull.raiseError(MsgpackMalformedItemException("Bin exceeds (2^32)-1 bytes", Some(position)))
           else
-            Pull.pure(None)
+            PullNone
 
         case MsgpackItem.Array(size) =>
           if (size < 0)
@@ -65,7 +67,7 @@ private[low] object ItemValidator {
           else if (size >= (1L << 32))
             Pull.raiseError(MsgpackMalformedItemException(s"Array size exceeds (2^32)-1", Some(position)))
           else if (size == 0)
-            Pull.pure(None)
+            PullNone
           else
             Pull.pure(Some(Expect(size, position)))
 
@@ -75,7 +77,7 @@ private[low] object ItemValidator {
           else if (size >= (1L << 32))
             Pull.raiseError(MsgpackMalformedItemException(s"Map size exceeds (2^32)-1", Some(position)))
           else if (size == 0)
-            Pull.pure(None)
+            PullNone
           else
             Pull.pure(Some(Expect(size * 2, position)))
 
@@ -83,33 +85,33 @@ private[low] object ItemValidator {
           if (bytes.size > Math.pow(2, 32) - 1)
             Pull.raiseError(MsgpackMalformedItemException("Extension data exceeds (2^32)-1 bytes", Some(position)))
           else
-            Pull.pure(None)
+            PullNone
 
         case _: MsgpackItem.Timestamp32 =>
-          Pull.pure(None)
+          PullNone
 
         case item: MsgpackItem.Timestamp64 =>
           if (item.nanoseconds > 999999999)
             Pull.raiseError(
               MsgpackMalformedItemException("Timestamp64 nanoseconds is larger than '999999999'", Some(position)))
           else
-            Pull.pure(None)
+            PullNone
 
         case MsgpackItem.Timestamp96(nanoseconds, _) =>
           if (nanoseconds > 999999999)
             Pull.raiseError(
               MsgpackMalformedItemException("Timestamp96 nanoseconds is larger than '999999999'", Some(position)))
           else
-            Pull.pure(None)
+            PullNone
 
         case MsgpackItem.Nil =>
-          Pull.pure(None)
+          PullNone
 
         case MsgpackItem.True =>
-          Pull.pure(None)
+          PullNone
 
         case MsgpackItem.False =>
-          Pull.pure(None)
+          PullNone
       }
 
     def stepChunk(chunk: Chunk[MsgpackItem],
