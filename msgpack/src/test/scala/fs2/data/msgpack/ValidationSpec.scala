@@ -35,8 +35,7 @@ object ValidationSpec extends SimpleIOSuite {
           .through(low.toBinary[F])
           .compile
           .drain
-          .map(_ => failure(s"Expected error for item ${lhs}"))
-          .handleError(expect.same(_, rhs))
+          .redeem(expect.same(_, rhs), _ => failure(s"Expected error for item ${lhs}"))
       }
       .compile
       .foldMonoid
@@ -50,8 +49,7 @@ object ValidationSpec extends SimpleIOSuite {
           .through(low.toBinary[F])
           .compile
           .drain
-          .map(_ => failure(s"Expected error for item ${lhs}"))
-          .handleError(expect.same(_, rhs))
+          .redeem(expect.same(_, rhs), _ => failure(s"Expected error for item ${lhs}"))
       }
       .compile
       .foldMonoid
