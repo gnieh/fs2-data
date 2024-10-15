@@ -34,8 +34,8 @@ object MsgpackItem {
   case class Str(bytes: ByteVector) extends MsgpackItem
 
   case class Bin(bytes: ByteVector) extends MsgpackItem
-  case class Array(size: Int) extends MsgpackItem
-  case class Map(size: Int) extends MsgpackItem
+  case class Array(size: Long) extends MsgpackItem
+  case class Map(size: Long) extends MsgpackItem
 
   case class Extension(tpe: Byte, bytes: ByteVector) extends MsgpackItem
 
