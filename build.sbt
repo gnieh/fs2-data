@@ -143,7 +143,46 @@ lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.text.CharLikeStringChunks.pullNext"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.text.CharLikeStringChunks.advance"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("fs2.data.text.CharLikeStringChunks.current"),
-      ProblemFilters.exclude[MissingClassProblem]("fs2.data.text.CharLikeStringChunks$StringContext")
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.text.CharLikeStringChunks$StringContext"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.text.render.internal.Annotated$AlignBegin"),
+      ProblemFilters.exclude[MissingTypesProblem]("fs2.data.text.render.internal.Annotated$AlignBegin$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#AlignBegin.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#AlignBegin.unapply"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "fs2.data.text.render.internal.Annotated#AlignBegin.fromProduct"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.text.render.internal.Annotated$AlignEnd"),
+      ProblemFilters.exclude[MissingTypesProblem]("fs2.data.text.render.internal.Annotated$AlignEnd$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#AlignEnd.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#AlignEnd.unapply"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "fs2.data.text.render.internal.Annotated#AlignEnd.fromProduct"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.text.render.internal.Annotated$GroupEnd"),
+      ProblemFilters.exclude[MissingTypesProblem]("fs2.data.text.render.internal.Annotated$GroupEnd$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#GroupEnd.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#GroupEnd.unapply"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "fs2.data.text.render.internal.Annotated#GroupEnd.fromProduct"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.text.render.internal.Annotated$IndentBegin"),
+      ProblemFilters.exclude[MissingTypesProblem]("fs2.data.text.render.internal.Annotated$IndentBegin$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#IndentBegin.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#IndentBegin.unapply"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "fs2.data.text.render.internal.Annotated#IndentBegin.fromProduct"),
+      ProblemFilters.exclude[MissingClassProblem]("fs2.data.text.render.internal.Annotated$IndentEnd"),
+      ProblemFilters.exclude[MissingTypesProblem]("fs2.data.text.render.internal.Annotated$IndentEnd$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#IndentEnd.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#IndentEnd.unapply"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "fs2.data.text.render.internal.Annotated#IndentEnd.fromProduct"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#Line.hp"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#LineBreak.hp"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#Text.hp"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#Text.copy"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#Text.copy$default$2"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#Text.this"),
+      ProblemFilters.exclude[MissingTypesProblem]("fs2.data.text.render.internal.Annotated$Text$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#Text.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.text.render.internal.Annotated#Text._2")
     )
   )
   .nativeSettings(
