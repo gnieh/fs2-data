@@ -23,7 +23,6 @@ package internal
 import scodec.bits.ByteVector
 
 private[internal] object Helpers {
-  case class MsgpackParsingException(str: String) extends Exception
 
   /** @param chunk Current chunk
     * @param idx Index of the current [[Byte]] in `chunk`
@@ -67,7 +66,7 @@ private[internal] object Helpers {
       // Inbounds chunk access is guaranteed by `ensureChunk`
       Pull.pure(ctx.next.toResult(ctx.chunk(ctx.idx)))
     } {
-      Pull.raiseError(new MsgpackParsingException("Unexpected end of input"))
+      Pull.raiseError(MsgpackUnexpectedEndOfStreamException())
     }
   }
 
@@ -93,7 +92,7 @@ private[internal] object Helpers {
           go(count - available, ParserContext(chunk, slice.size, rest, acc), newBytes)
         }
       } {
-        Pull.raiseError(new MsgpackParsingException("Unexpected end of input"))
+        Pull.raiseError(MsgpackUnexpectedEndOfStreamException())
       }
     }
 
