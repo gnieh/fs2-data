@@ -21,11 +21,12 @@ import cats.collections.Dequeue
 import cats.data.{Chain, NonEmptyList}
 import fs2.{Chunk, Pipe, Pull, Stream}
 
+private case class OpenGroup(hpl: Int, indent: Int, group: Chain[Annotated])
 private class AnnotationContext(var pos: Int,
-                                var aligns: NonEmptyList[Int],
+                                var aligns: NonEmptyIntList,
                                 var hpl: Int,
                                 var indent: Int,
-                                var groups: Dequeue[(Int, Int, Chain[Annotated])])
+                                var groups: Dequeue[OpenGroup])
 private class RenderingContext(var fit: Int, var hpl: Int, var lines: NonEmptyList[String], var col: Int)
 
 private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(implicit render: Renderable[Event])
@@ -33,8 +34,9 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
 
   private def push(annctx: AnnotationContext, evt: Annotated): Unit =
     annctx.groups.unsnoc match {
-      case Some(((ghpl, gindent, group), groups)) => annctx.groups = groups.snoc((ghpl, gindent, group.append(evt)))
-      case None                                   => // should never happen
+      case Some((OpenGroup(ghpl, gindent, group), groups)) =>
+        annctx.groups = groups.snoc(OpenGroup(ghpl, gindent, group.append(evt)))
+      case None => // should never happen
     }
 
   private def pop(buffer: Chain[Annotated],
@@ -42,8 +44,8 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
                   rctx: RenderingContext,
                   chunkAcc: StringBuilder): Unit =
     annctx.groups.unsnoc match {
-      case Some(((ghpl, gindent, group), groups)) =>
-        annctx.groups = groups.snoc((ghpl, gindent, group.concat(buffer)))
+      case Some((OpenGroup(ghpl, gindent, group), groups)) =>
+        annctx.groups = groups.snoc(OpenGroup(ghpl, gindent, group.concat(buffer)))
       case None =>
         annctx.groups = Dequeue.empty
         buffer.iterator.foreach(renderAnnotated(_, rctx, chunkAcc))
@@ -55,11 +57,11 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
     } else {
       // group does not fit, uncons first buffer
       annctx.groups.uncons match {
-        case Some(((_, _, buffer), groups)) =>
+        case Some((OpenGroup(_, _, buffer), groups)) =>
           renderGroupBegin(Position.TooFar, rctx)
           buffer.iterator.foreach(renderAnnotated(_, rctx, chunkAcc))
           groups.uncons match {
-            case Some(((newhpl, newindent, _), _)) =>
+            case Some((OpenGroup(newhpl, newindent, _), _)) =>
               annctx.hpl = newhpl
               annctx.indent = newindent
               annctx.groups = groups
@@ -131,10 +133,10 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
             // this is the top-level group, turn on the buffer mechanism
             annctx.hpl = hpl1
             annctx.indent = annctx.aligns.head
-            annctx.groups = annctx.groups.snoc((hpl1, annctx.indent, Chain.empty))
+            annctx.groups = annctx.groups.snoc(OpenGroup(hpl1, annctx.indent, Chain.empty))
           } else {
             // starting a new group, puts a new empty buffer in the group dequeue, and check for overflow
-            annctx.groups = annctx.groups.snoc((hpl1, annctx.aligns.head, Chain.empty))
+            annctx.groups = annctx.groups.snoc(OpenGroup(hpl1, annctx.aligns.head, Chain.empty))
             check(annctx, rctx, chunkAcc)
           }
 
@@ -143,7 +145,7 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
             case None =>
             // closing unknown group, just ignore it
 
-            case Some(((newhpl, newindent, group), groups)) =>
+            case Some((OpenGroup(newhpl, newindent, group), groups)) =>
               // closing a group, pop it from the buffer dequeue, and continue
               annctx.groups = groups
               pop(group.prepend(Annotated.GroupBegin(Position.Small(annctx.pos))).append(Annotated.GroupEnd),
@@ -157,7 +159,7 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
 
         case DocEvent.IndentBegin =>
           // increment the current indentation level
-          annctx.aligns = NonEmptyList(annctx.aligns.head + 1, annctx.aligns.tail)
+          annctx.aligns = annctx.aligns.incHead
           if (annctx.groups.isEmpty) {
             // no open group we can emit immediately a new line
             renderIndentBegin(rctx)
@@ -170,7 +172,7 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
 
         case DocEvent.IndentEnd =>
           // decrement the current indentation level
-          annctx.aligns = NonEmptyList(annctx.aligns.head - 1, annctx.aligns.tail)
+          annctx.aligns = annctx.aligns.decHead
           if (annctx.groups.isEmpty) {
             // no open group we can emit immediately a new line
             renderIndentEnd(rctx)
@@ -195,10 +197,7 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
 
         case DocEvent.AlignEnd =>
           // restore to previous indentation level
-          annctx.aligns = annctx.aligns match {
-            case NonEmptyList(_, i :: is) => NonEmptyList(i, is)
-            case NonEmptyList(_, Nil)     => NonEmptyList.one(0)
-          }
+          annctx.aligns = annctx.aligns.pop
           if (annctx.groups.isEmpty) {
             // no open group we can emit immediately a new line
             renderAlignEnd(rctx)
@@ -287,7 +286,7 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
         0,
         0,
         events.flatMap(renderer.doc(_)),
-        new AnnotationContext(0, NonEmptyList.one(0), 0, 0, Dequeue.empty),
+        new AnnotationContext(0, One(0), 0, 0, Dequeue.empty),
         new RenderingContext(0, width, NonEmptyList.one(""), 0),
         new StringBuilder
       ).stream
