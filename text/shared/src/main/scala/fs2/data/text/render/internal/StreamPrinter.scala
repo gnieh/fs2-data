@@ -178,7 +178,7 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
                                                                pos,
                                                                NonEmptyList(aligns.head - 1, aligns.tail),
                                                                hpl,
-                                                               indent,
+                                                               indent - 1,
                                                                groups)
           } else {
             // there is an open group, append the event to the current group
@@ -225,42 +225,109 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
       }
     }
 
-  def apply(events: Stream[F, Event]): Stream[F, String] =
-    annotate(
-      Chunk.empty,
-      0,
-      Stream.suspend(Stream.emit(render.newRenderer())).flatMap(renderer => events.flatMap(renderer.doc(_))),
-      0,
-      NonEmptyList.one(0),
-      0,
-      0,
-      Dequeue.empty
-    ).stream
-      .mapAccumulate((0, width, NonEmptyList.one(""), 0)) { case (acc @ (fit, hpl, lines, col), evt) =>
-        evt match {
-          case Annotated.Text(text, _)         => ((fit, hpl, lines, col + text.size), Some(text))
-          case Annotated.Line(pos) if fit == 0 => ((fit, pos + width, lines, lines.head.size), Some("\n" + lines.head))
-          case Annotated.Line(_)               => ((fit, hpl, lines, col + 1), Some(" "))
-          case Annotated.LineBreak(pos) if fit == 0 =>
-            ((fit, pos + width, lines, lines.head.size), Some("\n" + lines.head))
-          case Annotated.LineBreak(_)                            => (acc, None)
-          case Annotated.GroupBegin(Position.TooFar) if fit == 0 => ((0, hpl, lines, col), None)
-          case Annotated.GroupBegin(Position.Small(pos)) if fit == 0 =>
-            ((if (pos <= hpl) 1 else 0, hpl, lines, col), None)
-          case Annotated.GroupBegin(_)           => ((fit + 1, hpl, lines, col), None)
-          case Annotated.GroupEnd(_) if fit == 0 => (acc, None)
-          case Annotated.GroupEnd(_)             => ((fit - 1, hpl, lines, col), None)
-          case Annotated.IndentBegin(_) =>
-            ((fit, hpl, NonEmptyList(lines.head + (" " * indentSize), lines.tail), col), None)
-          case Annotated.IndentEnd(_) =>
-            ((fit, hpl, NonEmptyList(lines.head.drop(indentSize), lines.tail), col), None)
-          case Annotated.AlignBegin(_) =>
-            ((fit, hpl, (" " * col) :: lines, col), None)
-          case Annotated.AlignEnd(_) =>
-            ((fit, hpl, NonEmptyList.fromList(lines.tail).getOrElse(NonEmptyList.one("")), col), None)
-        }
-
+  private def renderAnnotated(chunk: Chunk[Annotated],
+                              chunkSize: Int,
+                              idx: Int,
+                              rest: Stream[F, Annotated],
+                              fit: Int,
+                              hpl: Int,
+                              lines: NonEmptyList[String],
+                              col: Int,
+                              chunkAcc: StringBuilder): Pull[F, String, Unit] =
+    if (idx >= chunkSize) {
+      Pull.output1(chunkAcc.result()) >> rest.pull.uncons.flatMap {
+        case Some((hd, tl)) =>
+          chunkAcc.setLength(0)
+          renderAnnotated(hd, hd.size, 0, tl, fit, hpl, lines, col, chunkAcc)
+        case None =>
+          Pull.done
       }
-      .map(_._2)
-      .unNone
+    } else {
+      chunk(idx) match {
+        case Annotated.Text(text, _) =>
+          renderAnnotated(chunk, chunkSize, idx + 1, rest, fit, hpl, lines, col + text.size, chunkAcc.append(text))
+        case Annotated.Line(pos) if fit == 0 =>
+          renderAnnotated(chunk,
+                          chunkSize,
+                          idx + 1,
+                          rest,
+                          fit,
+                          pos + width,
+                          lines,
+                          lines.head.size,
+                          chunkAcc.append('\n').append(lines.head))
+        case Annotated.Line(_) =>
+          renderAnnotated(chunk, chunkSize, idx + 1, rest, fit, hpl, lines, col + 1, chunkAcc.append(' '))
+        case Annotated.LineBreak(pos) if fit == 0 =>
+          renderAnnotated(chunk,
+                          chunkSize,
+                          idx + 1,
+                          rest,
+                          fit,
+                          pos + width,
+                          lines,
+                          lines.head.size,
+                          chunkAcc.append('\n').append(lines.head))
+        case Annotated.LineBreak(_) =>
+          renderAnnotated(chunk, chunkSize, idx + 1, rest, fit, hpl, lines, col, chunkAcc)
+        case Annotated.GroupBegin(Position.TooFar) if fit == 0 =>
+          renderAnnotated(chunk, chunkSize, idx + 1, rest, 0, hpl, lines, col, chunkAcc)
+        case Annotated.GroupBegin(Position.Small(pos)) if fit == 0 =>
+          renderAnnotated(chunk, chunkSize, idx + 1, rest, if (pos <= hpl) 1 else 0, hpl, lines, col, chunkAcc)
+        case Annotated.GroupBegin(_) =>
+          renderAnnotated(chunk, chunkSize, idx + 1, rest, fit + 1, hpl, lines, col, chunkAcc)
+        case Annotated.GroupEnd(_) if fit == 0 =>
+          renderAnnotated(chunk, chunkSize, idx + 1, rest, fit, hpl, lines, col, chunkAcc)
+        case Annotated.GroupEnd(_) =>
+          renderAnnotated(chunk, chunkSize, idx + 1, rest, fit - 1, hpl, lines, col, chunkAcc)
+        case Annotated.IndentBegin(_) =>
+          renderAnnotated(chunk,
+                          chunkSize,
+                          idx + 1,
+                          rest,
+                          fit,
+                          hpl,
+                          NonEmptyList(lines.head + (" " * indentSize), lines.tail),
+                          col,
+                          chunkAcc)
+        case Annotated.IndentEnd(_) =>
+          renderAnnotated(chunk,
+                          chunkSize,
+                          idx + 1,
+                          rest,
+                          fit,
+                          hpl,
+                          NonEmptyList(lines.head.drop(indentSize), lines.tail),
+                          col,
+                          chunkAcc)
+        case Annotated.AlignBegin(_) =>
+          renderAnnotated(chunk, chunkSize, idx + 1, rest, fit, hpl, (" " * col) :: lines, col, chunkAcc)
+        case Annotated.AlignEnd(_) =>
+          renderAnnotated(chunk,
+                          chunkSize,
+                          idx + 1,
+                          rest,
+                          fit,
+                          hpl,
+                          NonEmptyList.fromList(lines.tail).getOrElse(NonEmptyList.one("")),
+                          col,
+                          chunkAcc)
+      }
+    }
+
+  def apply(events: Stream[F, Event]): Stream[F, String] = {
+    val annotated =
+      annotate(
+        Chunk.empty,
+        0,
+        Stream.suspend(Stream.emit(render.newRenderer())).flatMap(renderer => events.flatMap(renderer.doc(_))),
+        0,
+        NonEmptyList.one(0),
+        0,
+        0,
+        Dequeue.empty
+      ).stream
+
+    renderAnnotated(Chunk.empty, 0, 0, annotated, 0, width, NonEmptyList.one(""), 0, new StringBuilder).stream
+  }
 }
