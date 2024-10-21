@@ -26,10 +26,16 @@ trait CellValue[T] {
   def value: String
 }
 
+private class AnnotationCellValue[T](a: Annotation[CsvValue, T]) extends CellValue[T] {
+  def value: String = a().value
+}
+
+private class ConstantCellValue[T](val value: String) extends CellValue[T]
+
 object CellValue {
   inline given deriveSingleton[T](using m: Mirror.ProductOf[T] { type MirroredElemTypes = EmptyTuple }): CellValue[T] =
     summonFrom {
-      case a: Annotation[CsvValue, T] => new CellValue[T] { def value: String = a().value }
-      case _                          => new CellValue[T] { def value: String = constValue[m.MirroredLabel] }
+      case a: Annotation[CsvValue, T] => new AnnotationCellValue[T](a)
+      case _                          => new ConstantCellValue[T](constValue[m.MirroredLabel])
     }
 }
