@@ -154,7 +154,71 @@ package object json {
       * You can use this to write the Json stream to a file.
       */
     def compact[F[_]]: Pipe[F, Token, String] =
-      _.through(fs2.data.text.render.pretty(width = Int.MaxValue)(Token.compact))
+      _.scanChunks((0, false)) { case (state, chunk) =>
+        val builder = new StringBuilder
+        val state1 =
+          chunk.foldLeft(state) {
+            case ((level, comma), Token.StartObject) =>
+              if (comma) {
+                builder.append(',')
+              }
+              builder.append(('{'))
+              (level + 1, false)
+            case ((level, _), Token.EndObject) =>
+              builder.append('}')
+              (level - 1, level > 1)
+            case ((level, comma), Token.StartArray) =>
+              if (comma) {
+                builder.append(',')
+              }
+              builder.append(('['))
+              (level + 1, false)
+            case ((level, _), Token.EndArray) =>
+              builder.append(']')
+              (level - 1, level > 1)
+            case ((level, comma), Token.Key(key)) =>
+              if (comma) {
+                builder.append(',')
+              }
+              builder.append('"')
+              Token.renderString(key, 0, builder)
+              builder.append("\":")
+              (level, false)
+            case ((level, comma), Token.StringValue(key)) =>
+              if (comma) {
+                builder.append(',')
+              }
+              builder.append('"')
+              Token.renderString(key, 0, builder)
+              builder.append('"')
+              (level, level > 0)
+            case ((level, comma), Token.NumberValue(n)) =>
+              if (comma) {
+                builder.append(',')
+              }
+              builder.append(n)
+              (level, level > 0)
+            case ((level, comma), Token.TrueValue) =>
+              if (comma) {
+                builder.append(',')
+              }
+              builder.append("true")
+              (level, level > 0)
+            case ((level, comma), Token.FalseValue) =>
+              if (comma) {
+                builder.append(',')
+              }
+              builder.append("false")
+              (level, level > 0)
+            case ((level, comma), Token.NullValue) =>
+              if (comma) {
+                builder.append(',')
+              }
+              builder.append("null")
+              (level, level > 0)
+          }
+        (state1, Chunk.singleton(builder.result()))
+      }
 
     /** Renders a pretty-printed representation of the token stream with the given
       * indentation size.
