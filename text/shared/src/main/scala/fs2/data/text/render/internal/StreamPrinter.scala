@@ -220,7 +220,7 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
   private def renderLine(pos: Int, ctx: RenderingContext, chunkAcc: StringBuilder): Unit = if (ctx.fit == 0) {
     ctx.hpl = pos + width
     ctx.col = ctx.lines.head.size
-    chunkAcc.append('\n').append(ctx.lines.head): Unit
+    val _ = chunkAcc.append('\n').append(ctx.lines.head)
   } else {
     ctx.col += 1
     chunkAcc.append(' ')
@@ -230,7 +230,7 @@ private[render] class StreamPrinter[F[_], Event](width: Int, indentSize: Int)(im
     if (ctx.fit == 0) {
       ctx.hpl = pos + width
       ctx.col = ctx.lines.head.size
-      chunkAcc.append('\n').append(ctx.lines.head): Unit
+      val _ = chunkAcc.append('\n').append(ctx.lines.head)
     }
 
   private def renderGroupBegin(pos: Position, ctx: RenderingContext): Unit =
