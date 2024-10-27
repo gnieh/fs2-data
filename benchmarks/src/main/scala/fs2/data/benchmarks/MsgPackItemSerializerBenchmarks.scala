@@ -32,29 +32,20 @@ import fs2._
 @Warmup(iterations = 3, time = 2)
 @Measurement(iterations = 10, time = 2)
 class MsgPackItemSerializerBenchmarks {
-  val msgpackItems: List[fs2.data.msgpack.low.MsgpackItem] = {
-    val bytes =
-      fs2.io
-        .readClassLoaderResource[SyncIO]("twitter_msgpack.txt", 4096)
-        .through(fs2.text.utf8.decode)
-        .compile
-        .string
-        .map(ByteVector.fromHex(_).get)
-        .unsafeRunSync()
-
-    Stream
-      .chunk(Chunk.byteVector(bytes))
+  val msgpackItems: Stream[SyncIO, fs2.data.msgpack.low.MsgpackItem] =
+    fs2.io
+      .readClassLoaderResource[SyncIO]("twitter_msgpack.mp", 4096)
       .through(fs2.data.msgpack.low.items[SyncIO])
+      .chunks
       .compile
       .toList
       .unsafeRunSync()
-  }
-
+      .map(Stream.chunk)
+      .fold(Stream.empty)(_ ++ _)
 
   @Benchmark
   def serialize() =
-    Stream
-      .emits(msgpackItems)
+    msgpackItems
       .through(fs2.data.msgpack.low.toNonValidatedBinary[SyncIO])
       .compile
       .drain
@@ -62,8 +53,7 @@ class MsgPackItemSerializerBenchmarks {
 
   @Benchmark
   def withValidation() =
-    Stream
-      .emits(msgpackItems)
+    msgpackItems
       .through(fs2.data.msgpack.low.toBinary[SyncIO])
       .compile
       .drain
