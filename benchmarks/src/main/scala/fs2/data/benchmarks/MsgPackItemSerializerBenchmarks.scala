@@ -22,9 +22,6 @@ import org.openjdk.jmh.annotations._
 
 import cats.effect.SyncIO
 
-import scodec.bits._
-import fs2._
-
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @BenchmarkMode(Array(Mode.AverageTime))
 @State(org.openjdk.jmh.annotations.Scope.Benchmark)

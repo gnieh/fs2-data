@@ -20,7 +20,6 @@ package msgpack
 
 import cats.effect._
 import low.MsgpackItem
-import scodec.bits.ByteVector
 import weaver._
 import scodec.bits._
 import cats.implicits._
