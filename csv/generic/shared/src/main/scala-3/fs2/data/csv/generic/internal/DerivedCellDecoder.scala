@@ -25,6 +25,11 @@ import scala.deriving.Mirror
 
 trait DerivedCellDecoder[T] extends CellDecoder[T]
 
+private class CoproductDerivedCellDecoder[T](decoders: List[DerivedCellDecoder[T]]) extends DerivedCellDecoder[T] {
+  def apply(in: String) =
+    decoders.foldRight(new DecoderError("Didn't match any value").asLeft)(_.apply(in).orElse(_))
+}
+
 object DerivedCellDecoder {
   def expect[T](e: String, r: T): DerivedCellDecoder[T] = (in: String) =>
     Either.cond(in == e, r, new DecoderError(s"Expected $e, got $in"))
@@ -38,10 +43,7 @@ object DerivedCellDecoder {
   inline given deriveCoproduct[T](using m: Mirror.SumOf[T]): DerivedCellDecoder[T] = {
     val decoders: List[DerivedCellDecoder[T]] =
       summonAsArray[K0.LiftP[DerivedCellDecoder, m.MirroredElemTypes]].toList.asInstanceOf
-    new DerivedCellDecoder[T] {
-      def apply(in: String) =
-        decoders.foldRight(new DecoderError("Didn't match any value").asLeft)(_.apply(in).orElse(_))
-    }
+    new CoproductDerivedCellDecoder[T](decoders)
   }
 
   inline given deriveSingleton[T](using cv: CellValue[T], m: Mirror.ProductOf[T]): DerivedCellDecoder[T] =

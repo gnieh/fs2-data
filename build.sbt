@@ -17,10 +17,10 @@ import laika.config._
 import sbt.Def._
 import scala.scalanative.build._
 
-val scala212 = "2.12.19"
-val scala213 = "2.13.14"
-val scala3 = "3.3.3"
-val fs2Version = "3.10.2"
+val scala212 = "2.12.20"
+val scala213 = "2.13.15"
+val scala3 = "3.3.4"
+val fs2Version = "3.11.0"
 val circeVersion = "0.14.8"
 val circeExtrasVersion = "0.14.2"
 val playVersion = "3.0.4"

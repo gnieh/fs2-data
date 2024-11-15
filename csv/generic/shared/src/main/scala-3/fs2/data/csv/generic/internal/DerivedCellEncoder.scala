@@ -31,14 +31,12 @@ object DerivedCellEncoder {
     ce(t.productElement(0).asInstanceOf[Tuple.Head[m.MirroredElemTypes]])
   }
 
-  inline given deriveCoproduct[T](using g: K0.CoproductInstances[DerivedCellEncoder, T]): DerivedCellEncoder[T] =
-    new DerivedCellEncoder[T] {
-      def apply(elem: T) = g.fold(elem)([t <: T] => (dce: DerivedCellEncoder[t], te: t) => dce(te))
-    }
+  inline given deriveCoproduct[T](using g: K0.CoproductInstances[DerivedCellEncoder, T]): DerivedCellEncoder[T] with {
+    def apply(elem: T) = g.fold(elem)([t <: T] => (dce: DerivedCellEncoder[t], te: t) => dce(te))
+  }
 
-  inline given deriveSingleton[T](using cv: CellValue[T]): DerivedCellEncoder[T] =
-    new DerivedCellEncoder[T] {
-      def apply(t: T) = cv.value
-    }
+  inline given deriveSingleton[T](using cv: CellValue[T]): DerivedCellEncoder[T] with {
+    def apply(t: T) = cv.value
+  }
 
 }

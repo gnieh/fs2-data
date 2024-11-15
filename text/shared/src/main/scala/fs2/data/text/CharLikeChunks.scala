@@ -18,9 +18,10 @@ package fs2
 package data
 package text
 
-import scala.annotation.implicitNotFound
+import org.typelevel.scalaccompat.annotation.*
 
 import java.nio.charset.Charset
+import scala.annotation.implicitNotFound
 
 /** A typeclass witnessing that a stream of type `In` has chunks
   * that can be iterated over to get characters.
@@ -74,6 +75,7 @@ trait CharLikeChunks[F[_], In] {
 
 }
 
+@nowarn3("cat=deprecation")
 sealed trait AsCharBuffer[F[_], T] extends CharLikeChunks[F, T] {
 
   def mark(ctx: Context): Unit
