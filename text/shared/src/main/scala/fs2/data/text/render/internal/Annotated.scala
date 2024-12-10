@@ -18,13 +18,13 @@ package fs2.data.text.render.internal
 
 private sealed trait Annotated
 private object Annotated {
-  case class Text(text: String, hp: Int) extends Annotated
-  case class Line(hp: Int) extends Annotated
-  case class LineBreak(hp: Int) extends Annotated
+  case class Text(text: String) extends Annotated
+  case class Line(pos: Int) extends Annotated
+  case class LineBreak(pos: Int) extends Annotated
   case class GroupBegin(hpl: Position) extends Annotated
-  case class GroupEnd(hp: Int) extends Annotated
-  case class IndentBegin(hp: Int) extends Annotated
-  case class IndentEnd(hp: Int) extends Annotated
-  case class AlignBegin(hp: Int) extends Annotated
-  case class AlignEnd(hp: Int) extends Annotated
+  case object GroupEnd extends Annotated
+  case object IndentBegin extends Annotated
+  case object IndentEnd extends Annotated
+  case object AlignBegin extends Annotated
+  case object AlignEnd extends Annotated
 }
