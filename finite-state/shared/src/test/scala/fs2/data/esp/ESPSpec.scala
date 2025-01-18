@@ -73,8 +73,7 @@ object ESPSpec extends IOSuite {
 
   test("reverse tree") { esp =>
     Stream
-      .emits(
-        List[MiniXML](
+      .emits(List[MiniXML](
           // format: off
           MiniXML.Open("a"),
             MiniXML.Open("rev"),

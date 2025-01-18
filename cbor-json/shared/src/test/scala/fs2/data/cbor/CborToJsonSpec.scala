@@ -101,12 +101,14 @@ object CborToJsonSpec extends SimpleIOSuite {
       .toList
       .map(tokens =>
         expect.same(
-          List(Token.StartArray,
-               Token.StringValue("Zmlyc3Q"),
-               Token.StringValue("c2Vjb25k"),
-               Token.StringValue("dGhpcmQ"),
-               Token.StringValue("Zm91cnRo"),
-               Token.EndArray),
+          List(
+            Token.StartArray,
+            Token.StringValue("Zmlyc3Q"),
+            Token.StringValue("c2Vjb25k"),
+            Token.StringValue("dGhpcmQ"),
+            Token.StringValue("Zm91cnRo"),
+            Token.EndArray
+          ),
           tokens
         ))
   }
