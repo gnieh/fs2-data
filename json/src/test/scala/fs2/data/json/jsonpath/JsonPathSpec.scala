@@ -101,16 +101,17 @@ object JsonPathSpec extends SimpleIOSuite {
       .parEvalMapUnbounded(_.compile.toList)
       .compile
       .toList
-      .map(expect.same(
-        List(
-          List(Token.StartObject, Token.Key("idx"), Token.NumberValue("0"), Token.EndObject),
-          List(Token.StartObject, Token.Key("idx"), Token.NumberValue("1"), Token.EndObject),
-          List(Token.StartObject, Token.Key("idx"), Token.NumberValue("2"), Token.EndObject),
-          List(Token.StartObject, Token.Key("idx"), Token.NumberValue("3"), Token.EndObject),
-          List(Token.StartObject, Token.Key("idx"), Token.NumberValue("4"), Token.EndObject)
-        ),
-        _
-      ))
+      .map(
+        expect.same(
+          List(
+            List(Token.StartObject, Token.Key("idx"), Token.NumberValue("0"), Token.EndObject),
+            List(Token.StartObject, Token.Key("idx"), Token.NumberValue("1"), Token.EndObject),
+            List(Token.StartObject, Token.Key("idx"), Token.NumberValue("2"), Token.EndObject),
+            List(Token.StartObject, Token.Key("idx"), Token.NumberValue("3"), Token.EndObject),
+            List(Token.StartObject, Token.Key("idx"), Token.NumberValue("4"), Token.EndObject)
+          ),
+          _
+        ))
 
   }
 

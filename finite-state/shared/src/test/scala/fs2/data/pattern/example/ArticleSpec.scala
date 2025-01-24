@@ -115,8 +115,7 @@ object ArticleSpec extends IOSuite {
 
   test("article to html") { esp =>
     Stream
-      .emits(
-        List[MiniXML](
+      .emits(List[MiniXML](
           // format: off
           MiniXML.Open("article"),
             MiniXML.Open("title"),
