@@ -26,18 +26,7 @@ import cats.implicits._
 
 object ValidationSpec extends SimpleIOSuite {
   def validation1[F[_]: Sync](cases: (MsgpackItem, Throwable)*): F[Expectations] =
-    Stream
-      .emits(cases)
-      .evalMap { case (lhs, rhs) =>
-        Stream
-          .emit(lhs)
-          .through(low.toBinary[F])
-          .compile
-          .drain
-          .redeem(expect.same(_, rhs), _ => failure(s"Expected error for item ${lhs}"))
-      }
-      .compile
-      .foldMonoid
+    validation[F](cases.map(_.leftMap(List(_)))*)
 
   def validation[F[_]: Sync](cases: (List[MsgpackItem], Throwable)*): F[Expectations] =
     Stream
@@ -48,7 +37,7 @@ object ValidationSpec extends SimpleIOSuite {
           .through(low.toBinary[F])
           .compile
           .drain
-          .redeem(expect.same(_, rhs), _ => failure(s"Expected error for item ${lhs}"))
+          .redeem(expect.same(_, rhs), _ => failure(s"Expected error for item $lhs"))
       }
       .compile
       .foldMonoid
