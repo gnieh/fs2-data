@@ -39,7 +39,7 @@ private[low] object ItemSerializer {
     *
     * @param contents buffered [[Chunk]]
     */
-  private class Out[F[_]](val contents: Chunk[Byte]) extends AnyVal {
+  private class Out[F[_]](val contents: Chunk[Byte]) { // Note this can't be an effective AnyVal as it's used in a generic
     import Out.limit
 
     /** Pushes `bv` into the buffer and emits the buffer if it reaches the limit.
