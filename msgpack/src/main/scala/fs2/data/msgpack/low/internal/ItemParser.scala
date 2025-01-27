@@ -37,7 +37,7 @@ private[low] object ItemParser {
 
       ((byte & 0xff): @switch) match {
         case Headers.Nil       => Pull.pure(ctx.prepend(MsgpackItem.Nil))
-        case Headers.NeverUsed => Pull.raiseError(new MsgpackParsingException("Reserved value 0xc1 used"))
+        case Headers.NeverUsed => Pull.raiseError(MsgpackMalformedByteStreamException("Reserved value 0xc1 used"))
         case Headers.False     => Pull.pure(ctx.prepend(MsgpackItem.False))
         case Headers.True      => Pull.pure(ctx.prepend(MsgpackItem.True))
         case Headers.Bin8      => parseBin(1, ctx)
@@ -77,13 +77,13 @@ private[low] object ItemParser {
           // fixmap
           else if ((byte & 0xf0) == 0x80) {
             val length = byte & 0x0f // 0x8f- 0x80
-            Pull.pure(ctx.prepend(MsgpackItem.Map(length)))
+            Pull.pure(ctx.prepend(MsgpackItem.Map(length.toLong)))
           }
 
           // fixarray
           else if ((byte & 0xf0) == 0x90) {
             val length = byte & 0x0f // 0x9f- 0x90
-            Pull.pure(ctx.prepend(MsgpackItem.Array(length)))
+            Pull.pure(ctx.prepend(MsgpackItem.Array(length.toLong)))
           }
 
           // fixstr
@@ -98,7 +98,7 @@ private[low] object ItemParser {
           else if ((byte & 0xe0) == 0xe0) {
             Pull.pure(ctx.prepend(MsgpackItem.SignedInt(ByteVector(byte))))
           } else {
-            Pull.raiseError(new MsgpackParsingException(s"Invalid type ${byte}"))
+            Pull.raiseError(MsgpackMalformedByteStreamException(s"Invalid type ${byte}"))
           }
         }
       }
