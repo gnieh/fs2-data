@@ -461,8 +461,7 @@ abstract class QuerySpec(credit: Int) extends SimpleIOSuite {
       .flatMap(_.esp[IO])
       .flatMap { esp =>
         Stream
-          .emits(
-            List[MiniXML](
+          .emits(List[MiniXML](
               // format: off
               MiniXML.Open("doc"),
                 MiniXML.Open("a"),

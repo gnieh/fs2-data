@@ -117,8 +117,8 @@ private[internal] object FormatParsers {
     }
   }
 
-  def parseFloat32[F[_]](ctx: ParserContext[F])(implicit
-      F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
+  def parseFloat32[F[_]](
+      ctx: ParserContext[F])(implicit F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
     requireBytes(4, ctx).map {
       _.accumulate { v =>
         MsgpackItem.Float32 {
@@ -147,8 +147,8 @@ private[internal] object FormatParsers {
     }
   }
 
-  def parseFloat64[F[_]](ctx: ParserContext[F])(implicit
-      F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
+  def parseFloat64[F[_]](
+      ctx: ParserContext[F])(implicit F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
     requireBytes(8, ctx).map {
       _.accumulate { v =>
         MsgpackItem.Float64 {
