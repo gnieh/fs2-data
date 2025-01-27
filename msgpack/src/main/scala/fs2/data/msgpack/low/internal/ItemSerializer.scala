@@ -39,8 +39,8 @@ private[low] object ItemSerializer {
     *
     * @param contents buffered [[Chunk]]
     */
-  private class Out[F[_]](contents: Chunk[Byte]) {
-    private val limit = 4096
+  private class Out[F[_]](val contents: Chunk[Byte]) extends AnyVal {
+    import Out.limit
 
     /** Pushes `bv` into the buffer and emits the buffer if it reaches the limit.
      */
@@ -74,7 +74,11 @@ private[low] object ItemSerializer {
 
     /** Outputs the whole buffer. */
     @inline
-    def flush = Pull.output(contents)
+    def flush: Pull[Nothing, Byte, Unit] = Pull.output(contents)
+  }
+
+  private object Out {
+    @inline private final val limit: Int = 4096
   }
 
   @inline
