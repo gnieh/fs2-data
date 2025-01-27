@@ -34,14 +34,14 @@ private[internal] object FormatParsers {
   def parseArray[F[_]](length: Int, ctx: ParserContext[F])(implicit
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
     requireBytes(length, ctx).map { res =>
-      res.accumulate(v => MsgpackItem.Array(v.toInt(false, ByteOrdering.BigEndian)))
+      res.accumulate(v => MsgpackItem.Array(v.toLong(false)))
     }
   }
 
   def parseMap[F[_]](length: Int, ctx: ParserContext[F])(implicit
       F: RaiseThrowable[F]): Pull[F, MsgpackItem, ParserContext[F]] = {
     requireBytes(length, ctx).map { res =>
-      res.accumulate(v => MsgpackItem.Map(v.toInt(false, ByteOrdering.BigEndian)))
+      res.accumulate(v => MsgpackItem.Map(v.toLong(false)))
     }
   }
 
@@ -63,7 +63,7 @@ private[internal] object FormatParsers {
           res <- requireBytes(8, res.toContext)
           seconds = res.result.toLong(false)
         } yield res.toContext.prepend(MsgpackItem.Timestamp96(nanosec, seconds))
-      case _ => Pull.raiseError(new MsgpackParsingException(s"Invalid timestamp length: ${length}"))
+      case _ => Pull.raiseError(MsgpackMalformedByteStreamException(s"Invalid timestamp length: ${length}"))
     }
   }
 
