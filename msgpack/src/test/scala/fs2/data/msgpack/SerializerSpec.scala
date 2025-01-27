@@ -178,10 +178,7 @@ object SerializerSpec extends SimpleIOSuite {
       pre <- round(data)
       processed <- round(pre)
     } yield {
-      if (processed == pre)
-        success
-      else
-        failure(s"Serializer should be fixpoint for ${pre} but it emitted ${processed}")
+      expect(pre === processed, s"Serializer should be fixpoint for $pre but it emitted $processed")
     }
 
     out.compile.foldMonoid
