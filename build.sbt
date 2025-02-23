@@ -19,7 +19,7 @@ import scala.scalanative.build._
 
 val scala212 = "2.12.20"
 val scala213 = "2.13.16"
-val scala3 = "3.3.4"
+val scala3 = "3.3.5"
 val fs2Version = "3.11.0"
 val circeVersion = "0.14.8"
 val circeExtrasVersion = "0.14.2"
