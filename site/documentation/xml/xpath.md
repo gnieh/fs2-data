@@ -79,29 +79,25 @@ You can use parentheses to associate differently, for instance `!(p1 && p2) || p
 Using the path defined above, we can filter the stream of events, to only emit selected tokens downstream. This can be used to drastically reduce the amount of emitted data, to only the parts that are of interest for you.
 The filtering pipes are located in the `fs2.data.xml.xpath.filter` namespace.
 
-Since XPath includes a recursive descent operator, there can be nested matches for your path.
-The `filter.raw` emits a stream of all matches.
-Each match is represented as a nested stream of XML events which must be consumed.
+The main operators in the namespace are:
+
+ - `filter.first(xpath)` which is a `Pipe` returning the events of the first match only.
+ - `filter.collect(xpath, collector)` which uses the provided `collector` to aggregate the events of each match, and emits all the aggregated results.
+ - `filter.dom[Node](xpath)` which builds the DOM for each match for any DOM type `Node` with a [`DocumentBuilder`][dom-builder] in scope.
+ - `filter.through(xpath, pipe)` which sends all matches as a stream through the provided `pipe`.
+
+@:callout(info)
+Since XPath includes a recursive descent operator, there can be nested matches for your xpath.
+The matches are returned in the order their opening matching element is encountered in the input by default.
+This means that for nested matches, the first stream returned is the ancestor element.
+@:@
+
+Using `filter.collect`, you can build a stream that collects each match for the provided collector and emits the aggregated result. For instance, to build the list of string representations of the matches, you can run the following code.
 
 ```scala mdoc
 import cats.effect._
 import cats.effect.unsafe.implicits.global
 
-stream
-  .lift[IO]
-  .through(filter.raw(path))
-  .parEvalMapUnbounded(_.through(render.raw()).compile.foldMonoid)
-  .compile
-  .toList
-  .unsafeRunSync()
-```
-
-The matching streams are returned in the order their matching element is encountered in the input.
-This means that for nested matches, the first stream returned is the ancestor element.
-
-The library offers `filter.collect` to collect each match for any collector.
-
-```scala mdoc
 stream
   .lift[IO]
   .through(filter.collect(path, collector.raw()))
@@ -121,5 +117,58 @@ stream
   .unsafeRunSync()
 ```
 
+The `filter.through` operator allows for handling each match in a streaming fashion.
+For instance, let's say you want to save each match in a file, incrementing a counter on each match. You can run the following code.
+
+```scala mdoc
+import fs2.io.file.{Files, Path}
+
+def saveXml(counter: Ref[IO, Int], events: Stream[IO, XmlEvent]): Stream[IO, Nothing] =
+  Stream.eval(counter.getAndUpdate(_ + 1)).flatMap { index =>
+    events
+      .through(render.raw())
+      .through(Files[IO].writeUtf8(Path(s"match-$index.xml")))
+  }
+
+val program =
+  for {
+    counter <- Ref[IO].of(0)
+    _ <- stream
+      .lift[IO]
+      .through(filter.through(path, saveXml(counter, _)))
+      .compile
+      .drain
+  } yield ()
+
+program.unsafeRunSync()
+
+Files[IO].readUtf8(Path("match-0.xml")).compile.string.unsafeRunSync()
+Files[IO].readUtf8(Path("match-1.xml")).compile.string.unsafeRunSync()
+```
+
+@:callout(warning)
+The operator described below is unsafe and should be used carefully only if none of the above operators fits your purpose.
+When using it, please ensure that you:
+
+ - consume **all** inner `Stream`s
+ - consume them in **parallel** (e.g. with a variant of `parEvalMap` and paralellism >1, or with a variant of `parJoin`).
+
+Failure to do so might result in memory leaks or hanging programs.
+@:@
+
+The `filter.unsafeRaw` operator emits a stream of all matches.
+Each match is represented as a nested stream of XML events which must be consumed.
+
+```scala mdoc
+stream
+  .lift[IO]
+  .through(filter.unsafeRaw(path))
+  .parEvalMapUnbounded(_.through(render.raw()).compile.foldMonoid)
+  .compile
+  .toList
+  .unsafeRunSync()
+```
+
 [monad-error]: https://typelevel.org/cats/api/cats/MonadError.html
 [xpath]: https://www.w3.org/TR/xpath/
+[dom-builder]: index.md#dom-builder-and-eventifier

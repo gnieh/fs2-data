@@ -42,7 +42,7 @@ object JsonPathSpec extends SimpleIOSuite {
              }
            }"""
       .lift[IO]
-      .through(filter.raw(path))
+      .through(filter.unsafeRaw(path))
       .parEvalMapUnbounded(_.compile.toList)
       .compile
       .toList
@@ -66,7 +66,7 @@ object JsonPathSpec extends SimpleIOSuite {
     val path = jsonpath"$$.a[3]"
 
     jsonWithArray
-      .through(filter.raw(path))
+      .through(filter.unsafeRaw(path))
       .parEvalMapUnbounded(_.compile.toList)
       .compile
       .toList
@@ -78,7 +78,7 @@ object JsonPathSpec extends SimpleIOSuite {
     val path = jsonpath"$$..a[:2]"
 
     jsonWithArray
-      .through(filter.raw(path))
+      .through(filter.unsafeRaw(path))
       .parEvalMapUnbounded(_.compile.toList)
       .compile
       .toList
@@ -97,7 +97,7 @@ object JsonPathSpec extends SimpleIOSuite {
     val path = jsonpath"$$.a[*]"
 
     jsonWithArray
-      .through(filter.raw(path))
+      .through(filter.unsafeRaw(path))
       .parEvalMapUnbounded(_.compile.toList)
       .compile
       .toList
