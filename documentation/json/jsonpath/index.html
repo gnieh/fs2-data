@@ -258,25 +258,31 @@ window.addEventListener('DOMContentLoaded', (event) => {
         <h2 id="using-jsonpath" class="section"><a class="anchor-link left" href="#using-jsonpath"><i class="icofont-laika link">&#xef71;</i></a>Using JSONPath</h2>
         <p>Using the path defined above, we can filter the stream of tokens, to only emit selected tokens downstream. This can be used to drastically reduce the amount of emitted data, to only the parts that are of interest for you.
         The filtering pipes are located in the <code>fs2.data.json.jsonpath.filter</code> namespace.</p>
-        <p>Since JSONPath includes a recursive descent operator, there can be nested matches for your path.
-        The <code>filter.raw</code> emits a stream of all matches.
-        Each match is represented as a nested stream of JSON tokens which must be consumed.</p>
-        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">jsonpath</span><span>.</span><span class="identifier">filter</span><span>
+        <p>The main operators in the namespace are:</p>
+        <ul>
+          <li><code>filter.first(path)</code> which is a <code>Pipe</code> returning the tokens of the first match only.</li>
+        </ul>
+        <ul>
+          <li><code>filter.collect(path, collector)</code> which uses the provided <code>collector</code> to aggregate the tokens of each match, and emits all the aggregated results.</li>
+        </ul>
+        <ul>
+          <li><code>filter.values[Json](path)</code> which builds the AST for each match for any type <code>Json</code> with a <a href="../#ast-builder-and-tokenizer"><code>Builder</code></a> in scope.</li>
+        </ul>
+        <ul>
+          <li><code>filter.through(path, pipe)</code> which sends all matches as a stream through the provided <code>pipe</code>.</li>
+        </ul>
+        <div class="callout info">
+          <i class="icofont-laika info">&#xef4e;</i>
+          <p>Since JSONPath includes a recursive descent operator, there can be nested matches for your path.
+          The matches are returned in the order their first matching token is encountered in the input.
+          This means that for nested matches, the first stream returned is the ancestor element.</p>
+        </div>
+        <p>Using <code>filter.collect</code>, you can build a stream that collects each match for the provided collector and emits the aggregated result. For instance, to build the list of string representations of the matches, you can run the following code.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">literals</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">jsonpath</span><span>.</span><span class="identifier">filter</span><span>
 
 </span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="identifier">_</span><span>
 </span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="identifier">unsafe</span><span>.</span><span class="identifier">implicits</span><span>.</span><span class="identifier">global</span><span>
-
-</span><span class="keyword">val</span><span> </span><span class="identifier">filtered</span><span> = </span><span class="identifier">stream</span><span>.</span><span class="identifier">lift</span><span>[</span><span class="type-name">IO</span><span>].</span><span class="identifier">through</span><span>(</span><span class="identifier">filter</span><span>.</span><span class="identifier">raw</span><span>(</span><span class="identifier">path</span><span>)).</span><span class="identifier">parEvalMapUnbounded</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>)
-</span><span class="comment">// filtered: Stream[[x]IO[x], List[Token]] = Stream(..)
-</span><span class="identifier">filtered</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>.</span><span class="identifier">unsafeRunSync</span><span>()
-</span><span class="comment">// res0: List[List[Token]] = List(
-//   List(NumberValue(value = &quot;1&quot;)),
-//   List(NumberValue(value = &quot;2&quot;)),
-//   List(NumberValue(value = &quot;3&quot;))
-// )</span></code></pre>
-        <p>The matching streams are returned in the order their matching element is encountered in the input.
-        This means that for nested matches, the first stream returned is the ancestor element.</p>
-        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">json</span><span>.</span><span class="identifier">literals</span><span>.</span><span class="identifier">_</span><span>
 
 </span><span class="keyword">val</span><span> </span><span class="identifier">recursive</span><span> = </span><span class="string-literal">jsonpath&quot;$$..a&quot;</span><span>
 </span><span class="comment">// recursive: JsonPath = JsonPath(
@@ -299,35 +305,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
 </span><span>
 </span><span class="identifier">json</span><span>
   .</span><span class="identifier">lift</span><span>[</span><span class="type-name">IO</span><span>]
-  .</span><span class="identifier">through</span><span>(</span><span class="identifier">filter</span><span>.</span><span class="identifier">raw</span><span>(</span><span class="identifier">recursive</span><span>))
-  .</span><span class="identifier">parEvalMapUnbounded</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>)
-  .</span><span class="identifier">compile</span><span>
-  .</span><span class="identifier">toList</span><span>
-  .</span><span class="identifier">unsafeRunSync</span><span>()
-</span><span class="comment">// res1: List[List[Token]] = List(
-//   List(
-//     StartObject,
-//     Key(value = &quot;a&quot;),
-//     StartObject,
-//     Key(value = &quot;c&quot;),
-//     NumberValue(value = &quot;1&quot;),
-//     EndObject,
-//     Key(value = &quot;b&quot;),
-//     NumberValue(value = &quot;2&quot;),
-//     Key(value = &quot;c&quot;),
-//     NumberValue(value = &quot;3&quot;),
-//     EndObject
-//   ),
-//   List(StartObject, Key(value = &quot;c&quot;), NumberValue(value = &quot;1&quot;), EndObject)
-// )</span></code></pre>
-        <p>This is actually a common use case, so the library offers <code>filter.collect</code> to have this behavior for any collector.</p>
-        <pre><code class="nohighlight"><span class="identifier">json</span><span>
-  .</span><span class="identifier">lift</span><span>[</span><span class="type-name">IO</span><span>]
   .</span><span class="identifier">through</span><span>(</span><span class="identifier">filter</span><span>.</span><span class="identifier">collect</span><span>(</span><span class="identifier">recursive</span><span>, </span><span class="type-name">List</span><span>))
   .</span><span class="identifier">compile</span><span>
   .</span><span class="identifier">toList</span><span>
   .</span><span class="identifier">unsafeRunSync</span><span>()
-</span><span class="comment">// res2: List[List[Token]] = List(
+</span><span class="comment">// res0: List[List[Token]] = List(
 //   List(
 //     StartObject,
 //     Key(value = &quot;a&quot;),
@@ -350,7 +332,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
   .</span><span class="identifier">compile</span><span>
   .</span><span class="identifier">toList</span><span>
   .</span><span class="identifier">unsafeRunSync</span><span>()
-</span><span class="comment">// res3: List[List[Token]] = List(
+</span><span class="comment">// res1: List[List[Token]] = List(
 //   List(StartObject, Key(value = &quot;c&quot;), NumberValue(value = &quot;1&quot;), EndObject),
 //   List(
 //     StartObject,
@@ -365,6 +347,78 @@ window.addEventListener('DOMContentLoaded', (event) => {
 //     NumberValue(value = &quot;3&quot;),
 //     EndObject
 //   )
+// )</span></code></pre>
+        <p>The <code>filter.through</code> operator allows for handling each match in a streaming fashion.
+        For instance, let&#39;s say you want to save each match in a file, incrementing a counter on each match. You can run the following code.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">io</span><span>.</span><span class="identifier">file</span><span>.{</span><span class="type-name">Files</span><span>, </span><span class="type-name">Path</span><span>}
+
+</span><span class="keyword">def</span><span> </span><span class="declaration-name">saveJson</span><span>(</span><span class="identifier">counter</span><span>: </span><span class="type-name">Ref</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">Int</span><span>], </span><span class="identifier">tokens</span><span>: </span><span class="type-name">Stream</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">Token</span><span>]): </span><span class="type-name">Stream</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">Nothing</span><span>] =
+  </span><span class="type-name">Stream</span><span>.</span><span class="identifier">eval</span><span>(</span><span class="identifier">counter</span><span>.</span><span class="identifier">getAndUpdate</span><span>(</span><span class="identifier">_</span><span> + </span><span class="number-literal">1</span><span>)).</span><span class="identifier">flatMap</span><span> { </span><span class="identifier">index</span><span> =&gt;
+   </span><span class="identifier">tokens</span><span> 
+      .</span><span class="identifier">through</span><span>(</span><span class="identifier">render</span><span>.</span><span class="identifier">compact</span><span>)
+      .</span><span class="identifier">through</span><span>(</span><span class="type-name">Files</span><span>[</span><span class="type-name">IO</span><span>].</span><span class="identifier">writeUtf8</span><span>(</span><span class="type-name">Path</span><span>(</span><span class="string-literal">s&quot;match-</span><span class="substitution">$index</span><span class="string-literal">.json&quot;</span><span>)))
+  }
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">program</span><span> =
+  </span><span class="keyword">for</span><span> {
+    </span><span class="identifier">counter</span><span> &lt;- </span><span class="type-name">Ref</span><span>[</span><span class="type-name">IO</span><span>].</span><span class="identifier">of</span><span>(</span><span class="number-literal">0</span><span>)
+    </span><span class="identifier">_</span><span> &lt;- </span><span class="identifier">json</span><span>
+      .</span><span class="identifier">lift</span><span>[</span><span class="type-name">IO</span><span>]
+      .</span><span class="identifier">through</span><span>(</span><span class="identifier">filter</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">recursive</span><span>, </span><span class="identifier">saveJson</span><span>(</span><span class="identifier">counter</span><span>, </span><span class="identifier">_</span><span>)))
+      .</span><span class="identifier">compile</span><span>
+      .</span><span class="identifier">drain</span><span>
+  } </span><span class="keyword">yield</span><span> ()
+</span><span class="comment">// program: IO[Unit] = FlatMap(
+//   ioe = Delay(
+//     thunk = cats.effect.IO$$$Lambda$12958/0x000000080335e840@73965525,
+//     event = cats.effect.tracing.TracingEvent$StackTrace
+//   ),
+//   f = &lt;function1&gt;,
+//   event = cats.effect.tracing.TracingEvent$StackTrace
+// )
+</span><span>
+</span><span class="identifier">program</span><span>.</span><span class="identifier">unsafeRunSync</span><span>()
+
+</span><span class="type-name">Files</span><span>[</span><span class="type-name">IO</span><span>].</span><span class="identifier">readUtf8</span><span>(</span><span class="type-name">Path</span><span>(</span><span class="string-literal">&quot;match-0.json&quot;</span><span>)).</span><span class="identifier">compile</span><span>.</span><span class="identifier">string</span><span>.</span><span class="identifier">unsafeRunSync</span><span>()
+</span><span class="comment">// res3: String = &quot;{\&quot;c\&quot;:1}&quot;
+</span><span class="type-name">Files</span><span>[</span><span class="type-name">IO</span><span>].</span><span class="identifier">readUtf8</span><span>(</span><span class="type-name">Path</span><span>(</span><span class="string-literal">&quot;match-1.json&quot;</span><span>)).</span><span class="identifier">compile</span><span>.</span><span class="identifier">string</span><span>.</span><span class="identifier">unsafeRunSync</span><span>()
+</span><span class="comment">// res4: String = &quot;{\&quot;a\&quot;:{\&quot;c\&quot;:1},\&quot;b\&quot;:2,\&quot;c\&quot;:3}&quot;</span></code></pre>
+        <div class="callout warning">
+          <i class="icofont-laika warning">&#xf026;</i>
+          <p>The operator described below is unsafe and should be used carefully only if none of the above operators fits your purpose.
+          When using it, please ensure that you:</p>
+          <ul>
+            <li>consume <strong>all</strong> inner <code>Stream</code>s</li>
+          </ul>
+          <ul>
+            <li>consume them in <strong>parallel</strong> (e.g. with a variant of <code>parEvalMap</code> and paralellism &gt;1, or with a variant of <code>parJoin</code>).</li>
+          </ul>
+          <p>Failure to do so might result in memory leaks or hanging programs.</p>
+        </div>
+        <p>The <code>filter.unsafeRaw</code> emits a stream of all matches.
+        Each match is represented as a nested stream of JSON tokens which must be consumed.</p>
+        <pre><code class="nohighlight"><span class="identifier">json</span><span>
+  .</span><span class="identifier">lift</span><span>[</span><span class="type-name">IO</span><span>]
+  .</span><span class="identifier">through</span><span>(</span><span class="identifier">filter</span><span>.</span><span class="identifier">unsafeRaw</span><span>(</span><span class="identifier">recursive</span><span>))
+  .</span><span class="identifier">parEvalMapUnbounded</span><span>(</span><span class="identifier">_</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>)
+  .</span><span class="identifier">compile</span><span>
+  .</span><span class="identifier">toList</span><span>
+  .</span><span class="identifier">unsafeRunSync</span><span>()
+</span><span class="comment">// res5: List[List[Token]] = List(
+//   List(
+//     StartObject,
+//     Key(value = &quot;a&quot;),
+//     StartObject,
+//     Key(value = &quot;c&quot;),
+//     NumberValue(value = &quot;1&quot;),
+//     EndObject,
+//     Key(value = &quot;b&quot;),
+//     NumberValue(value = &quot;2&quot;),
+//     Key(value = &quot;c&quot;),
+//     NumberValue(value = &quot;3&quot;),
+//     EndObject
+//   ),
+//   List(StartObject, Key(value = &quot;c&quot;), NumberValue(value = &quot;1&quot;), EndObject)
 // )</span></code></pre>
 
         
