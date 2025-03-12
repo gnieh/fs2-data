@@ -49,13 +49,19 @@ package object jsonpath {
       * E.g., if you want to emit only the top most matches, set it to `0`.
       *
       * '''Warning''': make sure you actually consume all the emitted streams otherwise
-      * this can lead to memory problems.
+      * this can lead to memory problems. The streams must all be consumed in parallel
+      * to avoid hanging programs.
       */
-    def raw(path: JsonPath, maxMatch: Int = Int.MaxValue, maxNest: Int = Int.MaxValue)(implicit
+    def unsafeRaw(path: JsonPath, maxMatch: Int = Int.MaxValue, maxNest: Int = Int.MaxValue)(implicit
         F: Concurrent[F]): Pipe[F, Token, Stream[F, Token]] =
       _.through(JsonTagger.pipe)
         .through(new JsonQueryPipe(compileJsonPath(path)).raw(maxMatch, maxNest)(_))
         .map(_.map(untag(_)).unNone)
+
+    @deprecated(message = "Use `filter.unsafeRaw()` instead", since = "fs2-data 1.12.0")
+    def raw(path: JsonPath, maxMatch: Int = Int.MaxValue, maxNest: Int = Int.MaxValue)(implicit
+        F: Concurrent[F]): Pipe[F, Token, Stream[F, Token]] =
+      unsafeRaw(path = path, maxMatch = maxMatch, maxNest = maxNest)
 
     /** Selects the first match in the input stream. The tokens of the first matching
       * value are emitted as they are read.
@@ -95,6 +101,25 @@ package object jsonpath {
                        maxMatch,
                        maxNest))
         .flatMap(Stream.emits(_))
+
+    /** Selects all matching elements in the input stream, feeding them to the provided [[fs2.Pipe]] in parallel.
+      * Each match results in a new stream of [[fs2.data.json.Token Token]] fed to the `pipe`. All the matches are processed in parallel as soon as new tokens are available.
+      *
+      * The `maxMatch` parameter controls how many matches are to be emitted at most.
+      * Further matches won't be emitted if any.
+      *
+      * The `maxNest` parameter controls the maximum level of match nesting to be emitted.
+      * E.g., if you want to emit only the top most matches, set it to `0`.
+      *
+      */
+    def through(path: JsonPath,
+                pipe: Pipe[F, Token, Nothing],
+                maxMatch: Int = Int.MaxValue,
+                maxNest: Int = Int.MaxValue)(implicit F: Concurrent[F]): Pipe[F, Token, Nothing] =
+      _.through(JsonTagger.pipe)
+        .through(
+          new JsonQueryPipe(compileJsonPath(path))
+            .through(_, _.map(untag(_)).unNone.through(pipe), maxMatch, maxNest))
 
     /** Selects all matching elements in the input stream, and applies the [[fs2.Collector]] to it.
       *

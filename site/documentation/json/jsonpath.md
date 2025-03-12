@@ -72,25 +72,28 @@ The supported JSONPath features are:
 Using the path defined above, we can filter the stream of tokens, to only emit selected tokens downstream. This can be used to drastically reduce the amount of emitted data, to only the parts that are of interest for you.
 The filtering pipes are located in the `fs2.data.json.jsonpath.filter` namespace.
 
+The main operators in the namespace are:
+
+ - `filter.first(path)` which is a `Pipe` returning the tokens of the first match only.
+ - `filter.collect(path, collector)` which uses the provided `collector` to aggregate the tokens of each match, and emits all the aggregated results.
+ - `filter.values[Json](path)` which builds the AST for each match for any type `Json` with a [`Builder`][json-builder] in scope.
+ - `filter.through(path, pipe)` which sends all matches as a stream through the provided `pipe`.
+
+@:callout(info)
 Since JSONPath includes a recursive descent operator, there can be nested matches for your path.
-The `filter.raw` emits a stream of all matches.
-Each match is represented as a nested stream of JSON tokens which must be consumed.
+The matches are returned in the order their first matching token is encountered in the input.
+This means that for nested matches, the first stream returned is the ancestor element.
+@:@
+
+
+Using `filter.collect`, you can build a stream that collects each match for the provided collector and emits the aggregated result. For instance, to build the list of string representations of the matches, you can run the following code.
 
 ```scala mdoc
+import fs2.data.json.literals._
 import fs2.data.json.jsonpath.filter
 
 import cats.effect._
 import cats.effect.unsafe.implicits.global
-
-val filtered = stream.lift[IO].through(filter.raw(path)).parEvalMapUnbounded(_.compile.toList)
-filtered.compile.toList.unsafeRunSync()
-```
-
-The matching streams are returned in the order their matching element is encountered in the input.
-This means that for nested matches, the first stream returned is the ancestor element.
-
-```scala mdoc
-import fs2.data.json.literals._
 
 val recursive = jsonpath"$$..a"
 
@@ -104,18 +107,6 @@ val json = json"""{
   }
 }"""
 
-json
-  .lift[IO]
-  .through(filter.raw(recursive))
-  .parEvalMapUnbounded(_.compile.toList)
-  .compile
-  .toList
-  .unsafeRunSync()
-```
-
-This is actually a common use case, so the library offers `filter.collect` to have this behavior for any collector.
-
-```scala mdoc
 json
   .lift[IO]
   .through(filter.collect(recursive, List))
@@ -135,5 +126,58 @@ json
   .unsafeRunSync()
 ```
 
+The `filter.through` operator allows for handling each match in a streaming fashion.
+For instance, let's say you want to save each match in a file, incrementing a counter on each match. You can run the following code.
+
+```scala mdoc
+import fs2.io.file.{Files, Path}
+
+def saveJson(counter: Ref[IO, Int], tokens: Stream[IO, Token]): Stream[IO, Nothing] =
+  Stream.eval(counter.getAndUpdate(_ + 1)).flatMap { index =>
+   tokens 
+      .through(render.compact)
+      .through(Files[IO].writeUtf8(Path(s"match-$index.json")))
+  }
+
+val program =
+  for {
+    counter <- Ref[IO].of(0)
+    _ <- json
+      .lift[IO]
+      .through(filter.through(recursive, saveJson(counter, _)))
+      .compile
+      .drain
+  } yield ()
+
+program.unsafeRunSync()
+
+Files[IO].readUtf8(Path("match-0.json")).compile.string.unsafeRunSync()
+Files[IO].readUtf8(Path("match-1.json")).compile.string.unsafeRunSync()
+```
+
+@:callout(warning)
+The operator described below is unsafe and should be used carefully only if none of the above operators fits your purpose.
+When using it, please ensure that you:
+
+ - consume **all** inner `Stream`s
+ - consume them in **parallel** (e.g. with a variant of `parEvalMap` and paralellism >1, or with a variant of `parJoin`).
+
+Failure to do so might result in memory leaks or hanging programs.
+@:@
+
+The `filter.unsafeRaw` emits a stream of all matches.
+Each match is represented as a nested stream of JSON tokens which must be consumed.
+
+```scala mdoc
+
+json
+  .lift[IO]
+  .through(filter.unsafeRaw(recursive))
+  .parEvalMapUnbounded(_.compile.toList)
+  .compile
+  .toList
+  .unsafeRunSync()
+```
 [monad-error]: https://typelevel.org/cats/api/cats/MonadError.html
 [jsonpath]: https://goessner.net/articles/JsonPath/index.html
+[json-builder]: index.md#ast-builder-and-tokenizer

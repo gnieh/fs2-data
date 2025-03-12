@@ -42,7 +42,7 @@ object QueryPipeSpec extends SimpleIOSuite {
               |</a>""".stripMargin)
       .covary[IO]
       .through(events())
-      .through(filter.raw(query))
+      .through(filter.unsafeRaw(query))
       .parEvalMapUnbounded(_.compile.toList)
       .compile
       .toList
@@ -73,7 +73,7 @@ object QueryPipeSpec extends SimpleIOSuite {
               |<root><a><c>text</c></a></root>""".stripMargin)
       .covary[IO]
       .through(events())
-      .through(filter.raw(query))
+      .through(filter.unsafeRaw(query))
       .parEvalMapUnbounded(_.compile.toList)
       .compile
       .toList
@@ -140,7 +140,7 @@ object QueryPipeSpec extends SimpleIOSuite {
               |<root><a><c><a>text</a></c></a></root>""".stripMargin)
       .covary[IO]
       .through(events())
-      .through(filter.raw(query))
+      .through(filter.unsafeRaw(query))
       .parEvalMapUnbounded(_.compile.toList)
       .compile
       .toList
@@ -182,7 +182,7 @@ object QueryPipeSpec extends SimpleIOSuite {
               |<root><a><c>text</c></a></root>""".stripMargin)
       .covary[IO]
       .through(events())
-      .through(filter.raw(query))
+      .through(filter.unsafeRaw(query))
       .parEvalMapUnbounded(_.compile.toList)
       .compile
       .toList
@@ -221,7 +221,7 @@ object QueryPipeSpec extends SimpleIOSuite {
               |<a attr="other value">with other value</a>""".stripMargin)
       .covary[IO]
       .through(events())
-      .through(filter.raw(query))
+      .through(filter.unsafeRaw(query))
       .parEvalMapUnbounded(_.compile.toList)
       .compile
       .toList
