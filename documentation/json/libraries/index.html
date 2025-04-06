@@ -262,7 +262,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
   </span><span class="type-name">WrappedData</span><span>(</span><span class="identifier">data</span><span>.</span><span class="identifier">field1</span><span>, </span><span class="identifier">data</span><span>.</span><span class="identifier">field2</span><span>, </span><span class="identifier">data</span><span>.</span><span class="identifier">field3</span><span>.</span><span class="identifier">map</span><span>(</span><span class="type-name">Wrapped</span><span>(</span><span class="identifier">_</span><span>)))
 
 </span><span class="keyword">val</span><span> </span><span class="identifier">sel</span><span> = </span><span class="identifier">root</span><span>.</span><span class="identifier">field</span><span>(</span><span class="string-literal">&quot;field3&quot;</span><span>).</span><span class="identifier">iterate</span><span>.</span><span class="identifier">compile</span><span>
-</span><span class="comment">// sel: Selector = PipeSelector(
+</span><span class="comment">// sel: fs2.data.json.Selector = PipeSelector(
 //   left = NameSelector(
 //     pred = Single(name = &quot;field3&quot;),
 //     strict = true,
@@ -301,7 +301,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 </span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">syntax</span><span>.</span><span class="identifier">all</span><span>.</span><span class="identifier">_</span><span>
 
 </span><span class="keyword">val</span><span> </span><span class="identifier">f1</span><span> = </span><span class="identifier">root</span><span>.</span><span class="identifier">field</span><span>(</span><span class="string-literal">&quot;field1&quot;</span><span>).</span><span class="identifier">compile</span><span>
-</span><span class="comment">// f1: Selector = NameSelector(
+</span><span class="comment">// f1: fs2.data.json.Selector = NameSelector(
 //   pred = Single(name = &quot;field1&quot;),
 //   strict = true,
 //   mandatory = false
