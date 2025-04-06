@@ -19,9 +19,8 @@ package data
 package pattern
 package example
 
-import cats.effect._
-
-import weaver._
+import cats.effect.IO
+import weaver.*
 
 sealed trait Typ {
   val range: Iterator[Tag] =
