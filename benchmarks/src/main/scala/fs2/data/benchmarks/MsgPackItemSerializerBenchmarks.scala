@@ -31,7 +31,7 @@ import cats.effect.SyncIO
 class MsgPackItemSerializerBenchmarks {
   val msgpackItems: Stream[SyncIO, fs2.data.msgpack.low.MsgpackItem] =
     fs2.io
-      .readClassLoaderResource[SyncIO]("twitter_msgpack.mp", 4096)
+      .readClassLoaderResource[SyncIO]("users.mp", 4096)
       .through(fs2.data.msgpack.low.items[SyncIO])
       .chunks
       .compile
