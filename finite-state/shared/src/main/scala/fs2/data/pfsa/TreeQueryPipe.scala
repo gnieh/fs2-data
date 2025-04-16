@@ -138,6 +138,9 @@ private[data] abstract class TreeQueryPipe[F[_]: Concurrent, T, O <: T, Matcher,
   final def topmost(s: Stream[F, T]): Stream[F, T] =
     raw(Int.MaxValue, 0)(s).parJoinUnbounded
 
+  final def through(s: Stream[F, T], pipe: Pipe[F, T, Nothing], maxMatch: Int, maxNest: Int): Stream[F, Nothing] =
+    raw(maxMatch = maxMatch, maxNest = maxNest)(s).map(_.through(pipe)).parJoinUnbounded
+
   final def aggregate[U](s: Stream[F, T],
                          f: Stream[F, T] => F[U],
                          deterministic: Boolean,

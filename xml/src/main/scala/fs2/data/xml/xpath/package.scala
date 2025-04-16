@@ -48,11 +48,17 @@ package object xpath {
       * E.g., if you want to emit only the top most matches, set it to `0`.
       *
       * '''Warning''': make sure you actually consume all the emitted streams otherwise
-      * this can lead to memory problems.
+      * this can lead to memory problems. The streams must all be consumed in parallel
+      * to avoid hanging programs.
       */
-    def raw(path: XPath, maxMatch: Int = Int.MaxValue, maxNest: Int = Int.MaxValue)(implicit
+    def unsafeRaw(path: XPath, maxMatch: Int = Int.MaxValue, maxNest: Int = Int.MaxValue)(implicit
         F: Concurrent[F]): Pipe[F, XmlEvent, Stream[F, XmlEvent]] =
       new XmlQueryPipe(compileXPath(path)).raw(maxMatch, maxNest)(_)
+
+    @deprecated(message = "Use `filter.unsafeRaw()` instead", since = "fs2-data 1.12.0")
+    def raw(path: XPath, maxMatch: Int = Int.MaxValue, maxNest: Int = Int.MaxValue)(implicit
+        F: Concurrent[F]): Pipe[F, XmlEvent, Stream[F, XmlEvent]] =
+      unsafeRaw(path = path, maxMatch = maxMatch, maxNest = maxNest)
 
     /** Selects the first match only. First is meant as in: opening tag appears first in the input, no matter the depth.
       * Tokens of the first match are emitted as they are read from the input.
@@ -83,6 +89,22 @@ package object xpath {
       new XmlQueryPipe(compileXPath(path))
         .aggregate(_, _.through(xml.dom.elements).compile.toList, deterministic, maxMatch, maxNest)
         .flatMap(Stream.emits(_))
+
+    /** Selects all matching elements in the input stream, feeding them to the provided [[fs2.Pipe]] in parallel.
+      * Each match results in a new stream of [[fs2.data.xml.XmlEvent XmlEvent]] fed to the `pipe`. All the matches are processed in parallel as soon as new events are available.
+      *
+      * The `maxMatch` parameter controls how many matches are to be emitted at most.
+      * Further matches won't be emitted if any.
+      *
+      * The `maxNest` parameter controls the maximum level of match nesting to be emitted.
+      * E.g., if you want to emit only the top most matches, set it to `0`.
+      *
+      */
+    def through(path: XPath,
+                pipe: Pipe[F, XmlEvent, Nothing],
+                maxMatch: Int = Int.MaxValue,
+                maxNest: Int = Int.MaxValue)(implicit F: Concurrent[F]): Pipe[F, XmlEvent, Nothing] =
+      new XmlQueryPipe(compileXPath(path)).through(_, pipe, maxMatch, maxNest)
 
     /** Selects all matching elements in the input stream, and applies the [[fs2.Collector]] to it.
       *
