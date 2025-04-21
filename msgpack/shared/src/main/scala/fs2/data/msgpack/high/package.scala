@@ -73,7 +73,7 @@ package object high {
 
   object dynamic extends DynamicDecoderInstances {
 
-    /** Converts a stream of bytes into a stream [[MsgpackItem]]s into a stream of [[MsgpackValue$]]s. Alias for [[fromItems]][F, [[MsgpackValue]]].
+    /** Converts a stream of bytes into a stream [[fs2.data.msgpack.low.MsgpackItem]]s into a stream of [[MsgpackValue$]]s. Alias for [[fromItems]][F, [[MsgpackValue]]].
       */
     @inline def valuesFromItems[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, MsgpackValue] =
       fromItems[F, MsgpackValue]
