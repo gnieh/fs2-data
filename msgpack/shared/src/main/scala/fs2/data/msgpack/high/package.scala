@@ -20,7 +20,8 @@ package msgpack
 
 import fs2.data.msgpack.low.MsgpackItem
 import cats.Monad
-import scala.collection.mutable
+import scala.jdk.CollectionConverters._
+import java.util.ArrayDeque
 
 package object high {
   implicit val msgpackDecoderMonad: Monad[MsgpackDecoder] = MsgpackDecoder.msgpackDecoderMonad
@@ -30,20 +31,23 @@ package object high {
   def fromItems[F[_], A](implicit F: RaiseThrowable[F], da: MsgpackDecoder[A]): Pipe[F, MsgpackItem, A] = { stream =>
     import fs2.data.msgpack.high.internal.Helpers._
 
-    def go(ctx: DecodingContext[F], buffer: mutable.ArrayDeque[A]): Pull[F, A, Unit] = {
+    def go(ctx: DecodingContext[F], buffer: ArrayDeque[A]): Pull[F, A, Unit] = {
       if (ctx.idx >= ctx.chunk.size) {
-        Pull.output(Chunk.from(buffer)) >> ctx.rest.pull.uncons.flatMap {
-          case Some((hd, tl)) => go(DecodingContext(hd, 0, tl), new mutable.ArrayDeque())
-          case None           => Pull.done
+        Pull.output(Chunk.from(buffer.asScala)) >> ctx.rest.pull.uncons.flatMap {
+          case Some((hd, tl)) =>
+            buffer.clear()
+            go(DecodingContext(hd, 0, tl), buffer)
+          case None => Pull.done
         }
       } else {
         da.run(ctx).flatMap { case (item, ctx) =>
-          go(ctx, buffer.addOne(item))
+          buffer.add(item)
+          go(ctx, buffer)
         }
       }
     }
 
-    go(DecodingContext(Chunk.empty, 0, stream), new mutable.ArrayDeque()).stream
+    go(DecodingContext(Chunk.empty, 0, stream), new ArrayDeque()).stream
   }
 
   /** Converts a stream of [[fs2.data.msgpack.low.MsgpackItem]] into a stream of `A` via an explicit decoder instance.

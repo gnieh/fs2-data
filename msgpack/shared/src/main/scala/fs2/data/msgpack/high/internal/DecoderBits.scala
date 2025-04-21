@@ -114,7 +114,7 @@ private[high] object DecoderBits {
         Pull.pure((acc.result(), ctx))
       else
         pa.run(ctx).flatMap { case (item, ctxP) =>
-          go(n - 1, acc.addOne(item), ctxP)
+          go(n - 1, acc += (item), ctxP)
         }
     }
     go(size, List.newBuilder[A], ctx.next)
@@ -131,7 +131,7 @@ private[high] object DecoderBits {
       else
         pk.run(ctx).flatMap { case (key, ctxK) =>
           pv.run(ctxK).flatMap { case (value, ctxV) =>
-            go(n - 1, acc.addOne((key, value)), ctxV)
+            go(n - 1, acc += ((key, value)), ctxV)
           }
         }
     }

@@ -173,7 +173,7 @@ private[high] class StaticDecoderInstances {
       }
     }
   }
-  
+
   implicit object intDecoder extends MsgpackDecoder[Int] {
     def run[F[_]: RaiseThrowable](ctx: DecodingContext[F]) = get1(ctx) { (item, ctx) =>
       item match {
@@ -190,9 +190,9 @@ private[high] class StaticDecoderInstances {
       item match {
         case MsgpackItem.Array(size) if size < 0 =>
           Pull.raiseError(new MsgpackMalformedItemException(s"Negative array length ${size}"))
-        case MsgpackItem.Array(size) if size <= Int.MaxValue => runList[F, A](size.toInt, ctx)
-        case MsgpackItem.Array(size) =>
+        case MsgpackItem.Array(size) if size > Int.MaxValue =>
           Pull.raiseError(new MsgpackMalformedItemException("Array size exceeds Int.MaxValue"))
+        case MsgpackItem.Array(size) => runList[F, A](size.toInt, ctx)
         case x =>
           Pull.raiseError(new MsgpackDecodingTypeMismatchException(s"MsgpackItem.${x.getClass.getSimpleName}", "List"))
       }
@@ -216,9 +216,9 @@ private[high] class StaticDecoderInstances {
         item match {
           case MsgpackItem.Map(size) if size < 0 =>
             Pull.raiseError(new MsgpackMalformedItemException(s"Negative map length ${size}"))
-          case MsgpackItem.Map(size) if size <= Int.MaxValue => runMap[F, K, V](size.toInt, ctx)
-          case MsgpackItem.Map(size) =>
+          case MsgpackItem.Map(size) if size > Int.MaxValue =>
             Pull.raiseError(new MsgpackMalformedItemException("Map size exceeds Int.MaxValue"))
+          case MsgpackItem.Map(size) => runMap[F, K, V](size.toInt, ctx)
           case x =>
             Pull.raiseError(new MsgpackDecodingTypeMismatchException(s"MsgpackItem.${x.getClass.getSimpleName}", "Map"))
         }
