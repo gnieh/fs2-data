@@ -34,7 +34,7 @@ private[high] object Helpers {
     @inline def proceed[A](result: A): DecodingResult[F, A] = Pull.pure((result, DecodingContext(chunk, idx + 1, rest)))
   }
 
-  /** @alias Pull[F, Nothing, (A, DecodingContext[F])]
+  /** Alias for [[fs2.Pull Pull]][F, Nothing, (A, [[DecodingContext]][F])]
     * @tparam F Effect type
     * @tparam A Result type
     */
