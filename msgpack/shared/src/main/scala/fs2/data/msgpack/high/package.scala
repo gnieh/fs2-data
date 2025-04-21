@@ -76,14 +76,14 @@ package object high {
     /** Converts a stream of bytes into a stream [[fs2.data.msgpack.low.MsgpackItem MsgpackItem]]s into a stream of
       * [[MsgpackValue$ MsgpackValue]]s.
       *
-      * Alias for [[fromItems(F:RaiseThrowable[F],da:MsgpackDecoder[A])]][F, [[MsgpackValue]]].
+      * Alias for fromItems[F, [[MsgpackValue$ MsgpackValue]]].
       */
     @inline def valuesFromItems[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, MsgpackValue] =
       fromItems[F, MsgpackValue]
 
     /** Decodes a stream of bytes into a stream of [[MsgpackValue]]s.
       *
-      * Alias for [[decode(F:RaiseThrowable[F]*]][F, [[MsgpackValue$ MsgpackValue]]]
+      * Alias for decode[F, [[MsgpackValue$ MsgpackValue]]]
       */
     @inline def values[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, MsgpackValue] = decode[F, MsgpackValue]
   }
