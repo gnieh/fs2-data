@@ -23,7 +23,6 @@ import fs2.data.msgpack.low.MsgpackItem
 import fs2.data.msgpack.high.internal.Helpers._
 import fs2.data.msgpack.high.internal.DecoderBits._
 import scodec.bits.ByteVector
-import java.time.Instant
 
 private[high] class DynamicDecoderInstances {
   implicit object msgpackValueDecoder extends MsgpackDecoder[MsgpackValue] {
@@ -62,17 +61,13 @@ private[high] class DynamicDecoderInstances {
           }
 
         case MsgpackItem.Timestamp32(seconds) =>
-          val instant = java.time.Instant.ofEpochSecond(seconds.toLong)
-          ctx.proceed(MsgpackValue.Timestamp(instant))
+          ctx.proceed(MsgpackValue.Timestamp(0, seconds.toLong))
 
-        case MsgpackItem.Timestamp64(combined) =>
-          runTimestamp64(combined, ctx).map { case (item, ctx) =>
-            (MsgpackValue.Timestamp(item), ctx)
-          }
+        case item: MsgpackItem.Timestamp64 =>
+          ctx.proceed(MsgpackValue.Timestamp(item.nanoseconds, item.seconds))
 
         case MsgpackItem.Timestamp96(nanoseconds, seconds) =>
-          val instant = java.time.Instant.ofEpochSecond(seconds, nanoseconds.toLong)
-          ctx.proceed(MsgpackValue.Timestamp(instant))
+          ctx.proceed(MsgpackValue.Timestamp(nanoseconds, seconds))
 
         case MsgpackItem.Bin(bytes) => ctx.proceed(MsgpackValue.Bin(bytes))
 
@@ -178,29 +173,7 @@ private[high] class StaticDecoderInstances {
       }
     }
   }
-
-  implicit object instantDecoder extends MsgpackDecoder[Instant] {
-    def run[F[_]: RaiseThrowable](ctx: DecodingContext[F]) = get1(ctx) { (item, ctx) =>
-      item match {
-        case MsgpackItem.Timestamp32(seconds) =>
-          val instant = java.time.Instant.ofEpochSecond(seconds.toLong)
-          ctx.proceed(instant)
-
-        case MsgpackItem.Timestamp64(combined) =>
-          runTimestamp64(combined, ctx)
-
-        case MsgpackItem.Timestamp96(nanoseconds, seconds) =>
-          val instant = java.time.Instant.ofEpochSecond(seconds, nanoseconds.toLong)
-          ctx.proceed(instant)
-
-        case x =>
-          Pull.raiseError(
-            new MsgpackDecodingTypeMismatchException(s"MsgpackItem.${x.getClass.getSimpleName}", "Instant"))
-
-      }
-    }
-  }
-
+  
   implicit object intDecoder extends MsgpackDecoder[Int] {
     def run[F[_]: RaiseThrowable](ctx: DecodingContext[F]) = get1(ctx) { (item, ctx) =>
       item match {

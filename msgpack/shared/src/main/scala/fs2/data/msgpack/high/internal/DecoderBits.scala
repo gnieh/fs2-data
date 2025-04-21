@@ -144,11 +144,4 @@ private[high] object DecoderBits {
       case Left(e)    => Pull.raiseError(e)
       case Right(str) => ctx.proceed(str)
     }
-
-  def runTimestamp64[F[_]: RaiseThrowable](combined: Long, ctx: DecodingContext[F]) = {
-    val seconds = combined & (2 ^ 34 - 1) // lower 34 bits
-    val nanoseconds = combined & ((2 ^ 30 - 1) << 34) // uper 30 bits
-    val instant = java.time.Instant.ofEpochSecond(seconds, nanoseconds)
-    ctx.proceed(instant)
-  }
 }

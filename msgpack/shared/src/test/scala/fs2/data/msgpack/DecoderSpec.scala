@@ -23,7 +23,6 @@ import weaver._
 import fs2.data.msgpack.high._
 import fs2.data.msgpack.high.static._
 import fs2.data.msgpack.low.MsgpackItem
-import java.time.Instant
 import fs2.data.msgpack.high.dynamic.valuesFromItems
 
 object DecoderSpec extends SimpleIOSuite {
@@ -134,8 +133,7 @@ object DecoderSpec extends SimpleIOSuite {
               MsgpackValue.Integer(2) -> MsgpackValue.String("bar"))),
       Chunk(MsgpackItem.Float32(3.141592F)) -> MsgpackValue.Float(3.141592F),
       Chunk(MsgpackItem.Float64(3.141592)) -> MsgpackValue.Double(3.141592),
-      Chunk(MsgpackItem.Timestamp96(150000000, 1741519200)) ->
-        MsgpackValue.Timestamp(Instant.parse("2025-03-09T11:20:00.15Z")),
+      Chunk(MsgpackItem.Timestamp96(792929711, 1745250930)) -> MsgpackValue.Timestamp(792929711, 1745250930),
       Chunk(MsgpackItem.Extension(0x01, hex"abcdef")) -> MsgpackValue.Extension(0x01, hex"abcdef"),
       Chunk(MsgpackItem.Nil) -> MsgpackValue.Nil
     )

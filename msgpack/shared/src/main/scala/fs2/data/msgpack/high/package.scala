@@ -65,7 +65,7 @@ package object high {
     */
   def decoder[A](implicit ev: MsgpackDecoder[A]) = ev
 
-  object static extends StaticDecoderInstances
+  object static extends StaticDecoderInstances with internal.PlatformStaticDecoderInstances
 
   object dynamic extends DynamicDecoderInstances {
 

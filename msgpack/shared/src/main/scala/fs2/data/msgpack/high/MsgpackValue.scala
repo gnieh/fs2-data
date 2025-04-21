@@ -33,8 +33,8 @@ object MsgpackValue {
   case class Float(x: scala.Float) extends MsgpackValue
   case class Double(x: scala.Double) extends MsgpackValue
 
-  case class Timestamp(x: java.time.Instant) extends MsgpackValue
   case class Extension(tpe: Byte, bytes: ByteVector) extends MsgpackValue
+  case class Timestamp(nanoseconds: Int, seconds: Long) extends MsgpackValue
 
   case object Nil extends MsgpackValue
 }
