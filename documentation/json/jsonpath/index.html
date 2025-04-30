@@ -370,7 +370,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
   } </span><span class="keyword">yield</span><span> ()
 </span><span class="comment">// program: IO[Unit] = FlatMap(
 //   ioe = Delay(
-//     thunk = cats.effect.IO$$$Lambda$12046/0x0000000803061040@7519f17d,
+//     thunk = cats.effect.IO$$$Lambda$11766/0x0000000803059040@7eaf3e2c,
 //     event = cats.effect.tracing.TracingEvent$StackTrace
 //   ),
 //   f = &lt;function1&gt;,
@@ -380,9 +380,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 </span><span class="identifier">program</span><span>.</span><span class="identifier">unsafeRunSync</span><span>()
 
 </span><span class="type-name">Files</span><span>[</span><span class="type-name">IO</span><span>].</span><span class="identifier">readUtf8</span><span>(</span><span class="type-name">Path</span><span>(</span><span class="string-literal">&quot;match-0.json&quot;</span><span>)).</span><span class="identifier">compile</span><span>.</span><span class="identifier">string</span><span>.</span><span class="identifier">unsafeRunSync</span><span>()
-</span><span class="comment">// res3: String = &quot;{\&quot;c\&quot;:1}&quot;
+</span><span class="comment">// res3: String = &quot;{\&quot;a\&quot;:{\&quot;c\&quot;:1},\&quot;b\&quot;:2,\&quot;c\&quot;:3}&quot;
 </span><span class="type-name">Files</span><span>[</span><span class="type-name">IO</span><span>].</span><span class="identifier">readUtf8</span><span>(</span><span class="type-name">Path</span><span>(</span><span class="string-literal">&quot;match-1.json&quot;</span><span>)).</span><span class="identifier">compile</span><span>.</span><span class="identifier">string</span><span>.</span><span class="identifier">unsafeRunSync</span><span>()
-</span><span class="comment">// res4: String = &quot;{\&quot;a\&quot;:{\&quot;c\&quot;:1},\&quot;b\&quot;:2,\&quot;c\&quot;:3}&quot;</span></code></pre>
+</span><span class="comment">// res4: String = &quot;{\&quot;c\&quot;:1}&quot;</span></code></pre>
         <div class="callout warning">
           <i class="icofont-laika warning">&#xf026;</i>
           <p>The operator described below is unsafe and should be used carefully only if none of the above operators fits your purpose.
