@@ -23,10 +23,12 @@ import cats.Eq
 import cats.syntax.all._
 import cats.data.NonEmptyList
 import cats.Show
+import scala.runtime.AbstractFunction1
+import scala.runtime.AbstractFunction3
 
 case class XPath(locations: NonEmptyList[List[Location]])
 
-object XPath {
+object XPath extends AbstractFunction1[NonEmptyList[List[Location]], XPath] {
 
   private implicit val showLocation: Show[List[Location]] =
     _.mkString_("")
@@ -38,7 +40,7 @@ object XPath {
 
 case class Location(axis: Axis, node: Node, predicate: Option[Predicate])
 
-object Location {
+object Location extends AbstractFunction3[Axis, Node, Option[Predicate], Location] {
 
   private implicit val showPredicats: Show[Option[Predicate]] =
     _.fold("")(_.show)
@@ -56,7 +58,7 @@ case class Node(prefix: Option[String], local: Option[String]) {
       case Node(pfx, Some(local))  => name.prefix === pfx && name.local === local
     }
 }
-object Node {
+object Node extends ((Option[String], Option[String]) => Node) {
   implicit val eq: Eq[Node] = Eq.fromUniversalEquals
 
   implicit val show: Show[Node] = _ match {
