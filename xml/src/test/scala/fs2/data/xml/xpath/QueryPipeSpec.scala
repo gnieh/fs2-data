@@ -19,11 +19,11 @@ package data
 package xml
 package xpath
 
-import literals._
-
-import weaver._
-
+import cats.data.NonEmptyList
 import cats.effect.IO
+import weaver.*
+
+import literals.*
 
 object QueryPipeSpec extends SimpleIOSuite {
 
@@ -56,7 +56,7 @@ object QueryPipeSpec extends SimpleIOSuite {
         ))
   }
 
-  test("simple query") {
+  test("simple query nested") {
 
     val query = xpath"//a/c"
 
@@ -273,6 +273,21 @@ object QueryPipeSpec extends SimpleIOSuite {
           ),
           tokens
         ))
+  }
+
+  pureTest("expression with alternative") {
+    val parsed = xpath"/root/a/b|/root/a/c|//d/e"
+    val expected = XPath(
+      NonEmptyList.of(
+        List(Location(Axis.Child, Node(None, Some("root")), None),
+             Location(Axis.Child, Node(None, Some("a")), None),
+             Location(Axis.Child, Node(None, Some("b")), None)),
+        List(Location(Axis.Child, Node(None, Some("root")), None),
+             Location(Axis.Child, Node(None, Some("a")), None),
+             Location(Axis.Child, Node(None, Some("c")), None)),
+        List(Location(Axis.Descendant, Node(None, Some("d")), None), Location(Axis.Child, Node(None, Some("e")), None))
+      ))
+    expect.same(expected, parsed)
   }
 
 }
