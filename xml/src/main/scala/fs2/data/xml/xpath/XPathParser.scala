@@ -97,8 +97,9 @@ class XPathParser[F[_]](val input: String)(implicit F: MonadError[F, Throwable])
   def parse(): F[XPath] =
     tailRecM((List.empty[Location], List.empty[List[Location]])) { case (current, acc) =>
       peek.flatMap {
-        case None => pure(XPath(NonEmptyList(current.reverse, acc)).asRight[(List[Location], List[List[Location]])])
-        case Some('|') => consume >> location.map(loc => (List(loc), current :: acc).asLeft[XPath])
+        case None =>
+          pure(XPath(NonEmptyList(current.reverse, acc).reverse).asRight[(List[Location], List[List[Location]])])
+        case Some('|') => consume >> location.map(loc => (List(loc), current.reverse :: acc).asLeft[XPath])
         case _         => location.map(loc => (loc :: current, acc).asLeft[XPath])
       }
     }.runA(0)
