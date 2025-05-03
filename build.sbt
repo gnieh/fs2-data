@@ -572,7 +572,7 @@ val footer: Initialize[Seq[Span]] = setting {
 val chatLink: IconLink = IconLink.external("https://discord.gg/XF3CXcMzqD", HeliumIcon.chat)
 
 val mastodonLink: IconLink =
-  IconLink.external("https://fosstodon.org/@lucassatabin", HeliumIcon.mastodon)
+  IconLink.external("https://piaille.fr/@lucassatabin", HeliumIcon.mastodon)
 
 lazy val site = project
   .in(file("msite"))
