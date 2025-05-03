@@ -64,7 +64,7 @@
     
     <a class="icon-link glyph-link" href="https://discord.gg/XF3CXcMzqD"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
     
-    <a class="icon-link svg-link" href="https://fosstodon.org/@lucassatabin"><span class="mastodon" title="Mastodon"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <a class="icon-link svg-link" href="https://piaille.fr/@lucassatabin"><span class="mastodon" title="Mastodon"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg">
   <g class="svg-shape">
     <path d="M11.19 12.195c2.016-.24 3.77-1.475 3.99-2.603.348-1.778.32-4.339.32-4.339 0-3.47-2.286-4.488-2.286-4.488C12.062.238 10.083.017 8.027 0h-.05C5.92.017 3.942.238 2.79.765c0 0-2.285 1.017-2.285 4.488l-.002.662c-.004.64-.007 1.35.011 2.091.083 3.394.626 6.74 3.78 7.57 1.454.383 2.703.463 3.709.408 1.823-.1 2.847-.647 2.847-.647l-.06-1.317s-1.303.41-2.767.36c-1.45-.05-2.98-.156-3.215-1.928a3.614 3.614 0 0 1-.033-.496s1.424.346 3.228.428c1.103.05 2.137-.064 3.188-.189zm1.613-2.47H11.13v-4.08c0-.859-.364-1.295-1.091-1.295-.804 0-1.207.517-1.207 1.541v2.233H7.168V5.89c0-1.024-.403-1.541-1.207-1.541-.727 0-1.091.436-1.091 1.296v4.079H3.197V5.522c0-.859.22-1.541.66-2.046.456-.505 1.052-.764 1.793-.764.856 0 1.504.328 1.933.983L8 4.39l.417-.695c.429-.655 1.077-.983 1.934-.983.74 0 1.336.259 1.791.764.442.505.661 1.187.661 2.046v4.203z"/>
   </g>
@@ -92,7 +92,7 @@
     
     <a class="icon-link glyph-link" href="https://discord.gg/XF3CXcMzqD"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
     
-    <a class="icon-link svg-link" href="https://fosstodon.org/@lucassatabin"><span class="mastodon" title="Mastodon"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <a class="icon-link svg-link" href="https://piaille.fr/@lucassatabin"><span class="mastodon" title="Mastodon"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg">
   <g class="svg-shape">
     <path d="M11.19 12.195c2.016-.24 3.77-1.475 3.99-2.603.348-1.778.32-4.339.32-4.339 0-3.47-2.286-4.488-2.286-4.488C12.062.238 10.083.017 8.027 0h-.05C5.92.017 3.942.238 2.79.765c0 0-2.285 1.017-2.285 4.488l-.002.662c-.004.64-.007 1.35.011 2.091.083 3.394.626 6.74 3.78 7.57 1.454.383 2.703.463 3.709.408 1.823-.1 2.847-.647 2.847-.647l-.06-1.317s-1.303.41-2.767.36c-1.45-.05-2.98-.156-3.215-1.928a3.614 3.614 0 0 1-.033-.496s1.424.346 3.228.428c1.103.05 2.137-.064 3.188-.189zm1.613-2.47H11.13v-4.08c0-.859-.364-1.295-1.091-1.295-.804 0-1.207.517-1.207 1.541v2.233H7.168V5.89c0-1.024-.403-1.541-1.207-1.541-.727 0-1.091.436-1.091 1.296v4.079H3.197V5.522c0-.859.22-1.541.66-2.046.456-.505 1.052-.764 1.793-.764.856 0 1.504.328 1.933.983L8 4.39l.417-.695c.429-.655 1.077-.983 1.934-.983.74 0 1.336.259 1.791.764.442.505.661 1.187.661 2.046v4.203z"/>
   </g>
@@ -190,7 +190,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 }
 
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">stateDecoder</span><span> = </span><span class="identifier">deriveCellDecoder</span><span>[</span><span class="type-name">State</span><span>]
-</span><span class="comment">// stateDecoder: CellDecoder[State] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@501e5b60
+</span><span class="comment">// stateDecoder: CellDecoder[State] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@69bac4eb
 // use stateDecoder to derive decoders for rows...or just test:
 </span><span class="identifier">stateDecoder</span><span>(</span><span class="string-literal">&quot;On&quot;</span><span>)
 </span><span class="comment">// res1: DecoderResult[State] = Right(value = On)
@@ -199,7 +199,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 </span><span>
 </span><span class="comment">// same goes for the encoder
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">stateEncoder</span><span> = </span><span class="identifier">deriveCellEncoder</span><span>[</span><span class="type-name">State</span><span>]
-</span><span class="comment">// stateEncoder: CellEncoder[State] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@7ef38038
+</span><span class="comment">// stateEncoder: CellEncoder[State] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@6cdc3179
 </span><span class="identifier">stateEncoder</span><span>(</span><span class="type-name">State</span><span>.</span><span class="type-name">On</span><span>)
 </span><span class="comment">// res3: String = &quot;On&quot;</span></code></pre>
         <p>The generic derivation for cell decoders also supports renaming and deriving instances for unary product types (case classes with one field):</p>
@@ -213,9 +213,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 </span><span class="comment">// works as we have an implicit CellDecoder[String]
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">unknownDecoder</span><span> = </span><span class="identifier">deriveCellDecoder</span><span>[</span><span class="type-name">Advanced</span><span>.</span><span class="type-name">Unknown</span><span>]
-</span><span class="comment">// unknownDecoder: CellDecoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$unaryProductDecoder$3@62ac561b
+</span><span class="comment">// unknownDecoder: CellDecoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$unaryProductDecoder$3@56364d48
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">advancedDecoder</span><span> = </span><span class="identifier">deriveCellDecoder</span><span>[</span><span class="type-name">Advanced</span><span>]
-</span><span class="comment">// advancedDecoder: CellDecoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@2b30b3a1
+</span><span class="comment">// advancedDecoder: CellDecoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellDecoder$$anonfun$coproductDecoder$3@11379356
 </span><span>
 </span><span class="identifier">advancedDecoder</span><span>(</span><span class="string-literal">&quot;Active&quot;</span><span>)
 </span><span class="comment">// res4: DecoderResult[Advanced] = Right(value = On)
@@ -223,9 +223,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 </span><span class="comment">// res5: DecoderResult[Advanced] = Right(value = Unknown(name = &quot;Off&quot;))
 </span><span>
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">unknownEncoder</span><span> = </span><span class="identifier">deriveCellEncoder</span><span>[</span><span class="type-name">Advanced</span><span>.</span><span class="type-name">Unknown</span><span>]
-</span><span class="comment">// unknownEncoder: CellEncoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$unaryProductEncoder$3@72f7bff1
+</span><span class="comment">// unknownEncoder: CellEncoder[Advanced.Unknown] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$unaryProductEncoder$3@2daf3f86
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">advancedEncoder</span><span> = </span><span class="identifier">deriveCellEncoder</span><span>[</span><span class="type-name">Advanced</span><span>]
-</span><span class="comment">// advancedEncoder: CellEncoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@2a921250
+</span><span class="comment">// advancedEncoder: CellEncoder[Advanced] = fs2.data.csv.generic.internal.DerivedCellEncoder$$anonfun$coproductEncoder$3@67f8dec6
 </span><span>
 </span><span class="identifier">advancedEncoder</span><span>(</span><span class="type-name">Advanced</span><span>.</span><span class="type-name">On</span><span>)
 </span><span class="comment">// res6: String = &quot;Active&quot;
@@ -269,7 +269,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">csv</span><span>.</span><span class="identifier">generic</span><span>.</span><span class="identifier">semiauto</span><span>.</span><span class="identifier">_</span><span>
 
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="type-name">MyRowDecoder</span><span>: </span><span class="type-name">CsvRowDecoder</span><span>[</span><span class="type-name">MyRow</span><span>, </span><span class="type-name">String</span><span>] = </span><span class="identifier">deriveCsvRowDecoder</span><span>[</span><span class="type-name">MyRow</span><span>]
-</span><span class="comment">// MyRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@10f7bb88
+</span><span class="comment">// MyRowDecoder: CsvRowDecoder[MyRow, String] = fs2.data.csv.generic.internal.DerivedCsvRowDecoder$$anon$1@47fa5b8b
 </span><span>
 </span><span class="keyword">val</span><span> </span><span class="identifier">decoded</span><span> = </span><span class="identifier">stream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">decodeUsingHeaders</span><span>[</span><span class="type-name">MyRow</span><span>]())
 </span><span class="comment">// decoded: Stream[[x]Fallible[x], MyRow] = Stream(..)
