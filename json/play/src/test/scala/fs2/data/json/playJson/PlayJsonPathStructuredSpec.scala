@@ -3,10 +3,7 @@ package fs2.data.json.playJson
 import fs2.data.json.ast.Builder
 import fs2.data.json.codec.Deserializer
 import fs2.data.json.jsonpath.{Data, JsonPathStructuredSpec}
-import play.api.libs.json.JsValue
-import play.api.libs.json.Reads
-import play.api.libs.json.JsPath
-import play.api.libs.json.JsResult
+import play.api.libs.json.{JsResult, JsValue, Reads}
 
 object PlayJsonPathStructuredSpec extends JsonPathStructuredSpec[JsValue] {
 
