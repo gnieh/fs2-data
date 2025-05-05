@@ -27,6 +27,7 @@ import ast.Builder
 import tagged._
 import jsonpath.internals._
 import pfsa.{PDFA, PNFA}
+import fs2.data.json.codec.Deserializer
 
 package object jsonpath {
 
@@ -74,6 +75,32 @@ package object jsonpath {
         .map(untag(_))
         .unNone
 
+    /** Selects all matching elements in the input stream, feeding them to the provided [[fs2.Pipe]] in parallel.
+      * Each match results in a new stream of [[fs2.data.json.Token Token]] fed to the `transformer`.
+      * All the matches are processed in parallel as soon as new tokens are available.
+      *
+      * If `deterministic` is set to `true` (default value), results of `transformer` are emitted in the order they
+      * appeat in the input stream, i.e. first opening tag first.
+      * If `deterministic` is set to `false`, transformed elements are emitted as soon
+      * as possible (i.e. when the value is entirely built).
+      *
+      * The `maxMatch` parameter controls how many matches are to be emitted at most.
+      * Further matches won't be emitted if any.
+      *
+      * The `maxNest` parameter controls the maximum level of match nesting to be emitted.
+      * E.g., if you want to emit only the top most matches, set it to `0`.
+      *
+      */
+    def through[T](path: JsonPath,
+                   transformer: Pipe[F, Token, T],
+                   deterministic: Boolean = true,
+                   maxMatch: Int = Int.MaxValue,
+                   maxNest: Int = Int.MaxValue)(implicit F: Concurrent[F]): Pipe[F, Token, T] =
+      _.through(JsonTagger.pipe)
+        .through(new JsonQueryPipe(compileJsonPath(path))
+          .aggregate(_, _.map(untag(_)).unNone.through(transformer).compile.toList, deterministic, maxMatch, maxNest))
+        .flatMap(Stream.emits(_))
+
     /** Selects all matching elements in the input stream, and builds an AST.
       *
       * If `deterministic` is set to `true` (default value), elements are emitted in the order they
@@ -92,18 +119,14 @@ package object jsonpath {
                   deterministic: Boolean = true,
                   maxMatch: Int = Int.MaxValue,
                   maxNest: Int = Int.MaxValue)(implicit F: Concurrent[F], builder: Builder[T]): Pipe[F, Token, T] =
-      _.through(JsonTagger.pipe)
-        .through(
-          new JsonQueryPipe(compileJsonPath(path))
-            .aggregate(_,
-                       _.map(untag(_)).unNone.through(json.ast.values).compile.toList,
-                       deterministic,
-                       maxMatch,
-                       maxNest))
-        .flatMap(Stream.emits(_))
+      through(path, json.ast.values, deterministic = deterministic, maxMatch = maxMatch, maxNest = maxNest)
 
-    /** Selects all matching elements in the input stream, feeding them to the provided [[fs2.Pipe]] in parallel.
-      * Each match results in a new stream of [[fs2.data.json.Token Token]] fed to the `pipe`. All the matches are processed in parallel as soon as new tokens are available.
+    /** Selects all matching elements in the input stream, and builds an AST.
+      *
+      * If `deterministic` is set to `true` (default value), elements are emitted in the order they
+      * appeat in the input stream, i.e. first opening tag first.
+      * If `deterministic` is set to `false`, built elements are emitted as soon
+      * as possible (i.e. when the value is entirely built).
       *
       * The `maxMatch` parameter controls how many matches are to be emitted at most.
       * Further matches won't be emitted if any.
@@ -112,14 +135,29 @@ package object jsonpath {
       * E.g., if you want to emit only the top most matches, set it to `0`.
       *
       */
-    def through(path: JsonPath,
-                pipe: Pipe[F, Token, Nothing],
+    def deserialize[T](
+        path: JsonPath,
+        deterministic: Boolean = true,
+        maxMatch: Int = Int.MaxValue,
+        maxNest: Int = Int.MaxValue)(implicit F: Concurrent[F], deserializer: Deserializer[T]): Pipe[F, Token, T] =
+      through(path, json.codec.deserialize, deterministic = deterministic, maxMatch = maxMatch, maxNest = maxNest)
+
+    /** Selects all matching elements in the input stream, feeding them to the provided [[fs2.Pipe]] in parallel.
+      * Each match results in a new stream of [[fs2.data.json.Token Token]] fed to the `consumer`.
+      * All the matches are processed in parallel as soon as new tokens are available.
+      *
+      * The `maxMatch` parameter controls how many matches are to be emitted at most.
+      * Further matches won't be emitted if any.
+      *
+      * The `maxNest` parameter controls the maximum level of match nesting to be emitted.
+      * E.g., if you want to emit only the top most matches, set it to `0`.
+      *
+      */
+    def consume(path: JsonPath,
+                consumer: Pipe[F, Token, Nothing],
                 maxMatch: Int = Int.MaxValue,
                 maxNest: Int = Int.MaxValue)(implicit F: Concurrent[F]): Pipe[F, Token, Nothing] =
-      _.through(JsonTagger.pipe)
-        .through(
-          new JsonQueryPipe(compileJsonPath(path))
-            .through(_, _.map(untag(_)).unNone.through(pipe), maxMatch, maxNest))
+      through(path, consumer, maxMatch = maxMatch, maxNest = maxNest)
 
     /** Selects all matching elements in the input stream, and applies the [[fs2.Collector]] to it.
       *
