@@ -16,12 +16,14 @@
 
 package fs2.data.json.jsonpath
 
-import fs2.data.json.literals._
-import fs2.data.json.jsonpath.literals._
-import weaver._
 import cats.effect.IO
+import fs2.Pipe
+import fs2.data.json.Token
 import fs2.data.json.ast.Builder
 import fs2.data.json.codec.Deserializer
+import fs2.data.json.jsonpath.literals.*
+import fs2.data.json.literals.*
+import weaver.*
 
 abstract class JsonPathStructuredSpec[Json] extends SimpleIOSuite {
 
@@ -56,21 +58,6 @@ abstract class JsonPathStructuredSpec[Json] extends SimpleIOSuite {
       ))
   }
 
-  test("early AST") {
-    recursiveJson
-      .through(filter.values(recursivePath, deterministic = false))
-      .compile
-      .toList
-      .map(expect.same(
-        List(
-          builder.makeObject(List("value" -> builder.makeTrue)),
-          builder.makeObject(
-            List("a" -> builder.makeObject(List("value" -> builder.makeTrue)), "value" -> builder.makeNumber("2")))
-        ),
-        _
-      ))
-  }
-
   test("deterministic deserialized") {
     recursiveJson
       .through(filter.deserialize(recursivePath))
@@ -79,12 +66,18 @@ abstract class JsonPathStructuredSpec[Json] extends SimpleIOSuite {
       .map(expect.same(List(Data.Number(2), Data.Bool(true)), _))
   }
 
-  test("early deserialized") {
+  test("deterministic generic pipe") {
+    val stringify: Pipe[IO, Token, String] =
+      _.map(_.jsonRepr)
+
     recursiveJson
-      .through(filter.deserialize[Data](recursivePath, deterministic = false))
+      .through(filter.through(recursivePath, stringify))
       .compile
       .toList
-      .map(expect.same(List(Data.Bool(true), Data.Number(2)), _))
+      .map(
+        expect.same(
+          List("{", "\"a\"", "{", "\"value\"", "true", "}", "\"value\"", "2", "}", "{", "\"value\"", "true", "}"),
+          _))
   }
 
 }
