@@ -23,7 +23,6 @@ import org.openjdk.jmh.annotations._
 import cats.effect.SyncIO
 
 import fs2.data.msgpack.high._
-import fs2.data.msgpack.high.static._
 import fs2.data.msgpack.low.MsgpackItem
 import fs2.data.msgpack.low
 import java.time.Instant
@@ -35,17 +34,17 @@ import scodec.bits._
 @Fork(value = 1)
 @Warmup(iterations = 3, time = 2)
 @Measurement(iterations = 10, time = 2)
-class MsgPackDecoderBenchmarks {
+class MsgpackDeserializerBenchmarks {
   case class User(name: String, age: Long, aliases: List[String], balance: Double, things: Map[String, Int], raw: ByteVector, created: Instant)
 
-  implicit val userDecoder: MsgpackDecoder[User] = for {
-    name <- decoder[String]
-    age <- decoder[Long]
-    aliases <- decoder[List[String]]
-    balance <- decoder[Double]
-    things <- decoder[Map[String, Int]]
-    raw <- decoder[ByteVector]
-    created <- decoder[Instant]
+  implicit val userDecoder: MsgpackDeserializer[User] = for {
+    name <- deserializer[String]
+    age <- deserializer[Long]
+    aliases <- deserializer[List[String]]
+    balance <- deserializer[Double]
+    things <- deserializer[Map[String, Int]]
+    raw <- deserializer[ByteVector]
+    created <- deserializer[Instant]
   } yield User(name, age, aliases, balance, things, raw, created)
 
   def getChunkedItems(filename: String): List[Chunk[MsgpackItem]] =
@@ -63,7 +62,7 @@ class MsgPackDecoderBenchmarks {
   def readUserItems() = userStream = Stream.emits(getChunkedItems("users.mp")).unchunks
 
   @Benchmark
-  def staticDecoder() =
+  def deserialize() =
     userStream
       .through(fs2.data.msgpack.high.fromItems[SyncIO, User])
       .compile
@@ -71,9 +70,9 @@ class MsgPackDecoderBenchmarks {
       .unsafeRunSync()
 
   @Benchmark
-  def dynamicDecoder() =
+  def deserializeValues() =
     userStream
-      .through(fs2.data.msgpack.high.dynamic.valuesFromItems[SyncIO])
+      .through(fs2.data.msgpack.high.ast.valuesFromItems[SyncIO])
       .compile
       .drain
       .unsafeRunSync()

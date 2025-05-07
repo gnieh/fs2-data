@@ -21,15 +21,14 @@ import cats.effect.IO
 import scodec.bits._
 import weaver._
 import fs2.data.msgpack.high._
-import fs2.data.msgpack.high.static._
 import fs2.data.msgpack.low.MsgpackItem
-import fs2.data.msgpack.high.dynamic.valuesFromItems
+import fs2.data.msgpack.high.ast._
 
-object DecoderSpec extends SimpleIOSuite {
-  def check[A: MsgpackDecoder](inputs: ByteVector, expected: List[A]): IO[Expectations] =
+object DeserializerSpec extends SimpleIOSuite {
+  def check[A: MsgpackDeserializer](inputs: ByteVector, expected: List[A]): IO[Expectations] =
     Stream
       .chunk(Chunk.byteVector(inputs))
-      .through(decode[IO, A])
+      .through(deserialize[IO, A])
       .compile
       .toList
       .map(got => expect(got == expected))
@@ -64,16 +63,16 @@ object DecoderSpec extends SimpleIOSuite {
     )
 
     val d = for {
-      m1 <- decoder[Map[Long, Long]]
-      m2 <- decoder[Map[Long, Long]]
-      m3 <- decoder[Map[Long, Long]]
-      s1 <- decoder[String]
-      s2 <- decoder[String]
-      s3 <- decoder[String]
-      s4 <- decoder[String]
-      l1 <- decoder[List[Long]]
-      l2 <- decoder[List[Long]]
-      l3 <- decoder[List[Long]]
+      m1 <- deserializer[Map[Long, Long]]
+      m2 <- deserializer[Map[Long, Long]]
+      m3 <- deserializer[Map[Long, Long]]
+      s1 <- deserializer[String]
+      s2 <- deserializer[String]
+      s3 <- deserializer[String]
+      s4 <- deserializer[String]
+      l1 <- deserializer[List[Long]]
+      l2 <- deserializer[List[Long]]
+      l3 <- deserializer[List[Long]]
     } yield (m1, m2, m3, s1, s2, s3, s4, l1, l2, l3)
 
     check(input, List(expected))(d)
@@ -100,7 +99,7 @@ object DecoderSpec extends SimpleIOSuite {
   }
 
   test("extension type") {
-    implicit val d: MsgpackDecoder[BitVector] = extensionDecoder { (tpe, bytes) =>
+    implicit val d: MsgpackDeserializer[BitVector] = extensionDeserializer { (tpe, bytes) =>
       if (tpe == 0x01)
         Some(bytes.bits)
       else

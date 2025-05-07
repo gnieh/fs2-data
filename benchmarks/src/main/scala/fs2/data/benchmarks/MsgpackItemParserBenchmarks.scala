@@ -28,11 +28,10 @@ import cats.effect.SyncIO
 @Fork(value = 1)
 @Warmup(iterations = 3, time = 2)
 @Measurement(iterations = 10, time = 2)
-class MsgPackItemSerializerBenchmarks {
-  val msgpackItems: Stream[SyncIO, fs2.data.msgpack.low.MsgpackItem] =
+class MsgpackItemParserBenchmarks {
+  val msgpackBytes: Stream[SyncIO, Byte] =
     fs2.io
       .readClassLoaderResource[SyncIO]("users.mp", 4096)
-      .through(fs2.data.msgpack.low.items[SyncIO])
       .chunks
       .compile
       .toList
@@ -41,17 +40,9 @@ class MsgPackItemSerializerBenchmarks {
       .fold(Stream.empty)(_ ++ _)
 
   @Benchmark
-  def serialize() =
-    msgpackItems
-      .through(fs2.data.msgpack.low.toNonValidatedBinary[SyncIO])
-      .compile
-      .drain
-      .unsafeRunSync()
-
-  @Benchmark
-  def withValidation() =
-    msgpackItems
-      .through(fs2.data.msgpack.low.toBinary[SyncIO])
+  def parseMsgpackItems() =
+    msgpackBytes
+      .through(fs2.data.msgpack.low.items[SyncIO])
       .compile
       .drain
       .unsafeRunSync()

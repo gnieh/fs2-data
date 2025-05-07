@@ -23,68 +23,50 @@ import cats.Monad
 import scala.jdk.CollectionConverters._
 import java.util.ArrayDeque
 
-package object high {
-  implicit val msgpackDecoderMonad: Monad[MsgpackDecoder] = MsgpackDecoder.msgpackDecoderMonad
+package object high extends DeserializerInstances with internal.PlatformDeserializerInstances {
+  implicit val msgpackDeserializerMonad: Monad[MsgpackDeserializer] = MsgpackDeserializer.msgpackDeserializerMonad
 
-  /** Converts a stream of [[fs2.data.msgpack.low.MsgpackItem]] into a stream of `A` via an implicit decoder instance.
+  /** Converts a stream of [[fs2.data.msgpack.low.MsgpackItem]] into a stream of `A` via an implicit deserializer instance.
     */
-  def fromItems[F[_], A](implicit F: RaiseThrowable[F], da: MsgpackDecoder[A]): Pipe[F, MsgpackItem, A] = { stream =>
+  def fromItems[F[_], A](implicit F: RaiseThrowable[F], da: MsgpackDeserializer[A]): Pipe[F, MsgpackItem, A] = {
     import fs2.data.msgpack.high.internal.Helpers._
 
-    def go(ctx: DecodingContext[F], buffer: ArrayDeque[A]): Pull[F, A, Unit] = {
-      if (ctx.idx >= ctx.chunk.size) {
-        Pull.output(Chunk.from(buffer.asScala)) >> ctx.rest.pull.uncons.flatMap {
-          case Some((hd, tl)) =>
-            buffer.clear()
-            go(DecodingContext(hd, 0, tl), buffer)
-          case None => Pull.done
-        }
-      } else {
-        da.run(ctx).flatMap { case (item, ctx) =>
-          buffer.add(item)
-          go(ctx, buffer)
+    stream =>
+      def go(ctx: DeserializationContext[F], buffer: ArrayDeque[A]): Pull[F, A, Unit] = {
+        if (ctx.idx >= ctx.chunk.size) {
+          Pull.output(Chunk.from(buffer.asScala)) >> ctx.rest.pull.uncons.flatMap {
+            case Some((hd, tl)) =>
+              buffer.clear()
+              go(DeserializationContext(hd, 0, tl), buffer)
+            case None => Pull.done
+          }
+        } else {
+          da.run(ctx).flatMap { case (item, ctx) =>
+            buffer.add(item)
+            go(ctx, buffer)
+          }
         }
       }
-    }
 
-    go(DecodingContext(Chunk.empty, 0, stream), new ArrayDeque()).stream
+      go(DeserializationContext(Chunk.empty, 0, stream), new ArrayDeque()).stream
   }
 
-  /** Converts a stream of [[fs2.data.msgpack.low.MsgpackItem]] into a stream of `A` via an explicit decoder instance.
+  /** Converts a stream of [[fs2.data.msgpack.low.MsgpackItem]] into a stream of `A` via an explicit deserializer instance.
     */
-  @inline def fromItems[F[_], A](da: MsgpackDecoder[A])(implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, A] =
+  @inline def fromItems[F[_], A](da: MsgpackDeserializer[A])(implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, A] =
     fromItems(F, da)
 
-  /** Decodes a stream of bytes into a stream of `A`s via an implicit decoder instance. 
+  /** Decodes a stream of bytes into a stream of `A`s via an implicit deserializer instance. 
     */
-  def decode[F[_]: RaiseThrowable, A: MsgpackDecoder]: Pipe[F, Byte, A] =
+  def deserialize[F[_]: RaiseThrowable, A: MsgpackDeserializer]: Pipe[F, Byte, A] =
     _.through(low.items[F]).through(fromItems[F, A])
 
-  /** Decodes a stream of bytes into a stream of `A`s via an explicit decoder instance. 
+  /** Decodes a stream of bytes into a stream of `A`s via an explicit deserializer instance. 
     */
-  @inline def decode[F[_], A](da: MsgpackDecoder[A])(implicit F: RaiseThrowable[F]): Pipe[F, Byte, A] =
-    decode(F, da)
+  @inline def deserialize[F[_], A](da: MsgpackDeserializer[A])(implicit F: RaiseThrowable[F]): Pipe[F, Byte, A] =
+    deserialize(F, da)
 
-  /** Summons a [[fs2.data.msgpack.high.MsgpackDecoder]] instance for the desired type
+  /** Summons a [[fs2.data.msgpack.high.MsgpackDeserializer]] instance for the desired type
     */
-  def decoder[A](implicit ev: MsgpackDecoder[A]) = ev
-
-  object static extends StaticDecoderInstances with internal.PlatformStaticDecoderInstances
-
-  object dynamic extends DynamicDecoderInstances {
-
-    /** Converts a stream of bytes into a stream [[fs2.data.msgpack.low.MsgpackItem MsgpackItem]]s into a stream of
-      * [[MsgpackValue$ MsgpackValue]]s.
-      *
-      * Alias for fromItems[F, [[MsgpackValue$ MsgpackValue]]].
-      */
-    @inline def valuesFromItems[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, MsgpackValue] =
-      fromItems[F, MsgpackValue]
-
-    /** Decodes a stream of bytes into a stream of [[MsgpackValue]]s.
-      *
-      * Alias for decode[F, [[MsgpackValue$ MsgpackValue]]]
-      */
-    @inline def values[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, MsgpackValue] = decode[F, MsgpackValue]
-  }
+  def deserializer[A](implicit ev: MsgpackDeserializer[A]) = ev
 }

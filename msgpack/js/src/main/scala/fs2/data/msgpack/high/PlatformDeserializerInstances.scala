@@ -19,14 +19,14 @@ package data.msgpack.high
 package internal
 
 import internal.Helpers._
-import fs2.data.msgpack.MsgpackDecodingTypeMismatchException
+import fs2.data.msgpack.MsgpackDeserializationTypeMismatchException
 import fs2.data.msgpack.low.MsgpackItem
 
 import scala.scalajs.js
 
-private[high] trait PlatformStaticDecoderInstances {
-  implicit object dateDecoder extends MsgpackDecoder[js.Date] {
-    def run[F[_]: RaiseThrowable](ctx: DecodingContext[F]) = get1(ctx) { (item, ctx) =>
+private[high] trait PlatformDeserializerInstances {
+  implicit object dateDeserializer extends MsgpackDeserializer[js.Date] {
+    def run[F[_]: RaiseThrowable](ctx: DeserializationContext[F]) = get1(ctx) { (item, ctx) =>
       item match {
         case MsgpackItem.Timestamp32(seconds) =>
           val d = new js.Date()
@@ -49,7 +49,7 @@ private[high] trait PlatformStaticDecoderInstances {
 
         case x =>
           Pull.raiseError(
-            new MsgpackDecodingTypeMismatchException(s"MsgpackItem.${x.getClass.getSimpleName}", "js.Date"))
+            new MsgpackDeserializationTypeMismatchException(s"MsgpackItem.${x.getClass.getSimpleName}", "js.Date"))
       }
     }
   }

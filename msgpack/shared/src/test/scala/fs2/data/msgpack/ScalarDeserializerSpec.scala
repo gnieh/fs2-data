@@ -19,7 +19,6 @@ package data.msgpack
 
 import low.MsgpackItem
 import high._
-import high.static._
 
 import cats.effect.IO
 import cats.Show
@@ -28,8 +27,8 @@ import scodec.bits._
 import weaver._
 import weaver.scalacheck._
 
-object ScalarDecoderSpec extends SimpleIOSuite with Checkers {
-  def testRoundtrip[A: MsgpackDecoder: Arbitrary: Show](name: String)(lift: A => MsgpackItem) =
+object ScalarDeserializerSpec extends SimpleIOSuite with Checkers {
+  def testRoundtrip[A: MsgpackDeserializer: Arbitrary: Show](name: String)(lift: A => MsgpackItem) =
     test(name) {
       forall { (x: A) =>
         Stream(lift(x))
@@ -74,21 +73,20 @@ object ScalarDecoderSpec extends SimpleIOSuite with Checkers {
   }
 
   test("integer types should fail when uint exceeds their MaxValues") {
-    val long = (decoder[Long],
+    val long = (deserializer[Long],
                 MsgpackItem.UnsignedInt(hex"80 00 00 00 00 00 00 00"),
-                new MsgpackDecodingTypeMismatchException("uint bigger than Long.MaxValue", "Long"))
-    val int = (decoder[Int],
+                new MsgpackDeserializationTypeMismatchException("uint bigger than Long.MaxValue", "Long"))
+    val int = (deserializer[Int],
                MsgpackItem.UnsignedInt(hex"80 00 00 00"),
-               new MsgpackDecodingTypeMismatchException("uint bigger than Int.MaxValue", "Int"))
-    val short = (decoder[Short],
+               new MsgpackDeserializationTypeMismatchException("uint bigger than Int.MaxValue", "Int"))
+    val short = (deserializer[Short],
                  MsgpackItem.UnsignedInt(hex"80 00"),
-                 new MsgpackDecodingTypeMismatchException("uint bigger than Short.MaxValue", "Short"))
-    val byte = (decoder[Byte],
+                 new MsgpackDeserializationTypeMismatchException("uint bigger than Short.MaxValue", "Short"))
+    val byte = (deserializer[Byte],
                 MsgpackItem.UnsignedInt(hex"80"),
-                new MsgpackDecodingTypeMismatchException(s"uint bigger than Byte.MaxValue", "Byte"))
+                new MsgpackDeserializationTypeMismatchException(s"uint bigger than Byte.MaxValue", "Byte"))
 
-    def f[A](
-        triplet: (MsgpackDecoder[A], MsgpackItem, MsgpackDecodingTypeMismatchException)): Stream[IO, Expectations] =
+    def f[A](triplet: (MsgpackDeserializer[A], MsgpackItem, MsgpackDeserializationTypeMismatchException)) =
       Stream
         .emit(triplet)
         .evalMap { case (d, in, expected) =>

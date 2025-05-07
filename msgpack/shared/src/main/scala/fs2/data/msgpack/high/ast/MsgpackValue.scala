@@ -18,6 +18,7 @@ package fs2
 package data
 package msgpack
 package high
+package ast
 
 import scodec.bits.ByteVector
 
