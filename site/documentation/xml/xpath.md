@@ -84,6 +84,7 @@ The main operators in the namespace are:
  - `filter.first(xpath)` which is a `Pipe` returning the events of the first match only.
  - `filter.collect(xpath, collector)` which uses the provided `collector` to aggregate the events of each match, and emits all the aggregated results.
  - `filter.dom[Node](xpath)` which builds the DOM for each match for any DOM type `Node` with a [`DocumentBuilder`][dom-builder] in scope.
+ - `filter.consumer(xpath, consumer)` which sends all matches as a stream through the provided `consumer`.
  - `filter.through(xpath, pipe)` which sends all matches as a stream through the provided `pipe`.
 
 @:callout(info)
@@ -117,7 +118,7 @@ stream
   .unsafeRunSync()
 ```
 
-The `filter.through` operator allows for handling each match in a streaming fashion.
+The `filter.consumer` operator allows for handling each match in a streaming fashion without emitting any value.
 For instance, let's say you want to save each match in a file, incrementing a counter on each match. You can run the following code.
 
 ```scala mdoc
@@ -135,7 +136,7 @@ val program =
     counter <- Ref[IO].of(0)
     _ <- stream
       .lift[IO]
-      .through(filter.through(path, saveXml(counter, _)))
+      .through(filter.consume(path, saveXml(counter, _)))
       .compile
       .drain
   } yield ()

@@ -68,6 +68,31 @@ package object xpath {
     def first(path: XPath)(implicit F: Concurrent[F]): Pipe[F, XmlEvent, XmlEvent] =
       new XmlQueryPipe(compileXPath(path)).first(_)
 
+    /** Selects all matching elements in the input stream, feeding them to the provided [[fs2.Pipe]] in parallel.
+      * Each match results in a new stream of [[fs2.data.xml.XmlEvent XmlEvent]] fed to the `transformer`.
+      * All the matches are processed in parallel as soon as new tokens are available.
+      *
+      * If `deterministic` is set to `true` (default value), results of `transformer` are emitted in the order they
+      * appeat in the input stream, i.e. first opening tag first.
+      * If `deterministic` is set to `false`, transformed elements are emitted as soon
+      * as possible (i.e. when the value is entirely built).
+      *
+      * The `maxMatch` parameter controls how many matches are to be emitted at most.
+      * Further matches won't be emitted if any.
+      *
+      * The `maxNest` parameter controls the maximum level of match nesting to be emitted.
+      * E.g., if you want to emit only the top most matches, set it to `0`.
+      *
+      */
+    def through[T](path: XPath,
+                   transformer: Pipe[F, XmlEvent, T],
+                   deterministic: Boolean = true,
+                   maxMatch: Int = Int.MaxValue,
+                   maxNest: Int = Int.MaxValue)(implicit F: Concurrent[F]): Pipe[F, XmlEvent, T] =
+      new XmlQueryPipe(compileXPath(path))
+        .aggregate(_, _.through(transformer).compile.toList, deterministic, maxMatch, maxNest)
+        .flatMap(Stream.emits(_))
+
     /** Selects all matching elements in the input stream, and builds an element DOM.
       *
       * If `deterministic` is set to `true` (default value), elements are emitted in the order they
@@ -86,12 +111,11 @@ package object xpath {
         implicit
         F: Concurrent[F],
         builder: ElementBuilder.Aux[T]): Pipe[F, XmlEvent, T] =
-      new XmlQueryPipe(compileXPath(path))
-        .aggregate(_, _.through(xml.dom.elements).compile.toList, deterministic, maxMatch, maxNest)
-        .flatMap(Stream.emits(_))
+      through(path, xml.dom.elements, deterministic = deterministic, maxMatch = maxMatch, maxNest = maxNest)
 
     /** Selects all matching elements in the input stream, feeding them to the provided [[fs2.Pipe]] in parallel.
-      * Each match results in a new stream of [[fs2.data.xml.XmlEvent XmlEvent]] fed to the `pipe`. All the matches are processed in parallel as soon as new events are available.
+      * Each match results in a new stream of [[fs2.data.xml.XmlEvent XmlEvent]] fed to the `consumer`.
+      * All the matches are processed in parallel as soon as new events are available.
       *
       * The `maxMatch` parameter controls how many matches are to be emitted at most.
       * Further matches won't be emitted if any.
@@ -100,11 +124,11 @@ package object xpath {
       * E.g., if you want to emit only the top most matches, set it to `0`.
       *
       */
-    def through(path: XPath,
-                pipe: Pipe[F, XmlEvent, Nothing],
+    def consume(path: XPath,
+                consumer: Pipe[F, XmlEvent, Nothing],
                 maxMatch: Int = Int.MaxValue,
                 maxNest: Int = Int.MaxValue)(implicit F: Concurrent[F]): Pipe[F, XmlEvent, Nothing] =
-      new XmlQueryPipe(compileXPath(path)).through(_, pipe, maxMatch, maxNest)
+      through(path, consumer, maxMatch = maxMatch, maxNest = maxNest)
 
     /** Selects all matching elements in the input stream, and applies the [[fs2.Collector]] to it.
       *
