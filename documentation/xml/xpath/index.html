@@ -282,6 +282,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
           <li><code>filter.dom[Node](xpath)</code> which builds the DOM for each match for any DOM type <code>Node</code> with a <a href="../#dom-builder-and-eventifier"><code>DocumentBuilder</code></a> in scope.</li>
         </ul>
         <ul>
+          <li><code>filter.consumer(xpath, consumer)</code> which sends all matches as a stream through the provided <code>consumer</code>.</li>
+        </ul>
+        <ul>
           <li><code>filter.through(xpath, pipe)</code> which sends all matches as a stream through the provided <code>pipe</code>.</li>
         </ul>
         <div class="callout info">
@@ -329,7 +332,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 //     &lt;/a&gt;
 //   &lt;/a&gt;&quot;&quot;&quot;
 // )</span></code></pre>
-        <p>The <code>filter.through</code> operator allows for handling each match in a streaming fashion.
+        <p>The <code>filter.consumer</code> operator allows for handling each match in a streaming fashion without emitting any value.
         For instance, let&#39;s say you want to save each match in a file, incrementing a counter on each match. You can run the following code.</p>
         <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">io</span><span>.</span><span class="identifier">file</span><span>.{</span><span class="type-name">Files</span><span>, </span><span class="type-name">Path</span><span>}
 
@@ -345,13 +348,13 @@ window.addEventListener('DOMContentLoaded', (event) => {
     </span><span class="identifier">counter</span><span> &lt;- </span><span class="type-name">Ref</span><span>[</span><span class="type-name">IO</span><span>].</span><span class="identifier">of</span><span>(</span><span class="number-literal">0</span><span>)
     </span><span class="identifier">_</span><span> &lt;- </span><span class="identifier">stream</span><span>
       .</span><span class="identifier">lift</span><span>[</span><span class="type-name">IO</span><span>]
-      .</span><span class="identifier">through</span><span>(</span><span class="identifier">filter</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">path</span><span>, </span><span class="identifier">saveXml</span><span>(</span><span class="identifier">counter</span><span>, </span><span class="identifier">_</span><span>)))
+      .</span><span class="identifier">through</span><span>(</span><span class="identifier">filter</span><span>.</span><span class="identifier">consume</span><span>(</span><span class="identifier">path</span><span>, </span><span class="identifier">saveXml</span><span>(</span><span class="identifier">counter</span><span>, </span><span class="identifier">_</span><span>)))
       .</span><span class="identifier">compile</span><span>
       .</span><span class="identifier">drain</span><span>
   } </span><span class="keyword">yield</span><span> ()
 </span><span class="comment">// program: IO[Unit] = FlatMap(
 //   ioe = Delay(
-//     thunk = cats.effect.IO$$$Lambda$12976/0x0000000803381040@c506a76,
+//     thunk = cats.effect.IO$$$Lambda$13039/0x0000000801c60440@1b7e826e,
 //     event = cats.effect.tracing.TracingEvent$StackTrace
 //   ),
 //   f = &lt;function1&gt;,
