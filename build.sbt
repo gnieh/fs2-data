@@ -48,6 +48,7 @@ ThisBuild / scalaVersion := scala213
 ThisBuild / tlJdkRelease := Some(11)
 
 ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 
 val commonSettings = List(
   versionScheme := Some("early-semver"),
