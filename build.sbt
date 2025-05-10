@@ -509,6 +509,7 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
 lazy val msgpack = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("msgpack"))
+  .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     name := "fs2-data-msgpack",
