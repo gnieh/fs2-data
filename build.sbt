@@ -30,7 +30,7 @@ val shapeless3Version = "3.4.1"
 val scalaJavaTimeVersion = "2.6.0"
 val diffsonVersion = "4.6.0"
 val literallyVersion = "1.1.0"
-val weaverVersion = "0.8.4"
+val weaverVersion = "0.9.0"
 
 ThisBuild / tlBaseVersion := "1.12"
 
@@ -59,8 +59,8 @@ val commonSettings = List(
     "io.circe" %%% "circe-jawn" % circeVersion % "test",
     "io.circe" %%% "circe-generic" % circeVersion % "test",
     "co.fs2" %%% "fs2-io" % fs2Version % "test",
-    "com.disneystreaming" %%% "weaver-cats" % weaverVersion % "test",
-    "com.disneystreaming" %%% "weaver-scalacheck" % weaverVersion % Test,
+    "org.typelevel" %%% "weaver-cats" % weaverVersion % "test",
+    "org.typelevel" %%% "weaver-scalacheck" % weaverVersion % Test,
     "com.eed3si9n.expecty" %%% "expecty" % "0.16.0" % "test",
     "org.portable-scala" %%% "portable-scala-reflect" % "1.1.3" cross CrossVersion.for3Use2_13
   ) ++ PartialFunction
