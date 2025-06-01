@@ -68,7 +68,7 @@ class MFTBuilder[Guard, InTag, OutTag] private[mft] {
         case PatternBuilder.Leaf(in, g) => q.rules += (EventSelector.Leaf(in, g) -> rhs)
         case PatternBuilder.AnyLeaf(g)  => q.rules += (EventSelector.AnyLeaf(g) -> rhs)
         case PatternBuilder.Epsilon     => q.rules += (EventSelector.Epsilon() -> rhs)
-        case PatternBuilder.Any(g) =>
+        case PatternBuilder.Any(g)      =>
           q.rules += (EventSelector.AnyNode(g) -> rhs) += (EventSelector.AnyLeaf(g) -> rhs) += (EventSelector
             .Epsilon() -> rhs)
       }

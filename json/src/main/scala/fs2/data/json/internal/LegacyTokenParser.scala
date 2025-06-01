@@ -88,7 +88,7 @@ private[json] class LegacyTokenParser[F[_], T, Res](s: Stream[F, T])(implicit
             case 'r'  => slowString_(T.advance(context), key, StringState.Normal, 0, acc.append('\r'), chunkAcc)
             case 't'  => slowString_(T.advance(context), key, StringState.Normal, 0, acc.append('\t'), chunkAcc)
             case 'u'  => slowString_(T.advance(context), key, StringState.Expect4Unicode, 0, acc, chunkAcc)
-            case _ =>
+            case _    =>
               emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unknown escaped character '$c'"))
           }
         case StringState.Normal =>
@@ -279,7 +279,7 @@ private[json] class LegacyTokenParser[F[_], T, Res](s: Stream[F, T])(implicit
       val c = T.current(context)
       (c: @switch) match {
         case ' ' | '\t' | '\r' | '\n' => go_(T.advance(context), state, chunkAcc)
-        case _ =>
+        case _                        =>
           (state: @switch) match {
             case State.BeforeValue =>
               value_(context, state, chunkAcc).flatMap { case (context, chunkAcc) =>
@@ -306,7 +306,7 @@ private[json] class LegacyTokenParser[F[_], T, Res](s: Stream[F, T])(implicit
             case State.AfterObjectKey =>
               (c: @switch) match {
                 case ':' => go_(T.advance(context), State.BeforeObjectValue, chunkAcc)
-                case c =>
+                case c   =>
                   emitChunk(chunkAcc) >> Pull.raiseError[F](new JsonException(s"unexpected '$c' after object key"))
               }
             case State.BeforeObjectValue =>

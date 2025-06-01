@@ -146,10 +146,10 @@ object Diagnostic {
             case CborItem.SimpleValue(value)        => Pull.pure((s"simple(${value & 0xff})", s).some)
             case CborItem.TextString(str)           => Pull.pure((s""""$str"""", s).some)
             case CborItem.StartIndefiniteTextString => strings(s, '"')
-            case CborItem.ByteString(bytes) =>
+            case CborItem.ByteString(bytes)         =>
               Pull.pure((s"h'${bytes.toHex(Bases.Alphabets.HexUppercase)}'", s).some)
             case CborItem.StartIndefiniteByteString => strings(s, '\'')
-            case CborItem.Tag(tag) =>
+            case CborItem.Tag(tag)                  =>
               OptionT(value(s)).map { case (str, s) => (s"$tag($str)", s) }.value
             case CborItem.StartArray(size)     => array(s, size, true, new StringBuilder().append("["))
             case CborItem.StartIndefiniteArray => array(s, -1, true, new StringBuilder().append("[_ "))
