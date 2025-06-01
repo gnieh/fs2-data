@@ -197,7 +197,7 @@ package object jsonpath {
              q: Int,
              acc: Map[Int, List[(Option[PathMatcher], Int)]]): (Int, Map[Int, List[(Option[PathMatcher], Int)]]) =
       locations match {
-        case Nil => (q, acc)
+        case Nil                               => (q, acc)
         case Location.Child(name) :: locations =>
           loop(locations, q + 1, acc.combine(Map(q -> List(makeKey(name).some -> (q + 1)))))
         case Location.Descendant(name) :: locations =>
