@@ -103,7 +103,7 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
             val (q1, states1) =
               states.get(src) match {
                 case Some(q1) => (q1, states)
-                case None =>
+                case None     =>
                   val q1 =
                     if (initialSrc)
                       start
@@ -118,7 +118,7 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
                 val (q2, states1) =
                   states.get(tgt) match {
                     case Some(q2) => (q2, states)
-                    case None =>
+                    case None     =>
                       val q2 = state(args = q1.nargs)
                       (q2, states.updated(tgt, q2))
                   }

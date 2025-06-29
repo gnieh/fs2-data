@@ -86,7 +86,7 @@ package object scalaXml {
         case Text(content)              => Stream.emit(XmlEvent.XmlString(content, false))
         case EntityRef(name)            => Stream.emit(XmlEvent.XmlEntityRef(name))
         case ProcInstr(target, content) => Stream.emit(XmlEvent.XmlPI(target, content))
-        case e: Elem =>
+        case e: Elem                    =>
           val isEmpty = e.minimizeEmpty && e.child.isEmpty
           val name = QName(Option(e.prefix), e.label)
           Stream.emit(XmlEvent.StartTag(name, makeAttributes(e.attributes, Nil), isEmpty)) ++ Stream
