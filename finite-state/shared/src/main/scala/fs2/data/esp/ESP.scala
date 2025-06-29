@@ -155,7 +155,7 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
       case Expr.Default(v, e @ Expr.Close(_, _))                    => squeeze(Expr.Leaf(v, e))
       case Expr.Default(_, e @ (Expr.Open(_, _) | Expr.Leaf(_, _))) => squeeze(e)
       case Expr.Default(_, _)                                       => (e, Nil)
-      case Expr.Open(o, e) =>
+      case Expr.Open(o, e)                                          =>
         val (e1, s1) = squeeze(e)
         (e1, o :: s1)
       case Expr.Close(c, e) =>
@@ -171,7 +171,7 @@ private[data] class ESP[F[_], Guard, InTag, OutTag](val init: Int,
     def loop(e: Expr[Out], acc: ListBuffer[Out]): (Expr[Out], List[Out]) =
       e match {
         case Expr.Epsilon | Expr.Call(_, _, _, _) => (e, acc.result())
-        case _ =>
+        case _                                    =>
           val (e1, s) = squeeze(e)
           loop(e1, acc ++= s)
       }

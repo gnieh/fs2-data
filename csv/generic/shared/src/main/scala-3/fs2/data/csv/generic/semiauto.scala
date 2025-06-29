@@ -37,14 +37,12 @@ object semiauto {
   def deriveRowDecoder[T](using ic: K0.ProductInstances[OptCellDecoder, T]): RowDecoder[T] = {
     new RowDecoder[T] {
       override def apply(row: Row): DecoderResult[T] = {
-        ic.constructM[StateT[DecoderResult, List[(String, Int)], *]] {
-          [t] =>
-            (cd: OptCellDecoder[t]) =>
-              StateT[DecoderResult, List[(String, Int)], t] {
-                case (hd, idx) :: tail => cd(s"at index $idx", Some(hd)).tupleLeft(tail)
-                // do not fail immediately as optional decoding could succeed without input
-                case Nil => cd(s"at index -1", None).tupleLeft(Nil)
-              }.adaptErr { case d: DecoderError => d.withLine(row.line) }
+        ic.constructM[StateT[DecoderResult, List[(String, Int)], *]] { [t] => (cd: OptCellDecoder[t]) =>
+          StateT[DecoderResult, List[(String, Int)], t] {
+            case (hd, idx) :: tail => cd(s"at index $idx", Some(hd)).tupleLeft(tail)
+            // do not fail immediately as optional decoding could succeed without input
+            case Nil => cd(s"at index -1", None).tupleLeft(Nil)
+          }.adaptErr { case d: DecoderError => d.withLine(row.line) }
         }(summon, summon, summon)
           .runA(row.values.toList.zipWithIndex)
       }
@@ -54,10 +52,8 @@ object semiauto {
   def deriveRowEncoder[T](using ic: K0.ProductInstances[CellEncoder, T]): RowEncoder[T] = new RowEncoder[T] {
     override def apply(elem: T): Row = Row(
       cats.data.NonEmptyList
-        .fromListUnsafe(
-          ic.foldLeft(elem)(List.empty[String])(
-            [t] => (acc: List[String], ce: CellEncoder[t], e: t) => Continue[List[String]](ce(e) :: acc)
-          ))
+        .fromListUnsafe(ic.foldLeft(elem)(List.empty[String])([t] =>
+          (acc: List[String], ce: CellEncoder[t], e: t) => Continue[List[String]](ce(e) :: acc)))
         .reverse)
   }
 
@@ -67,13 +63,11 @@ object semiauto {
     val names: List[String] = naming.names
     new CsvRowDecoder[T, String] {
       override def apply(row: CsvRow[String]): DecoderResult[T] = {
-        ic.constructM[StateT[DecoderResult, List[(String, Option[String])], *]] {
-          [t] =>
-            (cd: OptCellDecoder[t]) =>
-              StateT[DecoderResult, List[(String, Option[String])], t] {
-                case (name, value) :: tail => cd(name, value).tupleLeft(tail)
-                case Nil                   => new DecoderError("Bug in derivation logic.").asLeft
-              }.adaptErr { case d: DecoderError => d.withLine(row.line) }
+        ic.constructM[StateT[DecoderResult, List[(String, Option[String])], *]] { [t] => (cd: OptCellDecoder[t]) =>
+          StateT[DecoderResult, List[(String, Option[String])], t] {
+            case (name, value) :: tail => cd(name, value).tupleLeft(tail)
+            case Nil                   => new DecoderError("Bug in derivation logic.").asLeft
+          }.adaptErr { case d: DecoderError => d.withLine(row.line) }
         }(summon, summon, summon)
           .runA(names.map(name => name -> row(name)))
       }
@@ -86,9 +80,8 @@ object semiauto {
       type Acc = (List[String], List[(String, String)])
       override def apply(elem: T): CsvRow[String] = {
         val columns = ic
-          .foldLeft[Acc](elem)(names -> List.empty[(String, String)])(
-            [t] => (acc: Acc, ce: CellEncoder[t], e: t) => Continue((acc._1.tail, ((acc._1.head -> ce(e)) :: acc._2)))
-          )
+          .foldLeft[Acc](elem)(names -> List.empty[(String, String)])([t] =>
+            (acc: Acc, ce: CellEncoder[t], e: t) => Continue((acc._1.tail, ((acc._1.head -> ce(e)) :: acc._2))))
           ._2
         CsvRow.fromNelHeaders(cats.data.NonEmptyList.fromListUnsafe(columns.reverse))
       }

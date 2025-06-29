@@ -42,7 +42,7 @@ class Compiler[F[_], Expr, Tag, Pat, Out](implicit
   private def guardSplit(cases: List[List[RawSkeleton[Expr, Tag]]]): F[List[List[Skeleton[Expr, Tag]]]] =
     cases match {
       case Nil :: _ => F.pure(cases.as(Nil))
-      case _ =>
+      case _        =>
         F.catchNonFatal(cases.transpose)
           .handleErrorWith(e => F.raiseError(new PatternException(s"malformed pattern matching: $cases", e)))
           .map(_.map(_.exists(_.guard.isDefined)))
