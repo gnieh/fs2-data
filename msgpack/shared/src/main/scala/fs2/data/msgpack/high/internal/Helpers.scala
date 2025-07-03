@@ -22,34 +22,19 @@ package internal
 
 import scodec.bits.ByteVector
 import fs2.data.msgpack.low.MsgpackItem
+import fs2.data.msgpack.high.DeserializationResult._
 
 private[high] object Helpers {
-  case class DeserializationContext[F[_]](chunk: Chunk[low.MsgpackItem], idx: Int, rest: Stream[F, low.MsgpackItem]) {
-    @inline def next = DeserializationContext(chunk, idx + 1, rest)
+  def typeMismatch(got: String, expected: String) = Err(s"Type mismatch: got $got, expected $expected")
 
-    /** Advances deserializer position and boundles the context with `result`
-      *
-      * @param result value to be bundled with the decoding context
-      */
-    @inline def proceed[A](result: A): DeserializationResult[F, A] =
-      Pull.pure((result, DeserializationContext(chunk, idx + 1, rest)))
-  }
-
-  /** Alias for [[fs2.Pull Pull]][F, Nothing, (A, [[DeserializationContext]][F])]
-    * @tparam F Effect type
-    * @tparam A Result type
-    */
-  type DeserializationResult[F[_], A] = Pull[F, Nothing, (A, DeserializationContext[F])]
-
-  @inline def get1[F[_]: RaiseThrowable, A](ctx: DeserializationContext[F])(
-      lift: (MsgpackItem, DeserializationContext[F]) => DeserializationResult[F, A]
-  ): DeserializationResult[F, A] =
-    if (ctx.idx >= ctx.chunk.size) {
-      ctx.rest.pull.uncons.flatMap {
-        case Some((hd, tl)) => get1(DeserializationContext(hd, 0, tl))(lift)
-        case None           => Pull.raiseError(new MsgpackUnexpectedEndOfStreamException)
+  @inline
+  def getItem[A](f: (MsgpackItem, Vector[MsgpackItem]) => DeserializationResult[A]) = new MsgpackDeserializer[A] {
+    def deserialize(items: Vector[MsgpackItem]): DeserializationResult[A] =
+      items match {
+        case head +: tail => f(head, tail)
+        case _            => NeedsMoreItems(None)
       }
-    } else lift(ctx.chunk(ctx.idx), ctx)
+  }
 
   @inline def firstBitPositive(bytes: ByteVector) = (bytes.head & 0x80) == 0x80
 }

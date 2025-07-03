@@ -19,38 +19,35 @@ package data.msgpack.high
 package internal
 
 import internal.Helpers._
-import fs2.data.msgpack.MsgpackDeserializationTypeMismatchException
 import fs2.data.msgpack.low.MsgpackItem
+import DeserializationResult._
 
 import scala.scalajs.js
 
 private[high] trait PlatformDeserializerInstances {
-  implicit object dateDeserializer extends MsgpackDeserializer[js.Date] {
-    def run[F[_]: RaiseThrowable](ctx: DeserializationContext[F]) = get1(ctx) { (item, ctx) =>
-      item match {
-        case MsgpackItem.Timestamp32(seconds) =>
-          val d = new js.Date()
-          d.setUTCSeconds(seconds.toDouble)
-          ctx.proceed(d)
+  implicit val dateDeserializer: MsgpackDeserializer[js.Date] = getItem { (item, tail) =>
+    item match {
+      case MsgpackItem.Timestamp32(seconds) =>
+        val d = new js.Date()
+        d.setUTCSeconds(seconds.toDouble)
+        Ok(d, tail)
 
-        case item: MsgpackItem.Timestamp64 =>
-          val d = new js.Date()
-          val ms = item.nanoseconds.toDouble / 1000000
-          d.setUTCSeconds(item.seconds.toDouble)
-          d.setUTCMilliseconds(ms)
-          ctx.proceed(d)
+      case item: MsgpackItem.Timestamp64 =>
+        val d = new js.Date()
+        val ms = item.nanoseconds.toDouble / 1000000
+        d.setUTCSeconds(item.seconds.toDouble)
+        d.setUTCMilliseconds(ms)
+        Ok(d, tail)
 
-        case MsgpackItem.Timestamp96(nanoseconds, seconds) =>
-          val d = new js.Date()
-          val ms = nanoseconds / 1000000
-          d.setUTCSeconds(seconds.toDouble)
-          d.setUTCMilliseconds(ms.toDouble)
-          ctx.proceed(d)
+      case MsgpackItem.Timestamp96(nanoseconds, seconds) =>
+        val d = new js.Date()
+        val ms = nanoseconds / 1000000
+        d.setUTCSeconds(seconds.toDouble)
+        d.setUTCMilliseconds(ms.toDouble)
+        Ok(d, tail)
 
-        case x =>
-          Pull.raiseError(
-            new MsgpackDeserializationTypeMismatchException(s"MsgpackItem.${x.getClass.getSimpleName}", "js.Date"))
-      }
+      case x =>
+        typeMismatch(s"MsgpackItem.${x.getClass.getSimpleName}", "js.Date")
     }
   }
 }

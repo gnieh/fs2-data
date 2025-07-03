@@ -24,128 +24,126 @@ import fs2.data.msgpack.high.internal.Helpers._
 import scodec.bits._
 import scala.collection.mutable
 import scala.collection.immutable.HashMap
+import fs2.data.msgpack.low.MsgpackItem
+import fs2.data.msgpack.high.DeserializationResult._
 
 /** Deserializer parts shared by fs2.data.msgpack.high and fs2.data.msgpack.high.ast.
   */
 private[high] object DeserializerBits {
-  def runBigInt[F[_]: RaiseThrowable](bytes: ByteVector, ctx: DeserializationContext[F]) =
-    /* Msgpack spec defines numbers as 64bit values and although BigInt can
-     * certainly support bigger numbers, we don't want to allow malformed data
-     * to be decoded.
-     */
-    if (bytes.length > 8) {
-      Pull.raiseError(new MsgpackMalformedItemException("Number exceeds 64 bits"))
-    } else {
-      val n = BigInt(bytes.toArray)
-      ctx.proceed(n)
-    }
-
-  def runUnsignedLong[F[_]: RaiseThrowable](bytes: ByteVector, ctx: DeserializationContext[F]) =
+  def runUnsignedLong(bytes: ByteVector, rest: Vector[MsgpackItem]) =
     if (bytes.length > 8)
-      Pull.raiseError(new MsgpackMalformedItemException("Number exceeds 64 bits"))
+      Err("Number exceeds 64 bits")
     else if (bytes.length == 8 && firstBitPositive(bytes))
-      Pull.raiseError(new MsgpackDeserializationTypeMismatchException("uint bigger than Long.MaxValue", "Long"))
+      typeMismatch("uint bigger than Long.MaxValue", "Long")
     else
-      ctx.proceed(bytes.toLong(false))
+      Ok(bytes.toLong(false), rest)
 
-  def runSignedLong[F[_]: RaiseThrowable](bytes: ByteVector, ctx: DeserializationContext[F]) =
+  def runSignedLong(bytes: ByteVector, rest: Vector[MsgpackItem]) =
     if (bytes.length > 8)
-      Pull.raiseError(new MsgpackMalformedItemException("Number exceeds 64 bits"))
+      Err("Number exceeds 64 bits")
     else
-      ctx.proceed(bytes.toLong(true))
+      Ok(bytes.toLong(true), rest)
 
-  def runUnsignedInt[F[_]: RaiseThrowable](bytes: ByteVector, ctx: DeserializationContext[F]) =
+  def runUnsignedInt(bytes: ByteVector, rest: Vector[MsgpackItem]) =
     if (bytes.length > 8)
-      Pull.raiseError(new MsgpackMalformedItemException("Number exceeds 64 bits"))
+      Err("Number exceeds 64 bits")
     else if (bytes.length > 4)
-      Pull.raiseError(new MsgpackDeserializationTypeMismatchException(s"${bytes.length}-byte value", "Int"))
+      typeMismatch(s"${bytes.length}-byte value", "Int")
     else if (bytes.length == 4 && firstBitPositive(bytes))
-      Pull.raiseError(new MsgpackDeserializationTypeMismatchException("uint bigger than Int.MaxValue", "Int"))
+      typeMismatch("uint bigger than Int.MaxValue", "Int")
     else
-      ctx.proceed(bytes.toInt(false))
+      Ok(bytes.toInt(false), rest)
 
-  def runSignedInt[F[_]: RaiseThrowable](bytes: ByteVector, ctx: DeserializationContext[F]) =
+  def runSignedInt(bytes: ByteVector, rest: Vector[MsgpackItem]) =
     if (bytes.length > 8)
-      Pull.raiseError(new MsgpackMalformedItemException("Number exceeds 64 bits"))
+      Err("Number exceeds 64 bits")
     else if (bytes.length > 4)
-      Pull.raiseError(new MsgpackDeserializationTypeMismatchException(s"${bytes.length}-byte value", "Int"))
+      typeMismatch(s"${bytes.length}-byte value", "Int")
     else
-      ctx.proceed(bytes.toInt(true))
+      Ok(bytes.toInt(true), rest)
 
-  def runUnsignedShort[F[_]: RaiseThrowable](bytes: ByteVector, ctx: DeserializationContext[F]) =
+  def runUnsignedShort(bytes: ByteVector, rest: Vector[MsgpackItem]) =
     if (bytes.length > 8)
-      Pull.raiseError(new MsgpackMalformedItemException("Number exceeds 64 bits"))
+      Err("Number exceeds 64 bits")
     else if (bytes.length > 2)
-      Pull.raiseError(new MsgpackDeserializationTypeMismatchException(s"${bytes.length}-byte value", "Short"))
+      typeMismatch(s"${bytes.length}-byte value", "Short")
     else if (bytes.length == 2 && firstBitPositive(bytes))
-      Pull.raiseError(new MsgpackDeserializationTypeMismatchException("uint bigger than Short.MaxValue", "Short"))
+      typeMismatch("uint bigger than Short.MaxValue", "Short")
     else
-      ctx.proceed(bytes.toShort(false))
+      Ok(bytes.toShort(false), rest)
 
-  def runSignedShort[F[_]: RaiseThrowable](bytes: ByteVector, ctx: DeserializationContext[F]) =
+  def runSignedShort(bytes: ByteVector, rest: Vector[MsgpackItem]) =
     if (bytes.length > 8)
-      Pull.raiseError(new MsgpackMalformedItemException("Number exceeds 64 bits"))
+      Err("Number exceeds 64 bits")
     else if (bytes.length > 2)
-      Pull.raiseError(new MsgpackDeserializationTypeMismatchException(s"${bytes.length}-byte value", "Short"))
+      typeMismatch(s"${bytes.length}-byte value", "Short")
     else
-      ctx.proceed(bytes.toShort(true))
+      Ok(bytes.toShort(true), rest)
 
-  def runUnsignedByte[F[_]: RaiseThrowable](bytes: ByteVector, ctx: DeserializationContext[F]) =
+  def runUnsignedByte(bytes: ByteVector, rest: Vector[MsgpackItem]) =
     if (bytes.length > 8)
-      Pull.raiseError(new MsgpackMalformedItemException("Number exceeds 64 bits"))
+      Err("Number exceeds 64 bits")
     else if (bytes.length > 1)
-      Pull.raiseError(new MsgpackDeserializationTypeMismatchException(s"${bytes.length}-byte value", "Byte"))
+      typeMismatch(s"${bytes.length}-byte value", "Byte")
     else if (bytes.length == 1 && firstBitPositive(bytes))
-      Pull.raiseError(new MsgpackDeserializationTypeMismatchException(s"uint bigger than Byte.MaxValue", "Byte"))
+      typeMismatch("uint bigger than Byte.MaxValue", "Byte")
     else
-      ctx.proceed(bytes.toByte(false))
+      Ok(bytes.toByte(false), rest)
 
-  def runSignedByte[F[_]: RaiseThrowable](bytes: ByteVector, ctx: DeserializationContext[F]) =
+  def runSignedByte(bytes: ByteVector, rest: Vector[MsgpackItem]) =
     if (bytes.length > 8)
-      Pull.raiseError(new MsgpackMalformedItemException("Number exceeds 64 bits"))
+      Err("Number exceeds 64 bits")
     else if (bytes.length > 1)
-      Pull.raiseError(new MsgpackDeserializationTypeMismatchException(s"${bytes.length}-byte value", "Byte"))
+      typeMismatch(s"${bytes.length}-byte value", "Byte")
     else
-      ctx.proceed(bytes.toByte(true))
+      Ok(bytes.toByte(true), rest)
 
-  def runList[F[_], A](size: Int, ctx: DeserializationContext[F])(implicit
-      pa: MsgpackDeserializer[A],
-      F: RaiseThrowable[F]) = {
-    def go(n: Int,
-           acc: mutable.Builder[A, List[A]],
-           ctx: DeserializationContext[F]): DeserializationResult[F, List[A]] = {
+  def runList[A](size: Long, rest: Vector[MsgpackItem])(implicit da: MsgpackDeserializer[A]) = {
+    def go(n: Long, acc: mutable.Builder[A, List[A]], rest: Vector[MsgpackItem]): DeserializationResult[List[A]] = {
       if (n == 0)
-        Pull.pure((acc.result(), ctx))
+        Ok(acc.result(), rest)
+      else if (rest.length == 0)
+        NeedsMoreItems(None)
       else
-        pa.run(ctx).flatMap { case (item, ctxP) =>
-          go(n - 1, acc += (item), ctxP)
+        da.deserialize(rest).flatMap { (value, reminder) =>
+          go(n - 1, acc += value, reminder)
         }
     }
-    go(size, List.newBuilder[A], ctx.next)
+
+    if (size > rest.length)
+      NeedsMoreItems(Some(size))
+    else
+      go(size, List.newBuilder[A], rest)
   }
 
-  def runMap[F[_]: RaiseThrowable, K, V](size: Int, ctx: DeserializationContext[F])(implicit
-      pk: MsgpackDeserializer[K],
-      pv: MsgpackDeserializer[V]) = {
-    def go(n: Int,
+  def runMap[K, V](size: Long, rest: Vector[MsgpackItem])(implicit
+      dk: MsgpackDeserializer[K],
+      dv: MsgpackDeserializer[V]) = {
+    def go(n: Long,
            acc: mutable.Builder[(K, V), HashMap[K, V]],
-           ctx: DeserializationContext[F]): DeserializationResult[F, Map[K, V]] = {
+           rest: Vector[MsgpackItem]): DeserializationResult[Map[K, V]] = {
       if (n == 0)
-        Pull.pure((acc.result(), ctx))
+        Ok(acc.result(), rest)
+      else if (rest.length == 0)
+        NeedsMoreItems(None)
       else
-        pk.run(ctx).flatMap { case (key, ctxK) =>
-          pv.run(ctxK).flatMap { case (value, ctxV) =>
-            go(n - 1, acc += ((key, value)), ctxV)
+        dk.deserialize(rest).flatMap { (key, rest1) =>
+          dv.deserialize(rest1).flatMap { (value, rest2) =>
+            go(n - 1, acc += ((key, value)), rest2)
           }
         }
     }
 
-    go(size, HashMap.newBuilder[K, V], ctx.next)
+    go(size, HashMap.newBuilder[K, V], rest) match {
+      case NeedsMoreItems(Some(x)) => NeedsMoreItems(Some(size * 2 + x - 1))
+      case NeedsMoreItems(None)    => NeedsMoreItems(Some(size * 2 + 1))
+      case x                       => x
+    }
   }
 
-  def runString[F[_]: RaiseThrowable](bytes: ByteVector, ctx: DeserializationContext[F]) =
+  def runString(bytes: ByteVector, rest: Vector[MsgpackItem]) =
     bytes.decodeUtf8 match {
-      case Left(e)    => Pull.raiseError(e)
-      case Right(str) => ctx.proceed(str)
+      case Left(e)    => Err(e.getMessage)
+      case Right(str) => Ok(str, rest)
     }
 }

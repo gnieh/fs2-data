@@ -31,5 +31,4 @@ case class MsgpackUnexpectedEndOfStreamException(position: Option[Long] = None, 
 case class MsgpackMalformedByteStreamException(msg: String, inner: Throwable = null)
     extends MsgpackException(msg, inner)
 
-case class MsgpackDeserializationTypeMismatchException(from: String = null, to: String = null, inner: Throwable = null)
-    extends MsgpackException(if (from != null && to != null) s"Cannot decode ${from} to ${to}" else null, inner)
+case class MsgpackDeserializerException(msg: String, inner: Throwable = null) extends MsgpackException(msg, inner)

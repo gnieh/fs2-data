@@ -19,36 +19,51 @@ package data
 package msgpack
 
 import fs2.data.msgpack.low.MsgpackItem
+import fs2.data.msgpack.high.DeserializationResult._
 import cats.Monad
 import scala.jdk.CollectionConverters._
-import java.util.ArrayDeque
 
 package object high extends DeserializerInstances with internal.PlatformDeserializerInstances {
   implicit val msgpackDeserializerMonad: Monad[MsgpackDeserializer] = MsgpackDeserializer.msgpackDeserializerMonad
 
-  /** Converts a stream of [[fs2.data.msgpack.low.MsgpackItem]] into a stream of `A` via an implicit deserializer instance.
-    */
   def fromItems[F[_], A](implicit F: RaiseThrowable[F], da: MsgpackDeserializer[A]): Pipe[F, MsgpackItem, A] = {
-    import fs2.data.msgpack.high.internal.Helpers._
-
     stream =>
-      def go(ctx: DeserializationContext[F], buffer: ArrayDeque[A]): Pull[F, A, Unit] = {
-        if (ctx.idx >= ctx.chunk.size) {
-          Pull.output(Chunk.from(buffer.asScala)) >> ctx.rest.pull.uncons.flatMap {
-            case Some((hd, tl)) =>
+      val buffer = new java.util.ArrayDeque[A]()
+
+      def go(current: Vector[MsgpackItem],
+             rest: Stream[F, MsgpackItem],
+             needsMoreItems: Boolean,
+             itemCountHint: Option[Long]): Pull[F, A, Unit] = {
+        if (needsMoreItems) {
+          val uncons = itemCountHint match {
+            case Some(count) if count <= Int.MaxValue =>
+              rest.pull.unconsMin(count.toInt) // this makes sense only for one-dimensional arrays/maps
+            case _ => rest.pull.uncons
+          }
+
+          uncons.flatMap {
+            case Some((head, tail)) => go(current ++ head.toVector, tail, false, None)
+            case None               => Pull.raiseError(new MsgpackUnexpectedEndOfStreamException())
+          }
+        } else if (current.isEmpty) {
+          Pull.output(Chunk.from(buffer.asScala)) >> rest.pull.uncons.flatMap {
+            case Some((head, tail)) =>
               buffer.clear()
-              go(DeserializationContext(hd, 0, tl), buffer)
+              go(current ++ head.toVector, tail, false, None)
             case None => Pull.done
           }
         } else {
-          da.run(ctx).flatMap { case (item, ctx) =>
-            buffer.add(item)
-            go(ctx, buffer)
+          da.deserialize(current.toVector) match {
+            case Err(msg)             => Pull.raiseError(new MsgpackDeserializerException(msg))
+            case NeedsMoreItems(hint) => go(current, rest, true, hint)
+            case Ok(value, reminder) =>
+              buffer.add(value)
+              go(reminder, rest, false, None)
           }
         }
       }
 
-      go(DeserializationContext(Chunk.empty, 0, stream), new ArrayDeque()).stream
+      go(Vector.empty, stream, false, None).stream
   }
 
   /** Converts a stream of [[fs2.data.msgpack.low.MsgpackItem]] into a stream of `A` via an explicit deserializer instance.
@@ -56,17 +71,13 @@ package object high extends DeserializerInstances with internal.PlatformDeserial
   @inline def fromItems[F[_], A](da: MsgpackDeserializer[A])(implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, A] =
     fromItems(F, da)
 
-  /** Decodes a stream of bytes into a stream of `A`s via an implicit deserializer instance. 
+  /** Decodes a stream of bytes into a stream of `A`s via an implicit deserializer instance.
     */
   def deserialize[F[_]: RaiseThrowable, A: MsgpackDeserializer]: Pipe[F, Byte, A] =
     _.through(low.items[F]).through(fromItems[F, A])
 
-  /** Decodes a stream of bytes into a stream of `A`s via an explicit deserializer instance. 
+  /** Decodes a stream of bytes into a stream of `A`s via an explicit deserializer instance.
     */
   @inline def deserialize[F[_], A](da: MsgpackDeserializer[A])(implicit F: RaiseThrowable[F]): Pipe[F, Byte, A] =
     deserialize(F, da)
-
-  /** Summons a [[fs2.data.msgpack.high.MsgpackDeserializer]] instance for the desired type
-    */
-  def deserializer[A](implicit ev: MsgpackDeserializer[A]) = ev
 }

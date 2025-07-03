@@ -28,6 +28,8 @@ import weaver._
 import weaver.scalacheck._
 
 object ScalarDeserializerSpec extends SimpleIOSuite with Checkers {
+  def tm(got: String, expected: String) = MsgpackDeserializerException(s"Type mismatch: got $got, expected $expected")
+
   def testRoundtrip[A: MsgpackDeserializer: Arbitrary: Show](name: String)(lift: A => MsgpackItem) =
     test(name) {
       forall { (x: A) =>
@@ -73,20 +75,17 @@ object ScalarDeserializerSpec extends SimpleIOSuite with Checkers {
   }
 
   test("integer types should fail when uint exceeds their MaxValues") {
-    val long = (deserializer[Long],
+    val long = (MsgpackDeserializer[Long],
                 MsgpackItem.UnsignedInt(hex"80 00 00 00 00 00 00 00"),
-                new MsgpackDeserializationTypeMismatchException("uint bigger than Long.MaxValue", "Long"))
-    val int = (deserializer[Int],
-               MsgpackItem.UnsignedInt(hex"80 00 00 00"),
-               new MsgpackDeserializationTypeMismatchException("uint bigger than Int.MaxValue", "Int"))
-    val short = (deserializer[Short],
-                 MsgpackItem.UnsignedInt(hex"80 00"),
-                 new MsgpackDeserializationTypeMismatchException("uint bigger than Short.MaxValue", "Short"))
-    val byte = (deserializer[Byte],
-                MsgpackItem.UnsignedInt(hex"80"),
-                new MsgpackDeserializationTypeMismatchException(s"uint bigger than Byte.MaxValue", "Byte"))
+                tm("uint bigger than Long.MaxValue", "Long"))
+    val int =
+      (MsgpackDeserializer[Int], MsgpackItem.UnsignedInt(hex"80 00 00 00"), tm("uint bigger than Int.MaxValue", "Int"))
+    val short =
+      (MsgpackDeserializer[Short], MsgpackItem.UnsignedInt(hex"80 00"), tm("uint bigger than Short.MaxValue", "Short"))
+    val byte =
+      (MsgpackDeserializer[Byte], MsgpackItem.UnsignedInt(hex"80"), tm(s"uint bigger than Byte.MaxValue", "Byte"))
 
-    def f[A](triplet: (MsgpackDeserializer[A], MsgpackItem, MsgpackDeserializationTypeMismatchException)) =
+    def f[A](triplet: (MsgpackDeserializer[A], MsgpackItem, MsgpackDeserializerException)) =
       Stream
         .emit(triplet)
         .evalMap { case (d, in, expected) =>

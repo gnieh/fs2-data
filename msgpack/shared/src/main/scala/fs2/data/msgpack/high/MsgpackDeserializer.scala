@@ -20,57 +20,73 @@ package msgpack
 package high
 
 import cats.Monad
-import fs2.data.msgpack.high.internal.Helpers._
-import scala.util.control.NonFatal
+import fs2.data.msgpack.high.DeserializationResult._
+import fs2.data.msgpack.low.MsgpackItem
+import scala.annotation.tailrec
 
 /** Represents a process of extracting value of type `A` from an item stream.
   *
   * Built-in instances are accessbile via an import `fs2.data.msgpack.high.*`.
   */
-trait MsgpackDeserializer[A] { outer =>
-  private[high] def run[F[_]: RaiseThrowable](ctx: DeserializationContext[F]): DeserializationResult[F, A]
+trait MsgpackDeserializer[A] { self =>
+  def deserialize(items: Vector[MsgpackItem]): DeserializationResult[A]
 
-  def flatMap[B](f: A => MsgpackDeserializer[B]): MsgpackDeserializer[B] = new MsgpackDeserializer[B] {
-    def run[F[_]: RaiseThrowable](ctx: DeserializationContext[F]): DeserializationResult[F, B] =
-      outer.run(ctx).flatMap { case (x, ctx) => f(x).run(ctx) }
-  }
+  def map[B](f: A => B): MsgpackDeserializer[B] = (items: Vector[MsgpackItem]) =>
+    self.deserialize(items) match {
+      case Ok(value, reminder) => Ok(f(value), reminder)
+      case x: Err              => x
+      case x: NeedsMoreItems   => x
+    }
 
-  def map[B](f: A => B): MsgpackDeserializer[B] = new MsgpackDeserializer[B] {
-    def run[F[_]: RaiseThrowable](ctx: DeserializationContext[F]): DeserializationResult[F, B] =
-      outer.run(ctx).map { case (x, ctx) => (f(x), ctx) }
-  }
+  def flatMap[B](f: A => MsgpackDeserializer[B]): MsgpackDeserializer[B] =
+    new FlatMapDeserializer(self, f)
 
-  def either[B](implicit db: MsgpackDeserializer[B]) = new MsgpackDeserializer[Either[A, B]] {
-    private[high] def run[F[_]: RaiseThrowable](
-        ctx: DeserializationContext[F]): DeserializationResult[F, Either[A, B]] =
-      outer
-        .run(ctx)
-        .map { case (item, ctx) => (Left(item), ctx) }
-        .handleErrorWith {
-          case NonFatal(_) =>
-            db.run(ctx).map { case (item, ctx) => (Right(item), ctx) }
-          case e => Pull.raiseError(e)
-        }
-  }
+  def either[B](implicit db: MsgpackDeserializer[B]): MsgpackDeserializer[Either[A, B]] =
+    (items: Vector[MsgpackItem]) =>
+      self.deserialize(items) match {
+        case Ok(value, reminder) => Ok(Left(value), reminder)
+        case _                   => db.deserialize(items).mapValue(Right(_))
+      }
+
 }
 
-private[this] object MsgpackDeserializer {
-  implicit val msgpackDeserializerMonad: Monad[MsgpackDeserializer] = new Monad[MsgpackDeserializer] {
-    def pure[A](x: A): MsgpackDeserializer[A] = new MsgpackDeserializer[A] {
-      def run[F[_]: RaiseThrowable](ctx: DeserializationContext[F]): DeserializationResult[F, A] =
-        Pull.pure((x, ctx))
+/** Provides a tail-recursive `deserialize` method for chained `flatMap` calls. */
+private case class FlatMapDeserializer[A, B](da: MsgpackDeserializer[A], fa: A => MsgpackDeserializer[B])
+    extends MsgpackDeserializer[B] {
+  @tailrec
+  private def go[C, D](dc: MsgpackDeserializer[C],
+                       fc: C => MsgpackDeserializer[D],
+                       items: Vector[MsgpackItem]): DeserializationResult[D] = {
+    dc.deserialize(items) match {
+      case Ok(value, reminder) =>
+        fc(value) match {
+          case FlatMapDeserializer(dd, fd) => go(dd, fd, reminder)
+          case d                           => d.deserialize(reminder)
+        }
+      case x: Err            => x
+      case x: NeedsMoreItems => x
     }
+  }
+
+  @inline def deserialize(items: Vector[MsgpackItem]): DeserializationResult[B] =
+    go[A, B](da, fa, items)
+}
+
+object MsgpackDeserializer {
+  def apply[A](implicit ev: MsgpackDeserializer[A]) = ev
+
+  implicit val msgpackDeserializerMonad: Monad[MsgpackDeserializer] = new Monad[MsgpackDeserializer] {
+    def pure[A](x: A): MsgpackDeserializer[A] = (items: Vector[MsgpackItem]) => Ok(x, items)
 
     def flatMap[A, B](fa: MsgpackDeserializer[A])(f: A => MsgpackDeserializer[B]): MsgpackDeserializer[B] =
       fa.flatMap(f)
 
-    def tailRecM[A, B](a: A)(f: A => MsgpackDeserializer[Either[A, B]]): MsgpackDeserializer[B] =
-      new MsgpackDeserializer[B] {
-        def run[F[_]: RaiseThrowable](ctx: DeserializationContext[F]): DeserializationResult[F, B] =
-          f(a).run(ctx).flatMap {
-            case (Left(x), ctx)  => tailRecM(x)(f).run(ctx)
-            case (Right(x), ctx) => Pull.pure((x, ctx))
-          }
+    def tailRecM[A, B](a: A)(f: A => MsgpackDeserializer[Either[A, B]]): MsgpackDeserializer[B] = {
+      f(a).flatMap {
+        case Left(value)  => tailRecM(value)(f)
+        case Right(value) => pure(value)
       }
+    }
+
   }
 }

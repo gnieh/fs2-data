@@ -38,13 +38,13 @@ class MsgpackDeserializerBenchmarks {
   case class User(name: String, age: Long, aliases: List[String], balance: Double, things: Map[String, Int], raw: ByteVector, created: Instant)
 
   implicit val userDecoder: MsgpackDeserializer[User] = for {
-    name <- deserializer[String]
-    age <- deserializer[Long]
-    aliases <- deserializer[List[String]]
-    balance <- deserializer[Double]
-    things <- deserializer[Map[String, Int]]
-    raw <- deserializer[ByteVector]
-    created <- deserializer[Instant]
+    name <- MsgpackDeserializer[String]
+    age <- MsgpackDeserializer[Long]
+    aliases <- MsgpackDeserializer[List[String]]
+    balance <- MsgpackDeserializer[Double]
+    things <- MsgpackDeserializer[Map[String, Int]]
+    raw <- MsgpackDeserializer[ByteVector]
+    created <- MsgpackDeserializer[Instant]
   } yield User(name, age, aliases, balance, things, raw, created)
 
   def getChunkedItems(filename: String): List[Chunk[MsgpackItem]] =

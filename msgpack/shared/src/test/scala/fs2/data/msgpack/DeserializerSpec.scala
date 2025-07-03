@@ -23,6 +23,7 @@ import weaver._
 import fs2.data.msgpack.high._
 import fs2.data.msgpack.low.MsgpackItem
 import fs2.data.msgpack.high.ast._
+import fs2.data.msgpack.high.DeserializationResult._
 
 object DeserializerSpec extends SimpleIOSuite {
   def check[A: MsgpackDeserializer](inputs: ByteVector, expected: List[A]): IO[Expectations] =
@@ -63,16 +64,16 @@ object DeserializerSpec extends SimpleIOSuite {
     )
 
     val d = for {
-      m1 <- deserializer[Map[Long, Long]]
-      m2 <- deserializer[Map[Long, Long]]
-      m3 <- deserializer[Map[Long, Long]]
-      s1 <- deserializer[String]
-      s2 <- deserializer[String]
-      s3 <- deserializer[String]
-      s4 <- deserializer[String]
-      l1 <- deserializer[List[Long]]
-      l2 <- deserializer[List[Long]]
-      l3 <- deserializer[List[Long]]
+      m1 <- MsgpackDeserializer[Map[Long, Long]]
+      m2 <- MsgpackDeserializer[Map[Long, Long]]
+      m3 <- MsgpackDeserializer[Map[Long, Long]]
+      s1 <- MsgpackDeserializer[String]
+      s2 <- MsgpackDeserializer[String]
+      s3 <- MsgpackDeserializer[String]
+      s4 <- MsgpackDeserializer[String]
+      l1 <- MsgpackDeserializer[List[Long]]
+      l2 <- MsgpackDeserializer[List[Long]]
+      l3 <- MsgpackDeserializer[List[Long]]
     } yield (m1, m2, m3, s1, s2, s3, s4, l1, l2, l3)
 
     check(input, List(expected))(d)
@@ -99,12 +100,15 @@ object DeserializerSpec extends SimpleIOSuite {
   }
 
   test("extension type") {
-    implicit val d: MsgpackDeserializer[BitVector] = extensionDeserializer { (tpe, bytes) =>
-      if (tpe == 0x01)
-        Some(bytes.bits)
-      else
-        None
-    }
+    implicit val d: MsgpackDeserializer[BitVector] = (items) =>
+      items match {
+        case MsgpackItem.Extension(tpe, bytes) +: tail =>
+          if (tpe == 0x01)
+            Ok(bytes.bits, tail)
+          else
+            Err("Expected extension of type 0x01")
+        case _ => Err("Expected extension")
+      }
 
     val expected = List(hex"fafa".bits)
 

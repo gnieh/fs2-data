@@ -21,63 +21,60 @@ package high
 import fs2.data.msgpack.low.MsgpackItem
 import fs2.data.msgpack.high.internal.Helpers._
 import fs2.data.msgpack.high.internal.DeserializerBits._
+import fs2.data.msgpack.high.DeserializationResult._
 
 package object ast {
-  implicit object msgpackValueDeserializer extends MsgpackDeserializer[MsgpackValue] {
-    def run[F[_]: RaiseThrowable](ctx: DeserializationContext[F]) = get1(ctx) { (item, ctx) =>
-      item match {
-        case MsgpackItem.SignedInt(bytes) =>
-          runSignedLong(bytes, ctx).map { case (item, ctx) => (MsgpackValue.Integer(item), ctx) }
+  implicit val msgpackValueDeserializer: MsgpackDeserializer[MsgpackValue] = getItem { (head, tail) =>
+    head match {
+      case MsgpackItem.SignedInt(bytes) =>
+        runSignedLong(bytes, tail).mapValue(MsgpackValue.Integer(_))
 
-        case MsgpackItem.UnsignedInt(bytes) =>
-          runUnsignedLong(bytes, ctx).map { case (item, ctx) => (MsgpackValue.Integer(item), ctx) }
+      case MsgpackItem.UnsignedInt(bytes) =>
+        runUnsignedLong(bytes, tail).mapValue(MsgpackValue.Integer(_))
 
-        case MsgpackItem.Float32(x) => ctx.proceed(MsgpackValue.Float(x))
+      case MsgpackItem.Float32(x) => Ok(MsgpackValue.Float(x), tail)
 
-        case MsgpackItem.Float64(x) => ctx.proceed(MsgpackValue.Double(x))
+      case MsgpackItem.Float64(x) => Ok(MsgpackValue.Double(x), tail)
 
-        case MsgpackItem.Array(size) if size < 0 =>
-          Pull.raiseError(new MsgpackMalformedItemException(s"Negative array length ${size}"))
+      case MsgpackItem.Array(size) if size < 0 =>
+        Err(s"Negative array length ${size}")
 
-        case MsgpackItem.Array(size) if size > Int.MaxValue =>
-          Pull.raiseError(new MsgpackMalformedItemException("Array size exceeds Int.MaxValue"))
+      case MsgpackItem.Array(size) if size > Int.MaxValue =>
+        Err("Array size exceeds Int.MaxValue")
 
-        case MsgpackItem.Array(size) =>
-          runList[F, MsgpackValue](size.toInt, ctx).map { case (item, ctx) =>
-            (MsgpackValue.Array(item), ctx)
-          }
+      case MsgpackItem.Array(size) =>
+        runList[MsgpackValue](size, tail).mapValue(MsgpackValue.Array(_))
 
-        case MsgpackItem.Map(size) if size < 0 =>
-          Pull.raiseError(new MsgpackMalformedItemException(s"Negative map length ${size}"))
+      case MsgpackItem.Map(size) if size < 0 =>
+        Err(s"Negative map length ${size}")
 
-        case MsgpackItem.Map(size) if size > Int.MaxValue =>
-          Pull.raiseError(new MsgpackMalformedItemException("Map size exceeds Int.MaxValue"))
+      case MsgpackItem.Map(size) if size > Int.MaxValue =>
+        Err("Map size exceeds Int.MaxValue")
 
-        case MsgpackItem.Map(size) =>
-          runMap[F, MsgpackValue, MsgpackValue](size.toInt, ctx).map { case (item, ctx) =>
-            (MsgpackValue.Map(item), ctx)
-          }
+      case MsgpackItem.Map(size) =>
+        runMap[MsgpackValue, MsgpackValue](size, tail).mapValue(MsgpackValue.Map(_))
 
-        case MsgpackItem.Timestamp32(seconds) =>
-          ctx.proceed(MsgpackValue.Timestamp(0, seconds.toLong))
+      case MsgpackItem.Timestamp32(seconds) =>
+        Ok(MsgpackValue.Timestamp(0, seconds.toLong), tail)
 
-        case item: MsgpackItem.Timestamp64 =>
-          ctx.proceed(MsgpackValue.Timestamp(item.nanoseconds, item.seconds))
+      case item: MsgpackItem.Timestamp64 =>
+        Ok(MsgpackValue.Timestamp(item.nanoseconds, item.seconds), tail)
 
-        case MsgpackItem.Timestamp96(nanoseconds, seconds) =>
-          ctx.proceed(MsgpackValue.Timestamp(nanoseconds, seconds))
+      case MsgpackItem.Timestamp96(nanoseconds, seconds) =>
+        Ok(MsgpackValue.Timestamp(nanoseconds, seconds), tail)
 
-        case MsgpackItem.Bin(bytes) => ctx.proceed(MsgpackValue.Bin(bytes))
+      case MsgpackItem.Bin(bytes) => Ok(MsgpackValue.Bin(bytes), tail)
 
-        case MsgpackItem.Str(bytes) =>
-          runString(bytes, ctx).map { case (item, ctx) => (MsgpackValue.String(item), ctx) }
+      case MsgpackItem.Str(bytes) =>
+        runString(bytes, tail).mapValue(MsgpackValue.String(_))
 
-        case MsgpackItem.Extension(tpe, bytes) => ctx.proceed(MsgpackValue.Extension(tpe, bytes))
+      case MsgpackItem.Extension(tpe, bytes) => Ok(MsgpackValue.Extension(tpe, bytes), tail)
 
-        case MsgpackItem.Nil   => ctx.proceed(MsgpackValue.Nil)
-        case MsgpackItem.True  => ctx.proceed(MsgpackValue.Boolean(true))
-        case MsgpackItem.False => ctx.proceed(MsgpackValue.Boolean(false))
-      }
+      case MsgpackItem.Nil   => Ok(MsgpackValue.Nil, tail)
+      case MsgpackItem.True  => Ok(MsgpackValue.Boolean(true), tail)
+      case MsgpackItem.False => Ok(MsgpackValue.Boolean(false), tail)
+
+      case null => typeMismatch("null", "MsgpackValue")
     }
   }
 

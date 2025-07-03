@@ -20,29 +20,28 @@ package internal
 
 import java.time.Instant
 import internal.Helpers._
+import DeserializationResult._
 import fs2.data.msgpack.low._
-import fs2.data.msgpack.MsgpackDeserializationTypeMismatchException
 
 private[high] trait PlatformDeserializerInstances {
-  implicit object instantDeserializer extends MsgpackDeserializer[Instant] {
-    def run[F[_]: RaiseThrowable](ctx: DeserializationContext[F]) = get1(ctx) { (item, ctx) =>
+  implicit val instantDeserializer: MsgpackDeserializer[Instant] = getItem {
+    (item: MsgpackItem, tail: Vector[MsgpackItem]) =>
       item match {
         case MsgpackItem.Timestamp32(seconds) =>
           val instant = java.time.Instant.ofEpochSecond(seconds.toLong)
-          ctx.proceed(instant)
+          Ok(instant, tail)
 
-        case item: MsgpackItem.Timestamp64 =>
+        case (item: MsgpackItem.Timestamp64) =>
           val instant = java.time.Instant.ofEpochSecond(item.seconds, item.nanoseconds.toLong)
-          ctx.proceed(instant)
+          Ok(instant, tail)
 
         case MsgpackItem.Timestamp96(nanoseconds, seconds) =>
           val instant = java.time.Instant.ofEpochSecond(seconds, nanoseconds.toLong)
-          ctx.proceed(instant)
+          Ok(instant, tail)
 
-        case x =>
-          Pull.raiseError(
-            new MsgpackDeserializationTypeMismatchException(s"MsgpackItem.${x.getClass.getSimpleName}", "Instant"))
+        case _ =>
+          typeMismatch(s"MsgpackItem.${item.getClass.getSimpleName}", "Instant")
+
       }
-    }
   }
 }
