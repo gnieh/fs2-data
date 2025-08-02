@@ -29,7 +29,7 @@ private[xml] object Normalizer {
       case _                              => false
     }.flatMap {
       case (false, chunk) => Stream.chunk(chunk.map(mergeAttributes))
-      case (true, texts) =>
+      case (true, texts)  =>
         Stream.emit(
           XmlEvent.XmlString(texts
                                .collect { case XmlEvent.XmlString(s, _) =>

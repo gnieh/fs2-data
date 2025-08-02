@@ -239,7 +239,7 @@ private[low] object ItemSerializer {
   def pipe[F[_]: RaiseThrowable]: Pipe[F, MsgpackItem, Byte] = { stream =>
     def go(out: Out[F], rest: Stream[F, MsgpackItem]): Pull[F, Byte, Unit] =
       rest.pull.uncons.flatMap {
-        case None => out.flush
+        case None                => out.flush
         case Some((chunk, rest)) =>
           stepChunk(SerializationContext(out, chunk, 0, rest)).flatMap { case SerializationContext(out, _, _, rest) =>
             go(out, rest)

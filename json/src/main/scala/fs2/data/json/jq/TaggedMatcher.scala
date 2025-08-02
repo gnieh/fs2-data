@@ -31,8 +31,8 @@ private sealed trait TaggedMatcher {
     this match {
       case TaggedMatcher.AllOf(clauses) =>
         clauses.toList match {
-          case Nil      => NonEmptyList.one(NonEmptyList.one(TaggedMatcher.Fail))
-          case c :: Nil => c.dnf
+          case Nil       => NonEmptyList.one(NonEmptyList.one(TaggedMatcher.Fail))
+          case c :: Nil  => c.dnf
           case c :: rest =>
             val dnf1 = c.dnf
             val dnf2 = TaggedMatcher.AllOf(rest.toSet).dnf
