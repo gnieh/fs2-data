@@ -24,13 +24,13 @@ sealed trait DecisionTree[Expr, Tag, Out] {
     @tailrec
     def loop(tree: DecisionTree[Expr, Tag, Out]): Option[Out] =
       (skel, tree) match {
-        case (_, DecisionTree.Leaf(out)) => Some(out)
+        case (_, DecisionTree.Leaf(out))                         => Some(out)
         case (skel, DecisionTree.Switch(on, branches, fallBack)) =>
           skel.select(on) match {
             case Some(c) =>
               branches.get(c.tag) match {
                 case Some(tree1) => loop(tree1)
-                case None =>
+                case None        =>
                   fallBack match {
                     case Some(tree1) => loop(tree1)
                     case None        => None
