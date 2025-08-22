@@ -30,7 +30,7 @@ package object high extends DeserializerInstances with internal.PlatformDeserial
     stream =>
       val buffer = new java.util.ArrayDeque[A]()
 
-      def go(current: Vector[MsgpackItem],
+      def go(current: Chunk[MsgpackItem],
              rest: Stream[F, MsgpackItem],
              needsMoreItems: Boolean,
              itemCountHint: Option[Long]): Pull[F, A, Unit] = {
@@ -42,18 +42,18 @@ package object high extends DeserializerInstances with internal.PlatformDeserial
           }
 
           uncons.flatMap {
-            case Some((head, tail)) => go(current ++ head.toVector, tail, false, None)
+            case Some((head, tail)) => go(current ++ head, tail, false, None)
             case None               => Pull.raiseError(new MsgpackUnexpectedEndOfStreamException())
           }
         } else if (current.isEmpty) {
           Pull.output(Chunk.from(buffer.asScala)) >> rest.pull.uncons.flatMap {
             case Some((head, tail)) =>
               buffer.clear()
-              go(current ++ head.toVector, tail, false, None)
+              go(current ++ head, tail, false, None)
             case None => Pull.done
           }
         } else {
-          da.deserialize(current.toVector) match {
+          da.deserialize(current) match {
             case Err(msg)             => Pull.raiseError(new MsgpackDeserializerException(msg))
             case NeedsMoreItems(hint) => go(current, rest, true, hint)
             case Ok(value, reminder) =>
@@ -63,7 +63,7 @@ package object high extends DeserializerInstances with internal.PlatformDeserial
         }
       }
 
-      go(Vector.empty, stream, false, None).stream
+      go(Chunk.empty, stream, false, None).stream
   }
 
   /** Converts a stream of [[fs2.data.msgpack.low.MsgpackItem]] into a stream of `A` via an explicit deserializer instance.

@@ -101,10 +101,10 @@ object DeserializerSpec extends SimpleIOSuite {
 
   test("extension type") {
     implicit val d: MsgpackDeserializer[BitVector] = (items) =>
-      items match {
-        case MsgpackItem.Extension(tpe, bytes) +: tail =>
+      items.head match {
+        case Some(MsgpackItem.Extension(tpe, bytes)) =>
           if (tpe == 0x01)
-            Ok(bytes.bits, tail)
+            Ok(bytes.bits, items.drop(1))
           else
             Err("Expected extension of type 0x01")
         case _ => Err("Expected extension")

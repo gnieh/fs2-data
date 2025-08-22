@@ -15,6 +15,7 @@
  */
 
 package fs2.data.msgpack.high
+import fs2.Chunk
 import fs2.data.msgpack.low.MsgpackItem
 
 sealed trait DeserializationResult[+A] {
@@ -24,7 +25,7 @@ sealed trait DeserializationResult[+A] {
     case x: DeserializationResult.NeedsMoreItems   => x
   }
 
-  @inline def flatMap[B](f: (A, Vector[MsgpackItem]) => DeserializationResult[B]) = this match {
+  @inline def flatMap[B](f: (A, Chunk[MsgpackItem]) => DeserializationResult[B]) = this match {
     case DeserializationResult.Ok(value, reminder) => f(value, reminder)
     case x: DeserializationResult.Err              => x
     case x: DeserializationResult.NeedsMoreItems   => x
@@ -32,9 +33,9 @@ sealed trait DeserializationResult[+A] {
 }
 
 object DeserializationResult {
-  final case class Ok[A](value: A, reminder: Vector[MsgpackItem]) extends DeserializationResult[A]
+  final case class Ok[A](value: A, reminder: Chunk[MsgpackItem]) extends DeserializationResult[A]
   final case class Err(msg: String) extends DeserializationResult[Nothing]
   final case class NeedsMoreItems(hint: Option[Long]) extends DeserializationResult[Nothing]
 
-  @inline def pure[A](x: A, items: Vector[MsgpackItem]) = Ok(x, items)
+  @inline def pure[A](x: A, items: Chunk[MsgpackItem]) = Ok(x, items)
 }

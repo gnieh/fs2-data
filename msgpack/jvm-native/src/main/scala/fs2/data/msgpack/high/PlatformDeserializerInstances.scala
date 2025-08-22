@@ -25,7 +25,7 @@ import fs2.data.msgpack.low._
 
 private[high] trait PlatformDeserializerInstances {
   implicit val instantDeserializer: MsgpackDeserializer[Instant] = getItem {
-    (item: MsgpackItem, tail: Vector[MsgpackItem]) =>
+    (item: MsgpackItem, tail: Chunk[MsgpackItem]) =>
       item match {
         case MsgpackItem.Timestamp32(seconds) =>
           val instant = java.time.Instant.ofEpochSecond(seconds.toLong)

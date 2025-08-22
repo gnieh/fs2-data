@@ -30,7 +30,7 @@ import fs2.data.msgpack.high.DeserializationResult._
 /** Deserializer parts shared by fs2.data.msgpack.high and fs2.data.msgpack.high.ast.
   */
 private[high] object DeserializerBits {
-  def runUnsignedLong(bytes: ByteVector, rest: Vector[MsgpackItem]) =
+  def runUnsignedLong(bytes: ByteVector, rest: Chunk[MsgpackItem]) =
     if (bytes.length > 8)
       Err("Number exceeds 64 bits")
     else if (bytes.length == 8 && firstBitPositive(bytes))
@@ -38,13 +38,13 @@ private[high] object DeserializerBits {
     else
       Ok(bytes.toLong(false), rest)
 
-  def runSignedLong(bytes: ByteVector, rest: Vector[MsgpackItem]) =
+  def runSignedLong(bytes: ByteVector, rest: Chunk[MsgpackItem]) =
     if (bytes.length > 8)
       Err("Number exceeds 64 bits")
     else
       Ok(bytes.toLong(true), rest)
 
-  def runUnsignedInt(bytes: ByteVector, rest: Vector[MsgpackItem]) =
+  def runUnsignedInt(bytes: ByteVector, rest: Chunk[MsgpackItem]) =
     if (bytes.length > 8)
       Err("Number exceeds 64 bits")
     else if (bytes.length > 4)
@@ -54,7 +54,7 @@ private[high] object DeserializerBits {
     else
       Ok(bytes.toInt(false), rest)
 
-  def runSignedInt(bytes: ByteVector, rest: Vector[MsgpackItem]) =
+  def runSignedInt(bytes: ByteVector, rest: Chunk[MsgpackItem]) =
     if (bytes.length > 8)
       Err("Number exceeds 64 bits")
     else if (bytes.length > 4)
@@ -62,7 +62,7 @@ private[high] object DeserializerBits {
     else
       Ok(bytes.toInt(true), rest)
 
-  def runUnsignedShort(bytes: ByteVector, rest: Vector[MsgpackItem]) =
+  def runUnsignedShort(bytes: ByteVector, rest: Chunk[MsgpackItem]) =
     if (bytes.length > 8)
       Err("Number exceeds 64 bits")
     else if (bytes.length > 2)
@@ -72,7 +72,7 @@ private[high] object DeserializerBits {
     else
       Ok(bytes.toShort(false), rest)
 
-  def runSignedShort(bytes: ByteVector, rest: Vector[MsgpackItem]) =
+  def runSignedShort(bytes: ByteVector, rest: Chunk[MsgpackItem]) =
     if (bytes.length > 8)
       Err("Number exceeds 64 bits")
     else if (bytes.length > 2)
@@ -80,7 +80,7 @@ private[high] object DeserializerBits {
     else
       Ok(bytes.toShort(true), rest)
 
-  def runUnsignedByte(bytes: ByteVector, rest: Vector[MsgpackItem]) =
+  def runUnsignedByte(bytes: ByteVector, rest: Chunk[MsgpackItem]) =
     if (bytes.length > 8)
       Err("Number exceeds 64 bits")
     else if (bytes.length > 1)
@@ -90,7 +90,7 @@ private[high] object DeserializerBits {
     else
       Ok(bytes.toByte(false), rest)
 
-  def runSignedByte(bytes: ByteVector, rest: Vector[MsgpackItem]) =
+  def runSignedByte(bytes: ByteVector, rest: Chunk[MsgpackItem]) =
     if (bytes.length > 8)
       Err("Number exceeds 64 bits")
     else if (bytes.length > 1)
@@ -98,11 +98,11 @@ private[high] object DeserializerBits {
     else
       Ok(bytes.toByte(true), rest)
 
-  def runList[A](size: Long, rest: Vector[MsgpackItem])(implicit da: MsgpackDeserializer[A]) = {
-    def go(n: Long, acc: mutable.Builder[A, List[A]], rest: Vector[MsgpackItem]): DeserializationResult[List[A]] = {
+  def runList[A](size: Long, rest: Chunk[MsgpackItem])(implicit da: MsgpackDeserializer[A]) = {
+    def go(n: Long, acc: mutable.Builder[A, List[A]], rest: Chunk[MsgpackItem]): DeserializationResult[List[A]] = {
       if (n == 0)
         Ok(acc.result(), rest)
-      else if (rest.length == 0)
+      else if (rest.size == 0)
         NeedsMoreItems(None)
       else
         da.deserialize(rest).flatMap { (value, reminder) =>
@@ -110,21 +110,21 @@ private[high] object DeserializerBits {
         }
     }
 
-    if (size > rest.length)
+    if (size > rest.size)
       NeedsMoreItems(Some(size))
     else
       go(size, List.newBuilder[A], rest)
   }
 
-  def runMap[K, V](size: Long, rest: Vector[MsgpackItem])(implicit
+  def runMap[K, V](size: Long, rest: Chunk[MsgpackItem])(implicit
       dk: MsgpackDeserializer[K],
       dv: MsgpackDeserializer[V]) = {
     def go(n: Long,
            acc: mutable.Builder[(K, V), HashMap[K, V]],
-           rest: Vector[MsgpackItem]): DeserializationResult[Map[K, V]] = {
+           rest: Chunk[MsgpackItem]): DeserializationResult[Map[K, V]] = {
       if (n == 0)
         Ok(acc.result(), rest)
-      else if (rest.length == 0)
+      else if (rest.size == 0)
         NeedsMoreItems(None)
       else
         dk.deserialize(rest).flatMap { (key, rest1) =>
@@ -141,7 +141,7 @@ private[high] object DeserializerBits {
     }
   }
 
-  def runString(bytes: ByteVector, rest: Vector[MsgpackItem]) =
+  def runString(bytes: ByteVector, rest: Chunk[MsgpackItem]) =
     bytes.decodeUtf8 match {
       case Left(e)    => Err(e.getMessage)
       case Right(str) => Ok(str, rest)

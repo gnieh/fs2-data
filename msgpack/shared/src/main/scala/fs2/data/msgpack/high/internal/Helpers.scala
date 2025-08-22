@@ -28,12 +28,13 @@ private[high] object Helpers {
   def typeMismatch(got: String, expected: String) = Err(s"Type mismatch: got $got, expected $expected")
 
   @inline
-  def getItem[A](f: (MsgpackItem, Vector[MsgpackItem]) => DeserializationResult[A]) = new MsgpackDeserializer[A] {
-    def deserialize(items: Vector[MsgpackItem]): DeserializationResult[A] =
-      items match {
-        case head +: tail => f(head, tail)
-        case _            => NeedsMoreItems(None)
+  def getItem[A](f: (MsgpackItem, Chunk[MsgpackItem]) => DeserializationResult[A]) = new MsgpackDeserializer[A] {
+    def deserialize(items: Chunk[MsgpackItem]): DeserializationResult[A] = {
+      items.head match {
+        case Some(head) => f(head, items.drop(1))
+        case None       => NeedsMoreItems(None)
       }
+    }
   }
 
   @inline def firstBitPositive(bytes: ByteVector) = (bytes.head & 0x80) == 0x80

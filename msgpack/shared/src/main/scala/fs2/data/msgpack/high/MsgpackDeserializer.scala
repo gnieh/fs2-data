@@ -26,12 +26,12 @@ import scala.annotation.tailrec
 
 /** Represents a process of extracting value of type `A` from an item stream.
   *
-  * Built-in instances are accessbile via an import `fs2.data.msgpack.high.*`.
+  * Built-in instances are accessible via an import `fs2.data.msgpack.high.*`.
   */
 trait MsgpackDeserializer[A] { self =>
-  def deserialize(items: Vector[MsgpackItem]): DeserializationResult[A]
+  def deserialize(items: Chunk[MsgpackItem]): DeserializationResult[A]
 
-  def map[B](f: A => B): MsgpackDeserializer[B] = (items: Vector[MsgpackItem]) =>
+  def map[B](f: A => B): MsgpackDeserializer[B] = (items: Chunk[MsgpackItem]) =>
     self.deserialize(items) match {
       case Ok(value, reminder) => Ok(f(value), reminder)
       case x: Err              => x
@@ -42,7 +42,7 @@ trait MsgpackDeserializer[A] { self =>
     new FlatMapDeserializer(self, f)
 
   def either[B](implicit db: MsgpackDeserializer[B]): MsgpackDeserializer[Either[A, B]] =
-    (items: Vector[MsgpackItem]) =>
+    (items: Chunk[MsgpackItem]) =>
       self.deserialize(items) match {
         case Ok(value, reminder) => Ok(Left(value), reminder)
         case _                   => db.deserialize(items).mapValue(Right(_))
@@ -56,7 +56,7 @@ private case class FlatMapDeserializer[A, B](da: MsgpackDeserializer[A], fa: A =
   @tailrec
   private def go[C, D](dc: MsgpackDeserializer[C],
                        fc: C => MsgpackDeserializer[D],
-                       items: Vector[MsgpackItem]): DeserializationResult[D] = {
+                       items: Chunk[MsgpackItem]): DeserializationResult[D] = {
     dc.deserialize(items) match {
       case Ok(value, reminder) =>
         fc(value) match {
@@ -68,7 +68,7 @@ private case class FlatMapDeserializer[A, B](da: MsgpackDeserializer[A], fa: A =
     }
   }
 
-  @inline def deserialize(items: Vector[MsgpackItem]): DeserializationResult[B] =
+  @inline def deserialize(items: Chunk[MsgpackItem]): DeserializationResult[B] =
     go[A, B](da, fa, items)
 }
 
@@ -76,7 +76,7 @@ object MsgpackDeserializer {
   def apply[A](implicit ev: MsgpackDeserializer[A]) = ev
 
   implicit val msgpackDeserializerMonad: Monad[MsgpackDeserializer] = new Monad[MsgpackDeserializer] {
-    def pure[A](x: A): MsgpackDeserializer[A] = (items: Vector[MsgpackItem]) => Ok(x, items)
+    def pure[A](x: A): MsgpackDeserializer[A] = (items: Chunk[MsgpackItem]) => Ok(x, items)
 
     def flatMap[A, B](fa: MsgpackDeserializer[A])(f: A => MsgpackDeserializer[B]): MsgpackDeserializer[B] =
       fa.flatMap(f)
