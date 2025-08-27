@@ -77,6 +77,8 @@ The main operators in the namespace are:
  - `filter.first(path)` which is a `Pipe` returning the tokens of the first match only.
  - `filter.collect(path, collector)` which uses the provided `collector` to aggregate the tokens of each match, and emits all the aggregated results.
  - `filter.values[Json](path)` which builds the AST for each match for any type `Json` with a [`Builder`][json-builder] in scope.
+ - `filter.deserialize[Data](path)` which deserializes matching inputs to `Data` for each match for any type `Data` with a [`Deserializer`][json-deserializer] in scope.
+ - `filter.consume(path, consumer)` which sends all matches as a stream through the provided `consumer`.
  - `filter.through(path, pipe)` which sends all matches as a stream through the provided `pipe`.
 
 @:callout(info)
@@ -126,7 +128,7 @@ json
   .unsafeRunSync()
 ```
 
-The `filter.through` operator allows for handling each match in a streaming fashion.
+The `filter.consume` operator allows for consuming each match in a streaming fashion without emitting any value.
 For instance, let's say you want to save each match in a file, incrementing a counter on each match. You can run the following code.
 
 ```scala mdoc
@@ -144,7 +146,7 @@ val program =
     counter <- Ref[IO].of(0)
     _ <- json
       .lift[IO]
-      .through(filter.through(recursive, saveJson(counter, _)))
+      .through(filter.consume(recursive, saveJson(counter, _)))
       .compile
       .drain
   } yield ()
@@ -181,3 +183,4 @@ json
 [monad-error]: https://typelevel.org/cats/api/cats/MonadError.html
 [jsonpath]: https://goessner.net/articles/JsonPath/index.html
 [json-builder]: index.md#ast-builder-and-tokenizer
+[json-deserializer]: index.md#serializers-and-deserializers

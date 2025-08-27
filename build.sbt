@@ -16,14 +16,15 @@ import com.typesafe.tools.mima.core._
 import laika.config._
 import sbt.Def._
 import scala.scalanative.build._
+import xerial.sbt.Sonatype.sonatypeCentralHost
 
 val scala212 = "2.12.20"
 val scala213 = "2.13.16"
-val scala3 = "3.3.5"
+val scala3 = "3.3.6"
 val fs2Version = "3.12.0"
 val circeVersion = "0.14.8"
 val circeExtrasVersion = "0.14.2"
-val playVersion = "3.0.4"
+val playVersion = "3.0.5"
 val shapeless2Version = "2.3.11"
 val shapeless3Version = "3.4.1"
 val scalaJavaTimeVersion = "2.6.0"
@@ -31,7 +32,7 @@ val diffsonVersion = "4.6.0"
 val literallyVersion = "1.1.0"
 val weaverVersion = "0.8.4"
 
-ThisBuild / tlBaseVersion := "1.11"
+ThisBuild / tlBaseVersion := "1.12"
 
 ThisBuild / organization := "org.gnieh"
 ThisBuild / organizationName := "fs2-data Project"
@@ -45,6 +46,9 @@ ThisBuild / developers := List(
 ThisBuild / crossScalaVersions := Seq(scala212, scala213, scala3)
 ThisBuild / scalaVersion := scala213
 ThisBuild / tlJdkRelease := Some(11)
+
+ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 
 val commonSettings = List(
   versionScheme := Some("early-semver"),
@@ -505,6 +509,7 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
 lazy val msgpack = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("msgpack"))
+  .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     name := "fs2-data-msgpack",
