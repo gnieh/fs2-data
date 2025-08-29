@@ -339,6 +339,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
   .</span><span class="identifier">toList</span><span>
   .</span><span class="identifier">unsafeRunSync</span><span>()
 </span><span class="comment">// res1: List[List[Token]] = List(
+//   List(StartObject, Key(value = &quot;c&quot;), NumberValue(value = &quot;1&quot;), EndObject),
 //   List(
 //     StartObject,
 //     Key(value = &quot;a&quot;),
@@ -351,8 +352,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 //     Key(value = &quot;c&quot;),
 //     NumberValue(value = &quot;3&quot;),
 //     EndObject
-//   ),
-//   List(StartObject, Key(value = &quot;c&quot;), NumberValue(value = &quot;1&quot;), EndObject)
+//   )
 // )</span></code></pre>
         <p>The <code>filter.consume</code> operator allows for consuming each match in a streaming fashion without emitting any value.
         For instance, let&#39;s say you want to save each match in a file, incrementing a counter on each match. You can run the following code.</p>
@@ -376,7 +376,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
   } </span><span class="keyword">yield</span><span> ()
 </span><span class="comment">// program: IO[Unit] = FlatMap(
 //   ioe = Delay(
-//     thunk = cats.effect.IO$$$Lambda$11876/0x0000000803057840@10ff9cb6,
+//     thunk = cats.effect.IO$$$Lambda$11940/0x000000080171b840@4ed4d37c,
 //     event = cats.effect.tracing.TracingEvent$StackTrace
 //   ),
 //   f = &lt;function1&gt;,
