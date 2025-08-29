@@ -30,3 +30,5 @@ case class MsgpackUnexpectedEndOfStreamException(position: Option[Long] = None, 
 
 case class MsgpackMalformedByteStreamException(msg: String, inner: Throwable = null)
     extends MsgpackException(msg, inner)
+
+case class MsgpackDeserializerException(msg: String, inner: Throwable = null) extends MsgpackException(msg, inner)
