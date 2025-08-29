@@ -22,18 +22,16 @@ import org.openjdk.jmh.annotations._
 
 import cats.effect.SyncIO
 
-import fs2._
-
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @BenchmarkMode(Array(Mode.AverageTime))
 @State(org.openjdk.jmh.annotations.Scope.Benchmark)
 @Fork(value = 1)
 @Warmup(iterations = 3, time = 2)
 @Measurement(iterations = 10, time = 2)
-class MsgPackItemParserBenchmarks {
+class MsgpackItemParserBenchmarks {
   val msgpackBytes: Stream[SyncIO, Byte] =
     fs2.io
-      .readClassLoaderResource[SyncIO]("twitter_msgpack.mp", 4096)
+      .readClassLoaderResource[SyncIO]("users.mp", 4096)
       .chunks
       .compile
       .toList
