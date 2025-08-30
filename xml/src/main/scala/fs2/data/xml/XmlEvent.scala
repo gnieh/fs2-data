@@ -67,10 +67,10 @@ object XmlEvent {
   case class Comment(comment: String) extends XmlEvent
 
   implicit val show: Show[XmlEvent] = Show.show {
-    case t: XmlTexty      => t.render
-    case s: StartTag      => s.render(false)
-    case EndTag(n)        => show"</$n>"
-    case Comment(content) => s"<!--$content-->"
+    case t: XmlTexty                            => t.render
+    case s: StartTag                            => s.render(false)
+    case EndTag(n)                              => show"</$n>"
+    case Comment(content)                       => s"<!--$content-->"
     case XmlDecl(version, encoding, standalone) =>
       s"""<?xml version="$version"${encoding.foldMap(e => s""" encoding="$e"""")}${standalone.foldMap {
           case true  => s""" standalone="yes""""

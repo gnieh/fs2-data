@@ -55,7 +55,7 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
       case Some((Comma(_), idx)) =>
         next(idx).flatMap {
           case Some((Integer(i, _), idx)) => parseSeveralIndices(idx, indices + i)
-          case Some((token, _)) =>
+          case Some((token, _))           =>
             F.raiseError(new JsonSelectorException(s"invalid selector token '$token'", token.idx))
           case None =>
             F.raiseError(new JsonSelectorException("unexpected end of input", idx))
@@ -73,7 +73,7 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
       case Some((Integer(end, _), idx)) =>
         next(idx).flatMap {
           case Some((RightBracket(_), idx)) => F.pure((Selector.IndexSelector(start, end, _), idx))
-          case Some((token, _)) =>
+          case Some((token, _))             =>
             F.raiseError(new JsonSelectorException(s"invalid selector token '$token'", token.idx))
           case None =>
             F.raiseError(new JsonSelectorException("unexpected end of input", idx))
@@ -89,7 +89,7 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
       case Some((RightBracket(_), idx)) => F.pure((Selector.IndexSelector(fst, _), idx))
       case Some((Comma(_), _))          => parseSeveralIndices(idx, Set(fst))
       case Some((Colon(_), idx))        => parseRangeIndices(idx, fst)
-      case Some((token, _)) =>
+      case Some((token, _))             =>
         F.raiseError(new JsonSelectorException(s"invalid selector token '$token'", token.idx))
       case None =>
         F.raiseError(new JsonSelectorException("unexpected end of input", idx))
@@ -106,7 +106,7 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
       case Some((Comma(_), idx)) =>
         next(idx).flatMap {
           case Some((Str(s, _), idx)) => parseSeveralNames(idx, names + s)
-          case Some((token, _)) =>
+          case Some((token, _))       =>
             F.raiseError(new JsonSelectorException(s"invalid selector token '$token'", token.idx))
           case None =>
             F.raiseError(new JsonSelectorException("unexpected end of input", idx))
@@ -124,7 +124,7 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
     next(idx).flatMap {
       case Some((RightBracket(_), idx)) => parseMandatory(idx, Set(fst))
       case Some((Comma(_), _))          => parseSeveralNames(idx, Set(fst))
-      case Some((token, _)) =>
+      case Some((token, _))             =>
         F.raiseError(new JsonSelectorException(s"invalid selector token '$token'", token.idx))
       case None =>
         F.raiseError(new JsonSelectorException("unexpected end of input", idx))
@@ -135,7 +135,7 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
       case Some((RightBracket(_), idx)) => F.pure((Selector.IteratorSelector(_), idx))
       case Some((Integer(fst, _), idx)) => parseArraySelector(idx, fst)
       case Some((Str(fst, _), idx))     => parseObjectSelector(idx, fst)
-      case Some((token, _)) =>
+      case Some((token, _))             =>
         F.raiseError(new JsonSelectorException(s"invalid selector token '$token'", token.idx))
       case None =>
         F.raiseError(new JsonSelectorException("unexpected end of input", idx))
@@ -249,7 +249,7 @@ class SelectorParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
               case 'n'  => loop(idx + 2, acc.append('\n'))
               case 'r'  => loop(idx + 2, acc.append('\r'))
               case 't'  => loop(idx + 2, acc.append('\t'))
-              case 'u' =>
+              case 'u'  =>
                 val unicode =
                   (2 to 5).toList.foldLeftM(0) { case (n, i) =>
                     if (idx + i >= input.length) {

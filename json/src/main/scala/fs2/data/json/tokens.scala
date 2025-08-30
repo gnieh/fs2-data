@@ -188,7 +188,7 @@ object Token {
 
       private def closeObject(): Stream[Pure, DocEvent] =
         states match {
-          case Nil => endEmptyObject
+          case Nil           => endEmptyObject
           case state :: rest =>
             states = rest
             (state: @switch) match {
@@ -199,7 +199,7 @@ object Token {
 
       private def closeArray(): Stream[Pure, DocEvent] =
         states match {
-          case Nil => endEmptyArray
+          case Nil           => endEmptyArray
           case state :: rest =>
             states = rest
             (state: @switch) match {
@@ -297,7 +297,7 @@ object Token {
 
       private def closeObject(): Stream[Pure, DocEvent] =
         states match {
-          case Nil => endObject
+          case Nil           => endObject
           case state :: rest =>
             states = rest
             (state: @switch) match {
@@ -308,7 +308,7 @@ object Token {
 
       private def closeArray(): Stream[Pure, DocEvent] =
         states match {
-          case Nil => endArray
+          case Nil           => endArray
           case state :: rest =>
             states = rest
             (state: @switch) match {
