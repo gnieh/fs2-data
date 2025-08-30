@@ -99,7 +99,7 @@ object Selector {
   }
 
   implicit lazy val SelectorShow: Show[Selector] = Show.show {
-    case ThisSelector => "."
+    case ThisSelector                          => "."
     case NameSelector(pred, strict, mandatory) =>
       show"$pred${if (strict) "" else "?"}${if (mandatory) "!" else ""}"
     case IndexSelector(pred, strict) => show"$pred${if (strict) "" else "?"}"
