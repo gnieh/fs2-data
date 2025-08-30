@@ -35,7 +35,13 @@ import scodec.bits._
 @Warmup(iterations = 3, time = 2)
 @Measurement(iterations = 10, time = 2)
 class MsgpackDeserializerBenchmarks {
-  case class User(name: String, age: Long, aliases: List[String], balance: Double, things: Map[String, Int], raw: ByteVector, created: Instant)
+  case class User(name: String,
+                  age: Long,
+                  aliases: List[String],
+                  balance: Double,
+                  things: Map[String, Int],
+                  raw: ByteVector,
+                  created: Instant)
 
   implicit val userDecoder: MsgpackDeserializer[User] = for {
     name <- MsgpackDeserializer[String]
