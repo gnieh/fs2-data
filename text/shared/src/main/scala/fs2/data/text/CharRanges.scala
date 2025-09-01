@@ -23,7 +23,7 @@ sealed abstract class CharRanges {
   @tailrec
   final def contains(c: Char): Boolean =
     this match {
-      case CharRanges.Empty => false
+      case CharRanges.Empty                       => false
       case CharRanges.Node(min, max, left, right) =>
         if (min <= c && c <= max)
           true
@@ -66,7 +66,7 @@ object CharRanges {
               ranges: List[(Char, Char)],
               acc: VectorBuilder[(Char, Char)]): Vector[(Char, Char)] =
       ranges match {
-        case Nil => (acc += current).result()
+        case Nil                  => (acc += current).result()
         case (min, max) :: ranges =>
           if (min <= current._2 + 1)
             merge((current._1, max), ranges, acc)
@@ -75,7 +75,7 @@ object CharRanges {
       }
 
     sorted match {
-      case Nil => Empty
+      case Nil      => Empty
       case hd :: tl =>
         val merged = merge(hd, tl, new VectorBuilder)
         // now we try to keep the tree somewhat balanced, by taking the middle interval as root,

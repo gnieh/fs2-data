@@ -56,7 +56,7 @@ package object high extends DeserializerInstances with internal.PlatformDeserial
           da.deserialize(current) match {
             case Err(msg)             => Pull.raiseError(new MsgpackDeserializerException(msg))
             case NeedsMoreItems(hint) => go(current, rest, true, hint)
-            case Ok(value, reminder) =>
+            case Ok(value, reminder)  =>
               buffer.add(value)
               go(reminder, rest, false, None)
           }

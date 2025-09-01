@@ -33,7 +33,7 @@ sealed abstract class Regular[CharSet] {
       case (Regular.Epsilon(), _)               => that
       case (_, Regular.Epsilon())               => this
       case (Regular.Concatenation(re1, re2), _) => re1 ~ (re2 ~ that)
-      case (_, _) =>
+      case (_, _)                               =>
         if (this.isSatisfiable && that.isSatisfiable)
           Regular.Concatenation(this, that)
         else
@@ -46,7 +46,7 @@ sealed abstract class Regular[CharSet] {
   def &&(that: Regular[CharSet])(implicit CharSet: Pred[CharSet, _], eq: Eq[CharSet]): Regular[CharSet] =
     (this, that) match {
       case (Regular.And(re1, re2), _) => re1 && (re2 && that)
-      case (_, _) =>
+      case (_, _)                     =>
         if (this === that)
           this
         else if (this === Regular.any)
@@ -63,7 +63,7 @@ sealed abstract class Regular[CharSet] {
     (this, that) match {
       case (Regular.Or(re1, re2), _)                => re1 || (re2 || that)
       case (Regular.Chars(cs1), Regular.Chars(cs2)) => Regular.Chars(cs1 || cs2)
-      case (_, _) =>
+      case (_, _)                                   =>
         if (this === that)
           this
         else if (this === Regular.any)
@@ -83,7 +83,7 @@ sealed abstract class Regular[CharSet] {
       case Regular.Not(re)   => re
       case Regular.Chars(cs) => Regular.Chars(!cs)
       case Regular.Epsilon() => Regular.any
-      case _ =>
+      case _                 =>
         if (this === Regular.any)
           Regular.empty
         else if (this === Regular.empty)
@@ -95,7 +95,7 @@ sealed abstract class Regular[CharSet] {
   def rep(implicit CharSet: Pred[CharSet, _], eq: Eq[CharSet]): Regular[CharSet] =
     this match {
       case Regular.Star(_) => this
-      case _ =>
+      case _               =>
         if (this === Regular.epsilon)
           Regular.epsilon
         else if (this === Regular.empty)
@@ -118,9 +118,9 @@ sealed abstract class Regular[CharSet] {
 
   def derive[C](c: C)(implicit CharSet: Pred[CharSet, C], eq: Eq[CharSet]): Regular[CharSet] =
     this match {
-      case Regular.Epsilon()                               => Regular.Chars(CharSet.never)
-      case Regular.Chars(set) if CharSet.satisfies(set)(c) => Regular.Epsilon()
-      case Regular.Chars(_)                                => Regular.Chars(CharSet.never)
+      case Regular.Epsilon()                                    => Regular.Chars(CharSet.never)
+      case Regular.Chars(set) if CharSet.satisfies(set)(c)      => Regular.Epsilon()
+      case Regular.Chars(_)                                     => Regular.Chars(CharSet.never)
       case Regular.Concatenation(re1, re2) if re1.acceptEpsilon =>
         (re1.derive(c) ~ re2) || re2.derive(c)
       case Regular.Concatenation(re1, re2) =>
@@ -173,7 +173,7 @@ sealed abstract class Regular[CharSet] {
           }
           equivalent match {
             case Some(tgt1) => (qs, transitions.combine(Map(q -> List(cs -> tgt1))))
-            case None =>
+            case None       =>
               val qs1 = qs.append(tgt)
               val q1 = qs.size.toInt
               val transitions1 = transitions.combine(Map(q -> List(cs -> q1)))
@@ -217,7 +217,7 @@ object Regular {
     case (Chars(cs1), Chars(cs2))                               => cs1 === cs2
     case (Star(re1), Star(re2))                                 => re1 === re2
     case (Concatenation(re11, re12), Concatenation(re21, re22)) => re11 === re21 && re12 === re22
-    case (Or(re11, re12), Or(re21, re22)) =>
+    case (Or(re11, re12), Or(re21, re22))                       =>
       (re11 === re21 && re12 === re22) || (re11 === re22 && re12 === re21)
     case (And(re11, re12), And(re21, re22)) =>
       (re11 === re21 && re12 === re22) || (re11 === re22 && re12 === re21)
@@ -239,9 +239,9 @@ object Regular {
 
       override def satisfies(p: Regular[CharSet])(e: C): Boolean =
         p match {
-          case Epsilon()  => false
-          case Chars(set) => set.satisfies(e)
-          case Star(re)   => re.satisfies(e)
+          case Epsilon()               => false
+          case Chars(set)              => set.satisfies(e)
+          case Star(re)                => re.satisfies(e)
           case Concatenation(re1, re2) =>
             re1.satisfies(e) || (re1.acceptEpsilon && re2.satisfies(e))
           case Or(re1, re2)  => re1.satisfies(e) || re2.satisfies(e)

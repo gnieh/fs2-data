@@ -56,7 +56,7 @@ private[json] object PathMatcher {
 
       override def satisfies(p: PathMatcher)(e: TaggedJson): Boolean =
         (p, e) match {
-          case (True, _) => true
+          case (True, _)                                             => true
           case (Range(low, high), TaggedJson.StartArrayElement(idx)) =>
             idx >= low && idx <= high
           case (AnyKey, TaggedJson.StartObjectValue(_))   => true

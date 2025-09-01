@@ -399,7 +399,7 @@ private[xml] object EventParser {
         peekChar(ctx, chunkAcc).flatMap {
           case Some((ctx, chunkAcc, '<')) =>
             readMarkupToken(ctx, chunkAcc).flatMap {
-              case (ctx, chunkAcc, MarkupToken.CommentToken(None)) => scanMisc(ctx, chunkAcc)
+              case (ctx, chunkAcc, MarkupToken.CommentToken(None))          => scanMisc(ctx, chunkAcc)
               case (ctx, chunkAcc, MarkupToken.CommentToken(Some(comment))) =>
                 scanMisc(ctx, chunkAcc += XmlEvent.Comment(comment))
               case res @ (_, _, MarkupToken.PIToken(_))    => Pull.pure(Some(res))
@@ -703,7 +703,7 @@ private[xml] object EventParser {
           case Some((ctx, chunkAcc, '<')) => Pull.pure((ctx, chunkAcc, XmlEvent.XmlString(sb.toString, false)))
           case None                       => Pull.pure((ctx, chunkAcc, XmlEvent.XmlString(sb.toString, false)))
           case Some((ctx, chunkAcc, '&')) => Pull.pure((ctx, chunkAcc, XmlEvent.XmlString(sb.toString, false)))
-          case Some((ctx, chunkAcc, _)) =>
+          case Some((ctx, chunkAcc, _))   =>
             peekChar(T.advance(ctx), chunkAcc).flatMap {
               case Some((ctx, chunkAcc, '\n')) =>
                 sb.append('\n')
