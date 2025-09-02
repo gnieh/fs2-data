@@ -28,7 +28,7 @@ val playVersion = "3.0.5"
 val shapeless2Version = "2.3.13"
 val shapeless3Version = "3.5.0"
 val scalaJavaTimeVersion = "2.6.0"
-val diffsonVersion = "4.6.0"
+val diffsonVersion = "4.6-f7ab2a1-20250902T065807Z-SNAPSHOT"
 val literallyVersion = "1.2.0"
 val weaverVersion = "0.10-c027a6c-SNAPSHOT"
 
@@ -534,7 +534,9 @@ lazy val benchmarks = crossProject(JVMPlatform)
   )
   .dependsOn(csv, scalaXml, jsonCirce, msgpack)
 
-lazy val exampleJq = crossProject(JVMPlatform, NativePlatform, JSPlatform)
+// NOTE: cross build disabled for NativePlatform due to decline-effect missing on native
+// lazy val exampleJq = crossProject(JVMPlatform, NativePlatform, JSPlatform)
+lazy val exampleJq = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("examples/jqlike"))
   .enablePlugins(NoPublishPlugin)
@@ -543,18 +545,18 @@ lazy val exampleJq = crossProject(JVMPlatform, NativePlatform, JSPlatform)
     name := "jq-like",
     libraryDependencies ++= List(
       "co.fs2" %%% "fs2-io" % fs2Version,
-      "com.monovore" %%% "decline-effect" % "2.4.1"
+      "com.monovore" %%% "decline-effect" % "2.5.0"
     )
   )
   .jvmSettings(
     assembly / mainClass := Some("fs2.data.example.jqlike.JqLike"),
     assembly / assemblyJarName := "jq-like.jar"
   )
-  .nativeSettings(nativeConfig ~= {
-    _.withLTO(LTO.thin)
-      .withMode(Mode.releaseFast)
-      .withGC(GC.immix)
-  })
+  // .nativeSettings(nativeConfig ~= {
+  //   _.withLTO(LTO.thin)
+  //     .withMode(Mode.releaseFast)
+  //     .withGC(GC.immix)
+  // })
   .jsSettings(
     scalaJSUseMainModuleInitializer := true,
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
