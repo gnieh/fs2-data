@@ -537,7 +537,6 @@ lazy val benchmarks = crossProject(JVMPlatform)
   .dependsOn(csv, scalaXml, jsonCirce, msgpack)
 
 // NOTE: cross build disabled for NativePlatform due to decline-effect missing on native
-// lazy val exampleJq = crossProject(JVMPlatform, NativePlatform, JSPlatform)
 lazy val exampleJq = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("examples/jqlike"))
@@ -554,6 +553,7 @@ lazy val exampleJq = crossProject(JVMPlatform, JSPlatform)
     assembly / mainClass := Some("fs2.data.example.jqlike.JqLike"),
     assembly / assemblyJarName := "jq-like.jar"
   )
+  // Uncomment when decline-effect is available for SN 0.5.x
   // .nativeSettings(nativeConfig ~= {
   //   _.withLTO(LTO.thin)
   //     .withMode(Mode.releaseFast)
