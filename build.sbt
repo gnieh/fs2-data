@@ -28,7 +28,7 @@ val playVersion = "3.0.5"
 val shapeless2Version = "2.3.13"
 val shapeless3Version = "3.5.0"
 val scalaJavaTimeVersion = "2.6.0"
-val diffsonVersion = "4.6-f7ab2a1-20250902T065807Z-SNAPSHOT"
+val diffsonVersion = "5.0-8cf53fd-SNAPSHOT"
 val literallyVersion = "1.2.0"
 val weaverVersion = "0.11-b0644b4-SNAPSHOT"
 
