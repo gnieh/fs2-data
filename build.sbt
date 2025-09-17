@@ -50,6 +50,8 @@ ThisBuild / tlJdkRelease := Some(11)
 ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 
+ThisBuild / resolvers += Resolver.sonatypeCentralSnapshots
+
 val commonSettings = List(
   versionScheme := Some("early-semver"),
   libraryDependencies ++= List(
