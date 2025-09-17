@@ -274,7 +274,7 @@ jobs:
       - name: Submit Dependencies
         uses: scalacenter/sbt-dependency-submission@v2
         with:
-          modules-ignore: rootjs_2.12 rootjs_2.13 rootjs_3 fs2-data-msgpack_2.12 fs2-data-msgpack_2.13 fs2-data-msgpack_3 site_2.12 site_2.13 site_3 jq-like_2.12 jq-like_2.13 jq-like_3 benchmarks_2.12 benchmarks_2.13 benchmarks_3 fs2-data-msgpack_native0.4_2.12 fs2-data-msgpack_native0.4_2.13 fs2-data-msgpack_native0.4_3 rootjvm_2.12 rootjvm_2.13 rootjvm_3 rootnative_2.12 rootnative_2.13 rootnative_3 jq-like_sjs1_2.12 jq-like_sjs1_2.13 jq-like_sjs1_3 fs2-data-msgpack_sjs1_2.12 fs2-data-msgpack_sjs1_2.13 fs2-data-msgpack_sjs1_3 jq-like_native0.4_2.12 jq-like_native0.4_2.13 jq-like_native0.4_3
+          modules-ignore: rootjs_2.12 rootjs_2.13 rootjs_3 fs2-data-msgpack_2.12 fs2-data-msgpack_2.13 fs2-data-msgpack_3 site_2.12 site_2.13 site_3 jq-like_2.12 jq-like_2.13 jq-like_3 benchmarks_2.12 benchmarks_2.13 benchmarks_3 fs2-data-msgpack_native0.5_2.12 fs2-data-msgpack_native0.5_2.13 fs2-data-msgpack_native0.5_3 rootjvm_2.12 rootjvm_2.13 rootjvm_3 rootnative_2.12 rootnative_2.13 rootnative_3 jq-like_sjs1_2.12 jq-like_sjs1_2.13 jq-like_sjs1_3 fs2-data-msgpack_sjs1_2.12 fs2-data-msgpack_sjs1_2.13 fs2-data-msgpack_sjs1_3
           configs-ignore: test scala-tool scala-doc-tool test-internal
 
   validate-steward:
