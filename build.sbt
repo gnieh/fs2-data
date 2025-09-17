@@ -21,7 +21,7 @@ import xerial.sbt.Sonatype.sonatypeCentralHost
 val scala212 = "2.12.20"
 val scala213 = "2.13.16"
 val scala3 = "3.3.6"
-val fs2Version = "3.13.0-M6"
+val fs2Version = "3.13.0-M7"
 val circeVersion = "0.14.14"
 val circeExtrasVersion = "0.14.2"
 val playVersion = "3.0.5"
@@ -537,7 +537,6 @@ lazy val benchmarks = crossProject(JVMPlatform)
   .dependsOn(csv, scalaXml, jsonCirce, msgpack)
 
 // NOTE: cross build disabled for NativePlatform due to decline-effect missing on native
-// lazy val exampleJq = crossProject(JVMPlatform, NativePlatform, JSPlatform)
 lazy val exampleJq = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("examples/jqlike"))
@@ -554,6 +553,7 @@ lazy val exampleJq = crossProject(JVMPlatform, JSPlatform)
     assembly / mainClass := Some("fs2.data.example.jqlike.JqLike"),
     assembly / assemblyJarName := "jq-like.jar"
   )
+  // Uncomment when decline-effect is available for SN 0.5.x
   // .nativeSettings(nativeConfig ~= {
   //   _.withLTO(LTO.thin)
   //     .withMode(Mode.releaseFast)
