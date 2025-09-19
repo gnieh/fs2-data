@@ -30,7 +30,7 @@ val shapeless3Version = "3.5.0"
 val scalaJavaTimeVersion = "2.6.0"
 val diffsonVersion = "5.0-8cf53fd-SNAPSHOT"
 val literallyVersion = "1.2.0"
-val weaverVersion = "0.11-b0644b4-SNAPSHOT"
+val weaverVersion = "0.11-ddd6eba-SNAPSHOT"
 
 ThisBuild / tlBaseVersion := "1.12"
 
@@ -62,7 +62,6 @@ val commonSettings = List(
     "io.circe" %%% "circe-generic" % circeVersion % "test",
     "co.fs2" %%% "fs2-io" % fs2Version % "test",
     "org.typelevel" %%% "weaver-cats" % weaverVersion % "test",
-    "org.scalameta" %%% "munit-diff" % "1.2.0" % Test,
     "org.typelevel" %%% "weaver-scalacheck" % weaverVersion % Test,
     "com.eed3si9n.expecty" %%% "expecty" % "0.17.0" % "test",
     "org.portable-scala" %%% "portable-scala-reflect" % "1.1.3" cross CrossVersion.for3Use2_13
