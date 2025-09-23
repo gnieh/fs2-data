@@ -21,9 +21,27 @@ package msgpack
 import fs2.data.msgpack.low.MsgpackItem
 import fs2.data.msgpack.high.DeserializationResult._
 import cats.Monad
+import cats.Semigroup
 import scala.jdk.CollectionConverters._
 
-package object high extends DeserializerInstances with internal.PlatformDeserializerInstances {
+package object high
+    extends DeserializerInstances
+    with internal.PlatformDeserializerInstances
+    with SerializerInstances
+    with internal.PlatformSerializerInstances {
+
+  implicit class MsgpackSerializerSyntax[A](x: A)(implicit sa: MsgpackSerializer[A]) {
+    @inline def serialize = sa(x)
+  }
+
+  type SerializationResult = Either[String, Chunk[MsgpackItem]]
+
+  @inline implicit val serializationResultSemigroup: Semigroup[Either[String, Chunk[MsgpackItem]]] = (x, y) =>
+    for {
+      chunk1 <- x
+      chunk2 <- y
+    } yield chunk1 ++ chunk2
+
   implicit val msgpackDeserializerMonad: Monad[MsgpackDeserializer] = MsgpackDeserializer.msgpackDeserializerMonad
 
   def fromItems[F[_], A](implicit F: RaiseThrowable[F], da: MsgpackDeserializer[A]): Pipe[F, MsgpackItem, A] = {
@@ -80,4 +98,33 @@ package object high extends DeserializerInstances with internal.PlatformDeserial
     */
   @inline def deserialize[F[_], A](da: MsgpackDeserializer[A])(implicit F: RaiseThrowable[F]): Pipe[F, Byte, A] =
     deserialize(F, da)
+
+  def toItems[F[_]: RaiseThrowable, A](implicit sa: MsgpackSerializer[A]): Pipe[F, A, MsgpackItem] = { stream =>
+    @scala.annotation.tailrec
+    @inline
+    def processChunk(collected: Chunk[MsgpackItem], head: A, tail: Chunk[A]): Pull[F, MsgpackItem, Unit] =
+      sa(head) match {
+        case Left(e) =>
+          Pull.output(collected) >> Pull.raiseError(new MsgpackSerializerException(e))
+        case Right(items) =>
+          tail.head match {
+            case Some(newHead) =>
+              processChunk(collected ++ items, newHead, tail.drop(1))
+            case None =>
+              Pull.output(collected ++ items)
+          }
+      }
+
+    def go(rest: Stream[F, A]): Pull[F, MsgpackItem, Unit] =
+      rest.pull.uncons.flatMap {
+        case Some((headChunk, tail)) =>
+          processChunk(Chunk.empty, headChunk(0), headChunk.drop(1)) >> go(tail)
+        case None => Pull.done
+      }
+
+    go(stream).stream
+  }
+
+  @inline def serialize[F[_]: RaiseThrowable, A: MsgpackSerializer]: Pipe[F, A, Byte] =
+    _.through(high.toItems[F, A]).through(low.toNonValidatedBinary[F])
 }
