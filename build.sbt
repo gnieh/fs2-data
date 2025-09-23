@@ -63,6 +63,7 @@ val commonSettings = List(
     "co.fs2" %%% "fs2-io" % fs2Version % "test",
     "org.typelevel" %%% "weaver-cats" % weaverVersion % "test",
     "org.typelevel" %%% "weaver-scalacheck" % weaverVersion % Test,
+    "org.scalameta" %%% "munit-diff" % "1.2.0" % Test, // added explicitly to overcome https://github.com/typelevel/weaver-test/issues/208
     "com.eed3si9n.expecty" %%% "expecty" % "0.17.0" % "test",
     "org.portable-scala" %%% "portable-scala-reflect" % "1.1.3" cross CrossVersion.for3Use2_13
   ) ++ PartialFunction
