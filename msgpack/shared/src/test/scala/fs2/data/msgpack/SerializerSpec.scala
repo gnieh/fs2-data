@@ -169,7 +169,7 @@ object SerializerSpec extends SimpleIOSuite {
     def round(data: ByteVector) =
       Stream
         .chunk(Chunk.byteVector(data))
-        .through(low.items[IO])
+        .through(low.fromBinary[IO])
         .through(low.toNonValidatedBinary)
         .fold(ByteVector.empty)(_ :+ _)
 

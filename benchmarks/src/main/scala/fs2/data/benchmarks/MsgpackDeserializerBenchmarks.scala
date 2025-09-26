@@ -50,7 +50,7 @@ class MsgpackDeserializerBenchmarks {
   def getChunkedItems(filename: String): List[Chunk[MsgpackItem]] =
     fs2.io
       .readClassLoaderResource[SyncIO](filename, 4096)
-      .through(low.items)
+      .through(low.fromBinary)
       .chunks
       .compile
       .toList

@@ -92,7 +92,7 @@ package object high
   /** Decodes a stream of bytes into a stream of `A`s via an implicit deserializer instance.
     */
   def deserialize[F[_]: RaiseThrowable, A: MsgpackDeserializer]: Pipe[F, Byte, A] =
-    _.through(low.items[F]).through(fromItems[F, A])
+    _.through(low.fromBinary[F]).through(fromItems[F, A])
 
   /** Decodes a stream of bytes into a stream of `A`s via an explicit deserializer instance.
     */

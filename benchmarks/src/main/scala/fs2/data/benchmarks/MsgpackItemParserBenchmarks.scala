@@ -42,7 +42,7 @@ class MsgpackItemParserBenchmarks {
   @Benchmark
   def parseMsgpackItems() =
     msgpackBytes
-      .through(fs2.data.msgpack.low.items[SyncIO])
+      .through(fs2.data.msgpack.low.fromBinary[SyncIO])
       .compile
       .drain
       .unsafeRunSync()
