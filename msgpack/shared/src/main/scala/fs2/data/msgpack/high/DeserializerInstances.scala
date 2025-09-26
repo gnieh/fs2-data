@@ -53,6 +53,7 @@ private[high] class DeserializerInstances {
       item match {
         case MsgpackItem.Array(size) if size < 0            => Err(s"Negative map length ${size}")
         case MsgpackItem.Array(size) if size > Int.MaxValue => Err(s"Array size exceeds Int.MaxValue")
+        case MsgpackItem.Array(size) if size > tail.size    => NeedsMoreItems(Some(size - tail.size))
         case MsgpackItem.Array(size)                        => runList[A](size, tail)
         case _                                              => typeMismatch(item.getClass.getSimpleName, "List")
       }
@@ -126,10 +127,11 @@ private[high] class DeserializerInstances {
       dv: MsgpackDeserializer[V]): MsgpackDeserializer[Map[K, V]] = getItem {
     (item: MsgpackItem, tail: Chunk[MsgpackItem]) =>
       item match {
-        case MsgpackItem.Map(size) if size < 0            => Err(s"Negative map length ${size}")
-        case MsgpackItem.Map(size) if size > Int.MaxValue => Err(s"Map size exceeds Int.MaxValue")
-        case MsgpackItem.Map(size)                        => runMap[K, V](size, tail)
-        case _                                            => typeMismatch(item.getClass.getSimpleName, "Map")
+        case MsgpackItem.Map(size) if size < 0             => Err(s"Negative map length ${size}")
+        case MsgpackItem.Map(size) if size > Int.MaxValue  => Err(s"Map size exceeds Int.MaxValue")
+        case MsgpackItem.Map(size) if size * 2 > tail.size => NeedsMoreItems(Some(size * 2 - tail.size))
+        case MsgpackItem.Map(size)                         => runMap[K, V](size, tail)
+        case _                                             => typeMismatch(item.getClass.getSimpleName, "Map")
 
       }
   }
