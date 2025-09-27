@@ -37,8 +37,13 @@ trait SerializerInstances {
     if (x.isValidByte)
       byteSerializer(x.toByte)
     else {
-      val bv = ByteVector.fromShort(x)
-      right1(MsgpackItem.SignedInt(bv))
+      val masked = x & 0xff
+      val item =
+        if (masked == x)
+          MsgpackItem.UnsignedInt(ByteVector.fromShort(x, 1))
+        else
+          MsgpackItem.SignedInt(ByteVector.fromShort(x))
+      right1(item)
     }
   }
 
@@ -46,9 +51,14 @@ trait SerializerInstances {
     if (x.isValidShort)
       shortSerializer(x.toShort)
     else {
-      val nbytes = countBytes[Int](x >>> 2 * 8, _ >>> 8) + 2 // skip 2 because x isn't a valid short
+      val nbytes = countBytes[Int](x, _ >>> 8)
       val bv = ByteVector.fromInt(x, nbytes)
-      right1(MsgpackItem.SignedInt(bv))
+      val item =
+        if (nbytes == 2)
+          MsgpackItem.UnsignedInt(bv)
+        else
+          MsgpackItem.SignedInt(bv)
+      right1(item)
     }
   }
 
@@ -56,10 +66,10 @@ trait SerializerInstances {
     if (x.isValidInt)
       intSerializer(x.toInt)
     else {
-      val nbytes = countBytes[Long](x >>> 4 * 8, _ >>> 8) + 4 // skip 4 because x isn't a valid int
+      val nbytes = countBytes[Long](x, _ >>> 8)
       val bv = ByteVector.fromLong(x, nbytes)
       val item =
-        if (x > Int.MaxValue)
+        if (nbytes == 4)
           MsgpackItem.UnsignedInt(bv)
         else
           MsgpackItem.SignedInt(bv)
@@ -128,7 +138,7 @@ trait SerializerInstances {
     }
   }
 
-  implicit val byteVectorSerialize: MsgpackSerializer[ByteVector] = bv => right1(MsgpackItem.Bin(bv))
+  implicit val byteVectorSerializer: MsgpackSerializer[ByteVector] = bv => right1(MsgpackItem.Bin(bv))
 
   implicit def optionSerializer[A](implicit sa: MsgpackSerializer[A]): MsgpackSerializer[Option[A]] = _ match {
     case None        => right1(MsgpackItem.Nil)
