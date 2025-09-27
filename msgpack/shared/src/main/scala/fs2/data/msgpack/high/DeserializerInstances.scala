@@ -30,20 +30,16 @@ private[high] class DeserializerInstances {
     getItem { (item: MsgpackItem, tail: Chunk[MsgpackItem]) =>
       item match {
         case MsgpackItem.UnsignedInt(bytes) =>
-          if (bytes.length > 8) {
+          if (bytes.length > 8)
             Err("Number exceeds 64 bits")
-          } else {
-            val num = bytes.toLong(false)
-            Ok(BigInt(num), tail)
-          }
+          else
+            Ok(BigInt(1, bytes.toArray), tail)
 
         case MsgpackItem.SignedInt(bytes) =>
-          if (bytes.length > 8) {
+          if (bytes.length > 8)
             Err("Number exceeds 64 bits")
-          } else {
-            val num = bytes.toLong(true)
-            Ok(BigInt(num), tail)
-          }
+          else
+            Ok(BigInt(bytes.toArray), tail)
         case _ => typeMismatch(item.getClass.getSimpleName, "BigInt")
       }
     }
