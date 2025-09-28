@@ -91,4 +91,48 @@ package object ast {
     * Alias for deserialize[F, [[MsgpackValue$ MsgpackValue]]]
     */
   @inline def valuesFromBytes[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, MsgpackValue] = deserialize[F, MsgpackValue]
+
+  implicit val valueSerializer: MsgpackSerializer[MsgpackValue] = _ match {
+    case MsgpackValue.Integer(x)            => longSerializer(x)
+    case MsgpackValue.String(x)             => stringSerializer(x)
+    case MsgpackValue.Bin(x)                => byteVectorSerializer(x)
+    case MsgpackValue.Boolean(x)            => boolSerializer(x)
+    case MsgpackValue.Float(x)              => floatSerializer(x)
+    case MsgpackValue.Double(x)             => doubleSerializer(x)
+    case MsgpackValue.Nil                   => right1(MsgpackItem.Nil)
+    case MsgpackValue.Extension(tpe, bytes) => right1(MsgpackItem.Extension(tpe, bytes))
+    case MsgpackValue.Array(x)              => listSerializer(valueSerializer)(x)
+    case MsgpackValue.Map(x)                => mapSerializer(valueSerializer, valueSerializer)(x)
+    case MsgpackValue.Timestamp(nanoseconds, seconds) =>
+      // TODO: DRY - similar pattern in Instant and js.Date serializers
+      val secondsLow32: Long = seconds & 0xffffffff
+      val secondsLow34: Long = seconds & 0x3ffffffffL
+      val nanoLow30: Int = nanoseconds & 0x3fffffff
+
+      val item: MsgpackItem =
+        if (nanoseconds == 0 && (secondsLow32 == seconds)) {
+          MsgpackItem.Timestamp32(seconds.toInt)
+        } else if (nanoLow30 == nanoseconds && secondsLow34 == seconds) {
+          val combined = (nanoLow30.toLong << 34) | secondsLow34
+          MsgpackItem.Timestamp64(combined)
+        } else {
+          MsgpackItem.Timestamp96(nanoseconds, seconds)
+        }
+
+      right1(item)
+  }
+
+  /** Serializes a stream of [[MsgpackValue$ MsgpackValues]] into a stream of [[fs2.data.msgpack.low.MsgpackItem MsgpackItems]]
+    *
+    * Alias for toItems[F, [[MsgpackValue$ MsgpackValue]]]
+    */
+  @inline def valuesToItems[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, MsgpackValue, MsgpackItem] =
+    toItems[F, MsgpackValue]
+
+  /** Serializes a stream of [[MsgpackValue$ MsgpackValues]] into a stream of bytes
+    *
+    * Alias for serialize[F, [[MsgpackValue$ MsgpackValue]]]
+    */
+  @inline def valuesToBytes[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, MsgpackValue, Byte] =
+    serialize[F, MsgpackValue]
 }
