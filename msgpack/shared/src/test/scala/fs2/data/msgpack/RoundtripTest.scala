@@ -69,7 +69,6 @@ object RoundtripTest extends SimpleIOSuite with Checkers {
       ride[BigInt](Gen.choose(BigInt(Long.MinValue), BigInt(Long.MaxValue) * 2 - 1)), // max 64bit uint
       ride[String],
       ride[Boolean],
-
       ride[List[String]],
       ride[Map[Int, Boolean]],
       ride[Option[Int]],

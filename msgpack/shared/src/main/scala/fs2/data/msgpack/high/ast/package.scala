@@ -90,19 +90,20 @@ package object ast {
     *
     * Alias for deserialize[F, [[MsgpackValue$ MsgpackValue]]]
     */
-  @inline def valuesFromBytes[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, MsgpackValue] = deserialize[F, MsgpackValue]
+  @inline def valuesFromBytes[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, MsgpackValue] =
+    deserialize[F, MsgpackValue]
 
   implicit val valueSerializer: MsgpackSerializer[MsgpackValue] = _ match {
-    case MsgpackValue.Integer(x)            => longSerializer(x)
-    case MsgpackValue.String(x)             => stringSerializer(x)
-    case MsgpackValue.Bin(x)                => byteVectorSerializer(x)
-    case MsgpackValue.Boolean(x)            => boolSerializer(x)
-    case MsgpackValue.Float(x)              => floatSerializer(x)
-    case MsgpackValue.Double(x)             => doubleSerializer(x)
-    case MsgpackValue.Nil                   => right1(MsgpackItem.Nil)
-    case MsgpackValue.Extension(tpe, bytes) => right1(MsgpackItem.Extension(tpe, bytes))
-    case MsgpackValue.Array(x)              => listSerializer(valueSerializer)(x)
-    case MsgpackValue.Map(x)                => mapSerializer(valueSerializer, valueSerializer)(x)
+    case MsgpackValue.Integer(x)                      => longSerializer(x)
+    case MsgpackValue.String(x)                       => stringSerializer(x)
+    case MsgpackValue.Bin(x)                          => byteVectorSerializer(x)
+    case MsgpackValue.Boolean(x)                      => boolSerializer(x)
+    case MsgpackValue.Float(x)                        => floatSerializer(x)
+    case MsgpackValue.Double(x)                       => doubleSerializer(x)
+    case MsgpackValue.Nil                             => right1(MsgpackItem.Nil)
+    case MsgpackValue.Extension(tpe, bytes)           => right1(MsgpackItem.Extension(tpe, bytes))
+    case MsgpackValue.Array(x)                        => listSerializer(valueSerializer)(x)
+    case MsgpackValue.Map(x)                          => mapSerializer(valueSerializer, valueSerializer)(x)
     case MsgpackValue.Timestamp(nanoseconds, seconds) =>
       // TODO: DRY - similar pattern in Instant and js.Date serializers
       val secondsLow32: Long = seconds & 0xffffffff

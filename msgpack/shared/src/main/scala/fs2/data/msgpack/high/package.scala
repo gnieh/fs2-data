@@ -89,16 +89,19 @@ package object high
   @inline def fromItems[F[_], A](da: MsgpackDeserializer[A])(implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, A] =
     fromItems(F, da)
 
-  /** Decodes a stream of bytes into a stream of `A`s via an implicit deserializer instance.
+  /** Deserializes a stream of bytes into a stream of `A`s via an implicit deserializer instance.
     */
   def deserialize[F[_]: RaiseThrowable, A: MsgpackDeserializer]: Pipe[F, Byte, A] =
     _.through(low.fromBinary[F]).through(fromItems[F, A])
 
-  /** Decodes a stream of bytes into a stream of `A`s via an explicit deserializer instance.
+  /** Deserializes a stream of bytes into a stream of `A`s via an explicit deserializer instance.
     */
   @inline def deserialize[F[_], A](da: MsgpackDeserializer[A])(implicit F: RaiseThrowable[F]): Pipe[F, Byte, A] =
     deserialize(F, da)
 
+  /** Converts a stream of `A` into a stream of [[fs2.data.msgpack.low.MsgpackItem$ MsgpackItems]] via an explicit
+    * [[fs2.data.msgpack.high.MsgpackSerializer$ MsgpackSerializer]] instance.
+    */
   def toItems[F[_]: RaiseThrowable, A](implicit sa: MsgpackSerializer[A]): Pipe[F, A, MsgpackItem] = { stream =>
     @scala.annotation.tailrec
     @inline
@@ -125,6 +128,19 @@ package object high
     go(stream).stream
   }
 
+  /** Converts a stream of `A` into a stream of [[fs2.data.msgpack.low.MsgpackItem$ MsgpackItems]] via an implicit
+    * [[fs2.data.msgpack.high.MsgpackSerializer$ MsgpackSerializer]] instance.
+    */
+  @inline def toItems[F[_], A](sa: MsgpackSerializer[A])(implicit F: RaiseThrowable[F]): Pipe[F, A, MsgpackItem] =
+    toItems(F, sa)
+
+  /** Serializes a stream of `A`s into a stream of bytes via an implicit deserializer instance.
+    */
   @inline def serialize[F[_]: RaiseThrowable, A: MsgpackSerializer]: Pipe[F, A, Byte] =
     _.through(high.toItems[F, A]).through(low.toNonValidatedBinary[F])
+
+  /** Serializes a stream of `A`s into a stream of bytes via an implicit deserializer instance.
+    */
+  @inline def serialize[F[_], A](sa: MsgpackSerializer[A])(implicit F: RaiseThrowable[F]): Pipe[F, A, Byte] =
+    serialize(F, sa)
 }
