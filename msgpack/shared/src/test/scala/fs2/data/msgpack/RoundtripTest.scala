@@ -17,13 +17,11 @@
 package fs2
 package data.msgpack
 
-import low.MsgpackItem
 import high._
 
 import cats.effect.IO
 import cats.Show
 import org.scalacheck.Arbitrary
-import scodec.bits._
 import weaver._
 import weaver.scalacheck._
 
