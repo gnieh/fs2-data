@@ -116,9 +116,9 @@ class JsonPathParser[F[_]](val input: String)(implicit F: MonadError[F, Throwabl
 
   private val predicate: Parser[Either[Predicate, Property]] =
     peek.flatMap[Either[Predicate, Property], Int] {
-      case Some('"') => string.map(Property.Name(_).asRight)
-      case Some(':') => consume >> int.map(i => Predicate.Range(0, i.some).asLeft)
-      case Some('*') => consume >> pure(Predicate.Wildcard.asLeft)
+      case Some('"')             => string.map(Property.Name(_).asRight)
+      case Some(':')             => consume >> int.map(i => Predicate.Range(0, i.some).asLeft)
+      case Some('*')             => consume >> pure(Predicate.Wildcard.asLeft)
       case Some(d) if isDigit(d) =>
         int.flatMap { low =>
           peek.flatMap {
