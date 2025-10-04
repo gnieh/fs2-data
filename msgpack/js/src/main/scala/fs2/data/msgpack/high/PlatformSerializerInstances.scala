@@ -26,13 +26,13 @@ private[high] trait PlatformSerializerInstances {
   implicit val dateSerializer: MsgpackSerializer[js.Date] = { (date: js.Date) =>
     val milis: Long = date.getTime().toLong // NaN is casted to 0
     val seconds: Long = milis / 1000
-    val nano: Int = (milis % 1000).toInt * 1000000 
+    val nano: Int = (milis % 1000).toInt * 1000000
 
     val secondsLow32: Long = seconds & 0xffffffff
     val secondsLow34: Long = seconds & 0x3ffffffffL
     val nanoLow30: Int = nano & 0x3fffffff
 
-    val item: MsgpackItem = 
+    val item: MsgpackItem =
       if (nano == 0 && (secondsLow32 == seconds)) {
         MsgpackItem.Timestamp32(seconds.toInt)
       } else if (nanoLow30 == nano && secondsLow34 == seconds) {
