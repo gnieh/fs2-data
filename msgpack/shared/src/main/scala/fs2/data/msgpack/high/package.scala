@@ -20,8 +20,7 @@ package msgpack
 
 import fs2.data.msgpack.low.MsgpackItem
 import fs2.data.msgpack.high.DeserializationResult._
-import cats.Monad
-import cats.Semigroup
+import cats._
 import scala.jdk.CollectionConverters._
 
 package object high
@@ -35,12 +34,6 @@ package object high
   }
 
   type SerializationResult = Either[String, Chunk[MsgpackItem]]
-
-  @inline implicit val serializationResultSemigroup: Semigroup[Either[String, Chunk[MsgpackItem]]] = (x, y) =>
-    for {
-      chunk1 <- x
-      chunk2 <- y
-    } yield chunk1 ++ chunk2
 
   implicit val msgpackDeserializerMonad: Monad[MsgpackDeserializer] = MsgpackDeserializer.msgpackDeserializerMonad
 

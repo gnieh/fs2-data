@@ -118,7 +118,7 @@ trait SerializerInstances {
       sv: MsgpackSerializer[V]): MsgpackSerializer[Map[K, V]] = { map =>
     val header = Chunk(MsgpackItem.Map(map.size.toLong))
 
-    map.foldLeft(Right(header): Either[String, Chunk[MsgpackItem]]) { case (result, (k, v)) =>
+    map.foldLeft(Right(header): SerializationResult) { case (result, (k, v)) =>
       for {
         acc <- result
         key <- sk(k)
@@ -130,7 +130,7 @@ trait SerializerInstances {
   @inline implicit def listSerializer[A](implicit sa: MsgpackSerializer[A]): MsgpackSerializer[List[A]] = { list =>
     val header = Chunk(MsgpackItem.Array(list.size.toLong))
 
-    list.foldLeft(Right(header): Either[String, Chunk[MsgpackItem]]) { (result, x) =>
+    list.foldLeft(Right(header): SerializationResult) { (result, x) =>
       for {
         acc <- result
         item <- sa(x)
