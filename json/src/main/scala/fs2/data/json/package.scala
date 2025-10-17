@@ -143,6 +143,43 @@ package object json {
 
   }
 
+  object unwrap {
+
+    /** Strips the top-level array from a stream of Json tokens.
+      *
+      * If the stream does not start with `[` and end with `]`, an error is raised.
+      */
+    def stripTopLevelArray[F[_]: RaiseThrowable]: Pipe[F, Token, Token] = { tokens =>
+      def invalidFirst(first: Option[Token]): JsonException =
+        JsonException(s"Expected start of array, got: $first")
+
+      def invalidLast(last: Option[Token]): JsonException =
+        JsonException(s"Expected end of array, got: $last")
+
+      def init(stream: Stream[F, Token]): Pull[F, Token, Unit] =
+        stream.pull.uncons.flatMap {
+          case Some((chunk, tail)) =>
+            if (chunk.head.forall(_ == Token.StartArray))
+              loop(tail, chunk.drop(1))
+            else
+              Pull.raiseError(invalidFirst(chunk.head))
+          case None => Pull.done
+        }
+
+      def loop(stream: Stream[F, Token], prev: Chunk[Token]): Pull[F, Token, Unit] =
+        stream.pull.uncons.flatMap {
+          case Some((chunk, tail)) => Pull.output(prev) >> loop(tail, chunk)
+          case None                =>
+            if (prev.last.forall(_ == Token.EndArray))
+              Pull.output(prev.dropRight(1)) >> Pull.done
+            else
+              Pull.raiseError(invalidLast(prev.last))
+        }
+
+      init(tokens).stream
+    }
+  }
+
   /** Json Token stream pipes to render Json values. */
   object render {
 
