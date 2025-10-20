@@ -147,9 +147,13 @@ package object json {
 
     /** Strips the top-level array from a stream of Json tokens.
       *
-      * If the stream does not start with `[` and end with `]`, an error is raised.
+      * If `strict` is set to `true`, then the stream is expected to start with
+      * a `[` token, and end with a `]` token. If it is not the case or if it is empty,
+      * a `JsonException` is raised.
+      * If `strict` is set to `false`, then either the stream is enclosed in `[` and `]`, 
+      * in which case they are stripped, or the stream is left unchanged.
       */
-    def stripTopLevelArray[F[_]: RaiseThrowable]: Pipe[F, Token, Token] = { tokens =>
+    def stripTopLevelArray[F[_]: RaiseThrowable](strict: Boolean = true): Pipe[F, Token, Token] = { tokens =>
       def invalidFirst(first: Option[Token]): JsonException =
         JsonException(s"Expected start of array, got: $first")
 
@@ -161,9 +165,12 @@ package object json {
           case Some((chunk, tail)) =>
             if (chunk.head.forall(_ == Token.StartArray))
               loop(tail, chunk.drop(1))
-            else
-              Pull.raiseError(invalidFirst(chunk.head))
-          case None => Pull.done
+            else if (strict) Pull.raiseError(invalidFirst(chunk.head))
+            else stream.pull.echo
+
+          case None =>
+            if (strict) Pull.raiseError(invalidFirst(None))
+            else Pull.done
         }
 
       def loop(stream: Stream[F, Token], prev: Chunk[Token]): Pull[F, Token, Unit] =

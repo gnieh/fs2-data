@@ -25,44 +25,74 @@ object UnwrapSpec extends SimpleIOSuite {
   val obj: Chunk[Token] =
     Chunk(Token.StartObject, Token.EndObject)
 
-  pureTest("Unwrapping single chunk") {
+  val strict = unwrap.stripTopLevelArray[fs2.Fallible](strict = true)
+  val lenient = unwrap.stripTopLevelArray[fs2.Fallible](strict = false)
+
+  pureTest("Unwrapping empty stream - strict") {
+    val stream = Stream.empty.covary[Fallible]
+
+    val obtained = stream.through(strict).compile.toList
+    val expected = Left(JsonException("Expected start of array, got: None"))
+
+    expect.same(obtained, expected)
+  }
+
+  pureTest("Unwrapping empty stream - lenient") {
+    val wrapped = Stream.empty.covary[Fallible]
+
+    val obtained = wrapped.through(lenient).compile.toList
+    val expected = Right(List.empty[Token])
+
+    expect.same(obtained, expected)
+  }
+
+  pureTest("Unwrapping single chunk - strict") {
     val unwrapped = Stream.chunk(obj).covary[Fallible]
     val wrapped = Stream.chunk(Chunk(Token.StartArray) ++ obj ++ Chunk(Token.EndArray))
 
-    val obtained = wrapped.through(unwrap.stripTopLevelArray[fs2.Fallible]).compile.toList
+    val obtained = wrapped.through(strict).compile.toList
     val expected = unwrapped.compile.toList
 
     expect.same(obtained, expected)
   }
 
-  pureTest("Unwrapping single chunk - missing array start") {
+  pureTest("Unwrapping single chunk - lenient without array") {
+    val stream = Stream.chunk(obj).covary[Fallible]
+
+    val obtained = stream.through(lenient).compile.toList
+    val expected = stream.compile.toList
+
+    expect.same(obtained, expected)
+  }
+
+  pureTest("Unwrapping single chunk - strict - missing array start") {
     val wrapped = Stream.chunk(obj ++ Chunk(Token.EndArray))
 
-    val obtained = wrapped.through(unwrap.stripTopLevelArray[fs2.Fallible]).compile.toList
+    val obtained = wrapped.through(strict).compile.toList
     val expected = Left(JsonException("Expected start of array, got: Some(StartObject)"))
 
     expect.same(obtained, expected)
   }
 
-  pureTest("Unwrapping single chunk - missing array end") {
+  pureTest("Unwrapping single chunk  - strict - missing array end") {
     val wrapped = Stream.chunk(Chunk(Token.StartArray) ++ obj)
 
-    val obtained = wrapped.through(unwrap.stripTopLevelArray[fs2.Fallible]).compile.toList
+    val obtained = wrapped.through(strict).compile.toList
     val expected = Left(JsonException("Expected end of array, got: Some(EndObject)"))
 
     expect.same(obtained, expected)
   }
 
-  pureTest("Unwrapping single chunk - missing both ends so fails on start") {
+  pureTest("Unwrapping single chunk - strict - missing both ends so fails on start") {
     val wrapped = Stream.chunk(obj)
 
-    val obtained = wrapped.through(unwrap.stripTopLevelArray[fs2.Fallible]).compile.toList
+    val obtained = wrapped.through(strict).compile.toList
     val expected = Left(JsonException("Expected start of array, got: Some(StartObject)"))
 
     expect.same(obtained, expected)
   }
 
-  pureTest("Unwrapping multiple chunks") {
+  pureTest("Unwrapping multiple chunks - strict") {
     val elem = Stream.chunk(obj).covary[Fallible]
     val header = Stream.chunk(Chunk(Token.StartArray) ++ obj)
     val trailer = Stream.chunk(obj ++ Chunk(Token.EndArray))
@@ -71,31 +101,54 @@ object UnwrapSpec extends SimpleIOSuite {
 
     val wrapped = header ++ elem ++ trailer
 
-    val obtained = wrapped.through(unwrap.stripTopLevelArray[fs2.Fallible]).compile.toList
+    val obtained = wrapped.through(strict).compile.toList
     val expected = unwrapped.compile.toList
 
     expect.same(obtained, expected)
   }
 
-  pureTest("Unwrapping multiple chunks - missing array start") {
+  pureTest("Unwrapping multiple chunks - lenient") {
+    val elem = Stream.chunk(obj).covary[Fallible]
+
+    val stream = elem.repeatN(3)
+
+    val obtained = stream.through(lenient).compile.toList
+    val expected = stream.compile.toList
+
+    expect.same(obtained, expected)
+  }
+
+  pureTest("Unwrapping multiple chunks - strict - missing array start") {
     val elem = Stream.chunk(obj).covary[Fallible]
     val trailer = Stream.chunk(obj ++ Chunk(Token.EndArray))
 
     val wrapped = elem ++ trailer
 
-    val obtained = wrapped.through(unwrap.stripTopLevelArray[fs2.Fallible]).compile.toList
+    val obtained = wrapped.through(strict).compile.toList
     val expected = Left(JsonException("Expected start of array, got: Some(StartObject)"))
 
     expect.same(obtained, expected)
   }
 
-  pureTest("Unwrapping multiple chunks - missing array end") {
+  pureTest("Unwrapping multiple chunks - strict - missing array end") {
     val elem = Stream.chunk(obj).covary[Fallible]
     val header = Stream.chunk(Chunk(Token.StartArray) ++ obj)
 
     val wrapped = header ++ elem
 
-    val obtained = wrapped.through(unwrap.stripTopLevelArray[fs2.Fallible]).compile.toList
+    val obtained = wrapped.through(strict).compile.toList
+    val expected = Left(JsonException("Expected end of array, got: Some(EndObject)"))
+
+    expect.same(obtained, expected)
+  }
+
+  pureTest("Unwrapping multiple chunks - lenient - missing array end") {
+    val elem = Stream.chunk(obj).covary[Fallible]
+    val header = Stream.chunk(Chunk(Token.StartArray) ++ obj)
+
+    val wrapped = header ++ elem
+
+    val obtained = wrapped.through(lenient).compile.toList
     val expected = Left(JsonException("Expected end of array, got: Some(EndObject)"))
 
     expect.same(obtained, expected)
