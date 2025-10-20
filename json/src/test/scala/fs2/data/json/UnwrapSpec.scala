@@ -46,6 +46,26 @@ object UnwrapSpec extends SimpleIOSuite {
     expect.same(obtained, expected)
   }
 
+  pureTest("Unwrapping `[]` - strict") {
+    val unwrapped = Stream.empty.covary[Fallible]
+    val wrapped = Stream.chunk(Chunk(Token.StartArray) ++ Chunk(Token.EndArray))
+
+    val obtained = wrapped.through(strict).compile.toList
+    val expected = unwrapped.compile.toList
+
+    expect.same(obtained, expected)
+  }
+
+  pureTest("Unwrapping `[]` - lenient") {
+    val unwrapped = Stream.empty.covary[Fallible]
+    val wrapped = Stream.chunk(Chunk(Token.StartArray) ++ Chunk(Token.EndArray))
+
+    val obtained = wrapped.through(lenient).compile.toList
+    val expected = unwrapped.compile.toList
+
+    expect.same(obtained, expected)
+  }
+
   pureTest("Unwrapping single chunk - strict") {
     val unwrapped = Stream.chunk(obj).covary[Fallible]
     val wrapped = Stream.chunk(Chunk(Token.StartArray) ++ obj ++ Chunk(Token.EndArray))
