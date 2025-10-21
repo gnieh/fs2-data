@@ -66,7 +66,7 @@ val commonSettings = List(
   ) ++ PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
       List(
-        compilerPlugin("org.typelevel" % "kind-projector" % "0.13.3" cross CrossVersion.full),
+        compilerPlugin("org.typelevel" % "kind-projector" % "0.13.4" cross CrossVersion.full),
         compilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary)
       )
     }
