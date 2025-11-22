@@ -24,7 +24,7 @@ import scodec.bits.*
 import low.MsgpackItem
 import scala.annotation.tailrec
 
-trait SerializerInstances {
+private[high] trait SerializerInstances extends internal.PlatformSerializerInstances {
   def right1(x: MsgpackItem) = Right(Chunk(x))
 
   private def countBytes[A](x: A, f: A => A): Int = {

@@ -25,7 +25,7 @@ import fs2.data.msgpack.high.internal.DeserializerBits._
 import scodec.bits.ByteVector
 import fs2.data.msgpack.high.DeserializationResult._
 
-private[high] class DeserializerInstances {
+private[high] trait DeserializerInstances extends internal.PlatformDeserializerInstances {
   implicit val bigIntDeserializer: MsgpackDeserializer[BigInt] =
     getItem { (item: MsgpackItem, tail: Chunk[MsgpackItem]) =>
       item match {

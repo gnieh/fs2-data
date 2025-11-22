@@ -23,12 +23,7 @@ import fs2.data.msgpack.high.DeserializationResult._
 import cats._
 import scala.jdk.CollectionConverters._
 
-package object high
-    extends DeserializerInstances
-    with internal.PlatformDeserializerInstances
-    with SerializerInstances
-    with internal.PlatformSerializerInstances {
-
+package object high extends DeserializerInstances with SerializerInstances {
   implicit class MsgpackSerializerSyntax[A](x: A)(implicit sa: MsgpackSerializer[A]) {
     @inline def serialize = sa(x)
   }
