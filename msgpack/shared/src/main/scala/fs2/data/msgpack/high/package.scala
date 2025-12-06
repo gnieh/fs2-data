@@ -92,7 +92,6 @@ package object high extends DeserializerInstances with SerializerInstances {
     */
   def toItems[F[_]: RaiseThrowable, A](implicit sa: MsgpackSerializer[A]): Pipe[F, A, MsgpackItem] = { stream =>
     @scala.annotation.tailrec
-    @inline
     def processChunk(collected: Chunk[MsgpackItem], head: A, tail: Chunk[A]): Pull[F, MsgpackItem, Unit] =
       sa(head) match {
         case Left(e) =>

@@ -27,13 +27,27 @@ import scala.annotation.tailrec
 private[high] trait SerializerInstances extends internal.PlatformSerializerInstances {
   def right1(x: MsgpackItem) = Right(Chunk(x))
 
-  private def countBytes[A](x: A, f: A => A): Int = {
+  private def countBytesInt(x: Int): Int = {
     @tailrec
-    def go(current: A, bytes: Int): Int =
+    def go(current: Int, bytes: Int): Int =
       if (current == 0)
         bytes
       else
-        go(f(current), bytes + 1)
+        go(current >>> 8, bytes + 1)
+
+    if (x == 0)
+      1
+    else
+      go(x, 0)
+  }
+
+  private def countBytesLong(x: Long): Int = {
+    @tailrec
+    def go(current: Long, bytes: Int): Int =
+      if (current == 0)
+        bytes
+      else
+        go(current >>> 8, bytes + 1)
 
     if (x == 0)
       1
@@ -67,7 +81,7 @@ private[high] trait SerializerInstances extends internal.PlatformSerializerInsta
     if (x.isValidShort)
       shortSerializer(x.toShort)
     else {
-      val nbytes = countBytes[Int](x, _ >>> 8)
+      val nbytes = countBytesInt(x)
       val bv = ByteVector.fromInt(x, nbytes)
       val item =
         if (nbytes == 2)
@@ -82,7 +96,7 @@ private[high] trait SerializerInstances extends internal.PlatformSerializerInsta
     if (x.isValidInt)
       intSerializer(x.toInt)
     else {
-      val nbytes = countBytes[Long](x, _ >>> 8)
+      val nbytes = countBytesLong(x)
       val bv = ByteVector.fromLong(x, nbytes)
       val item =
         if (nbytes == 4)
