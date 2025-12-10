@@ -31,16 +31,7 @@ import org.scalacheck.Gen
 object RoundtripTest extends SimpleIOSuite with Checkers {
   // With implicit generator
   def ride[A: Show: Arbitrary: MsgpackSerializer: MsgpackDeserializer]: IO[Expectations] =
-    forall { (x: A) =>
-      Stream
-        .emit(x)
-        .through(high.serialize[IO, A])
-        .through(high.deserialize[IO, A])
-        .compile
-        .lastOrError
-        .attempt
-        .map(expect.same(_, Right(x)))
-    }
+    ride(implicitly[Arbitrary[A]].arbitrary)
 
   // With explicit egenerator
   def ride[A](
@@ -51,7 +42,7 @@ object RoundtripTest extends SimpleIOSuite with Checkers {
         .through(high.serialize[IO, A])
         .through(high.deserialize[IO, A])
         .compile
-        .lastOrError
+        .onlyOrError
         .attempt
         .map(expect.same(_, Right(x)))
     }
