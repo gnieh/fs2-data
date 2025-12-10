@@ -22,13 +22,14 @@ import fs2.data.msgpack.low.MsgpackItem
 import fs2.data.msgpack.high.DeserializationResult._
 import cats._
 import scala.jdk.CollectionConverters._
+import scala.collection.mutable.ArrayBuilder
 
 package object high extends DeserializerInstances with SerializerInstances {
   implicit class MsgpackSerializerSyntax[A](x: A)(implicit sa: MsgpackSerializer[A]) {
     @inline def serialize = sa(x)
   }
 
-  type SerializationResult = Either[String, Chunk[MsgpackItem]]
+  type SerializationResult = Either[String, Array[MsgpackItem]]
 
   implicit val msgpackDeserializerMonad: Monad[MsgpackDeserializer] = MsgpackDeserializer.msgpackDeserializerMonad
 
@@ -92,23 +93,28 @@ package object high extends DeserializerInstances with SerializerInstances {
     */
   def toItems[F[_]: RaiseThrowable, A](implicit sa: MsgpackSerializer[A]): Pipe[F, A, MsgpackItem] = { stream =>
     @scala.annotation.tailrec
-    def processChunk(collected: Chunk[MsgpackItem], head: A, tail: Chunk[A]): Pull[F, MsgpackItem, Unit] =
-      sa(head) match {
-        case Left(e) =>
-          Pull.output(collected) >> Pull.raiseError(new MsgpackSerializerException(e))
-        case Right(items) =>
-          tail.head match {
-            case Some(newHead) =>
-              processChunk(collected ++ items, newHead, tail.drop(1))
-            case None =>
-              Pull.output(collected ++ items)
-          }
+    def processChunk(chunk: Chunk[A],
+                     idx: Int,
+                     chunkLength: Int /*caching it turns out to improve performance in a non negligible way */,
+                     acc: ArrayBuilder[MsgpackItem]): Pull[F, MsgpackItem, Unit] =
+      if (idx >= chunkLength) {
+        // done processing this chunk
+        Pull.output(Chunk.array(acc.result()))
+      } else {
+        val item = chunk(idx)
+        sa(item) match {
+          case Left(e) => Pull.output(Chunk.array(acc.result())) >> Pull.raiseError(new MsgpackSerializerException(e))
+          case Right(items) => processChunk(chunk, idx + 1, chunkLength, acc ++= items)
+        }
       }
+
+    val builder = ArrayBuilder.make[MsgpackItem]
 
     def go(rest: Stream[F, A]): Pull[F, MsgpackItem, Unit] =
       rest.pull.uncons.flatMap {
         case Some((headChunk, tail)) =>
-          processChunk(Chunk.empty, headChunk(0), headChunk.drop(1)) >> go(tail)
+          builder.clear()
+          processChunk(headChunk, 0, headChunk.size, builder) >> go(tail)
         case None => Pull.done
       }
 

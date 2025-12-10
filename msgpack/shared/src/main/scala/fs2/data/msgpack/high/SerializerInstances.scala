@@ -23,9 +23,10 @@ import scodec.bits.*
 
 import low.MsgpackItem
 import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuilder
 
 private[high] trait SerializerInstances extends internal.PlatformSerializerInstances {
-  def right1(x: MsgpackItem) = Right(Chunk(x))
+  def right1(x: MsgpackItem) = Right(Array(x))
 
   private def countBytesInt(x: Int): Int = {
     @tailrec
@@ -146,26 +147,35 @@ private[high] trait SerializerInstances extends internal.PlatformSerializerInsta
   @inline implicit def mapSerializer[K, V](implicit
       sk: MsgpackSerializer[K],
       sv: MsgpackSerializer[V]): MsgpackSerializer[Map[K, V]] = { map =>
-    val header = Chunk(MsgpackItem.Map(map.size.toLong))
+    val header = ArrayBuilder.make[MsgpackItem].addOne(MsgpackItem.Array(map.size.toLong))
 
-    map.foldLeft(Right(header): SerializationResult) { case (result, (k, v)) =>
-      for {
-        acc <- result
-        key <- sk(k)
-        value <- sv(v)
-      } yield acc ++ key ++ value
-    }
+    map
+      .foldLeft(Right(header): Either[String, ArrayBuilder[MsgpackItem]]) { case (result, (k, v)) =>
+        for {
+          acc <- result
+          key <- sk(k)
+          value <- sv(v)
+        } yield {
+          acc ++= key
+          acc ++= value
+        }
+      }
+      .map(_.result())
   }
 
   @inline implicit def listSerializer[A](implicit sa: MsgpackSerializer[A]): MsgpackSerializer[List[A]] = { list =>
-    val header = Chunk(MsgpackItem.Array(list.size.toLong))
+    val header = ArrayBuilder.make[MsgpackItem].addOne(MsgpackItem.Array(list.size.toLong))
 
-    list.foldLeft(Right(header): SerializationResult) { (result, x) =>
-      for {
-        acc <- result
-        item <- sa(x)
-      } yield acc ++ item
-    }
+    list
+      .foldLeft(Right(header): Either[String, ArrayBuilder[MsgpackItem]]) { (result, x) =>
+        for {
+          acc <- result
+          item <- sa(x)
+        } yield {
+          acc ++= item
+        }
+      }
+      .map(_.result())
   }
 
   implicit val byteVectorSerializer: MsgpackSerializer[ByteVector] = bv => right1(MsgpackItem.Bin(bv))
