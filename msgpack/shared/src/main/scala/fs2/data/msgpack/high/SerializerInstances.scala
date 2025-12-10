@@ -51,6 +51,9 @@ private[high] trait SerializerInstances extends internal.PlatformSerializerInsta
     else {
       val masked = x & 0xff
       val item =
+        /* If a number fits in one byte and is not a valid signed byte,
+         * then it must be a 1-byte long unsigned number
+         */
         if (masked == x)
           MsgpackItem.UnsignedInt(ByteVector.fromShort(x, 1))
         else
@@ -66,6 +69,8 @@ private[high] trait SerializerInstances extends internal.PlatformSerializerInsta
       val nbytes = countBytesInt(x)
       val bv = ByteVector.fromInt(x, nbytes)
       val item =
+        // If a number takes 2 bytes and is not a valid signed short,
+        // then it must be an unsigned 2-byte number
         if (nbytes == 2)
           MsgpackItem.UnsignedInt(bv)
         else
@@ -81,6 +86,8 @@ private[high] trait SerializerInstances extends internal.PlatformSerializerInsta
       val nbytes = countBytesLong(x)
       val bv = ByteVector.fromLong(x, nbytes)
       val item =
+        // If a number takes 4 bytes and is not a valid signed int,
+        // then it must be an unsigned 4-byte number
         if (nbytes == 4)
           MsgpackItem.UnsignedInt(bv)
         else
@@ -151,8 +158,9 @@ private[high] trait SerializerInstances extends internal.PlatformSerializerInsta
 
     val init: Either[String, (ArrayBuilder[MsgpackItem], Int)] = Right((header, 0))
 
-    // List.size takes linear time, so we do that manually to avoid traversing
-    // through the list 2 times.
+    /* List.size takes linear time, so we do that manually to avoid traversing
+     * through the list 2 times.
+     */
     val folded = list.foldLeft(init) { (acc, x) =>
       for {
         tuple <- acc // scala3 seems to have a problem with "(a, b) <- c" syntax
