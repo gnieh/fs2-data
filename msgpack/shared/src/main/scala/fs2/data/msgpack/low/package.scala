@@ -26,7 +26,7 @@ package object low {
 
   /** Transforms a stream of [[scala.Byte]]s into a stream of [[MsgpackItem]]s.
     */
-  def items[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, MsgpackItem] =
+  def fromBinary[F[_]](implicit F: RaiseThrowable[F]): Pipe[F, Byte, MsgpackItem] =
     ItemParser.pipe[F]
 
   /** Transforms a stream of [[MsgpackItem]]s into a stream of [[scala.Byte]]s.

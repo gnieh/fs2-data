@@ -23,10 +23,9 @@ import org.openjdk.jmh.annotations._
 import cats.effect.SyncIO
 
 import fs2.data.msgpack.high._
-import fs2.data.msgpack.low.MsgpackItem
-import fs2.data.msgpack.low
+import fs2.data.msgpack.high.ast._
 import java.time.Instant
-import scodec.bits._
+import scodec.bits.ByteVector
 
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @BenchmarkMode(Array(Mode.AverageTime))
@@ -34,7 +33,7 @@ import scodec.bits._
 @Fork(value = 1)
 @Warmup(iterations = 3, time = 2)
 @Measurement(iterations = 10, time = 2)
-class MsgpackDeserializerBenchmarks {
+class MsgpackSerializerBenchmarks {
   case class User(name: String,
                   age: Long,
                   aliases: List[String],
@@ -53,33 +52,56 @@ class MsgpackDeserializerBenchmarks {
     created <- MsgpackDeserializer[Instant]
   } yield User(name, age, aliases, balance, things, raw, created)
 
-  def getChunkedItems(filename: String): List[Chunk[MsgpackItem]] =
-    fs2.io
-      .readClassLoaderResource[SyncIO](filename, 4096)
-      .through(low.fromBinary)
-      .chunks
-      .compile
-      .toList
-      .unsafeRunSync()
+  var objects: Stream[SyncIO, User] = _
+  var values: Stream[SyncIO, MsgpackValue] = _
 
-  var userStream: Stream[Pure, MsgpackItem] = _
+  implicit val userSerializer: MsgpackSerializer[User] = user =>
+    for {
+      name <- user.name.serialize
+      age <- user.age.serialize
+      aliases <- user.aliases.serialize
+      balance <- user.balance.serialize
+      things <- user.things.serialize
+      raw <- user.raw.serialize
+      created <- user.created.serialize
+    } yield name ++ age ++ aliases ++ balance ++ things ++ raw ++ created
 
   @Setup
-  def readUserItems() = userStream = Stream.emits(getChunkedItems("users.mp")).unchunks
+  def setupObjects() =
+    objects =
+      fs2.io
+      .readClassLoaderResource[SyncIO]("users.mp", 4096)
+      .through(fs2.data.msgpack.high.deserialize[SyncIO, User])
+      .compile
+      .toList
+      .map(Stream.emits)
+      .unsafeRunSync()
+
+  @Setup
+  def setupValues() =
+    values =
+      fs2.io
+      .readClassLoaderResource[SyncIO]("users.mp", 4096)
+      .through(fs2.data.msgpack.high.deserialize[SyncIO, MsgpackValue])
+      .compile
+      .toList
+      .map(Stream.emits)
+      .unsafeRunSync()
 
   @Benchmark
-  def deserialize() =
-    userStream
-      .through(fs2.data.msgpack.high.fromItems[SyncIO, User])
+  def serialize() =
+    objects
+      .through(fs2.data.msgpack.high.toItems[SyncIO, User])
       .compile
       .drain
       .unsafeRunSync()
 
   @Benchmark
-  def deserializeValues() =
-    userStream
-      .through(fs2.data.msgpack.high.ast.valuesFromItems[SyncIO])
+  def serializeValues() =
+    values
+      .through(fs2.data.msgpack.high.ast.valuesToItems[SyncIO])
       .compile
       .drain
       .unsafeRunSync()
+
 }

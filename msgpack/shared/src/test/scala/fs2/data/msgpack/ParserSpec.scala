@@ -108,7 +108,7 @@ object ParserSpec extends SimpleIOSuite {
       .evalMap { case (hex, repr) =>
         Stream
           .chunk(Chunk.byteVector(hex))
-          .through(low.items[IO])
+          .through(low.fromBinary[IO])
           .compile
           .toList
           .attempt
@@ -120,7 +120,7 @@ object ParserSpec extends SimpleIOSuite {
   test("MessagePack value parser should raise when the reserved value is used") {
     Stream
       .chunk(Chunk.byteVector(hex"c1"))
-      .through(low.items[IO])
+      .through(low.fromBinary[IO])
       .attempt
       .map(_.isLeft)
       .map(expect(_))
@@ -144,7 +144,7 @@ object ParserSpec extends SimpleIOSuite {
       .evalMap { n =>
         Stream
           .chunk(Chunk.byteVector(n))
-          .through(low.items[IO])
+          .through(low.fromBinary[IO])
           .compile
           .toList
           .attempt
@@ -263,7 +263,7 @@ object ParserSpec extends SimpleIOSuite {
         case (hex, repr) => {
           Stream
             .chunk(Chunk.byteVector(hex))
-            .through(low.items[IO])
+            .through(low.fromBinary[IO])
             .compile
             .toList
             .attempt
@@ -305,7 +305,7 @@ object ParserSpec extends SimpleIOSuite {
           case (hex, repr) => {
             Stream
               .chunk(Chunk.byteVector((hex)))
-              .through(low.items[IO])
+              .through(low.fromBinary[IO])
               .compile
               .toList
               .attempt
@@ -315,7 +315,7 @@ object ParserSpec extends SimpleIOSuite {
     val s2 =
       Stream
         .chunk(Chunk.byteVector(nans))
-        .through(low.items[IO])
+        .through(low.fromBinary[IO])
         .map {
           case MsgpackItem.Float32(v) => expect(v.isNaN)
           case MsgpackItem.Float64(v) => expect(v.isNaN)

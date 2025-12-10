@@ -28,22 +28,18 @@ private[high] trait PlatformDeserializerInstances {
   implicit val dateDeserializer: MsgpackDeserializer[js.Date] = getItem { (item, tail) =>
     item match {
       case MsgpackItem.Timestamp32(seconds) =>
-        val d = new js.Date()
-        d.setUTCSeconds(seconds.toDouble)
+        val ms = seconds.toDouble * 1000
+        val d = new js.Date(ms)
         Ok(d, tail)
 
       case item: MsgpackItem.Timestamp64 =>
-        val d = new js.Date()
-        val ms = item.nanoseconds.toDouble / 1000000
-        d.setUTCSeconds(item.seconds.toDouble)
-        d.setUTCMilliseconds(ms)
+        val ms = (item.nanoseconds.toDouble / 1000000) + (item.seconds.toDouble * 1000)
+        val d = new js.Date(ms)
         Ok(d, tail)
 
       case MsgpackItem.Timestamp96(nanoseconds, seconds) =>
-        val d = new js.Date()
-        val ms = nanoseconds / 1000000
-        d.setUTCSeconds(seconds.toDouble)
-        d.setUTCMilliseconds(ms.toDouble)
+        val ms = (nanoseconds.toDouble / 1000000) + (seconds.toDouble * 1000)
+        val d = new js.Date(ms)
         Ok(d, tail)
 
       case x =>

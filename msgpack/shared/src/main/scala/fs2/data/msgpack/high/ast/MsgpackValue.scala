@@ -27,9 +27,9 @@ sealed trait MsgpackValue
 object MsgpackValue {
   case class Integer(x: scala.Long) extends MsgpackValue
   case class String(x: java.lang.String) extends MsgpackValue
-  case class Array[A](x: scala.List[A]) extends MsgpackValue
+  case class Array(x: scala.collection.immutable.List[MsgpackValue]) extends MsgpackValue
   case class Bin(x: ByteVector) extends MsgpackValue
-  case class Map[K, V](x: scala.collection.Map[K, V]) extends MsgpackValue
+  case class Map(x: scala.collection.immutable.Map[MsgpackValue, MsgpackValue]) extends MsgpackValue
   case class Boolean(x: scala.Boolean) extends MsgpackValue
   case class Float(x: scala.Float) extends MsgpackValue
   case class Double(x: scala.Double) extends MsgpackValue

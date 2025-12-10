@@ -32,3 +32,4 @@ case class MsgpackMalformedByteStreamException(msg: String, inner: Throwable = n
     extends MsgpackException(msg, inner)
 
 case class MsgpackDeserializerException(msg: String, inner: Throwable = null) extends MsgpackException(msg, inner)
+case class MsgpackSerializerException(msg: String, inner: Throwable = null) extends MsgpackException(msg, inner)
