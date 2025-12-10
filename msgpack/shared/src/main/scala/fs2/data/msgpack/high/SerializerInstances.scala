@@ -22,39 +22,20 @@ package high
 import scodec.bits.*
 
 import low.MsgpackItem
-import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuilder
 
 private[high] trait SerializerInstances extends internal.PlatformSerializerInstances {
   def right1(x: MsgpackItem) = Right(Array(x))
 
-  private def countBytesInt(x: Int): Int = {
-    @tailrec
-    def go(current: Int, bytes: Int): Int =
-      if (current == 0)
-        bytes
-      else
-        go(current >>> 8, bytes + 1)
+  private def countBytesInt(x: Int): Int =
+    if (x == 0) 1
+    else if (x < 0) (32 - java.lang.Integer.numberOfLeadingZeros(x)) / 8
+    else Math.ceil((32 - java.lang.Integer.numberOfLeadingZeros(x)) / 8.0).toInt
 
-    if (x == 0)
-      1
-    else
-      go(x, 0)
-  }
-
-  private def countBytesLong(x: Long): Int = {
-    @tailrec
-    def go(current: Long, bytes: Int): Int =
-      if (current == 0)
-        bytes
-      else
-        go(current >>> 8, bytes + 1)
-
-    if (x == 0)
-      1
-    else
-      go(x, 0)
-  }
+  private def countBytesLong(x: Long): Int =
+    if (x == 0) 1
+    else if (x < 0) (64 - java.lang.Long.numberOfLeadingZeros(x)) / 8
+    else Math.ceil((64 - java.lang.Long.numberOfLeadingZeros(x)) / 8.0).toInt
 
   /* Numeric types
    *
