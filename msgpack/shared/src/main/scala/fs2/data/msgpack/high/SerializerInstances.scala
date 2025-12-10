@@ -135,7 +135,7 @@ private[high] trait SerializerInstances extends internal.PlatformSerializerInsta
   @inline implicit def mapSerializer[K, V](implicit
       sk: MsgpackSerializer[K],
       sv: MsgpackSerializer[V]): MsgpackSerializer[Map[K, V]] = { map =>
-    val header = ArrayBuilder.make[MsgpackItem] += MsgpackItem.Array(map.size.toLong)
+    val header = ArrayBuilder.make[MsgpackItem] += MsgpackItem.Map(map.size.toLong)
 
     val init: Either[String, ArrayBuilder[MsgpackItem]] = Right(header)
 
