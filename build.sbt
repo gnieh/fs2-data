@@ -21,14 +21,14 @@ import xerial.sbt.Sonatype.sonatypeCentralHost
 val scala212 = "2.12.20"
 val scala213 = "2.13.16"
 val scala3 = "3.3.7"
-val fs2Version = "3.12.0"
+val fs2Version = "3.12.2"
 val circeVersion = "0.14.8"
 val circeExtrasVersion = "0.14.2"
-val playVersion = "3.0.5"
+val playVersion = "3.0.6"
 val shapeless2Version = "2.3.11"
 val shapeless3Version = "3.4.1"
 val scalaJavaTimeVersion = "2.6.0"
-val diffsonVersion = "4.6.0"
+val diffsonVersion = "4.6.1"
 val literallyVersion = "1.1.0"
 val weaverVersion = "0.8.4"
 
@@ -66,7 +66,7 @@ val commonSettings = List(
   ) ++ PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
       List(
-        compilerPlugin("org.typelevel" % "kind-projector" % "0.13.3" cross CrossVersion.full),
+        compilerPlugin("org.typelevel" % "kind-projector" % "0.13.4" cross CrossVersion.full),
         compilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary)
       )
     }
