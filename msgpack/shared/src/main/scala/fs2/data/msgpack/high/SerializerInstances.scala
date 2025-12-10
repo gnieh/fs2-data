@@ -128,35 +128,45 @@ private[high] trait SerializerInstances extends internal.PlatformSerializerInsta
   @inline implicit def mapSerializer[K, V](implicit
       sk: MsgpackSerializer[K],
       sv: MsgpackSerializer[V]): MsgpackSerializer[Map[K, V]] = { map =>
-    val header = ArrayBuilder.make[MsgpackItem].addOne(MsgpackItem.Array(map.size.toLong))
+    val header = ArrayBuilder.make[MsgpackItem] += MsgpackItem.Array(map.size.toLong)
+
+    val init: Either[String, ArrayBuilder[MsgpackItem]] = Right(header)
 
     map
-      .foldLeft(Right(header): Either[String, ArrayBuilder[MsgpackItem]]) { case (result, (k, v)) =>
+      .foldLeft(init) { case (acc, (k, v)) =>
         for {
-          acc <- result
+          builder <- acc
           key <- sk(k)
           value <- sv(v)
         } yield {
-          acc ++= key
-          acc ++= value
+          builder ++= key
+          builder ++= value
         }
       }
       .map(_.result())
   }
 
   @inline implicit def listSerializer[A](implicit sa: MsgpackSerializer[A]): MsgpackSerializer[List[A]] = { list =>
-    val header = ArrayBuilder.make[MsgpackItem].addOne(MsgpackItem.Array(list.size.toLong))
+    val header = ArrayBuilder.make[MsgpackItem]
 
-    list
-      .foldLeft(Right(header): Either[String, ArrayBuilder[MsgpackItem]]) { (result, x) =>
-        for {
-          acc <- result
-          item <- sa(x)
-        } yield {
-          acc ++= item
-        }
+    val init: Either[String, (ArrayBuilder[MsgpackItem], Int)] = Right((header, 0))
+
+    // List.size takes linear time, so we do that manually to avoid traversing
+    // through the list 2 times.
+    val folded = list.foldLeft(init) { (acc, x) =>
+      for {
+        tuple <- acc // scala3 seems to have a problem with "(a, b) <- c" syntax
+        (builder, len) = tuple
+        item <- sa(x)
+      } yield {
+        (builder ++= item, len + 1)
       }
-      .map(_.result())
+    }
+
+    folded.map { case (builder, length) =>
+      val arr = builder.result()
+      arr.prepended(MsgpackItem.Array(length.toLong))
+    }
   }
 
   implicit val byteVectorSerializer: MsgpackSerializer[ByteVector] = bv => right1(MsgpackItem.Bin(bv))
