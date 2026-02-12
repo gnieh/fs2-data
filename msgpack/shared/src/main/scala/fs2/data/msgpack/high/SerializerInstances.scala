@@ -154,7 +154,7 @@ private[high] trait SerializerInstances extends internal.PlatformSerializerInsta
   }
 
   @inline implicit def listSerializer[A](implicit sa: MsgpackSerializer[A]): MsgpackSerializer[List[A]] = { list =>
-    val header = ArrayBuilder.make[MsgpackItem]
+    val header = ArrayBuilder.make[MsgpackItem] += null
 
     val init: Either[String, (ArrayBuilder[MsgpackItem], Int)] = Right((header, 0))
 
@@ -173,7 +173,8 @@ private[high] trait SerializerInstances extends internal.PlatformSerializerInsta
 
     folded.map { case (builder, length) =>
       val arr = builder.result()
-      arr.prepended(MsgpackItem.Array(length.toLong))
+      arr(0) = MsgpackItem.Array(length.toLong)
+      arr
     }
   }
 
