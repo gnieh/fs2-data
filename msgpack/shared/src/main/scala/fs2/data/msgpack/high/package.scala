@@ -20,10 +20,17 @@ package msgpack
 
 import fs2.data.msgpack.low.MsgpackItem
 import fs2.data.msgpack.high.DeserializationResult._
-import cats.Monad
+import cats._
 import scala.jdk.CollectionConverters._
+import scala.collection.mutable.ArrayBuilder
 
-package object high extends DeserializerInstances with internal.PlatformDeserializerInstances {
+package object high extends DeserializerInstances with SerializerInstances {
+  implicit class MsgpackSerializerSyntax[A](x: A)(implicit sa: MsgpackSerializer[A]) {
+    @inline def serialize = sa(x)
+  }
+
+  type SerializationResult = Either[String, Array[MsgpackItem]]
+
   implicit val msgpackDeserializerMonad: Monad[MsgpackDeserializer] = MsgpackDeserializer.msgpackDeserializerMonad
 
   def fromItems[F[_], A](implicit F: RaiseThrowable[F], da: MsgpackDeserializer[A]): Pipe[F, MsgpackItem, A] = {
@@ -71,13 +78,62 @@ package object high extends DeserializerInstances with internal.PlatformDeserial
   @inline def fromItems[F[_], A](da: MsgpackDeserializer[A])(implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, A] =
     fromItems(F, da)
 
-  /** Decodes a stream of bytes into a stream of `A`s via an implicit deserializer instance.
+  /** Deserializes a stream of bytes into a stream of `A`s via an implicit deserializer instance.
     */
   def deserialize[F[_]: RaiseThrowable, A: MsgpackDeserializer]: Pipe[F, Byte, A] =
-    _.through(low.items[F]).through(fromItems[F, A])
+    _.through(low.fromBinary[F]).through(fromItems[F, A])
 
-  /** Decodes a stream of bytes into a stream of `A`s via an explicit deserializer instance.
+  /** Deserializes a stream of bytes into a stream of `A`s via an explicit deserializer instance.
     */
   @inline def deserialize[F[_], A](da: MsgpackDeserializer[A])(implicit F: RaiseThrowable[F]): Pipe[F, Byte, A] =
     deserialize(F, da)
+
+  /** Converts a stream of `A` into a stream of [[fs2.data.msgpack.low.MsgpackItem$ MsgpackItems]] via an explicit
+    * [[fs2.data.msgpack.high.MsgpackSerializer$ MsgpackSerializer]] instance.
+    */
+  def toItems[F[_]: RaiseThrowable, A](implicit sa: MsgpackSerializer[A]): Pipe[F, A, MsgpackItem] = { stream =>
+    @scala.annotation.tailrec
+    def processChunk(chunk: Chunk[A],
+                     idx: Int,
+                     chunkLength: Int /*caching it turns out to improve performance in a non negligible way */,
+                     acc: ArrayBuilder[MsgpackItem]): Pull[F, MsgpackItem, Unit] =
+      if (idx >= chunkLength) {
+        // done processing this chunk
+        Pull.output(Chunk.array(acc.result()))
+      } else {
+        val item = chunk(idx)
+        sa(item) match {
+          case Left(e) => Pull.output(Chunk.array(acc.result())) >> Pull.raiseError(new MsgpackSerializerException(e))
+          case Right(items) => processChunk(chunk, idx + 1, chunkLength, acc ++= items)
+        }
+      }
+
+    val builder = ArrayBuilder.make[MsgpackItem]
+
+    def go(rest: Stream[F, A]): Pull[F, MsgpackItem, Unit] =
+      rest.pull.uncons.flatMap {
+        case Some((headChunk, tail)) =>
+          builder.clear()
+          processChunk(headChunk, 0, headChunk.size, builder) >> go(tail)
+        case None => Pull.done
+      }
+
+    go(stream).stream
+  }
+
+  /** Converts a stream of `A` into a stream of [[fs2.data.msgpack.low.MsgpackItem$ MsgpackItems]] via an implicit
+    * [[fs2.data.msgpack.high.MsgpackSerializer$ MsgpackSerializer]] instance.
+    */
+  @inline def toItems[F[_], A](sa: MsgpackSerializer[A])(implicit F: RaiseThrowable[F]): Pipe[F, A, MsgpackItem] =
+    toItems(F, sa)
+
+  /** Serializes a stream of `A`s into a stream of bytes via an implicit deserializer instance.
+    */
+  @inline def serialize[F[_]: RaiseThrowable, A: MsgpackSerializer]: Pipe[F, A, Byte] =
+    _.through(high.toItems[F, A]).through(low.toNonValidatedBinary[F])
+
+  /** Serializes a stream of `A`s into a stream of bytes via an implicit deserializer instance.
+    */
+  @inline def serialize[F[_], A](sa: MsgpackSerializer[A])(implicit F: RaiseThrowable[F]): Pipe[F, A, Byte] =
+    serialize(F, sa)
 }
