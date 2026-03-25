@@ -21,16 +21,16 @@ import xerial.sbt.Sonatype.sonatypeCentralHost
 val scala212 = "2.12.20"
 val scala213 = "2.13.16"
 val scala3 = "3.3.6"
-val fs2Version = "3.12.2"
-val circeVersion = "0.14.8"
+val fs2Version = "3.13.0"
+val circeVersion = "0.14.15"
 val circeExtrasVersion = "0.14.2"
 val playVersion = "3.0.6"
-val shapeless2Version = "2.3.11"
-val shapeless3Version = "3.4.1"
+val shapeless2Version = "2.3.13"
+val shapeless3Version = "3.5.0"
 val scalaJavaTimeVersion = "2.6.0"
 val diffsonVersion = "4.6.1"
-val literallyVersion = "1.1.0"
-val weaverVersion = "0.8.4"
+val literallyVersion = "1.2.0"
+val weaverVersion = "0.12.0"
 
 ThisBuild / tlBaseVersion := "1.12"
 
@@ -54,14 +54,14 @@ val commonSettings = List(
   versionScheme := Some("early-semver"),
   libraryDependencies ++= List(
     "co.fs2" %%% "fs2-core" % fs2Version,
-    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.11.0",
+    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.14.0",
     "io.circe" %%% "circe-parser" % circeVersion % "test",
     "io.circe" %%% "circe-jawn" % circeVersion % "test",
     "io.circe" %%% "circe-generic" % circeVersion % "test",
     "co.fs2" %%% "fs2-io" % fs2Version % "test",
-    "com.disneystreaming" %%% "weaver-cats" % weaverVersion % "test",
-    "com.disneystreaming" %%% "weaver-scalacheck" % weaverVersion % Test,
-    "com.eed3si9n.expecty" %%% "expecty" % "0.16.0" % "test",
+    "org.typelevel" %%% "weaver-cats" % weaverVersion % "test",
+    "org.typelevel" %%% "weaver-scalacheck" % weaverVersion % Test,
+    "com.eed3si9n.expecty" %%% "expecty" % "0.17.1" % "test",
     "org.portable-scala" %%% "portable-scala-reflect" % "1.1.3" cross CrossVersion.for3Use2_13
   ) ++ PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
@@ -126,7 +126,7 @@ lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     name := "fs2-data-text",
     description := "Utilities for textual data format",
     libraryDependencies ++= List(
-      "org.typelevel" %%% "cats-collections-core" % "0.9.8"
+      "org.typelevel" %%% "cats-collections-core" % "0.9.10"
     ),
     mimaBinaryIssueFilters ++= List(
       // private class
@@ -278,7 +278,7 @@ lazy val json = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     description := "Streaming JSON manipulation library",
     libraryDependencies ++= List(
       "org.typelevel" %%% "literally" % literallyVersion,
-      "org.typelevel" %%% "cats-parse" % "1.0.0"
+      "org.typelevel" %%% "cats-parse" % "1.1.0"
     ) ++ PartialFunction
       .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
