@@ -82,6 +82,17 @@ val commonSettings = List(
     }
     .toList
     .flatten,
+  scalacOptions ++= PartialFunction
+    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
+      // Suppress cats compose overload warnings inherited from MonadError/Functor type classes
+      List(
+        "-Wconf:cat=lint-overload&site=fs2\\.data\\.csv\\.CellDecoder\\.CellDecoderInstances:s",
+        "-Wconf:cat=lint-overload&site=fs2\\.data\\.csv\\.ParseableHeader\\.ParseableHeaderInstances:s",
+        "-Wconf:cat=lint-overload&site=fs2\\.data\\.csv\\.RowDecoderF\\.RowDecoderFInstances:s"
+      )
+    }
+    .toList
+    .flatten,
   testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
   tlBspCrossProjectPlatforms := Set(JVMPlatform)
 )
