@@ -83,7 +83,7 @@ val commonSettings = List(
     .toList
     .flatten,
   scalacOptions ++= PartialFunction
-    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
+    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, n)) if n >= 13 =>
       // Suppress cats compose overload warnings inherited from MonadError/Functor type classes
       List(
         "-Wconf:cat=lint-overload&site=fs2\\.data\\.csv\\.CellDecoder\\.CellDecoderInstances:s",
