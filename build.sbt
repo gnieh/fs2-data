@@ -18,8 +18,8 @@ import sbt.Def._
 import scala.scalanative.build._
 import xerial.sbt.Sonatype.sonatypeCentralHost
 
-val scala212 = "2.12.20"
-val scala213 = "2.13.16"
+val scala212 = "2.12.21"
+val scala213 = "2.13.18"
 val scala3 = "3.3.7"
 val fs2Version = "3.13.0"
 val circeVersion = "0.14.14"
@@ -28,9 +28,9 @@ val playVersion = "3.0.6"
 val shapeless2Version = "2.3.13"
 val shapeless3Version = "3.5.0"
 val scalaJavaTimeVersion = "2.6.0"
-val diffsonVersion = "5.0-8cf53fd-SNAPSHOT"
+val diffsonVersion = "4.7.0"
 val literallyVersion = "1.2.0"
-val weaverVersion = "0.11.3"
+val weaverVersion = "0.12.0"
 
 ThisBuild / tlBaseVersion := "1.12"
 
@@ -537,8 +537,7 @@ lazy val benchmarks = crossProject(JVMPlatform)
   )
   .dependsOn(csv, scalaXml, jsonCirce, msgpack)
 
-// NOTE: cross build disabled for NativePlatform due to decline-effect missing on native
-lazy val exampleJq = crossProject(JVMPlatform, JSPlatform)
+lazy val exampleJq = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("examples/jqlike"))
   .enablePlugins(NoPublishPlugin)
@@ -547,19 +546,18 @@ lazy val exampleJq = crossProject(JVMPlatform, JSPlatform)
     name := "jq-like",
     libraryDependencies ++= List(
       "co.fs2" %%% "fs2-io" % fs2Version,
-      "com.monovore" %%% "decline-effect" % "2.5.0"
+      "com.monovore" %%% "decline-effect" % "2.6.1"
     )
   )
   .jvmSettings(
     assembly / mainClass := Some("fs2.data.example.jqlike.JqLike"),
     assembly / assemblyJarName := "jq-like.jar"
   )
-  // Uncomment when decline-effect is available for SN 0.5.x
-  // .nativeSettings(nativeConfig ~= {
-  //   _.withLTO(LTO.thin)
-  //     .withMode(Mode.releaseFast)
-  //     .withGC(GC.immix)
-  // })
+  .nativeSettings(nativeConfig ~= {
+    _.withLTO(LTO.thin)
+      .withMode(Mode.releaseFast)
+      .withGC(GC.immix)
+  })
   .jsSettings(
     scalaJSUseMainModuleInitializer := true,
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
