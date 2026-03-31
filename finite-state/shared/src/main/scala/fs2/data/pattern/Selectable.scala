@@ -56,7 +56,7 @@ object Selectable {
 case class ConstructorTree[Tag](tag: Tag, args: List[ConstructorTree[Tag]]) {
   def select[Expr](sel: Selector[Expr, Tag])(implicit evaluator: Evaluator[Expr, Tag]): Option[ConstructorTree[Tag]] =
     sel match {
-      case Selector.Root() => Some(this)
+      case Selector.Root()               => Some(this)
       case Selector.Cons(parent, tag, n) =>
         select(parent).flatMap { const =>
           if (const.tag == tag)

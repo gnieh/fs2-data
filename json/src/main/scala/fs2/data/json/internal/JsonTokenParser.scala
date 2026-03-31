@@ -55,6 +55,7 @@ private[json] class JsonTokenParser[F[_], T, Res](
         case '\\' =>
           T.appendMarked(context, acc)
           T.advance(context)
+          T.mark(context)
           slowString_(key, StringState.SeenBackslash, 0, acc)
         case c =>
           if (c >= 0x20 && c <= 0x10ffff) {
@@ -92,7 +93,7 @@ private[json] class JsonTokenParser[F[_], T, Res](
             case 'r'  => slowString_(key, StringState.Normal, 0, acc.append('\r'))
             case 't'  => slowString_(key, StringState.Normal, 0, acc.append('\t'))
             case 'u'  => slowString_(key, StringState.Expect4Unicode, 0, acc)
-            case _ =>
+            case _    =>
               emitChunk() >> Pull.raiseError[F](new JsonException(s"unknown escaped character '$c'"))
           }
         case StringState.Normal =>
