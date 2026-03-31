@@ -20,7 +20,7 @@ import cats.syntax.all._
 
 import scala.annotation.nowarn
 
-@nowarn("msg=parameter.* L in method .+ is never used") trait LiteralCellEncoders {
+@nowarn trait LiteralCellEncoders {
 
   implicit final def literalStringEncoder[L <: String](implicit L: ValueOf[L]): CellEncoder[L] =
     CellEncoder.stringEncoder.narrow
