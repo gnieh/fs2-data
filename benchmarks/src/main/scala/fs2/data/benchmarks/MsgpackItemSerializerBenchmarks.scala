@@ -32,7 +32,7 @@ class MsgpackItemSerializerBenchmarks {
   val msgpackItems: Stream[SyncIO, fs2.data.msgpack.low.MsgpackItem] =
     fs2.io
       .readClassLoaderResource[SyncIO]("users.mp", 4096)
-      .through(fs2.data.msgpack.low.items[SyncIO])
+      .through(fs2.data.msgpack.low.fromBinary[SyncIO])
       .chunks
       .compile
       .toList
