@@ -463,7 +463,11 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     description := "Streaming CBOR manipulation library",
     scalacOptions ++= PartialFunction
       .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
-        List("-opt:l:inline", "-opt-inline-from:fs2.data.cbor.low.internal.ItemParser$")
+        List("-opt:l:inline", "-opt-inline-from:fs2.data.cbor.low.internal.ItemParser$") ++
+          // Suppress InlineInfoAttribute warnings from weaver bytecode compiled with a different
+          // Scala 2.12.x. The compiler can't read the inline metadata from that dependency.
+          // https://github.com/scala/bug/issues/11247
+          List("""-Wconf:msg=Error while reading InlineInfoAttribute:s""")
       }
       .toList
       .flatten
