@@ -16,9 +16,9 @@ import com.typesafe.tools.mima.core._
 import laika.config._
 import sbt.Def._
 import scala.scalanative.build._
-import xerial.sbt.Sonatype.sonatypeCentralHost
 
-val scala212 = "2.12.20"
+
+val scala212 = "2.12.21"
 val scala213 = "2.13.18"
 val scala3 = "3.3.7"
 val fs2Version = "3.13.0"
@@ -47,9 +47,6 @@ ThisBuild / crossScalaVersions := Seq(scala212, scala213, scala3)
 ThisBuild / scalaVersion := scala213
 ThisBuild / tlJdkRelease := Some(11)
 
-ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
-
 ThisBuild / resolvers += Resolver.sonatypeCentralSnapshots
 
 val commonSettings = List(
@@ -65,15 +62,7 @@ val commonSettings = List(
     "org.typelevel" %%% "weaver-scalacheck" % weaverVersion % Test,
     "com.eed3si9n.expecty" %%% "expecty" % "0.17.0" % "test",
     "org.portable-scala" %%% "portable-scala-reflect" % "1.1.3" cross CrossVersion.for3Use2_13
-  ) ++ PartialFunction
-    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
-      List(
-        compilerPlugin("org.typelevel" % "kind-projector" % "0.13.4" cross CrossVersion.full),
-        compilerPlugin("com.olegpy" % "better-monadic-for" % "0.3.1" cross CrossVersion.binary)
-      )
-    }
-    .toList
-    .flatten,
+  ),
   scalacOptions := scalacOptions.value.filterNot(_ == "-source:3.0-migration"),
   scalacOptions ++= PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
