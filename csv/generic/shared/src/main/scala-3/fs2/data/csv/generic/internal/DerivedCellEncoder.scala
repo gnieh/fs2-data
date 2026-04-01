@@ -20,6 +20,7 @@ package internal
 
 import shapeless3.deriving._
 
+import scala.annotation.nowarn
 import scala.deriving.Mirror
 
 trait DerivedCellEncoder[T] extends CellEncoder[T]
@@ -32,6 +33,7 @@ object DerivedCellEncoder {
   }
 
   inline given deriveCoproduct[T](using g: K0.CoproductInstances[DerivedCellEncoder, T]): DerivedCellEncoder[T] with {
+    @nowarn
     def apply(elem: T) = g.fold(elem)([t <: T] => (dce: DerivedCellEncoder[t], te: t) => dce(te))
   }
 

@@ -68,8 +68,7 @@ class MsgpackSerializerBenchmarks {
 
   @Setup
   def setupObjects() =
-    objects =
-      fs2.io
+    objects = fs2.io
       .readClassLoaderResource[SyncIO]("users.mp", 4096)
       .through(fs2.data.msgpack.high.deserialize[SyncIO, User])
       .compile
@@ -79,8 +78,7 @@ class MsgpackSerializerBenchmarks {
 
   @Setup
   def setupValues() =
-    values =
-      fs2.io
+    values = fs2.io
       .readClassLoaderResource[SyncIO]("users.mp", 4096)
       .through(fs2.data.msgpack.high.deserialize[SyncIO, MsgpackValue])
       .compile
