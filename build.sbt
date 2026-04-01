@@ -59,7 +59,7 @@ val commonSettings = List(
     "co.fs2" %%% "fs2-io" % fs2Version % "test",
     "org.typelevel" %%% "weaver-cats" % weaverVersion % "test",
     "org.typelevel" %%% "weaver-scalacheck" % weaverVersion % Test,
-    "com.eed3si9n.expecty" %%% "expecty" % "0.17.0" % "test",
+    "com.eed3si9n.expecty" %%% "expecty" % "0.17.1" % "test",
     "org.portable-scala" %%% "portable-scala-reflect" % "1.1.3" cross CrossVersion.for3Use2_13
   ),
   scalacOptions := scalacOptions.value.filterNot(_ == "-source:3.0-migration"),
