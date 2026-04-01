@@ -26,8 +26,9 @@ import cats.data._
 import cats.syntax.all._
 import shapeless3.deriving._
 import scala.compiletime._
+import scala.annotation.nowarn
 
-object semiauto {
+@nowarn object semiauto {
 
   // shapeless3 <-> cats interop
   private given [F[_]: Applicative]: Pure[F] = [t] => (a: t) => Applicative[F].pure(a)
