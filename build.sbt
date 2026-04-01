@@ -192,7 +192,7 @@ lazy val text = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     )
   )
   .nativeSettings(
-    tlVersionIntroduced := Map("3" -> "1.12.2", "2.13" -> "1.12.2", "2.12" -> "1.12.2")
+    tlVersionIntroduced := Map("3" -> "1.13.0", "2.13" -> "1.13.0", "2.12" -> "1.13.0")
   )
 
 lazy val csv = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -215,7 +215,7 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
   .nativeSettings(
-    tlVersionIntroduced := Map("3" -> "1.12.2", "2.13" -> "1.12.2", "2.12" -> "1.12.2")
+    tlVersionIntroduced := Map("3" -> "1.13.0", "2.13" -> "1.13.0", "2.12" -> "1.13.0")
   )
   .dependsOn(text)
 
@@ -267,7 +267,7 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   )
   .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test)
   .nativeSettings(
-    tlVersionIntroduced := Map("3" -> "1.12.2", "2.13" -> "1.12.2", "2.12" -> "1.12.2")
+    tlVersionIntroduced := Map("3" -> "1.13.0", "2.13" -> "1.13.0", "2.12" -> "1.13.0")
   )
   .dependsOn(csv)
 
@@ -304,7 +304,7 @@ lazy val json = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     )
   )
   .nativeSettings(
-    tlVersionIntroduced := Map("3" -> "1.12.2", "2.13" -> "1.12.2", "2.12" -> "1.12.2")
+    tlVersionIntroduced := Map("3" -> "1.13.0", "2.13" -> "1.13.0", "2.12" -> "1.13.0")
   )
   .dependsOn(text, finiteState)
 
@@ -329,7 +329,7 @@ lazy val jsonCirce = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     }
   )
   .nativeSettings(
-    tlVersionIntroduced := Map("3" -> "1.12.2", "2.13" -> "1.12.2", "2.12" -> "1.12.2")
+    tlVersionIntroduced := Map("3" -> "1.13.0", "2.13" -> "1.13.0", "2.12" -> "1.13.0")
   )
   .dependsOn(json % "compile->compile;test->test", jsonDiffson % "test->test")
 
@@ -362,7 +362,7 @@ lazy val jsonDiffson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     )
   )
   .nativeSettings(
-    tlVersionIntroduced := Map("3" -> "1.12.2", "2.13" -> "1.12.2", "2.12" -> "1.12.2")
+    tlVersionIntroduced := Map("3" -> "1.13.0", "2.13" -> "1.13.0", "2.12" -> "1.13.0")
   )
   .dependsOn(json % "compile->compile;test->test")
 
@@ -385,7 +385,7 @@ lazy val jsonInterpolators = crossProject(JVMPlatform, JSPlatform, NativePlatfor
     tlVersionIntroduced := Map("3" -> "1.4.0", "2.13" -> "1.4.0", "2.12" -> "1.4.0")
   )
   .nativeSettings(
-    tlVersionIntroduced := Map("3" -> "1.12.2", "2.13" -> "1.12.2", "2.12" -> "1.12.2")
+    tlVersionIntroduced := Map("3" -> "1.13.0", "2.13" -> "1.13.0", "2.12" -> "1.13.0")
   )
   .dependsOn(json % "compile->compile;test->test")
 
@@ -427,7 +427,7 @@ lazy val xml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
   .nativeSettings(
-    tlVersionIntroduced := Map("3" -> "1.12.2", "2.13" -> "1.12.2", "2.12" -> "1.12.2")
+    tlVersionIntroduced := Map("3" -> "1.13.0", "2.13" -> "1.13.0", "2.12" -> "1.13.0")
   )
   .dependsOn(text, finiteState)
 
@@ -450,7 +450,7 @@ lazy val scalaXml = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
   .nativeSettings(
-    tlVersionIntroduced := Map("3" -> "1.12.2", "2.13" -> "1.12.2", "2.12" -> "1.12.2")
+    tlVersionIntroduced := Map("3" -> "1.13.0", "2.13" -> "1.13.0", "2.12" -> "1.13.0")
   )
   .dependsOn(xml % "compile->compile;test->test")
 
@@ -476,7 +476,7 @@ lazy val cbor = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
   .nativeSettings(
-    tlVersionIntroduced := Map("3" -> "1.12.2", "2.13" -> "1.12.2", "2.12" -> "1.12.2")
+    tlVersionIntroduced := Map("3" -> "1.13.0", "2.13" -> "1.13.0", "2.12" -> "1.13.0")
   )
 
 lazy val finiteState = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -499,14 +499,14 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .settings(
     name := "fs2-data-cbor-json",
     description := "Streaming CBOR/JSON interoperability library",
-    tlVersionIntroduced := Map("3" -> "1.12.2", "2.13" -> "1.12.2", "2.12" -> "1.12.2")
+    tlVersionIntroduced := Map("3" -> "1.13.0", "2.13" -> "1.13.0", "2.12" -> "1.13.0")
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
   .dependsOn(cbor, json, jsonCirce % "test")
   .nativeSettings(
-    tlVersionIntroduced := Map("3" -> "1.12.2", "2.13" -> "1.12.2", "2.12" -> "1.12.2")
+    tlVersionIntroduced := Map("3" -> "1.13.0", "2.13" -> "1.13.0", "2.12" -> "1.13.0")
   )
 
 lazy val msgpack = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -517,7 +517,7 @@ lazy val msgpack = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .settings(
     name := "fs2-data-msgpack",
     description := "Streaming MessagePack library",
-    tlVersionIntroduced := Map("3" -> "1.12.2", "2.13" -> "1.12.2", "2.12" -> "1.12.2")
+    tlVersionIntroduced := Map("3" -> "1.13.0", "2.13" -> "1.13.0", "2.12" -> "1.13.0")
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
