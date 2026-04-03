@@ -16,18 +16,25 @@
 
 package fs2.data.csv.generic.internal
 
-import fs2.data.csv.CsvRowEncoder
+import cats.data.NonEmptyList
+import fs2.data.csv.{CsvRow, CsvRowEncoder, StaticHeaders}
 import fs2.data.csv.generic.CsvName
 import shapeless._
 
-trait DerivedCsvRowEncoder[T] extends CsvRowEncoder[T, String]
+trait DerivedCsvRowEncoder[T] extends CsvRowEncoder[T, String] with StaticHeaders[T, String]
 
 object DerivedCsvRowEncoder {
 
   final implicit def productWriter[T, Repr <: HList, AnnoRepr <: HList](implicit
       gen: LabelledGeneric.Aux[T, Repr],
       annotations: Annotations.Aux[CsvName, T, AnnoRepr],
-      cc: Lazy[MapShapedCsvRowEncoder.WithAnnotations[Repr, AnnoRepr]]): DerivedCsvRowEncoder[T] =
-    (elem: T) => cc.value.fromWithAnnotation(gen.to(elem), annotations())
+      cc: Lazy[MapShapedCsvRowEncoder.WithAnnotations[Repr, AnnoRepr]]): DerivedCsvRowEncoder[T] = {
+    val annos = annotations()
+    new DerivedCsvRowEncoder[T] {
+      override val headers: NonEmptyList[String] = NonEmptyList.fromListUnsafe(cc.value.headers(annos))
+      override def apply(elem: T): CsvRow[String] =
+        CsvRow.unsafe(NonEmptyList.fromListUnsafe(cc.value.rawRow(gen.to(elem))), headers)
+    }
+  }
 
 }

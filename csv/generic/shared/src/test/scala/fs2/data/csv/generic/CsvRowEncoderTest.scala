@@ -55,4 +55,10 @@ object CsvRowEncoderTest extends SimpleIOSuite {
     expect(testOptionRenameEncoder(TestOptionRename(1, "test", Some(42))) == csvRow)
   }
 
+  pureTest("headers should be available statically") {
+    forEach(List(testEncoder, testRenameEncoder, testOptionRenameEncoder)) { encoder =>
+      expect(encoder.headers === NonEmptyList.of("i", "s", "j"))
+    }
+  }
+
 }

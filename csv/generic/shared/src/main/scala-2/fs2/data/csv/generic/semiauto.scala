@@ -33,7 +33,7 @@ object semiauto {
   def deriveCsvRowDecoder[T](implicit T: Lazy[DerivedCsvRowDecoder[T]]): CsvRowDecoder[T, String] =
     T.value
 
-  def deriveCsvRowEncoder[T](implicit T: Lazy[DerivedCsvRowEncoder[T]]): CsvRowEncoder[T, String] =
+  def deriveCsvRowEncoder[T](implicit T: Lazy[DerivedCsvRowEncoder[T]]): StaticCsvRowEncoder[T, String] =
     T.value
 
   def deriveCellDecoder[T](implicit T: Lazy[DerivedCellDecoder[T]]): CellDecoder[T] =
