@@ -60,7 +60,7 @@ package object cbor {
         if (bi.isValidLong) {
           val rawBytes = bi.toByteArray
           val power2Length = if (rawBytes.length == 3) 4 else if (rawBytes.length > 4) 8 else rawBytes.length
-          Chunk.singleton(CborItem.PositiveInt(ByteVector(rawBytes).padLeft(power2Length)))
+          Chunk.singleton(CborItem.PositiveInt(ByteVector(rawBytes).padLeft(power2Length.toLong)))
         } else
           Chunk(CborItem.Tag(Tags.PositiveBigNum), CborItem.ByteString(ByteVector(bi.toByteArray).dropWhile(_ == 0x00)))
       } else {
@@ -68,7 +68,7 @@ package object cbor {
         if (bi.isValidLong) {
           val rawBytes = bi.toByteArray
           val power2Length = if (rawBytes.length == 3) 4 else if (rawBytes.length > 4) 8 else rawBytes.length
-          Chunk.singleton(CborItem.NegativeInt(ByteVector(rawBytes).padLeft(power2Length)))
+          Chunk.singleton(CborItem.NegativeInt(ByteVector(rawBytes).padLeft(power2Length.toLong)))
         } else
           Chunk(CborItem.Tag(Tags.NegativeBigNum), CborItem.ByteString(ByteVector(bi.toByteArray).dropWhile(_ == 0x00)))
       }
