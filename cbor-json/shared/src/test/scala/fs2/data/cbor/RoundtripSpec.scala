@@ -14,7 +14,8 @@ object RoundtripSpec extends SimpleIOSuite {
       CborValue.TextString("Hello, world!"),
       CborValue.True,
       CborValue.False,
-      CborValue.Null
+      CborValue.Null,
+      CborValue.Float64(Math.PI)
     )
 
     Stream
