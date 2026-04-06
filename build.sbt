@@ -546,7 +546,7 @@ lazy val exampleJq = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     name := "jq-like",
     libraryDependencies ++= List(
       "co.fs2" %%% "fs2-io" % fs2Version,
-      "com.monovore" %%% "decline-effect" % "2.6.1"
+      "com.monovore" %%% "decline-effect" % "2.6.2"
     )
   )
   .jvmSettings(
