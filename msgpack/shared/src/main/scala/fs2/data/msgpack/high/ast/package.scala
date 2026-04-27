@@ -23,6 +23,14 @@ import fs2.data.msgpack.high.internal.Helpers._
 import fs2.data.msgpack.high.internal.DeserializerBits._
 import fs2.data.msgpack.high.DeserializationResult._
 
+/** High-level AST API. Provides implicit instances of [[MsgpackSerializer]] and [[MsgpackDeserializer]] for
+  * [[MsgpackValue]].
+  *
+  * The AST module exports a serializer and a deserializer instance for MsgpackValue. In general, the AST API allows for
+  * more flexible behavior (e.g. heterogeneous lists) but also has worse performance (both in terms of speed and
+  * memory usage).
+  *
+  */
 package object ast {
   implicit val msgpackValueDeserializer: MsgpackDeserializer[MsgpackValue] = getItem { (head, tail) =>
     head match {

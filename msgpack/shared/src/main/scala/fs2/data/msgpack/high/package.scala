@@ -24,6 +24,11 @@ import cats._
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable.ArrayBuilder
 
+/** High-level representation of the MessagePack API.
+  *
+  * This module provides tools for conversion betwen language-level values and
+  * the MessagePack format.
+  */
 package object high extends DeserializerInstances with SerializerInstances {
   implicit class MsgpackSerializerSyntax[A](x: A)(implicit sa: MsgpackSerializer[A]) {
     @inline def serialize = sa(x)
@@ -33,6 +38,8 @@ package object high extends DeserializerInstances with SerializerInstances {
 
   implicit val msgpackDeserializerMonad: Monad[MsgpackDeserializer] = MsgpackDeserializer.msgpackDeserializerMonad
 
+  /** Converts a stream of [[fs2.data.msgpack.low.MsgpackItem]] into a stream of `A` via an implicit deserializer instance.
+    */
   def fromItems[F[_], A](implicit F: RaiseThrowable[F], da: MsgpackDeserializer[A]): Pipe[F, MsgpackItem, A] = {
     stream =>
       val buffer = new java.util.ArrayDeque[A]()
