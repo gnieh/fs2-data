@@ -53,7 +53,7 @@ Serializer instances for common types are imported from the `fs2.data.msgpack.hi
 
 Similarly to serialization, you have to provide a `MsgpackDeserializer[A]` instance for your type before you can parse it.
 
-`MsgpackDeserializer[A]` describes a process of creating a value of type `A` from a chunk of `MsgpackItems`s.
+`MsgpackDeserializer[A]` describes a process of creating a value of type `A` from a chunk of `MsgpackItem`s.
 
 ```scala mdoc:silent
 implicit val userDeserializer: MsgpackDeserializer[User] = 
@@ -76,7 +76,7 @@ byteStream
 ## AST
 More dynamic behavior can be achieved via the `msgpack.high.ast` API.
 The AST module exports a serializer and a deserializer for @:api(msgpack.high.ast.MsgpackValue$).
-In general, the AST API allows for more flexible behavior (e.g. heterogeneous lists) but also has worse performance (both in terms of speed and memory usage).
+In general, the AST API allows for more flexible behavior (e.g. heterogeneous lists) but also runs with worse performance (both in terms of speed and memory usage).
 
 ```scala mdoc
 val valueStream = byteStream.through(data.msgpack.high.ast.valuesFromBytes)
@@ -109,7 +109,7 @@ val inputStream = Stream[Fallible, MsgpackItem](
 val binaryStream = inputStream.through(data.msgpack.low.toBinary)
 ```
 
-This method performs stream validation and will not emit incorrect data.
+This method performs stream validation and will not emit malformed data.
 In case you are sure that the item stream is valid, you can use the `nonValidatedBinary` pipe.
 
 ```scala mdoc
