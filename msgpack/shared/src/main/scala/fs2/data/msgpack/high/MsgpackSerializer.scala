@@ -18,6 +18,10 @@ package fs2
 package data
 package msgpack.high
 
+/** Represents a process of turning a value of type `A` into an array of [[fs2.data.msgpack.low.MsgpackItem]]s.
+  *
+  * Built-in instances are accessible via an import `fs2.data.msgpack.high.*`.
+  */
 trait MsgpackSerializer[A] {
   def apply(x: A): SerializationResult
 }
