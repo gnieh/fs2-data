@@ -214,10 +214,10 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
       order: Order[Header]): NonEmptyMap[Header, String] =
     headers.get.zip(values).toNem
 
-  /** Drop all headers (if any).
+  /** Drop all headers (if any). Retains the line number if set.
     * @return a row without headers, but same values
     */
-  def dropHeaders: Row = Row(values)
+  def dropHeaders: Row = Row(values, line)
 
   // let's cache this to avoid recomputing it for every call to `as` or similar method
   // the `Option.get` call is safe since this field is only called in a context where a `HasHeaders`

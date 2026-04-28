@@ -52,7 +52,7 @@ import scala.annotation.nowarn
 
   def deriveRowEncoder[T](using ic: K0.ProductInstances[CellEncoder, T]): RowEncoder[T] = new RowEncoder[T] {
     override def apply(elem: T): Row = Row(
-      cats.data.NonEmptyList
+      NonEmptyList
         .fromListUnsafe(ic.foldLeft(elem)(List.empty[String])([t] =>
           (acc: List[String], ce: CellEncoder[t], e: t) => Continue[List[String]](ce(e) :: acc)))
         .reverse)
@@ -76,15 +76,18 @@ import scala.annotation.nowarn
   }
 
   def deriveCsvRowEncoder[T](using ic: K0.ProductInstances[CellEncoder, T], naming: Names[T]) =
-    new CsvRowEncoder[T, String] {
+    new CsvRowEncoder[T, String] with StaticHeaders[T, String] {
       val names: List[String] = naming.names
       type Acc = (List[String], List[(String, String)])
+
+      override val headers: NonEmptyList[String] = NonEmptyList.fromListUnsafe(names)
+
       override def apply(elem: T): CsvRow[String] = {
         val columns = ic
           .foldLeft[Acc](elem)(names -> List.empty[(String, String)])([t] =>
             (acc: Acc, ce: CellEncoder[t], e: t) => Continue((acc._1.tail, ((acc._1.head -> ce(e)) :: acc._2))))
           ._2
-        CsvRow.fromNelHeaders(cats.data.NonEmptyList.fromListUnsafe(columns.reverse))
+        CsvRow.fromNelHeaders(NonEmptyList.fromListUnsafe(columns.reverse))
       }
     }
 
@@ -104,7 +107,7 @@ import scala.annotation.nowarn
 
   private[generic] def deriveCsvRowEncoder[T](ic: K0.ProductInstances[CellEncoder, T],
                                               labels: Labelling[T],
-                                              annotations: Annotations[CsvName, T]): CsvRowEncoder[T, String] = {
+                                              annotations: Annotations[CsvName, T]): StaticCsvRowEncoder[T, String] = {
     given Labelling[T] = labels
     given Annotations[CsvName, T] = annotations
     deriveCsvRowEncoder[T](using ic = ic, naming = summon[Names[T]])

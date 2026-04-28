@@ -507,4 +507,39 @@ object CsvParserTest extends SimpleIOSuite {
       case Left(x)       => failure(s"Stream failed with value $x")
     }
   }
+
+  test("empty CSV with headers should round-trip correctly") {
+    val content = "name,age,description\n"
+
+    case class Data(name: String, age: Int, description: String)
+
+    implicit val dataDecoder: CsvRowDecoder[Data, String] = (row: CsvRow[String]) =>
+      (
+        row.as[String]("name"),
+        row.as[Int]("age"),
+        row.as[String]("description")
+      ).mapN(Data.apply)
+
+    implicit val dataEncoder: CsvRowEncoder[Data, String] with StaticHeaders[Data, String] =
+      new CsvRowEncoder[Data, String] with StaticHeaders[Data, String] {
+        override val headers: NonEmptyList[String] = NonEmptyList.of("name", "age", "description")
+
+        override def apply(elem: Data): CsvRow[String] = CsvRow.fromNelHeaders(
+          NonEmptyList.of(
+            "name" -> elem.name,
+            "age" -> elem.age.toString,
+            "description" -> elem.description
+          )
+        )
+      }
+
+    Stream
+      .emit(content)
+      .covary[IO]
+      .through(decodeUsingHeaders[Data]())
+      .through(encodeUsingStaticHeaders[Data]())
+      .compile
+      .string
+      .map(actual => expect.eql(content, actual))
+  }
 }
