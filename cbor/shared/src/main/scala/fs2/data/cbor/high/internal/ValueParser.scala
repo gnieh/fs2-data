@@ -233,6 +233,16 @@ object ValueParser {
             case _ => Pull.raiseError(new CborTagDecodingException("A bignum must have a byte string as value"))
           }
           parseTags(chunk, idx + 1, rest, f(true), chunkAcc)
+        case CborItem.Tag(Tags.DecimalFraction) =>
+          def f(recurse: Boolean): CborValue => Pull[F, Nothing, CborValue] = {
+            case CborValue.Array(Seq(CborValue.Integer(exponent), CborValue.Integer(mantissa)), false) =>
+              tags(CborValue.Float64(mantissa.toDouble * Math.pow(10D, exponent.toDouble)))
+            case CborValue.Tagged(tag2, v) if recurse => tags(CborValue.Tagged(tag2, v)).flatMap(f(false))
+            case _                                    =>
+              Pull.raiseError(
+                new CborTagDecodingException("A decimal fraction must have an array of two integers as value"))
+          }
+          parseTags(chunk, idx + 1, rest, f(true), chunkAcc)
         case CborItem.Tag(tag) => parseTags(chunk, idx + 1, rest, v => tags(CborValue.Tagged(tag, v)), chunkAcc)
         case _                 => Pull.pure((chunk, idx, rest, chunkAcc, tags))
       }

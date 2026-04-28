@@ -34,6 +34,7 @@ object JsonToCborSpec extends SimpleIOSuite {
           List(
             Token.NumberValue("0"),
             Token.NumberValue("10"),
+            Token.NumberValue("133456"),
             Token.NumberValue("-1"),
             Token.NumberValue("-20"),
             Token.NumberValue(Long.MinValue.toString()),
@@ -46,6 +47,7 @@ object JsonToCborSpec extends SimpleIOSuite {
       List(
         CborItem.PositiveInt(hex"00"),
         CborItem.PositiveInt(hex"0a"),
+        CborItem.PositiveInt(hex"00020950"),
         CborItem.NegativeInt(hex"00"),
         CborItem.NegativeInt(hex"13"),
         CborItem.NegativeInt(hex"7fffffffffffffff"),
