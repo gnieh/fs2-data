@@ -511,12 +511,11 @@ lazy val cborJson = crossProject(JVMPlatform, JSPlatform, NativePlatform)
 lazy val msgpack = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("msgpack"))
-  .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     name := "fs2-data-msgpack",
     description := "Streaming MessagePack library",
-    tlVersionIntroduced := Map("3" -> "1.13.0", "2.13" -> "1.13.0", "2.12" -> "1.13.0")
+    tlVersionIntroduced := Map("3" -> "1.14.0", "2.13" -> "1.14.0", "2.12" -> "1.14.0")
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
@@ -675,6 +674,7 @@ lazy val unidocs = project
       jsonDiffson.jvm,
       jsonPlay.jvm,
       jsonInterpolators.jvm,
+      msgpack.jvm,
       text.jvm,
       xml.jvm,
       scalaXml.jvm
