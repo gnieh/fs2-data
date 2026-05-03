@@ -60,9 +60,9 @@ import scala.annotation.nowarn
 
   def deriveCsvRowDecoder[T](using
       ic: K0.ProductInstances[OptCellDecoder, T],
-      naming: Names[T]): CsvRowDecoder[T, String] = {
+      naming: Names[T]): CsvRowDecoder[T, String] with StaticHeaders[T, String] = {
     val names: List[String] = naming.names
-    new CsvRowDecoder[T, String] {
+    new CsvRowDecoder[T, String] with StaticHeaders[T, String] {
       override def apply(row: CsvRow[String]): DecoderResult[T] = {
         ic.constructM[StateT[DecoderResult, List[(String, Option[String])], *]] { [t] => (cd: OptCellDecoder[t]) =>
           StateT[DecoderResult, List[(String, Option[String])], t] {
@@ -72,6 +72,8 @@ import scala.annotation.nowarn
         }(summon, summon, summon)
           .runA(names.map(name => name -> row(name)))
       }
+
+      override val headers: NonEmptyList[String] = NonEmptyList.fromListUnsafe(names)
     }
   }
 
