@@ -189,6 +189,30 @@ package object csv {
     }
   }
 
+  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type.
+   *
+   * Scenarios:
+   * - If skipHeaders is false, then the file contains no headers.
+   * - If skipHeaders is true, then the headers in the file will be skipped.
+   *
+   * For both scenarios the file is assumed to be compliant with the set of headers given via the instance of [[StaticHeaders]].
+   * It's equivalent to [[decodeGivenHeaders]] with headers from the [[StaticHeaders]] instance.
+   */
+  def decodeUsingStaticHeaders[T]: PartiallyAppliedDecodeUsingStaticHeaders[T] =
+    new PartiallyAppliedDecodeUsingStaticHeaders(dummy = true)
+
+  @nowarn
+  class PartiallyAppliedDecodeUsingStaticHeaders[T](val dummy: Boolean) extends AnyVal {
+    def apply[F[_], C, Header](skipHeaders: Boolean = false,
+                               separator: Char = ',',
+                               quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
+        F: RaiseThrowable[F],
+        C: CharLikeChunks[F, C],
+        SH: StaticHeaders[T, Header],
+        T: CsvRowDecoder[T, Header]): Pipe[F, C, T] =
+      decodeGivenHeaders[T](SH.headers, skipHeaders, separator, quoteHandling)
+  }
+
   /** Encode a specified type into a CSV that contains no headers. */
   def encodeWithoutHeaders[T]: PartiallyAppliedEncodeWithoutHeaders[T] =
     new PartiallyAppliedEncodeWithoutHeaders[T](dummy = true)
