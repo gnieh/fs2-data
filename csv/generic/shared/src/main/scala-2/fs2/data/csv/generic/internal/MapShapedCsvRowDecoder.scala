@@ -16,11 +16,11 @@
 
 package fs2.data.csv.generic.internal
 
-import cats.syntax.all._
-import fs2.data.csv._
+import cats.syntax.all.*
+import fs2.data.csv.*
 import fs2.data.csv.generic.CsvName
-import shapeless._
-import shapeless.labelled._
+import shapeless.*
+import shapeless.labelled.*
 
 trait MapShapedCsvRowDecoder[Repr] extends CsvRowDecoder[Repr, String]
 
@@ -30,6 +30,7 @@ object MapShapedCsvRowDecoder extends LowPriorityMapShapedCsvRowDecoder1 {
     new WithDefaults[HNil, HNil, HNil] {
       def fromWithDefault(row: CsvRow[String], default: HNil, annotation: HNil): DecoderResult[HNil] =
         Right(HNil)
+      override def headers(annotation: HNil): List[String] = Nil
     }
 
   implicit def optionHconsRowDecoder[Key <: Symbol, Head, Tail <: HList, DefaultTail <: HList, Anno, AnnoTail <: HList](
@@ -52,6 +53,9 @@ object MapShapedCsvRowDecoder extends LowPriorityMapShapedCsvRowDecoder1 {
           tail <- Tail.value.fromWithDefault(row, default.tail, anno.tail)
         } yield field[Key](head) :: tail
       }
+
+      override def headers(anno: Anno :: AnnoTail): List[String] =
+        anno.head.fold(witness.value.name)(_.name) :: Tail.value.headers(anno.tail)
     }
 
 }
@@ -60,6 +64,7 @@ private[generic] trait LowPriorityMapShapedCsvRowDecoder1 {
 
   trait WithDefaults[Repr, DefaultRepr, AnnoRepr] {
     def fromWithDefault(row: CsvRow[String], default: DefaultRepr, annotation: AnnoRepr): DecoderResult[Repr]
+    def headers(annotation: AnnoRepr): List[String]
   }
 
   implicit def hconsRowDecoder[Key <: Symbol, Head, Tail <: HList, DefaultTail <: HList, Anno, AnnoTail <: HList](
@@ -87,6 +92,9 @@ private[generic] trait LowPriorityMapShapedCsvRowDecoder1 {
           tail <- Tail.value.fromWithDefault(row, default.tail, anno.tail)
         } yield field[Key](head) :: tail
       }
+
+      override def headers(anno: Anno :: AnnoTail): List[String] =
+        anno.head.fold(witness.value.name)(_.name) :: Tail.value.headers(anno.tail)
     }
 
 }

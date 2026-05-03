@@ -97,4 +97,13 @@ object CsvRowDecoderTest extends SimpleIOSuite {
     }
   }
 
+  pureTest("should provide static headers correctly") {
+    expect(testDecoder.headers == NonEmptyList.of("i", "s", "j")) and
+      expect(testOrderDecoder.headers == NonEmptyList.of("s", "j", "i")) and
+      expect(testRenameDecoder.headers == NonEmptyList.of("s", "j", "i")) and
+      expect(testOptionRenameDecoder.headers == NonEmptyList.of("s", "j", "i")) and
+      expect(testOptionalStringDecoder.headers == NonEmptyList.of("i", "s", "j")) and
+      expect(testDefaultsDecoder.headers == NonEmptyList.of("i", "j"))
+  }
+
 }

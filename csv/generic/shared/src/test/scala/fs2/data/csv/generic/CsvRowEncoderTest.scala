@@ -61,4 +61,10 @@ object CsvRowEncoderTest extends SimpleIOSuite {
     }
   }
 
+  pureTest("should provide static headers correctly") {
+    expect(testEncoder.headers == NonEmptyList.of("i", "s", "j")) and
+      expect(testRenameEncoder.headers == NonEmptyList.of("i", "s", "j")) and
+      expect(testOptionRenameEncoder.headers == NonEmptyList.of("i", "s", "j"))
+  }
+
 }

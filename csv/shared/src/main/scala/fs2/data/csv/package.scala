@@ -91,6 +91,15 @@ package object csv {
    */
   type StaticCsvRowEncoder[T, Header] = CsvRowEncoder[T, Header] & StaticHeaders[T, Header]
 
+  /**
+   * Convenience type alias for a [[CsvRowDecoder]] that also has a [[StaticHeaders]] instance,
+   * so that the headers are determined solely by the type and not the input data.
+   *
+   * This type should not be taken as implicit parameter, prefer taking the two type class instances separately,
+   * but it can be useful as a return type for functions that need both capabilities.
+   */
+  type StaticCsvRowDecoder[T, Header] = CsvRowDecoder[T, Header] & StaticHeaders[T, Header]
+
   @nowarn
   sealed trait QuoteHandling
 
