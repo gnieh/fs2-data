@@ -357,8 +357,6 @@ implicit val staticHeadersForMyRow: StaticHeaders[MyRow, String] = StaticHeaders
 
 it is usually more practical to mix in the `StaticHeaders` trait into your `CsvRowDecoder` and `CsvRowEncoder` instances or rely on [generic derivation][csv-generic-doc] to get the `StaticHeaders` instance for free.
 
-```scala mdoc
-
 [nel]: https://typelevel.org/cats/datatypes/nel.html
 [rfc]: https://tools.ietf.org/html/rfc4180
 [enumeratum]: https://github.com/lloydmeta/enumeratum/
