@@ -268,12 +268,16 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       // which is far from recommended use cases
       ProblemFilters.exclude[InheritedNewAbstractMethodProblem](
         "fs2.data.csv.generic.internal.DerivedCsvRowEncoder.headers"),
+      ProblemFilters.exclude[InheritedNewAbstractMethodProblem](
+        "fs2.data.csv.generic.internal.DerivedCsvRowDecoder.headers"),
       ProblemFilters.exclude[DirectMissingMethodProblem](
         "fs2.data.csv.generic.internal.LowPrioMapShapedCsvRowEncoderImplicits#WithAnnotations.fromWithAnnotation"),
       ProblemFilters.exclude[ReversedMissingMethodProblem](
         "fs2.data.csv.generic.internal.LowPrioMapShapedCsvRowEncoderImplicits#WithAnnotations.headers"),
       ProblemFilters.exclude[ReversedMissingMethodProblem](
-        "fs2.data.csv.generic.internal.LowPrioMapShapedCsvRowEncoderImplicits#WithAnnotations.rawRow")
+        "fs2.data.csv.generic.internal.LowPrioMapShapedCsvRowEncoderImplicits#WithAnnotations.rawRow"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "fs2.data.csv.generic.internal.LowPriorityMapShapedCsvRowDecoder1#WithDefaults.headers")
     )
   )
   .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test)
