@@ -255,14 +255,25 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       }
       .toList
       .flatten,
-    // Filter related to DerivedCellDecoder come from removed implicit params. These are only the Java forwarders.
     mimaBinaryIssueFilters ++= List(
+      // Filter related to DerivedCellDecoder come from removed implicit params. These are only the Java forwarders.
       ProblemFilters.exclude[DirectMissingMethodProblem](
         "fs2.data.csv.generic.internal.DerivedCellDecoder.decodeCCons"),
       ProblemFilters.exclude[DirectMissingMethodProblem](
         "fs2.data.csv.generic.internal.DerivedCellDecoder.decodeCConsObjAnnotated"),
       ProblemFilters.exclude[DirectMissingMethodProblem](
-        "fs2.data.csv.generic.internal.DerivedCellDecoder.decodeCConsObj")
+        "fs2.data.csv.generic.internal.DerivedCellDecoder.decodeCConsObj"),
+      // Filters changes related to internals of generic derivation. While technically public,
+      // one should only run into issues if relied on internals of the generic derivation,
+      // which is far from recommended use cases
+      ProblemFilters.exclude[InheritedNewAbstractMethodProblem](
+        "fs2.data.csv.generic.internal.DerivedCsvRowEncoder.headers"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "fs2.data.csv.generic.internal.LowPrioMapShapedCsvRowEncoderImplicits#WithAnnotations.fromWithAnnotation"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "fs2.data.csv.generic.internal.LowPrioMapShapedCsvRowEncoderImplicits#WithAnnotations.headers"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "fs2.data.csv.generic.internal.LowPrioMapShapedCsvRowEncoderImplicits#WithAnnotations.rawRow")
     )
   )
   .jsSettings(libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test)
