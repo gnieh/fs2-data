@@ -670,7 +670,8 @@ lazy val site = project
              xml.jvm,
              scalaXml.jvm,
              cbor.jvm,
-             cborJson.jvm)
+             cborJson.jvm,
+             msgpack.jvm)
 
 lazy val unidocs = project
   .in(file("unidocs"))
