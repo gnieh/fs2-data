@@ -49,10 +49,12 @@ More high-level pipes are available for the following use cases:
 * `decodeWithoutHeaders` for CSV parsing that requires no headers and none are present in the input (Note: requires `RowDecoder` instead of `CsvRowDecoder`)
 * `decodeSkippingHeaders` for CSV parsing that requires no headers, but they are present in the input (Note: requires `RowDecoder` instead of `CsvRowDecoder`)
 * `decodeGivenHeaders` for CSV parsing that requires headers, but they aren't present in the input
+* `decodeUsingStaticHeaders` for CSV parsing that requires headers which aren't present in the input, but provided through a `StaticHeaders` type class instance
 * `decodeUsingHeaders` for CSV parsing that requires headers and they're present in the input
 * `encodeWithoutHeaders` for CSV encoding that works entirely without headers (Note: requires `RowEncoder` instead of `CsvRowEncoder`)
 * `encodeWithGivenHeaders` for CSV encoding that works without headers, but they should be added to the output
 * `encodeUsingFirstHeaders` for CSV encoding that works with headers. Uses the headers of the first row for the output.
+* `encodeUsingStaticHeaders` for CSV encoding that works with headers. Uses the headers of a `StatisHeaders` type class instance to emit headers even if the output is empty.
 
 ### Dealing with erroneous files
 
@@ -335,6 +337,25 @@ decoded.compile.toList
 Analogously, you can encode your data with a `CsvRowEncoder`. Make sure to not vary the headers based on the data itself as this can't be reflected in the CSV format.
 
 As you can see this can be quite tedious to implement. Lucky us, the `fs2-data-csv-generic` module comes to the rescue to avoid having to write the boilerplate. Please refer to [the module documentation][csv-generic-doc] for more details.
+
+### `StaticHeaders`
+
+The `StaticHeaders` type class is used to provide headers for encoding and decoding when the headers aren't present in the input or output. It is used by the `decodeUsingStaticHeaders` and `encodeUsingStaticHeaders` pipes. It's signature is very simple:
+
+```scala
+trait StaticHeaders[T, H] {
+  def headers: NonEmptyList[H]
+}
+```
+
+where `T` is the type you want to decode/encode and `H` is the type of the headers (often `String`).
+While you can define your own stand-alone instance of `StaticHeaders` easily
+
+```scala
+implicit val staticHeadersForMyRow: StaticHeaders[MyRow, String] = StaticHeaders.instance(NonEmptyList.of("i", "s", "j"))
+```
+
+it is usually more practical to mix in the `StaticHeaders` trait into your `CsvRowDecoder` and `CsvRowEncoder` instances or rely on [generic derivation][csv-generic-doc] to get the `StaticHeaders` instance for free.
 
 [nel]: https://typelevel.org/cats/datatypes/nel.html
 [rfc]: https://tools.ietf.org/html/rfc4180

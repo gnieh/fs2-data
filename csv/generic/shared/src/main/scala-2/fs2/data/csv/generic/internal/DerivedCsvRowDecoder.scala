@@ -16,11 +16,12 @@
 
 package fs2.data.csv.generic.internal
 
+import cats.data.NonEmptyList
 import fs2.data.csv.generic.CsvName
-import fs2.data.csv.{CsvRow, CsvRowDecoder, DecoderResult}
-import shapeless._
+import fs2.data.csv.{CsvRow, CsvRowDecoder, DecoderResult, StaticHeaders}
+import shapeless.*
 
-trait DerivedCsvRowDecoder[T] extends CsvRowDecoder[T, String]
+trait DerivedCsvRowDecoder[T] extends CsvRowDecoder[T, String] with StaticHeaders[T, String]
 
 object DerivedCsvRowDecoder {
 
@@ -29,9 +30,11 @@ object DerivedCsvRowDecoder {
       defaults: Default.AsOptions.Aux[T, DefaultRepr],
       annotations: Annotations.Aux[CsvName, T, AnnoRepr],
       cc: Lazy[MapShapedCsvRowDecoder.WithDefaults[Repr, DefaultRepr, AnnoRepr]]): DerivedCsvRowDecoder[T] =
-    new DerivedCsvRowDecoder[T] {
+    new DerivedCsvRowDecoder[T] with StaticHeaders[T, String] {
+      private val annos: AnnoRepr = annotations()
       def apply(row: CsvRow[String]): DecoderResult[T] =
-        cc.value.fromWithDefault(row, defaults(), annotations()).map(gen.from(_))
+        cc.value.fromWithDefault(row, defaults(), annos).map(gen.from(_))
+      override lazy val headers: NonEmptyList[String] = NonEmptyList.fromListUnsafe(cc.value.headers(annos))
     }
 
 }

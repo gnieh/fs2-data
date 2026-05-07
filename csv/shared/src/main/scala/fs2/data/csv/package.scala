@@ -79,8 +79,26 @@ package object csv {
   /** Describes how a row can be encoded from a value of the given type.
     */
   @implicitNotFound(
-    "No implicit CsvRowEncoderF[H,  found for type ${T}.\nYou can define one using CsvRowEncoderF[H, .instance, by calling contramap on another CsvRowEncoderF[H,  or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val csvRowEncoder: CsvRowEncoderF[H, [${T}] = deriveCsvRowEncoderF[H, \nMake sure to have instances of CellEncoder for every member type in scope.\n")
+    "No implicit CsvRowEncoder found for type ${T}.\nYou can define one using CsvRowEncoder.instance, by calling contramap on another CsvRowEncoder or by using generic derivation for product types like case classes.\nFor that, add the fs2-data-csv-generic module to your dependencies and use either full-automatic derivation:\nimport fs2.data.csv.generic.auto._\nor the recommended semi-automatic derivation:\nimport fs2.data.csv.generic.semiauto._\nimplicit val csvRowEncoder: CsvRowEncoder[${T}] = deriveCsvRowEncoder\nMake sure to have instances of CellEncoder for every member type in scope.\n")
   type CsvRowEncoder[T, Header] = RowEncoderF[Some, T, Header]
+
+  /**
+   * Convenience type alias for a [[CsvRowEncoder]] that also has a [[StaticHeaders]] instance,
+   * so that the headers are determined solely by the type and not the input data.
+   *
+   * This type should not be taken as implicit parameter, prefer taking the two type class instances separately,
+   * but it can be useful as a return type for functions that need both capabilities.
+   */
+  type StaticCsvRowEncoder[T, Header] = CsvRowEncoder[T, Header] & StaticHeaders[T, Header]
+
+  /**
+   * Convenience type alias for a [[CsvRowDecoder]] that also has a [[StaticHeaders]] instance,
+   * so that the headers are determined solely by the type and not the input data.
+   *
+   * This type should not be taken as implicit parameter, prefer taking the two type class instances separately,
+   * but it can be useful as a return type for functions that need both capabilities.
+   */
+  type StaticCsvRowDecoder[T, Header] = CsvRowDecoder[T, Header] & StaticHeaders[T, Header]
 
   @nowarn
   sealed trait QuoteHandling
@@ -180,6 +198,30 @@ package object csv {
     }
   }
 
+  /** Decode a char-like stream (see [[fs2.data.text.CharLikeChunks]]) into a specified type.
+   *
+   * Scenarios:
+   * - If skipHeaders is false, then the file contains no headers.
+   * - If skipHeaders is true, then the headers in the file will be skipped.
+   *
+   * For both scenarios the file is assumed to be compliant with the set of headers given via the instance of [[StaticHeaders]].
+   * It's equivalent to [[decodeGivenHeaders]] with headers from the [[StaticHeaders]] instance.
+   */
+  def decodeUsingStaticHeaders[T]: PartiallyAppliedDecodeUsingStaticHeaders[T] =
+    new PartiallyAppliedDecodeUsingStaticHeaders(dummy = true)
+
+  @nowarn
+  class PartiallyAppliedDecodeUsingStaticHeaders[T](val dummy: Boolean) extends AnyVal {
+    def apply[F[_], C, Header](skipHeaders: Boolean = false,
+                               separator: Char = ',',
+                               quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
+        F: RaiseThrowable[F],
+        C: CharLikeChunks[F, C],
+        SH: StaticHeaders[T, Header],
+        T: CsvRowDecoder[T, Header]): Pipe[F, C, T] =
+      decodeGivenHeaders[T](SH.headers, skipHeaders, separator, quoteHandling)
+  }
+
   /** Encode a specified type into a CSV that contains no headers. */
   def encodeWithoutHeaders[T]: PartiallyAppliedEncodeWithoutHeaders[T] =
     new PartiallyAppliedEncodeWithoutHeaders[T](dummy = true)
@@ -258,6 +300,30 @@ package object csv {
         if (fullRows) lowlevel.toRowStrings[F](separator, newline, escape)
         else lowlevel.toStrings[F](separator, newline, escape)
       lowlevel.encodeRow[F, Header, T] andThen lowlevel.encodeRowWithFirstHeaders[F, Header] andThen stringPipe
+    }
+  }
+
+  /** Encode a specified type into a CSV using the headers from the [[StaticHeaders]] instance.
+   * If the input is empty, the headers will still be emitted. */
+  def encodeUsingStaticHeaders[T]: PartiallyAppliedEncodeUsingStaticHeaders[T] =
+    new PartiallyAppliedEncodeUsingStaticHeaders(dummy = true)
+
+  @nowarn
+  class PartiallyAppliedEncodeUsingStaticHeaders[T](val dummy: Boolean) extends AnyVal {
+    def apply[F[_]: RaiseThrowable, Header](fullRows: Boolean = false,
+                                            separator: Char = ',',
+                                            newline: String = "\n",
+                                            escape: EscapeMode = EscapeMode.Auto)(implicit
+        T: CsvRowEncoder[T, Header],
+        SH: StaticHeaders[T, Header],
+        H: WriteableHeader[Header]): Pipe[F, T, String] = {
+      val stringPipe =
+        if (fullRows) lowlevel.toRowStrings[F](separator, newline, escape)
+        else lowlevel.toStrings[F](separator, newline, escape)
+      lowlevel.encodeRow[F, Header, T] andThen
+        (_.map(_.dropHeaders)) andThen
+        lowlevel.writeWithGivenHeaders[F, Header](SH.headers) andThen
+        stringPipe
     }
   }
 
