@@ -71,12 +71,14 @@ object RowEncoder {
                  C6: CellEncoder](f: T => (C1, C2, C3, C4, C5, C6)): RowEncoder[T] =
     instance { t =>
       val (c1, c2, c3, c4, c5, c6) = f(t)
-      NonEmptyList.of(CellEncoder[C1].apply(c1),
-                      CellEncoder[C2].apply(c2),
-                      CellEncoder[C3].apply(c3),
-                      CellEncoder[C4].apply(c4),
-                      CellEncoder[C5].apply(c5),
-                      CellEncoder[C6].apply(c6))
+      NonEmptyList.of(
+        CellEncoder[C1].apply(c1),
+        CellEncoder[C2].apply(c2),
+        CellEncoder[C3].apply(c3),
+        CellEncoder[C4].apply(c4),
+        CellEncoder[C5].apply(c5),
+        CellEncoder[C6].apply(c6)
+      )
     }
 
   def forColumns[T,

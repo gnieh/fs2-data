@@ -32,8 +32,7 @@ object CsvRowEncoder {
    * This is "unsafe" because it relies on the caller to ensure that the headers match the produced values.
    * Failure to do so will blow up at runtime with an exception (for unequal lengths) or wrong output (for wrong order).
    */
-  def unsafeStatic[T, Header](hs: NonEmptyList[Header])(
-      f: T => NonEmptyList[String]): StaticCsvRowEncoder[T, Header] =
+  def unsafeStatic[T, Header](hs: NonEmptyList[Header])(f: T => NonEmptyList[String]): StaticCsvRowEncoder[T, Header] =
     new CsvRowEncoder[T, Header] with StaticHeaders[T, Header] {
       override val headers: NonEmptyList[Header] = hs
       override def apply(t: T): CsvRow[Header] = CsvRow.unsafe(f(t), hs)
@@ -42,8 +41,7 @@ object CsvRowEncoder {
   def forColumns[T, H, C1: CellEncoder](h1: H)(f: T => C1): StaticCsvRowEncoder[T, H] =
     unsafeStatic(NonEmptyList.one(h1))(t => NonEmptyList.one(CellEncoder[C1].apply(f(t))))
 
-  def forColumns[T, H, C1: CellEncoder, C2: CellEncoder](h1: H, h2: H)(
-      f: T => (C1, C2)): StaticCsvRowEncoder[T, H] =
+  def forColumns[T, H, C1: CellEncoder, C2: CellEncoder](h1: H, h2: H)(f: T => (C1, C2)): StaticCsvRowEncoder[T, H] =
     unsafeStatic(NonEmptyList.of(h1, h2)) { t =>
       val (c1, c2) = f(t)
       NonEmptyList.of(CellEncoder[C1].apply(c1), CellEncoder[C2].apply(c2))
@@ -56,11 +54,8 @@ object CsvRowEncoder {
       NonEmptyList.of(CellEncoder[C1].apply(c1), CellEncoder[C2].apply(c2), CellEncoder[C3].apply(c3))
     }
 
-  def forColumns[T, H, C1: CellEncoder, C2: CellEncoder, C3: CellEncoder, C4: CellEncoder](
-      h1: H,
-      h2: H,
-      h3: H,
-      h4: H)(f: T => (C1, C2, C3, C4)): StaticCsvRowEncoder[T, H] =
+  def forColumns[T, H, C1: CellEncoder, C2: CellEncoder, C3: CellEncoder, C4: CellEncoder](h1: H, h2: H, h3: H, h4: H)(
+      f: T => (C1, C2, C3, C4)): StaticCsvRowEncoder[T, H] =
     unsafeStatic(NonEmptyList.of(h1, h2, h3, h4)) { t =>
       val (c1, c2, c3, c4) = f(t)
       NonEmptyList.of(CellEncoder[C1].apply(c1),
@@ -69,12 +64,12 @@ object CsvRowEncoder {
                       CellEncoder[C4].apply(c4))
     }
 
-  def forColumns[T, H, C1: CellEncoder, C2: CellEncoder, C3: CellEncoder, C4: CellEncoder, C5: CellEncoder](
-      h1: H,
-      h2: H,
-      h3: H,
-      h4: H,
-      h5: H)(f: T => (C1, C2, C3, C4, C5)): StaticCsvRowEncoder[T, H] =
+  def forColumns[T, H, C1: CellEncoder, C2: CellEncoder, C3: CellEncoder, C4: CellEncoder, C5: CellEncoder](h1: H,
+                                                                                                            h2: H,
+                                                                                                            h3: H,
+                                                                                                            h4: H,
+                                                                                                            h5: H)(
+      f: T => (C1, C2, C3, C4, C5)): StaticCsvRowEncoder[T, H] =
     unsafeStatic(NonEmptyList.of(h1, h2, h3, h4, h5)) { t =>
       val (c1, c2, c3, c4, c5) = f(t)
       NonEmptyList.of(CellEncoder[C1].apply(c1),
@@ -95,12 +90,14 @@ object CsvRowEncoder {
       f: T => (C1, C2, C3, C4, C5, C6)): StaticCsvRowEncoder[T, H] =
     unsafeStatic(NonEmptyList.of(h1, h2, h3, h4, h5, h6)) { t =>
       val (c1, c2, c3, c4, c5, c6) = f(t)
-      NonEmptyList.of(CellEncoder[C1].apply(c1),
-                      CellEncoder[C2].apply(c2),
-                      CellEncoder[C3].apply(c3),
-                      CellEncoder[C4].apply(c4),
-                      CellEncoder[C5].apply(c5),
-                      CellEncoder[C6].apply(c6))
+      NonEmptyList.of(
+        CellEncoder[C1].apply(c1),
+        CellEncoder[C2].apply(c2),
+        CellEncoder[C3].apply(c3),
+        CellEncoder[C4].apply(c4),
+        CellEncoder[C5].apply(c5),
+        CellEncoder[C6].apply(c6)
+      )
     }
 
   def forColumns[T,
@@ -523,8 +520,7 @@ object CsvRowEncoder {
                                    h15: H,
                                    h16: H,
                                    h17: H)(
-      f: T => (C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C13, C14, C15, C16, C17))
-      : StaticCsvRowEncoder[T, H] =
+      f: T => (C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C13, C14, C15, C16, C17)): StaticCsvRowEncoder[T, H] =
     unsafeStatic(NonEmptyList.of(h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15, h16, h17)) { t =>
       val (c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17) = f(t)
       NonEmptyList.of(
@@ -723,31 +719,30 @@ object CsvRowEncoder {
       f: T => (C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C13, C14, C15, C16, C17, C18, C19, C20))
       : StaticCsvRowEncoder[T, H] =
     unsafeStatic(
-      NonEmptyList.of(h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15, h16, h17, h18, h19, h20)) {
-      t =>
-        val (c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20) = f(t)
-        NonEmptyList.of(
-          CellEncoder[C1].apply(c1),
-          CellEncoder[C2].apply(c2),
-          CellEncoder[C3].apply(c3),
-          CellEncoder[C4].apply(c4),
-          CellEncoder[C5].apply(c5),
-          CellEncoder[C6].apply(c6),
-          CellEncoder[C7].apply(c7),
-          CellEncoder[C8].apply(c8),
-          CellEncoder[C9].apply(c9),
-          CellEncoder[C10].apply(c10),
-          CellEncoder[C11].apply(c11),
-          CellEncoder[C12].apply(c12),
-          CellEncoder[C13].apply(c13),
-          CellEncoder[C14].apply(c14),
-          CellEncoder[C15].apply(c15),
-          CellEncoder[C16].apply(c16),
-          CellEncoder[C17].apply(c17),
-          CellEncoder[C18].apply(c18),
-          CellEncoder[C19].apply(c19),
-          CellEncoder[C20].apply(c20)
-        )
+      NonEmptyList.of(h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15, h16, h17, h18, h19, h20)) { t =>
+      val (c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20) = f(t)
+      NonEmptyList.of(
+        CellEncoder[C1].apply(c1),
+        CellEncoder[C2].apply(c2),
+        CellEncoder[C3].apply(c3),
+        CellEncoder[C4].apply(c4),
+        CellEncoder[C5].apply(c5),
+        CellEncoder[C6].apply(c6),
+        CellEncoder[C7].apply(c7),
+        CellEncoder[C8].apply(c8),
+        CellEncoder[C9].apply(c9),
+        CellEncoder[C10].apply(c10),
+        CellEncoder[C11].apply(c11),
+        CellEncoder[C12].apply(c12),
+        CellEncoder[C13].apply(c13),
+        CellEncoder[C14].apply(c14),
+        CellEncoder[C15].apply(c15),
+        CellEncoder[C16].apply(c16),
+        CellEncoder[C17].apply(c17),
+        CellEncoder[C18].apply(c18),
+        CellEncoder[C19].apply(c19),
+        CellEncoder[C20].apply(c20)
+      )
     }
 
   def forColumns[T,
@@ -873,33 +868,32 @@ object CsvRowEncoder {
       : StaticCsvRowEncoder[T, H] =
     unsafeStatic(
       NonEmptyList
-        .of(h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15, h16, h17, h18, h19, h20, h21, h22)) {
-      t =>
-        val (c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22) =
-          f(t)
-        NonEmptyList.of(
-          CellEncoder[C1].apply(c1),
-          CellEncoder[C2].apply(c2),
-          CellEncoder[C3].apply(c3),
-          CellEncoder[C4].apply(c4),
-          CellEncoder[C5].apply(c5),
-          CellEncoder[C6].apply(c6),
-          CellEncoder[C7].apply(c7),
-          CellEncoder[C8].apply(c8),
-          CellEncoder[C9].apply(c9),
-          CellEncoder[C10].apply(c10),
-          CellEncoder[C11].apply(c11),
-          CellEncoder[C12].apply(c12),
-          CellEncoder[C13].apply(c13),
-          CellEncoder[C14].apply(c14),
-          CellEncoder[C15].apply(c15),
-          CellEncoder[C16].apply(c16),
-          CellEncoder[C17].apply(c17),
-          CellEncoder[C18].apply(c18),
-          CellEncoder[C19].apply(c19),
-          CellEncoder[C20].apply(c20),
-          CellEncoder[C21].apply(c21),
-          CellEncoder[C22].apply(c22)
-        )
+        .of(h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15, h16, h17, h18, h19, h20, h21, h22)) { t =>
+      val (c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22) =
+        f(t)
+      NonEmptyList.of(
+        CellEncoder[C1].apply(c1),
+        CellEncoder[C2].apply(c2),
+        CellEncoder[C3].apply(c3),
+        CellEncoder[C4].apply(c4),
+        CellEncoder[C5].apply(c5),
+        CellEncoder[C6].apply(c6),
+        CellEncoder[C7].apply(c7),
+        CellEncoder[C8].apply(c8),
+        CellEncoder[C9].apply(c9),
+        CellEncoder[C10].apply(c10),
+        CellEncoder[C11].apply(c11),
+        CellEncoder[C12].apply(c12),
+        CellEncoder[C13].apply(c13),
+        CellEncoder[C14].apply(c14),
+        CellEncoder[C15].apply(c15),
+        CellEncoder[C16].apply(c16),
+        CellEncoder[C17].apply(c17),
+        CellEncoder[C18].apply(c18),
+        CellEncoder[C19].apply(c19),
+        CellEncoder[C20].apply(c20),
+        CellEncoder[C21].apply(c21),
+        CellEncoder[C22].apply(c22)
+      )
     }
 }
