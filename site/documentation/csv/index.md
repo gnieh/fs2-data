@@ -321,7 +321,7 @@ case class Triple(i: Int, s: String, j: Int)
 
 val tripleDecoder: RowDecoder[Triple] =
   // Depending on your Scala version, you might also be able to use .forColumns(Triple.apply) instead
-  RowDecoder.forColumns((i: Int, s: String, j: Int) => Triple(i, s, j))
+  RowDecoder.forColumns(Triple(_, _, _))
 
 val tripleEncoder: RowEncoder[Triple] =
   RowEncoder.forColumns((t: Triple) => (t.i, t.s, t.j))
@@ -356,9 +356,7 @@ case class NamedRow(i: Int, j: Int, s: String)
 
 val namedDecoder: CsvRowDecoder[NamedRow, String] =
   // Depending on your Scala version, you might also be able to use .forColumns(NamedRow.apply) instead
-  CsvRowDecoder.forColumns("i", "j", "s") { (i: Int, j: Int, s: String) =>
-    NamedRow(i, j, s)
-  }
+  CsvRowDecoder.forColumns("i", "j", "s")(NamedRow(_, _, _))
 
 val namedEncoder: StaticCsvRowEncoder[NamedRow, String] =
   CsvRowEncoder.forColumns("i", "j", "s")((r: NamedRow) => (r.i, r.j, r.s))
