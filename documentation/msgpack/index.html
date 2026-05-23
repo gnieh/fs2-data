@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+  <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="Typelevel Laika + Helium Theme" />
+  <title>Introduction</title>
+  
+  <meta name="author" content="Lucas Satabin"/>
+  
+  <meta name="author" content="Yannick Heiber"/>
+  
+  
+  <meta name="description" content="site"/>
+  
+  
+  
+  <link rel="icon" sizes="32x32" type="image/png" href="https://typelevel.org/img/favicon.png"/>
+  
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700">
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono:500">
+  
+  <link rel="stylesheet" type="text/css" href="/pagefind/pagefind-ui.css" />
+    <link rel="stylesheet" type="text/css" href="../../helium/site/icofont.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../helium/site/laika-helium.css" />
+  <script src="/pagefind/pagefind-ui.js"></script>
+    <script src="../../helium/site/laika-helium.js"></script>
+  
+  
+  <script> /* for avoiding page load transitions */ </script>
+</head>
+
+  <body>
+
+    <header id="top-bar" class="light-default dark-default">
+
+  <div class="row">
+    <a id="nav-icon">
+      <i class="icofont-laika navigationMenu" title="Navigation">&#xefa2;</i>
+    </a>
+    
+    
+  </div>
+
+  <a class="image-link" href="../../"><img src="../../media/logo-header.svg"></a>
+
+  <div class="row links">
+    
+    <a class="icon-link svg-link" href="https://www.javadoc.io/doc/org.gnieh/fs2-data-docs_2.13/1.14.0/fs2/data/index.html"><span class="api" title="API"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M75,47.5c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm-50,-0c13.246,-0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,-0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm2.705,16.735l7.239,0l0.622,-4.904l-21.833,0l-0,4.904l7.589,0l0,22.067l6.383,0l-0,-22.067Zm58.076,7.265c-0,-8.757 -3.698,-14.166 -10.781,-14.166c-7.083,-0 -10.781,5.604 -10.781,14.166c0,8.757 3.698,14.166 10.781,14.166c7.083,0 10.781,-5.604 10.781,-14.166Zm-6.539,0c0,6.538 -1.128,9.496 -4.242,9.496c-2.997,0 -4.242,-2.88 -4.242,-9.496c-0,-6.616 1.206,-9.496 4.242,-9.496c3.036,-0 4.242,2.88 4.242,9.496Zm-29.242,-67c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm0.512,9.834c-7.122,-0 -12.609,5.098 -12.609,14.127c-0,9.263 5.215,14.205 12.532,14.205c4.164,0 7.083,-1.634 9.068,-3.658l-2.88,-3.697c-1.518,1.206 -3.153,2.413 -5.838,2.413c-3.697,-0 -6.266,-2.763 -6.266,-9.263c-0,-6.616 2.724,-9.379 6.149,-9.379c2.102,-0 3.892,0.778 5.371,1.984l3.113,-3.775c-2.257,-1.868 -4.748,-2.957 -8.64,-2.957Z"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link svg-link" href="https://github.com/gnieh/fs2-data"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link glyph-link" href="https://discord.gg/XF3CXcMzqD"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
+    
+    <a class="icon-link svg-link" href="https://piaille.fr/@lucassatabin"><span class="mastodon" title="Mastodon"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <g class="svg-shape">
+    <path d="M11.19 12.195c2.016-.24 3.77-1.475 3.99-2.603.348-1.778.32-4.339.32-4.339 0-3.47-2.286-4.488-2.286-4.488C12.062.238 10.083.017 8.027 0h-.05C5.92.017 3.942.238 2.79.765c0 0-2.285 1.017-2.285 4.488l-.002.662c-.004.64-.007 1.35.011 2.091.083 3.394.626 6.74 3.78 7.57 1.454.383 2.703.463 3.709.408 1.823-.1 2.847-.647 2.847-.647l-.06-1.317s-1.303.41-2.767.36c-1.45-.05-2.98-.156-3.215-1.928a3.614 3.614 0 0 1-.033-.496s1.424.346 3.228.428c1.103.05 2.137-.064 3.188-.189zm1.613-2.47H11.13v-4.08c0-.859-.364-1.295-1.091-1.295-.804 0-1.207.517-1.207 1.541v2.233H7.168V5.89c0-1.024-.403-1.541-1.207-1.541-.727 0-1.091.436-1.091 1.296v4.079H3.197V5.522c0-.859.22-1.541.66-2.046.456-.505 1.052-.764 1.793-.764.856 0 1.504.328 1.933.983L8 4.39l.417-.695c.429-.655 1.077-.983 1.934-.983.74 0 1.336.259 1.791.764.442.505.661 1.187.661 2.046v4.203z"/>
+  </g>
+</svg></span></a>
+    
+  </div>  
+
+</header>
+    
+    <nav id="sidebar">
+
+  <div class="row">
+    
+    <a class="icon-link svg-link" href="https://www.javadoc.io/doc/org.gnieh/fs2-data-docs_2.13/1.14.0/fs2/data/index.html"><span class="api" title="API"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M75,47.5c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm-50,-0c13.246,-0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,-0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm2.705,16.735l7.239,0l0.622,-4.904l-21.833,0l-0,4.904l7.589,0l0,22.067l6.383,0l-0,-22.067Zm58.076,7.265c-0,-8.757 -3.698,-14.166 -10.781,-14.166c-7.083,-0 -10.781,5.604 -10.781,14.166c0,8.757 3.698,14.166 10.781,14.166c7.083,0 10.781,-5.604 10.781,-14.166Zm-6.539,0c0,6.538 -1.128,9.496 -4.242,9.496c-2.997,0 -4.242,-2.88 -4.242,-9.496c-0,-6.616 1.206,-9.496 4.242,-9.496c3.036,-0 4.242,2.88 4.242,9.496Zm-29.242,-67c13.246,0 24,10.754 24,24c0,13.246 -10.754,24 -24,24c-13.246,0 -24,-10.754 -24,-24c0,-13.246 10.754,-24 24,-24Zm0.512,9.834c-7.122,-0 -12.609,5.098 -12.609,14.127c-0,9.263 5.215,14.205 12.532,14.205c4.164,0 7.083,-1.634 9.068,-3.658l-2.88,-3.697c-1.518,1.206 -3.153,2.413 -5.838,2.413c-3.697,-0 -6.266,-2.763 -6.266,-9.263c-0,-6.616 2.724,-9.379 6.149,-9.379c2.102,-0 3.892,0.778 5.371,1.984l3.113,-3.775c-2.257,-1.868 -4.748,-2.957 -8.64,-2.957Z"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link svg-link" href="https://github.com/gnieh/fs2-data"><span class="github" title="Source Code"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+  <g class="svg-shape">
+    <path d="M49.995,1c-27.609,-0 -49.995,22.386 -49.995,50.002c-0,22.09 14.325,40.83 34.194,47.444c2.501,0.458 3.413,-1.086 3.413,-2.412c0,-1.185 -0.043,-4.331 -0.067,-8.503c-13.908,3.021 -16.843,-6.704 -16.843,-6.704c-2.274,-5.773 -5.552,-7.311 -5.552,-7.311c-4.54,-3.103 0.344,-3.042 0.344,-3.042c5.018,0.356 7.658,5.154 7.658,5.154c4.46,7.64 11.704,5.433 14.552,4.156c0.454,-3.232 1.744,-5.436 3.174,-6.685c-11.102,-1.262 -22.775,-5.553 -22.775,-24.713c-0,-5.457 1.949,-9.92 5.147,-13.416c-0.516,-1.265 -2.231,-6.348 0.488,-13.233c0,0 4.199,-1.344 13.751,5.126c3.988,-1.108 8.266,-1.663 12.518,-1.682c4.245,0.019 8.523,0.574 12.517,1.682c9.546,-6.47 13.736,-5.126 13.736,-5.126c2.728,6.885 1.013,11.968 0.497,13.233c3.204,3.496 5.141,7.959 5.141,13.416c0,19.209 -11.691,23.436 -22.83,24.673c1.795,1.544 3.394,4.595 3.394,9.26c0,6.682 -0.061,12.076 -0.061,13.715c0,1.338 0.899,2.894 3.438,2.406c19.853,-6.627 34.166,-25.354 34.166,-47.438c-0,-27.616 -22.389,-50.002 -50.005,-50.002"/>
+  </g>
+</svg></span></a>
+    
+    <a class="icon-link glyph-link" href="https://discord.gg/XF3CXcMzqD"><i class="icofont-laika chat" title="Chat">&#xeed5;</i></a>
+    
+    <a class="icon-link svg-link" href="https://piaille.fr/@lucassatabin"><span class="mastodon" title="Mastodon"><svg class="svg-icon" width="100%" height="100%" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <g class="svg-shape">
+    <path d="M11.19 12.195c2.016-.24 3.77-1.475 3.99-2.603.348-1.778.32-4.339.32-4.339 0-3.47-2.286-4.488-2.286-4.488C12.062.238 10.083.017 8.027 0h-.05C5.92.017 3.942.238 2.79.765c0 0-2.285 1.017-2.285 4.488l-.002.662c-.004.64-.007 1.35.011 2.091.083 3.394.626 6.74 3.78 7.57 1.454.383 2.703.463 3.709.408 1.823-.1 2.847-.647 2.847-.647l-.06-1.317s-1.303.41-2.767.36c-1.45-.05-2.98-.156-3.215-1.928a3.614 3.614 0 0 1-.033-.496s1.424.346 3.228.428c1.103.05 2.137-.064 3.188-.189zm1.613-2.47H11.13v-4.08c0-.859-.364-1.295-1.091-1.295-.804 0-1.207.517-1.207 1.541v2.233H7.168V5.89c0-1.024-.403-1.541-1.207-1.541-.727 0-1.091.436-1.091 1.296v4.079H3.197V5.522c0-.859.22-1.541.66-2.046.456-.505 1.052-.764 1.793-.764.856 0 1.504.328 1.933.983L8 4.39l.417-.695c.429-.655 1.077-.983 1.934-.983.74 0 1.336.259 1.791.764.442.505.661 1.187.661 2.046v4.203z"/>
+  </g>
+</svg></span></a>
+    
+  </div>
+
+  <ul class="nav-list">
+    <li class="level1 nav-leaf"><a href="../../">Home</a></li>
+    <li class="level1 nav-header">documentation</li>
+    <li class="level2 nav-leaf"><a href="../">Introduction</a></li>
+    <li class="level2 nav-header">csv</li>
+    <li class="level3 nav-leaf"><a href="../csv/">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../csv/generic/">Generic</a></li>
+    <li class="level2 nav-header">json</li>
+    <li class="level3 nav-leaf"><a href="../json/">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../json/jsonpath/">JSONPath</a></li>
+    <li class="level3 nav-leaf"><a href="../json/jq/">JSON Queries</a></li>
+    <li class="level3 nav-leaf"><a href="../json/libraries/">JSON Libraries</a></li>
+    <li class="level3 nav-leaf"><a href="../json/jsonpatch/">JSON Patch</a></li>
+    <li class="level3 nav-leaf"><a href="../json/transformations/">Transformations</a></li>
+    <li class="level2 nav-header">xml</li>
+    <li class="level3 nav-leaf"><a href="../xml/">Introduction</a></li>
+    <li class="level3 nav-leaf"><a href="../xml/xpath/">XPath</a></li>
+    <li class="level3 nav-leaf"><a href="../xml/libraries/">XML Libraries</a></li>
+    <li class="level2 nav-header">cbor</li>
+    <li class="level3 nav-leaf"><a href="../cbor/">Introduction</a></li>
+    <li class="level2 nav-header">cbor-json</li>
+    <li class="level3 nav-leaf"><a href="../cbor-json/">Introduction</a></li>
+    <li class="level2 nav-header">msgpack</li>
+    <li class="level3 active nav-leaf"><a href="#">Introduction</a></li>
+    <li class="level1 nav-header">cookbooks</li>
+    <li class="level2 nav-leaf"><a href="../../cookbooks/jsonlines/">Handling JSON Lines data</a></li>
+    <li class="level2 nav-leaf"><a href="../../cookbooks/jq/">Reading/transforming/writing JSON data</a></li>
+  </ul>
+
+  <ul class="nav-list">
+    <li><div id="search"></div></li>
+  </ul>
+
+</nav>
+
+<script>
+window.addEventListener('DOMContentLoaded', (event) => {
+  new PagefindUI({ element: "#search", showSubResults: true, showImages: false });
+});
+</script>
+
+
+    <div id="container">
+
+      
+<nav id="page-nav">
+  <p class="header"><a href="#">Introduction</a></p>
+
+  <ul class="nav-list">
+    <li class="level1 nav-node"><a href="#high-level-api">High-level API</a></li>
+    <li class="level2 nav-leaf"><a href="#serialization-1">Serialization</a></li>
+    <li class="level2 nav-leaf"><a href="#deserialization-1">Deserialization</a></li>
+    <li class="level2 nav-leaf"><a href="#ast">AST</a></li>
+    <li class="level1 nav-node"><a href="#low-level-api">Low-level API</a></li>
+    <li class="level2 nav-leaf"><a href="#serialization-2">Serialization</a></li>
+    <li class="level2 nav-leaf"><a href="#deserialization-2">Deserialization</a></li>
+    <li class="level1 nav-leaf"><a href="#converting-between-low-level-and-high-level-representations">Converting between low-level and high-level representations</a></li>
+  </ul>
+
+  <p class="footer"></p>
+</nav>
+
+
+      <main class="content">
+
+        <h1 id="introduction" class="title">Introduction</h1>
+        <p>Module: <a href="https://mvnrepository.com/artifact/org.gnieh/fs2-data-msgpack_2.13"><img src="https://img.shields.io/maven-central/v/org.gnieh/fs2-data-msgpack_2.13.svg" alt="Maven Central"></a></p>
+        <p>The <code>fs2-data-msgpack</code> module provides tools that allow for serialization and deserialziation of <a href="https://msgpack.org/">MessagePack</a> data.</p>
+        <p>The module is split into two namespaces:</p>
+        <ul>
+          <li><code>fs2.data.msgpack.low</code> - Works on a flat model (see <a class="api" href="https://www.javadoc.io/doc/org.gnieh/fs2-data-docs_2.13/1.14.0/fs2/data/msgpack/low/MsgpackItem$.html">MsgpackItem</a>) which mimics the raw MessagePack format. This model is used as a middle-point for the high-level API.</li>
+          <li><code>fs2.data.msgpack.high</code> - Works on Scala values directly. You can create custom serializers and deserializers for your classes.</li>
+        </ul>
+        
+        <h1 id="high-level-api" class="section"><a class="anchor-link left" href="#high-level-api"><i class="icofont-laika link">&#xef71;</i></a>High-level API</h1>
+        <p>This is probably the API you want to use (unless you need to work on a flat stream instead of an AST).</p>
+        
+        <h2 id="serialization-1" class="section"><a class="anchor-link left" href="#serialization-1"><i class="icofont-laika link">&#xef71;</i></a>Serialization</h2>
+        <p>To serialize a class, you first have to provide a <code>MsgpackSerializer[A]</code> instance for it.</p>
+        <p><code>MsgpackSerializer[A]</code> describes a process of turning a value of type <code>A</code> into an array of <code>MsgpackItem</code>s.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.*
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">msgpack</span><span>.</span><span class="identifier">high</span><span>.*
+</span><span class="keyword">import</span><span> </span><span class="identifier">java</span><span>.</span><span class="identifier">time</span><span>.</span><span class="type-name">Instant</span><span>
+
+</span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">User</span><span>(</span><span class="identifier">name</span><span>: </span><span class="type-name">String</span><span>, </span><span class="identifier">age</span><span>: </span><span class="type-name">Int</span><span>, </span><span class="identifier">created</span><span>: </span><span class="type-name">Instant</span><span>, </span><span class="identifier">visits</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">Long</span><span>])
+
+</span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">userSerializer</span><span>: </span><span class="type-name">MsgpackSerializer</span><span>[</span><span class="type-name">User</span><span>] = {
+  </span><span class="keyword">case</span><span> </span><span class="type-name">User</span><span>(</span><span class="identifier">name</span><span>, </span><span class="identifier">age</span><span>, </span><span class="identifier">created</span><span>, </span><span class="identifier">visits</span><span>) =&gt;
+    </span><span class="keyword">for</span><span> {
+      </span><span class="identifier">name</span><span>    &lt;- </span><span class="type-name">MsgpackSerializer</span><span>[</span><span class="type-name">String</span><span>](</span><span class="identifier">name</span><span>)
+      </span><span class="identifier">age</span><span>     &lt;- </span><span class="type-name">MsgpackSerializer</span><span>[</span><span class="type-name">Int</span><span>](</span><span class="identifier">age</span><span>)
+      </span><span class="identifier">created</span><span> &lt;- </span><span class="type-name">MsgpackSerializer</span><span>[</span><span class="type-name">Instant</span><span>](</span><span class="identifier">created</span><span>)
+      </span><span class="identifier">visits</span><span>  &lt;- </span><span class="type-name">MsgpackSerializer</span><span>[</span><span class="type-name">List</span><span>[</span><span class="type-name">Long</span><span>]](</span><span class="identifier">visits</span><span>)
+    } </span><span class="keyword">yield</span><span> </span><span class="identifier">name</span><span> ++ </span><span class="identifier">age</span><span> ++ </span><span class="identifier">created</span><span> ++ </span><span class="identifier">visits</span><span>
+  }</span></code></pre>
+        <p>The <code>serialize: Pipe[F, A, Byte]</code> method can be used to apply a serializer of a specific type onto a stream.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">val</span><span> </span><span class="identifier">inputStream</span><span> = </span><span class="type-name">Stream</span><span>[</span><span class="type-name">Fallible</span><span>, </span><span class="type-name">User</span><span>](
+  </span><span class="type-name">User</span><span>(</span><span class="string-literal">&quot;foo&quot;</span><span>, </span><span class="number-literal">30</span><span>, </span><span class="type-name">Instant</span><span>.</span><span class="identifier">parse</span><span>(</span><span class="string-literal">&quot;2025-02-03T10:00:00.00Z&quot;</span><span>), </span><span class="type-name">List</span><span>.</span><span class="identifier">empty</span><span>),
+  </span><span class="type-name">User</span><span>(</span><span class="string-literal">&quot;bar&quot;</span><span>, </span><span class="number-literal">31</span><span>, </span><span class="type-name">Instant</span><span>.</span><span class="identifier">parse</span><span>(</span><span class="string-literal">&quot;2026-01-17T10:00:00.00Z&quot;</span><span>), </span><span class="type-name">List</span><span>(</span><span class="number-literal">1</span><span>, </span><span class="number-literal">3</span><span>, </span><span class="number-literal">7</span><span>))
+)
+</span><span class="comment">// inputStream: Stream[Fallible, User] = Stream(..)
+</span><span>
+</span><span class="keyword">val</span><span> </span><span class="identifier">byteStream</span><span> = </span><span class="identifier">inputStream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">data</span><span>.</span><span class="identifier">msgpack</span><span>.</span><span class="identifier">high</span><span>.</span><span class="identifier">serialize</span><span>[</span><span class="type-name">Fallible</span><span>, </span><span class="type-name">User</span><span>])
+</span><span class="comment">// byteStream: Stream[[x]Fallible[x], Byte] = Stream(..)</span></code></pre>
+        <p>You can also provide an instance of <code>MsgpackSerializer</code> to <code>serialize</code> as an argument explicitly.
+        Serializer instances for common types are imported from the <code>fs2.data.msgpack.high</code> package.</p>
+        
+        <h2 id="deserialization-1" class="section"><a class="anchor-link left" href="#deserialization-1"><i class="icofont-laika link">&#xef71;</i></a>Deserialization</h2>
+        <p>Similarly to serialization, you have to provide a <code>MsgpackDeserializer[A]</code> instance for your type before you can parse it.</p>
+        <p><code>MsgpackDeserializer[A]</code> describes a process of creating a value of type <code>A</code> from a chunk of <code>MsgpackItem</code>s.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">userDeserializer</span><span>: </span><span class="type-name">MsgpackDeserializer</span><span>[</span><span class="type-name">User</span><span>] = 
+  </span><span class="keyword">for</span><span> {
+    </span><span class="identifier">name</span><span>    &lt;- </span><span class="type-name">MsgpackDeserializer</span><span>[</span><span class="type-name">String</span><span>]
+    </span><span class="identifier">age</span><span>     &lt;- </span><span class="type-name">MsgpackDeserializer</span><span>[</span><span class="type-name">Int</span><span>]
+    </span><span class="identifier">created</span><span> &lt;- </span><span class="type-name">MsgpackDeserializer</span><span>[</span><span class="type-name">Instant</span><span>]
+    </span><span class="identifier">visits</span><span> &lt;- </span><span class="type-name">MsgpackDeserializer</span><span>[</span><span class="type-name">List</span><span>[</span><span class="type-name">Long</span><span>]]
+  } </span><span class="keyword">yield</span><span> </span><span class="type-name">User</span><span>(</span><span class="identifier">name</span><span>, </span><span class="identifier">age</span><span>, </span><span class="identifier">created</span><span>, </span><span class="identifier">visits</span><span>)</span></code></pre>
+        <p>Deserialization can be done with <code>deserialize: Pipe[F, Byte, A]</code>.</p>
+        <pre><code class="nohighlight"><span class="identifier">byteStream</span><span>
+  .</span><span class="identifier">through</span><span>(</span><span class="identifier">data</span><span>.</span><span class="identifier">msgpack</span><span>.</span><span class="identifier">high</span><span>.</span><span class="identifier">deserialize</span><span>[</span><span class="type-name">Fallible</span><span>, </span><span class="type-name">User</span><span>])
+  .</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>
+</span><span class="comment">// res0: Either[Throwable, List[User]] = Right(
+//   value = List(
+//     User(
+//       name = &quot;foo&quot;,
+//       age = 30,
+//       created = 2025-02-03T10:00:00Z,
+//       visits = List()
+//     ),
+//     User(
+//       name = &quot;bar&quot;,
+//       age = 31,
+//       created = 2026-01-17T10:00:00Z,
+//       visits = List(1L, 3L, 7L)
+//     )
+//   )
+// )</span></code></pre>
+        
+        <h2 id="ast" class="section"><a class="anchor-link left" href="#ast"><i class="icofont-laika link">&#xef71;</i></a>AST</h2>
+        <p>More dynamic behavior can be achieved via the <code>msgpack.high.ast</code> API.
+        The AST module exports a serializer and a deserializer for <a class="api" href="https://www.javadoc.io/doc/org.gnieh/fs2-data-docs_2.13/1.14.0/fs2/data/msgpack/high/ast/MsgpackValue$.html">MsgpackValue</a>.
+        In general, the AST API allows for more flexible behavior (e.g. heterogeneous lists) but also runs with worse performance (both in terms of speed and memory usage).</p>
+        <pre><code class="nohighlight"><span class="keyword">val</span><span> </span><span class="identifier">valueStream</span><span> = </span><span class="identifier">byteStream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">data</span><span>.</span><span class="identifier">msgpack</span><span>.</span><span class="identifier">high</span><span>.</span><span class="identifier">ast</span><span>.</span><span class="identifier">valuesFromBytes</span><span>)
+</span><span class="comment">// valueStream: Stream[[x]Fallible[x], ast.MsgpackValue] = Stream(..)
+</span><span>
+</span><span class="keyword">val</span><span> </span><span class="identifier">byteStream2</span><span> = </span><span class="identifier">valueStream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">data</span><span>.</span><span class="identifier">msgpack</span><span>.</span><span class="identifier">high</span><span>.</span><span class="identifier">ast</span><span>.</span><span class="identifier">valuesToBytes</span><span>)
+</span><span class="comment">// byteStream2: Stream[[x]Fallible[x], Byte] = Stream(..)
+</span><span>
+</span><span class="identifier">valueStream</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>
+</span><span class="comment">// res1: Either[Throwable, List[ast.MsgpackValue]] = Right(
+//   value = List(
+//     String(x = &quot;foo&quot;),
+//     Integer(x = 30L),
+//     Timestamp(nanoseconds = 0, seconds = 1738576800L),
+//     Array(x = List()),
+//     String(x = &quot;bar&quot;),
+//     Integer(x = 31L),
+//     Timestamp(nanoseconds = 0, seconds = 1768644000L),
+//     Array(x = List(Integer(x = 1L), Integer(x = 3L), Integer(x = 7L)))
+//   )
+// )
+</span><span>
+</span><span class="identifier">byteStream2</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span> == </span><span class="identifier">byteStream</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>
+</span><span class="comment">// res2: Boolean = true</span></code></pre>
+        
+        <h1 id="low-level-api" class="section"><a class="anchor-link left" href="#low-level-api"><i class="icofont-laika link">&#xef71;</i></a>Low-level API</h1>
+        <p>In case you want to operate on a flat MessagePack stream directly, you can use the low-level API.
+        Methods exposed in <code>fs2.data.msgpack.low</code> translate the binary data to <a class="api" href="https://www.javadoc.io/doc/org.gnieh/fs2-data-docs_2.13/1.14.0/fs2/data/msgpack/low/MsgpackItem$.html">MsgpackItem</a> and vice versa.</p>
+        
+        <h2 id="serialization-2" class="section"><a class="anchor-link left" href="#serialization-2"><i class="icofont-laika link">&#xef71;</i></a>Serialization</h2>
+        <p>The main serialization pipe is called <code>toBinary: Pipe[F, MsgpackItem, Byte]</code>.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.*
+</span><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.</span><span class="identifier">data</span><span>.</span><span class="identifier">msgpack</span><span>.</span><span class="identifier">low</span><span>.*
+</span><span class="keyword">import</span><span> </span><span class="identifier">scodec</span><span>.</span><span class="identifier">bits</span><span>.*
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">inputStream</span><span> = </span><span class="type-name">Stream</span><span>[</span><span class="type-name">Fallible</span><span>, </span><span class="type-name">MsgpackItem</span><span>](
+  </span><span class="type-name">MsgpackItem</span><span>.</span><span class="type-name">Array</span><span>(</span><span class="number-literal">2</span><span>),
+  </span><span class="type-name">MsgpackItem</span><span>.</span><span class="type-name">UnsignedInt</span><span>(</span><span class="string-literal">hex&quot;ab&quot;</span><span>),
+  </span><span class="type-name">MsgpackItem</span><span>.</span><span class="type-name">UnsignedInt</span><span>(</span><span class="string-literal">hex&quot;abcdef01&quot;</span><span>)
+)
+</span><span class="comment">// inputStream: Stream[Fallible, MsgpackItem] = Stream(..)
+</span><span>
+</span><span class="keyword">val</span><span> </span><span class="identifier">binaryStream</span><span> = </span><span class="identifier">inputStream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">data</span><span>.</span><span class="identifier">msgpack</span><span>.</span><span class="identifier">low</span><span>.</span><span class="identifier">toBinary</span><span>)
+</span><span class="comment">// binaryStream: Stream[[x]Fallible[x], Byte] = Stream(..)</span></code></pre>
+        <p>This method performs stream validation and will not emit malformed data.
+        In case you are sure that the item stream is valid, you can use the <code>nonValidatedBinary</code> pipe.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">inputStream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">data</span><span>.</span><span class="identifier">msgpack</span><span>.</span><span class="identifier">low</span><span>.</span><span class="identifier">toNonValidatedBinary</span><span>)
+</span><span class="comment">// res4: Stream[[x]Fallible[x], Byte] = Stream(..)</span></code></pre>
+        <p>You can also apply the <code>validate: Pipe[F, MsgpackItem, MsgpackItem]</code> pipe directly onto the stream.
+        This method will raise inside the effect in a case of a malformed stream.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="type-name">Stream</span><span>(</span><span class="type-name">MsgpackItem</span><span>.</span><span class="type-name">Array</span><span>(</span><span class="number-literal">999</span><span>))
+  .</span><span class="identifier">through</span><span>(</span><span class="identifier">data</span><span>.</span><span class="identifier">msgpack</span><span>.</span><span class="identifier">low</span><span>.</span><span class="identifier">validate</span><span>[</span><span class="type-name">Fallible</span><span>])
+  .</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>
+</span><span class="comment">// res5: Either[Throwable, List[MsgpackItem]] = Left(
+//   value = MsgpackUnexpectedEndOfStreamException(
+//     position = Some(value = 0L),
+//     inner = null
+//   )
+// )</span></code></pre>
+        
+        <h2 id="deserialization-2" class="section"><a class="anchor-link left" href="#deserialization-2"><i class="icofont-laika link">&#xef71;</i></a>Deserialization</h2>
+        <p>You can convert the stream of <code>Byte</code>s into a stream of <a class="api" href="https://www.javadoc.io/doc/org.gnieh/fs2-data-docs_2.13/1.14.0/fs2/data/msgpack/low/MsgpackItem$.html">MsgpackItem</a>s by using the <code>fromBinary: Pipe[F, Byte, MsgpackItem]</code> pipe.</p>
+        <p>Excluding extension types, the process of deserialization is the inverse of serialization.
+        In other words, <code>stream.through(serialize).through(deserialize)</code> should always be equal to <code>stream</code>.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">val</span><span> </span><span class="identifier">itemStream</span><span> = </span><span class="identifier">binaryStream</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">data</span><span>.</span><span class="identifier">msgpack</span><span>.</span><span class="identifier">low</span><span>.</span><span class="identifier">fromBinary</span><span>[</span><span class="type-name">Fallible</span><span>])
+</span><span class="comment">// itemStream: Stream[[x]Fallible[x], MsgpackItem] = Stream(..)
+</span><span>
+</span><span class="identifier">itemStream</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span> == </span><span class="identifier">inputStream</span><span>.</span><span class="identifier">compile</span><span>.</span><span class="identifier">toList</span><span>
+</span><span class="comment">// res6: Boolean = true</span></code></pre>
+        
+        <h1 id="converting-between-low-level-and-high-level-representations" class="section"><a class="anchor-link left" href="#converting-between-low-level-and-high-level-representations"><i class="icofont-laika link">&#xef71;</i></a>Converting between low-level and high-level representations</h1>
+        <p>As mentioned before, the flat item stream present in low-level API serves as a middle point between the binary data and language-level values.
+        To translate between Scala objects and <code>MsgpackItem</code> instances you can use the following functions:</p>
+        <ul>
+          <li><code>high.fromItems: Pipe[F, MsgpackItem, A]</code></li>
+          <li><code>high.toItems: Pipe[F, A, MsgpackItem]</code></li>
+          <li><code>high.ast.valuesFromItems: Pipe[F, MsgpackItem, MsgpackValue]</code></li>
+          <li><code>high.ast.valuesToItems: Pipe[F, MsgpackValue, MsgpackItem]</code></li>
+        </ul>
+
+        
+<hr class="footer-rule"/>
+<footer>
+  <code>fs2-data</code> is a <a href="https://typelevel.org/">Typelevel</a> affiliate project distributed under the <a href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache-2.0</a> license.
+</footer>
+
+
+      </main>
+
+    </div>
+
+  </body>
+
+</html>
