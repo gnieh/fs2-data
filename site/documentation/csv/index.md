@@ -314,6 +314,19 @@ val row = Stream(Option(3) :: "test" :: 42 :: HNil)
 row.through(lowlevel.encode).compile.toList
 ```
 
+For simple positional case classes, `RowDecoder.forColumns` and `RowEncoder.forColumns` build instances without boilerplate (overloads are provided for arities 1 through 22):
+
+```scala mdoc
+case class Triple(i: Int, s: String, j: Int)
+
+val tripleDecoder: RowDecoder[Triple] =
+  // Depending on your Scala version, you might also be able to use .forColumns(Triple.apply) instead
+  RowDecoder.forColumns(Triple(_, _, _))
+
+val tripleEncoder: RowEncoder[Triple] =
+  RowEncoder.forColumns((t: Triple) => (t.i, t.s, t.j))
+```
+
 ### `CsvRowDecoder` & `CsvRowEncoder`
 
 If your CSV data set has headers, you can use `CsvRowDecoder`. Using the headers, one can decode the CSV data to some case class:
@@ -336,7 +349,20 @@ decoded.compile.toList
 
 Analogously, you can encode your data with a `CsvRowEncoder`. Make sure to not vary the headers based on the data itself as this can't be reflected in the CSV format.
 
-As you can see this can be quite tedious to implement. Lucky us, the `fs2-data-csv-generic` module comes to the rescue to avoid having to write the boilerplate. Please refer to [the module documentation][csv-generic-doc] for more details.
+As you can see this can be quite tedious to implement. The `CsvRowDecoder.forColumns` and `CsvRowEncoder.forColumns` helpers can save the boilerplate when you just want to map each named column to a constructor argument or a tuple element (overloads exist for arities 1 through 22). The encoder variant additionally returns a `StaticCsvRowEncoder`, exposing the headers via `StaticHeaders`:
+
+```scala mdoc
+case class NamedRow(i: Int, j: Int, s: String)
+
+val namedDecoder: CsvRowDecoder[NamedRow, String] =
+  // Depending on your Scala version, you might also be able to use .forColumns(NamedRow.apply) instead
+  CsvRowDecoder.forColumns("i", "j", "s")(NamedRow(_, _, _))
+
+val namedEncoder: StaticCsvRowEncoder[NamedRow, String] =
+  CsvRowEncoder.forColumns("i", "j", "s")((r: NamedRow) => (r.i, r.j, r.s))
+```
+
+If neither the helpers nor a hand-written instance fit your use case, the `fs2-data-csv-generic` module derives `CsvRowDecoder` and `CsvRowEncoder` automatically. Please refer to [the module documentation][csv-generic-doc] for more details.
 
 ### `StaticHeaders`
 
