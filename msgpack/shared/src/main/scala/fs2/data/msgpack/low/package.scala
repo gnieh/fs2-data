@@ -21,6 +21,10 @@ package msgpack
 import low.internal.{ItemParser, ItemSerializer, ItemValidator}
 
 /** A low-level representation of the MessagePack format.
+  *
+  * Works on a flat object model (see [[MsgpackItem]]) which mimics the raw
+  * MessagePack format. This model is used as a middle-point for the hugh-leel
+  * API.
   */
 package object low {
 

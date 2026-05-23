@@ -18,6 +18,11 @@ package fs2.data.msgpack.low
 
 import scodec.bits.ByteVector
 
+/** Low-level MessagePack item.
+  *
+  *  Items are emitted as soon as they arrive. No AST is built.
+  *
+  */
 sealed trait MsgpackItem
 
 object MsgpackItem {
