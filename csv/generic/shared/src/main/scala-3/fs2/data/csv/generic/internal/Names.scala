@@ -19,11 +19,17 @@ package internal
 
 import shapeless3.deriving.*
 
-private[generic] trait Names[T] {
+// NOTE: `Names` and its given must stay publicly accessible. `deriveCsvRowDecoder`
+// and `deriveCsvRowEncoder` are public and summon `Names[T]` at the *call site*, which
+// lives outside this package. A `private[generic]` given is resolved there only through
+// a deprecated fallback (Implicits.warnIfImplicitFromInaccessibleCompanion); since Scala
+// 3.7 the compiler warns, and from Scala 3.10 it will no longer find it at all, breaking
+// derivation for every downstream user. See https://github.com/gnieh/fs2-data/issues/779
+trait Names[T] {
   def names: List[String]
 }
 
-private[generic] object Names {
+object Names {
   given [T](using labels: Labelling[T], annotations: Annotations[CsvName, T]): Names[T] = new Names[T] {
     override def names: List[String] = {
       val annos = annotations.apply().toList.asInstanceOf[List[Option[CsvName]]]
