@@ -219,6 +219,15 @@ case class RowF[H[+a] <: Option[a], Header](values: NonEmptyList[String],
     */
   def dropHeaders: Row = Row(values, line)
 
+  /**
+   * Combine two rows by concatenating their values and headers (if present). The resulting row will have no line number.
+   * Note that if the rows have headers, these should be disjoint to avoid duplicates causing trouble downstream.
+   */
+  def ++(other: RowF[H, Header]): RowF[H, Header] =
+    new RowF(values ::: other.values,
+             headers.flatMap(h1 => other.headers.map(h2 => h1 ::: h2)).asInstanceOf[H[NonEmptyList[Header]]],
+             None)
+
   // let's cache this to avoid recomputing it for every call to `as` or similar method
   // the `Option.get` call is safe since this field is only called in a context where a `HasHeaders`
   // instance is provided, meaning that the `Option` is `Some`
@@ -239,4 +248,8 @@ object RowF {
   implicit object functor extends Functor[CsvRow[*]] {
     override def map[A, B](fa: CsvRow[A])(f: A => B): CsvRow[B] = fa.copy(headers = Some(fa.headers.get.map(f)))
   }
+
+  implicit val orderRow: Order[Row] = Order.by(r => (r.values, r.line))
+  implicit def orderCsvRow[Header: Order]: Order[CsvRow[Header]] =
+    Order.by(r => (r.values, r.headers: Option[NonEmptyList[Header]], r.line))
 }
