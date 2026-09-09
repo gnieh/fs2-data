@@ -46,6 +46,8 @@ ThisBuild / crossScalaVersions := Seq(scala212, scala213, scala3)
 ThisBuild / scalaVersion := scala213
 ThisBuild / tlJdkRelease := Some(17)
 
+ThisBuild / tlCiReleaseBranches := Nil
+
 ThisBuild / resolvers += Resolver.sonatypeCentralSnapshots
 
 val commonSettings = List(
