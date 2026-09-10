@@ -18,7 +18,7 @@ import sbt.Def._
 import scala.scalanative.build._
 
 val scala212 = "2.12.21"
-val scala213 = "2.13.18"
+val scala213 = "3.9.0"
 val scala3 = "3.3.7"
 val fs2Version = "3.13.0"
 val circeVersion = "0.14.16"
