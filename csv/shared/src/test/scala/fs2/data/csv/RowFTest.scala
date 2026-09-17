@@ -16,8 +16,9 @@
 
 package fs2.data.csv
 
-import weaver._
 import cats.data.NonEmptyList
+import cats.syntax.all._
+import weaver._
 
 object RowFTest extends SimpleIOSuite {
 
@@ -71,5 +72,11 @@ object RowFTest extends SimpleIOSuite {
   pureTest("Row.asOptionalAt should return decoded value for non-empty cells") {
     val row = Row(NonEmptyList.of("", "2", "3"))
     expect(row.asOptionalAt[Int](1).contains(Some(2)))
+  }
+
+  pureTest("RowF.++ should return properly concatenated row") {
+    val rowA = Row(NonEmptyList.of("A1", "A2"), None)
+    val rowB = Row(NonEmptyList.of("A3", "A4"), None)
+    expect((rowA ++ rowB) === Row(NonEmptyList.of("A1", "A2", "A3", "A4"), None))
   }
 }
