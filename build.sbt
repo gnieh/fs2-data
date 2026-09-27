@@ -79,7 +79,7 @@ val commonSettings = List(
           "-Wconf:msg=type parameter .+ defined in .+ shadows .+:s", // esp.Tag
           "-Wconf:msg=value T is deprecated:s" // jsonpath/xpath literals
         )
-      case Some((3, _)) => List("-source:3.2-migration", "-no-indent")
+      case Some((3, _)) => List("-source:3.2-migration", "-no-indent", "-Yfuture-lazy-vals")
     }
     .toList
     .flatten,
