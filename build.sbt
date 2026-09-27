@@ -569,8 +569,7 @@ lazy val exampleJq = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     assembly / assemblyJarName := "jq-like.jar"
   )
   .nativeSettings(nativeConfig ~= {
-    _.withLTO(LTO.thin)
-      .withMode(Mode.releaseFast)
+    _.withMode(Mode.releaseFast)
       .withGC(GC.immix)
   })
   .jsSettings(
