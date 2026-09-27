@@ -19,7 +19,7 @@ import scala.scalanative.build._
 
 val scala212 = "2.12.21"
 val scala213 = "2.13.18"
-val scala3 = "3.3.7"
+val scala3 = "3.3.8"
 val fs2Version = "3.14.0"
 val circeVersion = "0.14.16"
 val circeExtrasVersion = "0.14.2"
@@ -569,8 +569,7 @@ lazy val exampleJq = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     assembly / assemblyJarName := "jq-like.jar"
   )
   .nativeSettings(nativeConfig ~= {
-    _.withLTO(LTO.thin)
-      .withMode(Mode.releaseFast)
+    _.withMode(Mode.releaseFast)
       .withGC(GC.immix)
   })
   .jsSettings(
