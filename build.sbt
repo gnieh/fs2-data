@@ -205,7 +205,9 @@ lazy val csv = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     description := "Streaming CSV manipulation library",
     mimaBinaryIssueFilters ++= List(
       // Static forwarder, only relevant for Java
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.csv.RowEncoderF.fromNonEmptyMapCsvRowEncoder")
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.csv.RowEncoderF.fromNonEmptyMapCsvRowEncoder"),
+      // Static initializer forwarder, not callable. Scala 3 only, due to future lazy val encoding
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.csv.CellDecoder.<clinit>")
     )
   )
   .jsSettings(
@@ -316,7 +318,11 @@ lazy val json = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartArrayElement$"),
       ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartObjectValue"),
       ProblemFilters.exclude[MissingClassProblem]("fs2.data.json.jsonpath.internals.TaggedJson$StartObjectValue$"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.json.jsonpath.package.untag")
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.json.jsonpath.package.untag"),
+      // Static initializer forwarders, not callable. Scala 3 only, due to future lazy val encoding
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.json.Selector.<clinit>"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.json.NamePredicate.<clinit>"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("fs2.data.json.IndexPredicate.<clinit>")
     )
   )
   .nativeSettings(
