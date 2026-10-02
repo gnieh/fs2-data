@@ -79,10 +79,16 @@ val commonSettings = List(
           "-Wconf:msg=type parameter .+ defined in .+ shadows .+:s", // esp.Tag
           "-Wconf:msg=value T is deprecated:s" // jsonpath/xpath literals
         )
-      case Some((3, _)) => List("-source:3.2-migration", "-no-indent", "-Yfuture-lazy-vals")
+      case Some((3, _)) => List("-source:3.2-migration", "-no-indent")
     }
     .toList
     .flatten,
+  // Scala Native's nscplugin for 3.3.8 cannot handle VarHandle-based lazy vals (scala-native/scala-native#4957)
+  scalacOptions ++= {
+    if (scalaBinaryVersion.value == "3" && !crossProjectPlatform.?.value.contains(NativePlatform))
+      List("-Yfuture-lazy-vals")
+    else Nil
+  },
   scalacOptions ++= PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
       case Some((2, n)) if n >= 13 =>
