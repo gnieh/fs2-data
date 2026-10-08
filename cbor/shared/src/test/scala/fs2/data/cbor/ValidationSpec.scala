@@ -198,4 +198,20 @@ object ValidationSpec extends SimpleIOSuite {
       .map(res => expect(res.isLeft))
   }
 
+  test("should not overflow stack for large arrays and maps") {
+    val length = 100000
+    // a single chunk of n items
+    def items(n: Int) = Stream.constant(CborItem.TextString("first"), n).take(n.toLong)
+    val defArr = Stream(CborItem.StartArray(length.toLong)) ++ items(length)
+    val arr = Stream(CborItem.StartIndefiniteArray) ++ items(length) ++ Stream(CborItem.Break)
+    val defMap = Stream(CborItem.StartMap(length.toLong)) ++ items(2 * length)
+    val map = Stream(CborItem.StartIndefiniteMap) ++ items(2 * length) ++ Stream(CborItem.Break)
+    (defArr ++ arr ++ defMap ++ map)
+      .through(validate[IO])
+      .compile
+      .drain
+      .attempt
+      .map(res => expect(res.isRight))
+  }
+
 }
