@@ -18,16 +18,16 @@ import sbt.Def._
 import scala.scalanative.build._
 
 val scala212 = "2.12.21"
-val scala213 = "3.9.0"
-val scala3 = "3.3.7"
-val fs2Version = "3.13.0"
-val circeVersion = "0.14.16"
+val scala213 = "2.13.18"
+val scala3 = "3.9.0"
+val fs2Version = "3.14.0"
+val circeVersion = "0.14.17"
 val circeExtrasVersion = "0.14.2"
 val playVersion = "3.0.6"
 val shapeless2Version = "2.3.13"
 val shapeless3Version = "3.6.0"
 val scalaJavaTimeVersion = "2.7.0"
-val diffsonVersion = "4.7.0"
+val diffsonVersion = "4.7.1"
 val literallyVersion = "1.2.0"
 val weaverVersion = "0.13.0"
 
@@ -569,8 +569,7 @@ lazy val exampleJq = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     assembly / assemblyJarName := "jq-like.jar"
   )
   .nativeSettings(nativeConfig ~= {
-    _.withLTO(LTO.thin)
-      .withMode(Mode.releaseFast)
+    _.withMode(Mode.releaseFast)
       .withGC(GC.immix)
   })
   .jsSettings(
