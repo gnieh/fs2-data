@@ -244,12 +244,11 @@ private[xml] object EventParser {
           } else {
             T.current(ctx) match {
               case '/' =>
-                readQName(T.advance(ctx), chunkAcc).flatMap { case (ctx, chunkAcc, qname) =>
-                  space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                    acceptChar(ctx, '>', "42", "missing '>' at the end of closing tag", chunkAcc)
-                      .map { case (ctx, chunkAcc) => (ctx, chunkAcc, MarkupToken.EndToken(qname)) }
-                  }
-                }
+                for {
+                  (ctx, chunkAcc, qname) <- readQName(T.advance(ctx), chunkAcc)
+                  (ctx, chunkAcc) <- space(ctx, chunkAcc)
+                  (ctx, chunkAcc) <- acceptChar(ctx, '>', "42", "missing '>' at the end of closing tag", chunkAcc)
+                } yield (ctx, chunkAcc, MarkupToken.EndToken(qname))
               case '?' =>
                 readNCName(T.advance(ctx), chunkAcc).map { case (ctx, chunkAcc, name) =>
                   (ctx, chunkAcc, MarkupToken.PIToken(name))
@@ -355,11 +354,15 @@ private[xml] object EventParser {
               case "SYSTEM" =>
                 readQuoted(ctx, false, "11", chunkAcc)
               case "PUBLIC" =>
-                readQuoted(ctx, true, "12", chunkAcc).flatMap { case (ctx, chunkAcc, _) =>
-                  assert(ctx, isXmlWhitespace(_), "12", "space required after PubidLiteral", chunkAcc).flatMap {
-                    case (ctx, chunkAcc, _) => readQuoted(ctx, false, "12", chunkAcc)
-                  }
-                }
+                for {
+                  (ctx, chunkAcc, _) <- readQuoted(ctx, true, "12", chunkAcc)
+                  (ctx, chunkAcc, _) <- assert(ctx,
+                                               isXmlWhitespace(_),
+                                               "12",
+                                               "space required after PubidLiteral",
+                                               chunkAcc)
+                  res <- readQuoted(ctx, false, "12", chunkAcc)
+                } yield res
               case _ =>
                 fail("75", "SYSTEM or PUBLIC expected", Some(chunkAcc))
             }
@@ -485,25 +488,24 @@ private[xml] object EventParser {
         space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
           peekChar(ctx, chunkAcc).flatMap {
             case Some((ctx, chunkAcc, c)) if isNCNameStart(c) =>
-              readQName(ctx, chunkAcc).flatMap { case (ctx, chunkAcc, name) =>
-                space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                  acceptChar(ctx, '=', "25", "'=' character expected", chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                    space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                      assert(ctx,
-                             c => c == '"' || c == '\'',
-                             "10",
-                             "single or double quote expected around attribute value",
-                             chunkAcc)
-                        .flatMap { case (ctx, chunkAcc, delimiter) =>
-                          readAttributeValue(ctx, is11, Some(delimiter), new StringBuilder, new VectorBuilder, chunkAcc)
-                            .flatMap { case (ctx, chunkAcc, value) =>
-                              loop(ctx, attributes += Attr(name, value), chunkAcc)
-                            }
-                        }
-                    }
-                  }
-                }
-              }
+              for {
+                (ctx, chunkAcc, name) <- readQName(ctx, chunkAcc)
+                (ctx, chunkAcc) <- space(ctx, chunkAcc)
+                (ctx, chunkAcc) <- acceptChar(ctx, '=', "25", "'=' character expected", chunkAcc)
+                (ctx, chunkAcc) <- space(ctx, chunkAcc)
+                (ctx, chunkAcc, delimiter) <- assert(ctx,
+                                                     c => c == '"' || c == '\'',
+                                                     "10",
+                                                     "single or double quote expected around attribute value",
+                                                     chunkAcc)
+                (ctx, chunkAcc, value) <- readAttributeValue(ctx,
+                                                             is11,
+                                                             Some(delimiter),
+                                                             new StringBuilder,
+                                                             new VectorBuilder,
+                                                             chunkAcc)
+                res <- loop(ctx, attributes += Attr(name, value), chunkAcc)
+              } yield res
             case Some((ctx, chunkAcc, _)) => Pull.pure((ctx, chunkAcc, attributes.result().toList))
             case None                     => fail("1", "unexpected end of input", None)
           }
@@ -572,17 +574,14 @@ private[xml] object EventParser {
         chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], XmlEvent.StartTag)] =
       readAttributes(ctx, is11, chunkAcc).flatMap { case (ctx, chunkAcc, attributes) =>
         space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-          peekChar(ctx, chunkAcc)
-            .flatMap {
+          for {
+            (ctx, chunkAcc, isEmpty) <- peekChar(ctx, chunkAcc).flatMap {
               case Some((ctx, chunkAcc, '/')) => Pull.pure((T.advance(ctx), chunkAcc, true))
               case Some((ctx, chunkAcc, _))   => Pull.pure((ctx, chunkAcc, false))
               case None                       => fail("44", "unexpected end of input", None)
             }
-            .flatMap { case (ctx, chunkAcc, isEmpty) =>
-              acceptChar(ctx, '>', "44", "missing closing '>'", chunkAcc).map { case (ctx, chunkAcc) =>
-                (ctx, chunkAcc, XmlEvent.StartTag(name, attributes, isEmpty))
-              }
-            }
+            (ctx, chunkAcc) <- acceptChar(ctx, '>', "44", "missing closing '>'", chunkAcc)
+          } yield (ctx, chunkAcc, XmlEvent.StartTag(name, attributes, isEmpty))
         }
       }
 
@@ -776,58 +775,42 @@ private[xml] object EventParser {
           Pull.output1(XmlEvent.EndDocument).as(None)
       }
 
-    def handleVersion(
-        ctx: T.Context,
-        chunkAcc: VectorBuilder[XmlEvent],
-        version: String,
-        delimiter: Char): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], (Boolean, XmlEvent.XmlDecl))] =
-      if (version.length == 2) {
-        fail("26", "expected non empty minor version", Some(chunkAcc))
-      } else {
-        acceptChar(ctx, delimiter, "24", "expected delimiter to close version attribute value", chunkAcc)
-          .flatMap { case (ctx, chunkAcc) =>
-            readEncoding(ctx, false, chunkAcc).flatMap { case (ctx, chunkAcc, (hasSpace, encoding)) =>
-              readStandalone(ctx, hasSpace, chunkAcc).flatMap { case (ctx, chunkAcc, standalone) =>
-                space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                  acceptString(ctx, "?>", "23", "expected end of PI", chunkAcc)
-                    .map { case (ctx, chunkAcc) =>
-                      (ctx, chunkAcc, (version == "1.1", XmlEvent.XmlDecl(version, encoding, standalone)))
-                    }
-                }
-              }
-            }
-          }
-      }
-
     def handleXmlDecl(ctx: T.Context, chunkAcc: VectorBuilder[XmlEvent])
         : Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], (Boolean, XmlEvent.XmlDecl))] =
-      assert(ctx, isXmlWhitespace(_), "24", "space is expected after xml", chunkAcc).flatMap {
-        case (ctx, chunkAcc, _) =>
-          space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-            acceptString(ctx, "version", "24", "expected 'version' attribute", chunkAcc)
-              .flatMap { case (ctx, chunkAcc) =>
-                space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                  acceptChar(ctx, '=', "24", "expected '=' after version", chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                    space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                      assert(ctx, c => c == '"' || c == '\'', "24", "simple or double quote expected", chunkAcc)
-                        .flatMap { case (ctx, chunkAcc, delimiter) =>
-                          acceptChar(ctx, '1', "26", "expected major version 1", chunkAcc)
-                            .flatMap { case (ctx, chunkAcc) =>
-                              acceptChar(ctx, '.', "26", "expected dot", chunkAcc)
-                                .flatMap { case (ctx, chunkAcc) =>
-                                  val sb = new StringBuilder("1.")
-                                  untilChar(ctx, !_.isDigit, sb, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                                    handleVersion(ctx, chunkAcc, sb.result(), delimiter)
-                                  }
-                                }
-                            }
-                        }
-                    }
-                  }
-                }
-              }
+      for {
+        (ctx, chunkAcc, _) <- assert(ctx, isXmlWhitespace(_), "24", "space is expected after xml", chunkAcc)
+        (ctx, chunkAcc) <- space(ctx, chunkAcc)
+        (ctx, chunkAcc) <- acceptString(ctx, "version", "24", "expected 'version' attribute", chunkAcc)
+        (ctx, chunkAcc) <- space(ctx, chunkAcc)
+        (ctx, chunkAcc) <- acceptChar(ctx, '=', "24", "expected '=' after version", chunkAcc)
+        (ctx, chunkAcc) <- space(ctx, chunkAcc)
+        (ctx, chunkAcc, delimiter) <- assert(ctx,
+                                             c => c == '"' || c == '\'',
+                                             "24",
+                                             "simple or double quote expected",
+                                             chunkAcc)
+        (ctx, chunkAcc) <- acceptChar(ctx, '1', "26", "expected major version 1", chunkAcc)
+        (ctx, chunkAcc) <- acceptChar(ctx, '.', "26", "expected dot", chunkAcc)
+        sb = new StringBuilder("1.")
+        (ctx, chunkAcc) <- untilChar(ctx, !_.isDigit, sb, chunkAcc)
+        version = sb.result()
+        res <-
+          if (version.length == 2) {
+            fail("26", "expected non empty minor version", Some(chunkAcc))
+          } else {
+            for {
+              (ctx, chunkAcc) <- acceptChar(ctx,
+                                            delimiter,
+                                            "24",
+                                            "expected delimiter to close version attribute value",
+                                            chunkAcc)
+              (ctx, chunkAcc, (hasSpace, encoding)) <- readEncoding(ctx, false, chunkAcc)
+              (ctx, chunkAcc, standalone) <- readStandalone(ctx, hasSpace, chunkAcc)
+              (ctx, chunkAcc) <- space(ctx, chunkAcc)
+              (ctx, chunkAcc) <- acceptString(ctx, "?>", "23", "expected end of PI", chunkAcc)
+            } yield (ctx, chunkAcc, (version == "1.1", XmlEvent.XmlDecl(version, encoding, standalone)))
           }
-      }
+      } yield res
 
     def readEncoding(ctx: T.Context, hasSpace: Boolean, chunkAcc: VectorBuilder[XmlEvent])
         : Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent], (Boolean, Option[String]))] =
@@ -836,40 +819,34 @@ private[xml] object EventParser {
           space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) => readEncoding(ctx, true, chunkAcc) }
         case Some((ctx, chunkAcc, 'e')) =>
           if (hasSpace) {
-            acceptString(ctx, "encoding", "80", "expected 'encoding' attribute", chunkAcc).flatMap {
-              case (ctx, chunkAcc) =>
-                space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                  acceptChar(ctx, '=', "80", "expected '='", chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                    space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                      assert(ctx, c => c == '"' || c == '\'', "80", "simple or double quote expected", chunkAcc)
-                        .flatMap { case (ctx, chunkAcc, delimiter) =>
-                          assert(ctx,
-                                 c => (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'),
-                                 "81",
-                                 "wrong encoding name character",
-                                 chunkAcc)
-                            .flatMap { case (ctx, chunkAcc, fst) =>
-                              val sb = new StringBuilder().append(fst)
-                              untilChar(
-                                ctx,
-                                c =>
-                                  !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '.' || c == '_' || c == '-'),
-                                sb,
-                                chunkAcc)
-                                .flatMap { case (ctx, chunkAcc) =>
-                                  acceptChar(ctx,
-                                             delimiter,
-                                             "80",
-                                             "'encoding' attribute value must end with proper delimiter",
+            for {
+              (ctx, chunkAcc) <- acceptString(ctx, "encoding", "80", "expected 'encoding' attribute", chunkAcc)
+              (ctx, chunkAcc) <- space(ctx, chunkAcc)
+              (ctx, chunkAcc) <- acceptChar(ctx, '=', "80", "expected '='", chunkAcc)
+              (ctx, chunkAcc) <- space(ctx, chunkAcc)
+              (ctx, chunkAcc, delimiter) <- assert(ctx,
+                                                   c => c == '"' || c == '\'',
+                                                   "80",
+                                                   "simple or double quote expected",
+                                                   chunkAcc)
+              (ctx, chunkAcc, fst) <- assert(ctx,
+                                             c => (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'),
+                                             "81",
+                                             "wrong encoding name character",
                                              chunkAcc)
-                                    .map { case (ctx, chunkAcc) => (ctx, chunkAcc, (false, Some(sb.result()))) }
-                                }
-                            }
-                        }
-                    }
-                  }
-                }
-            }
+              sb = new StringBuilder().append(fst)
+              (ctx, chunkAcc) <- untilChar(
+                ctx,
+                c =>
+                  !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '.' || c == '_' || c == '-'),
+                sb,
+                chunkAcc)
+              (ctx, chunkAcc) <- acceptChar(ctx,
+                                            delimiter,
+                                            "80",
+                                            "'encoding' attribute value must end with proper delimiter",
+                                            chunkAcc)
+            } yield (ctx, chunkAcc, (false, Some(sb.result())))
           } else {
             fail("80", "expected space before 'encoding' attribute", Some(chunkAcc))
           }
@@ -888,38 +865,33 @@ private[xml] object EventParser {
           space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) => readStandalone(ctx, true, chunkAcc) }
         case Some((ctx, chunkAcc, 's')) =>
           if (hasSpace) {
-            acceptString(ctx, "standalone", "32", "expected 'standalone' attribute", chunkAcc).flatMap {
-              case (ctx, chunkAcc) =>
-                space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                  acceptChar(ctx, '=', "32", "expected '='", chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                    space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                      assert(ctx, c => c == '"' || c == '\'', "32", "simple or double quote expected", chunkAcc)
-                        .flatMap { case (ctx, chunkAcc, delimiter) =>
-                          nextChar(ctx, chunkAcc)
-                            .flatMap {
-                              case (ctx, chunkAcc, 'y') =>
-                                acceptString(ctx, "es", "32", "expected 'yes' or 'no'", chunkAcc).map {
-                                  case (ctx, chunkAcc) => (ctx, chunkAcc, true)
-                                }
-                              case (ctx, chunkAcc, 'n') =>
-                                acceptChar(ctx, 'o', "32", "expected 'yes' or 'no'", chunkAcc).map {
-                                  case (ctx, chunkAcc) => (ctx, chunkAcc, false)
-                                }
-                              case (_, chunkAcc, _) => fail("32", "expected 'yes' or 'no'", Some(chunkAcc))
-                            }
-                            .flatMap { case (ctx, chunkAcc, sa) =>
-                              acceptChar(ctx,
-                                         delimiter,
-                                         "32",
-                                         "'standalone' attribute value must end with proper delimiter",
-                                         chunkAcc)
-                                .map { case (ctx, chunkAcc) => (ctx, chunkAcc, Some(sa)) }
-                            }
-                        }
-                    }
+            for {
+              (ctx, chunkAcc) <- acceptString(ctx, "standalone", "32", "expected 'standalone' attribute", chunkAcc)
+              (ctx, chunkAcc) <- space(ctx, chunkAcc)
+              (ctx, chunkAcc) <- acceptChar(ctx, '=', "32", "expected '='", chunkAcc)
+              (ctx, chunkAcc) <- space(ctx, chunkAcc)
+              (ctx, chunkAcc, delimiter) <- assert(ctx,
+                                                   c => c == '"' || c == '\'',
+                                                   "32",
+                                                   "simple or double quote expected",
+                                                   chunkAcc)
+              (ctx, chunkAcc, sa) <- nextChar(ctx, chunkAcc).flatMap {
+                case (ctx, chunkAcc, 'y') =>
+                  acceptString(ctx, "es", "32", "expected 'yes' or 'no'", chunkAcc).map { case (ctx, chunkAcc) =>
+                    (ctx, chunkAcc, true)
                   }
-                }
-            }
+                case (ctx, chunkAcc, 'n') =>
+                  acceptChar(ctx, 'o', "32", "expected 'yes' or 'no'", chunkAcc).map { case (ctx, chunkAcc) =>
+                    (ctx, chunkAcc, false)
+                  }
+                case (_, chunkAcc, _) => fail("32", "expected 'yes' or 'no'", Some(chunkAcc))
+              }
+              (ctx, chunkAcc) <- acceptChar(ctx,
+                                            delimiter,
+                                            "32",
+                                            "'standalone' attribute value must end with proper delimiter",
+                                            chunkAcc)
+            } yield (ctx, chunkAcc, Some(sa))
           } else {
             fail("32", "expected space before 'standalone' attribute", Some(chunkAcc))
           }
@@ -932,40 +904,30 @@ private[xml] object EventParser {
                    chunkAcc: VectorBuilder[XmlEvent]): Pull[F, XmlEvent, (T.Context, VectorBuilder[XmlEvent])] =
       name match {
         case "DOCTYPE" =>
-          assert(ctx, isXmlWhitespace(_), "28", "space is expected after DOCTYPE", chunkAcc).flatMap {
-            case (ctx, chunkAcc, _) =>
-              space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                readNCName(ctx, chunkAcc).flatMap { case (ctx, chunkAcc, docname) =>
-                  space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                    peekChar(ctx, chunkAcc)
-                      .flatMap {
-                        case Some((ctx, chunkAcc, c)) if isNCNameStart(c) =>
-                          readExternalID(ctx, chunkAcc).map { case (ctx, chunkAcc, name) =>
-                            (ctx, chunkAcc, Some(name))
-                          }
-                        case Some((ctx, chunkAcc, _)) => Pull.pure((ctx, chunkAcc, None))
-                        case None                     => Pull.pure((eos, new VectorBuilder[XmlEvent], None))
-                      }
-                      .flatMap { case (ctx, chunkAcc, systemid) =>
-                        space(ctx, chunkAcc).flatMap { case (ctx, chunkAcc) =>
-                          nextChar(ctx, chunkAcc)
-                            .flatMap {
-                              case (ctx, chunkAcc, '>') =>
-                                // done
-                                Pull.pure((ctx, chunkAcc += XmlEvent.XmlDoctype(name, docname, systemid)))
-                              case (ctx, chunkAcc, '[') =>
-                                skipInternalDTD(ctx, chunkAcc).map { case (ctx, chunkAcc) =>
-                                  (ctx, chunkAcc += XmlEvent.XmlDoctype(name, docname, systemid))
-                                }
-                              case (_, chunkAcc, c) =>
-                                fail("28", s"end of doctype or internal DTD expected but got $c", Some(chunkAcc))
-                            }
-                        }
-                      }
-                  }
+          for {
+            (ctx, chunkAcc, _) <- assert(ctx, isXmlWhitespace(_), "28", "space is expected after DOCTYPE", chunkAcc)
+            (ctx, chunkAcc) <- space(ctx, chunkAcc)
+            (ctx, chunkAcc, docname) <- readNCName(ctx, chunkAcc)
+            (ctx, chunkAcc) <- space(ctx, chunkAcc)
+            (ctx, chunkAcc, systemid) <- peekChar(ctx, chunkAcc).flatMap {
+              case Some((ctx, chunkAcc, c)) if isNCNameStart(c) =>
+                readExternalID(ctx, chunkAcc).map { case (ctx, chunkAcc, name) => (ctx, chunkAcc, Some(name)) }
+              case Some((ctx, chunkAcc, _)) => Pull.pure((ctx, chunkAcc, None))
+              case None                     => Pull.pure((eos, new VectorBuilder[XmlEvent], None))
+            }
+            (ctx, chunkAcc) <- space(ctx, chunkAcc)
+            res <- nextChar(ctx, chunkAcc).flatMap {
+              case (ctx, chunkAcc, '>') =>
+                // done
+                Pull.pure((ctx, chunkAcc += XmlEvent.XmlDoctype(name, docname, systemid)))
+              case (ctx, chunkAcc, '[') =>
+                skipInternalDTD(ctx, chunkAcc).map { case (ctx, chunkAcc) =>
+                  (ctx, chunkAcc += XmlEvent.XmlDoctype(name, docname, systemid))
                 }
-              }
-          }
+              case (_, chunkAcc, c) =>
+                fail("28", s"end of doctype or internal DTD expected but got $c", Some(chunkAcc))
+            }
+          } yield res
         case _ =>
           fail("22", "expected DOCTYPE declaration", Some(chunkAcc))
       }
