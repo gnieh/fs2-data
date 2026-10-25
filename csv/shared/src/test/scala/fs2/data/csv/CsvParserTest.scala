@@ -520,7 +520,7 @@ object CsvParserTest extends SimpleIOSuite {
         row.as[String]("description")
       ).mapN(Data.apply)
 
-    implicit val dataEncoder: CsvRowEncoder[Data, String] with StaticHeaders[Data, String] =
+    implicit val dataEncoder: CsvRowEncoder[Data, String] & StaticHeaders[Data, String] =
       new CsvRowEncoder[Data, String] with StaticHeaders[Data, String] {
         override val headers: NonEmptyList[String] = NonEmptyList.of("name", "age", "description")
 

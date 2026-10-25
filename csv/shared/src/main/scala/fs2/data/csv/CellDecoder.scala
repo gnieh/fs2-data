@@ -143,7 +143,7 @@ object CellDecoder
       s => step(s, a)
     }
 
-    override def combineK[A](x: CellDecoder[A], y: CellDecoder[A]): CellDecoder[A] = x or y
+    override def combineK[A](x: CellDecoder[A], y: CellDecoder[A]): CellDecoder[A] = x `or` y
   }
 
   def apply[T: CellDecoder]: CellDecoder[T] = implicitly[CellDecoder[T]]

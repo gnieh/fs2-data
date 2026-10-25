@@ -160,7 +160,7 @@ object Token {
 
       // the current stack of states, helping to deal with comma and indentation
       // states are described right above
-      private[this] var states = List.empty[Int]
+      private var states = List.empty[Int]
 
       private def separator(): Stream[Pure, DocEvent] =
         states match {
@@ -269,7 +269,7 @@ object Token {
 
       // the current stack of states, helping to deal with comma and indentation
       // states are described right above
-      private[this] var states = List.empty[Int]
+      private var states = List.empty[Int]
 
       private def separator(): Stream[Pure, DocEvent] =
         states match {
