@@ -25,9 +25,10 @@ import scala.annotation.switch
 
 import TokenParser._
 
-private[json] class JsonTokenParser[F[_], T, Res](
-    s: Stream[F, T],
-    private final val chunkAcc: ChunkAccumulator[Res])(implicit F: RaiseThrowable[F], T: AsCharBuffer[F, T]) {
+private[json] class JsonTokenParser[F[_], T, Res](s: Stream[F, T], private final val chunkAcc: ChunkAccumulator[Res])(
+    implicit
+    F: RaiseThrowable[F],
+    T: AsCharBuffer[F, T]) {
   private var context = T.create(s)
 
   private def emitChunk() =

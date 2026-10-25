@@ -71,7 +71,7 @@ val commonSettings = List(
     .flatten,
   scalacOptions ++= PartialFunction
     .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((3, _)) =>
-      List("-source:3.4-migration", "-no-indent")
+      List("-source:3.7-migration", "-no-indent")
     }
     .toList
     .flatten,

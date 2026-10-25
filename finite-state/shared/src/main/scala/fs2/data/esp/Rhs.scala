@@ -65,9 +65,9 @@ object Rhs {
 
   implicit def show[O: Show]: Show[Rhs[O]] = Show.show[Rhs[O]] {
     case Call(q, d, Nil)     => show"q$q[$d]()"
-    case Call(q, d, params)  => show"q$q[$d](${params.mkString_(", ")(show[O], implicitly)})"
+    case Call(q, d, params)  => show"q$q[$d](${params.mkString_(", ")(using show[O], implicitly)})"
     case SelfCall(q, Nil)    => show"q$q[0](x0)"
-    case SelfCall(q, params) => show"q$q[0](x0, ${params.mkString_(", ")(show[O], implicitly)})"
+    case SelfCall(q, params) => show"q$q[0](x0, ${params.mkString_(", ")(using show[O], implicitly)})"
     case Param(n)            => show"y$n"
     case Tree(tag, inner)    => show"<$tag> { $inner }"
     case CapturedTree(inner) => show"<%> { $inner }"

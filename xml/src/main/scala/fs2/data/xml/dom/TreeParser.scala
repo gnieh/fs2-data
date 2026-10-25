@@ -31,7 +31,7 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F]) {
   private var legacyBuilder: DocumentBuilder[Node] = null
 
   private[dom] def this(F: RaiseThrowable[F], builder: DocumentBuilder[Node]) = {
-    this()(F)
+    this()(using F)
     legacyBuilder = builder
   }
 
@@ -164,7 +164,7 @@ class TreeParser[F[_], Node](implicit F: RaiseThrowable[F]) {
     }
 
   @deprecated("only retained for bincompat", "1.6.0")
-  private[dom] def pipe: Pipe[F, XmlEvent, Node] = pipe(legacyBuilder)
+  private[dom] def pipe: Pipe[F, XmlEvent, Node] = pipe(using legacyBuilder)
 
   def pipe(implicit builder: DocumentBuilder[Node]): Pipe[F, XmlEvent, Node] = {
     def go(chunk: Chunk[XmlEvent], idx: Int, rest: Stream[F, XmlEvent]): Pull[F, Node, Unit] =
