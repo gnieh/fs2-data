@@ -83,7 +83,7 @@ package object high extends DeserializerInstances with SerializerInstances {
   /** Converts a stream of [[fs2.data.msgpack.low.MsgpackItem]] into a stream of `A` via an explicit deserializer instance.
     */
   @inline def fromItems[F[_], A](da: MsgpackDeserializer[A])(implicit F: RaiseThrowable[F]): Pipe[F, MsgpackItem, A] =
-    fromItems(F, da)
+    fromItems(using F, da)
 
   /** Deserializes a stream of bytes into a stream of `A`s via an implicit deserializer instance.
     */

@@ -42,7 +42,9 @@ private[json] object TokenParser {
     T match {
       case asCharBuffer: AsCharBuffer[F, T] =>
         Stream.suspend(
-          new JsonTokenParser[F, T, Token](s, new TokenChunkAccumulator)(F, asCharBuffer).go_(State.BeforeValue).stream)
+          new JsonTokenParser[F, T, Token](s, new TokenChunkAccumulator)(using F, asCharBuffer)
+            .go_(State.BeforeValue)
+            .stream)
       case _ =>
         Stream.suspend(new LegacyTokenParser[F, T, Token](s).parse(new TokenChunkAccumulator).stream)
     }

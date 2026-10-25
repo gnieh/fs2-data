@@ -66,7 +66,7 @@ object ScalarDeserializerSpec extends SimpleIOSuite with Checkers {
   }
 
   testRoundtrip("string roundtrip") { (x: String) =>
-    val bytes = ByteVector.encodeString(x)(java.nio.charset.Charset.forName("UTF-8"))
+    val bytes = ByteVector.encodeString(x)(using java.nio.charset.Charset.forName("UTF-8"))
 
     bytes match {
       case Right(bs) => MsgpackItem.Str(bs)

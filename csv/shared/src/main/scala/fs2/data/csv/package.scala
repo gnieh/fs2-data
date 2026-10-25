@@ -453,7 +453,7 @@ package object csv {
       // explicit Show avoids mapping the NEL before
       val showColumn: Show[String] =
         Show.show(RowWriter.encodeColumn(separator, escape))
-      _.map(_.mkString_("", separator.toString, newline)(showColumn, implicitly))
+      _.map(_.mkString_("", separator.toString, newline)(using showColumn, implicitly))
     }
 
     /** Encode a given type into simple CSV rows without headers. */
@@ -525,7 +525,7 @@ package object csv {
           C: CharLikeChunks[F, C],
           T: CsvRowDecoder[T, Header],
           H: ParseableHeader[Header]): Pipe[F, C, Either[CsvException, T]] = {
-        lowlevel.rows(separator, quoteHandling) andThen lowlevel.headersAttempt(
+        lowlevel.rows(separator, quoteHandling) andThen lowlevel.headersAttempt(using
           H) andThen lowlevel.attemptFlatMapDecodeRow
       }
     }
