@@ -70,20 +70,19 @@ val commonSettings = List(
     .toList
     .flatten,
   scalacOptions ++= PartialFunction
-    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
-      case Some((3, _)) => List("-source:3.2-migration", "-no-indent")
+    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((3, _)) =>
+      List("-source:3.2-migration", "-no-indent")
     }
     .toList
     .flatten,
   scalacOptions ++= PartialFunction
-    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
-      case Some((2, _)) =>
-        // Suppress cats compose overload warnings inherited from MonadError/Functor type classes
-        List(
-          "-Wconf:cat=lint-overload&site=fs2\\.data\\.csv\\.CellDecoder\\.CellDecoderInstances:s",
-          "-Wconf:cat=lint-overload&site=fs2\\.data\\.csv\\.ParseableHeader\\.ParseableHeaderInstances:s",
-          "-Wconf:cat=lint-overload&site=fs2\\.data\\.csv\\.RowDecoderF\\.RowDecoderFInstances:s"
-        )
+    .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
+      // Suppress cats compose overload warnings inherited from MonadError/Functor type classes
+      List(
+        "-Wconf:cat=lint-overload&site=fs2\\.data\\.csv\\.CellDecoder\\.CellDecoderInstances:s",
+        "-Wconf:cat=lint-overload&site=fs2\\.data\\.csv\\.ParseableHeader\\.ParseableHeaderInstances:s",
+        "-Wconf:cat=lint-overload&site=fs2\\.data\\.csv\\.RowDecoderF\\.RowDecoderFInstances:s"
+      )
     }
     .toList
     .flatten,
@@ -232,11 +231,10 @@ lazy val csvGeneric = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       )
     ),
     scalacOptions ++= PartialFunction
-      .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
-        case Some((2, _)) =>
-          Seq(
-            "-Ymacro-annotations"
-          )
+      .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((2, _)) =>
+        Seq(
+          "-Ymacro-annotations"
+        )
       }
       .toList
       .flatten,
