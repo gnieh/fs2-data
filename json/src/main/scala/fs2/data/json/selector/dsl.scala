@@ -67,7 +67,7 @@ sealed abstract class SelectorBuilder[M, S] private[selector] {
 
 object SelectorBuilder {
 
-  implicit class SelectorOps[M, S, B <: SelectorBuilder[M, S]](val inner: B with SelectorBuilder[M, S]) extends AnyVal {
+  implicit class SelectorOps[M, S, B <: SelectorBuilder[M, S]](val inner: B & SelectorBuilder[M, S]) extends AnyVal {
 
     /** Makes the selector to which it applies mandatory.
       * The selection will fail if the selected fields are not present in the object.
@@ -89,7 +89,7 @@ case object RootBuilder extends SelectorBuilder[NotApplicable, NotApplicable] {
   def compile: Selector = Selector.ThisSelector
 }
 
-case class IteratorBuilder[S](strict: Boolean, parent: SelectorBuilder[_, _])
+case class IteratorBuilder[S](strict: Boolean, parent: SelectorBuilder[?, ?])
     extends SelectorBuilder[NotApplicable, S] {
   def compile: Selector = Selector.PipeSelector.from(parent.compile, Selector.IteratorSelector(strict))
 }
@@ -105,7 +105,7 @@ object IteratorBuilder {
 
 }
 
-case class IndicesBuilder[S](predicate: IndexPredicate, strict: Boolean, parent: SelectorBuilder[_, _])
+case class IndicesBuilder[S](predicate: IndexPredicate, strict: Boolean, parent: SelectorBuilder[?, ?])
     extends SelectorBuilder[NotApplicable, S] {
   def compile: Selector = Selector.PipeSelector.from(parent.compile, Selector.IndexSelector(predicate, strict))
 }
@@ -124,7 +124,7 @@ object IndicesBuilder {
 case class NamesBuilder[M, S](predicate: NamePredicate,
                               strict: Boolean,
                               mandatory: Boolean,
-                              parent: SelectorBuilder[_, _])
+                              parent: SelectorBuilder[?, ?])
     extends SelectorBuilder[M, S] {
   def compile: Selector =
     Selector.PipeSelector.from(parent.compile, Selector.NameSelector(predicate, strict, mandatory))

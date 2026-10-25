@@ -66,7 +66,7 @@ package object scalaXml {
           case None         => new UnprefixedAttribute(attr.name.local, attr.value.map(makeText(_)), acc)
         }
       }
-      Elem(name.prefix.getOrElse(null), name.local, attrs, TopScope, isEmpty, children: _*)
+      Elem(name.prefix.getOrElse(null), name.local, attrs, TopScope, isEmpty, children*)
     }
 
     def makePI(target: String, content: String): Misc =

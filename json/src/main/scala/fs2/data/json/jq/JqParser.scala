@@ -27,7 +27,7 @@ object JqParser {
 
   implicit def accForMonoid[T: Monoid]: Accumulator0[T, T] = new Accumulator0[T, T] {
     override def newAppender(): Appender[T, T] = new Appender[T, T] {
-      private[this] var res = Monoid[T].empty
+      private var res = Monoid[T].empty
       override def append(item: T) = {
         res = res.combine(item)
         this
