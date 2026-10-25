@@ -28,7 +28,7 @@ class XmlTreeException(msg: String) extends Exception(msg)
 class TreeParser[F[_], Node](implicit F: RaiseThrowable[F]) {
 
   // Only for bincompat
-  private var legacyBuilder: DocumentBuilder[Node] = _
+  private var legacyBuilder: DocumentBuilder[Node] = null
 
   private[dom] def this(F: RaiseThrowable[F], builder: DocumentBuilder[Node]) = {
     this()(F)

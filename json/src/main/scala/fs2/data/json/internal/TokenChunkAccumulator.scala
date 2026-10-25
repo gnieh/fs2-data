@@ -23,7 +23,7 @@ import scala.collection.immutable.VectorBuilder
 
 private[json] final class TokenChunkAccumulator extends ChunkAccumulator[Token] {
 
-  private[this] final val chunkAcc: VectorBuilder[Token] = new VectorBuilder
+  private final val chunkAcc: VectorBuilder[Token] = new VectorBuilder
 
   override def startObject(): this.type = {
     chunkAcc.addOne(Token.StartObject)

@@ -332,7 +332,7 @@ package object json {
 
     implicit class JsonInterpolator(val sc: StringContext) extends AnyVal {
       def json(args: Any*): Stream[Fallible, Token] =
-        Stream.emit(sc.s(args: _*)).covary[Fallible].through(tokens)
+        Stream.emit(sc.s(args*)).covary[Fallible].through(tokens)
     }
 
   }
