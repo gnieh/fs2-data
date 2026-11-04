@@ -28,6 +28,16 @@ import scala.annotation.nowarn
 
 package object csv {
 
+  /**
+   * Default separator value for CSV data according to RFC-4180. Note that all pipes allow customizing this.
+   */
+  val csvDataDefaultSeparator: Char = ','
+
+  /**
+   * Default new line value for CSV data according to RFC-4180. Note that all pipes allow customizing this.
+   */
+  val csvDataDefaultNewline: String = "\r\n"
+
   /** Higher kinded version of [[scala.None]]. Ignores the type param.
     */
   type NoneF[+A] = None.type
@@ -130,7 +140,8 @@ package object csv {
 
   @nowarn
   class PartiallyAppliedDecodeWithoutHeaders[T](val dummy: Boolean) extends AnyVal {
-    def apply[F[_], C](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
+    def apply[F[_], C](separator: Char = csvDataDefaultSeparator,
+                       quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
         F: RaiseThrowable[F],
         C: CharLikeChunks[F, C],
         T: RowDecoder[T]): Pipe[F, C, T] =
@@ -145,7 +156,8 @@ package object csv {
 
   @nowarn
   class PartiallyAppliedDecodeSkippingHeaders[T](val dummy: Boolean) extends AnyVal {
-    def apply[F[_], C](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
+    def apply[F[_], C](separator: Char = csvDataDefaultSeparator,
+                       quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
         F: RaiseThrowable[F],
         C: CharLikeChunks[F, C],
         T: RowDecoder[T]
@@ -161,8 +173,8 @@ package object csv {
 
   @nowarn
   class PartiallyAppliedDecodeUsingHeaders[T](val dummy: Boolean) extends AnyVal {
-    def apply[F[_], C, Header](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(
-        implicit
+    def apply[F[_], C, Header](separator: Char = csvDataDefaultSeparator,
+                               quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
         F: RaiseThrowable[F],
         C: CharLikeChunks[F, C],
         T: CsvRowDecoder[T, Header],
@@ -185,7 +197,7 @@ package object csv {
   class PartiallyAppliedDecodeGivenHeaders[T](val dummy: Boolean) extends AnyVal {
     def apply[F[_], C, Header](headers: NonEmptyList[Header],
                                skipHeaders: Boolean = false,
-                               separator: Char = ',',
+                               separator: Char = csvDataDefaultSeparator,
                                quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
         F: RaiseThrowable[F],
         C: CharLikeChunks[F, C],
@@ -213,7 +225,7 @@ package object csv {
   @nowarn
   class PartiallyAppliedDecodeUsingStaticHeaders[T](val dummy: Boolean) extends AnyVal {
     def apply[F[_], C, Header](skipHeaders: Boolean = false,
-                               separator: Char = ',',
+                               separator: Char = csvDataDefaultSeparator,
                                quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
         F: RaiseThrowable[F],
         C: CharLikeChunks[F, C],
@@ -229,8 +241,8 @@ package object csv {
   @nowarn
   class PartiallyAppliedEncodeWithoutHeaders[T](val dummy: Boolean) extends AnyVal {
     def apply[F[_]](fullRows: Boolean = false,
-                    separator: Char = ',',
-                    newline: String = "\n",
+                    separator: Char = csvDataDefaultSeparator,
+                    newline: String = csvDataDefaultNewline,
                     escape: EscapeMode = EscapeMode.Auto)(implicit T: RowEncoder[T]): Pipe[F, T, String] = {
       val stringPipe =
         if (fullRows) lowlevel.toRowStrings[F](separator, newline, escape)
@@ -251,8 +263,8 @@ package object csv {
   class PartiallyAppliedEncodeGivenHeaders[T](val dummy: Boolean) extends AnyVal {
     def apply[F[_], Header](headers: NonEmptyList[Header],
                             fullRows: Boolean = false,
-                            separator: Char = ',',
-                            newline: String = "\n",
+                            separator: Char = csvDataDefaultSeparator,
+                            newline: String = csvDataDefaultNewline,
                             escape: EscapeMode = EscapeMode.Auto)(implicit
         T: RowEncoder[T],
         H: WriteableHeader[Header]): Pipe[F, T, String] = {
@@ -271,8 +283,8 @@ package object csv {
   class PartiallyAppliedEncodeWithGivenHeaders[T](val dummy: Boolean) extends AnyVal {
     def apply[F[_], Header](headers: NonEmptyList[Header],
                             fullRows: Boolean = false,
-                            separator: Char = ',',
-                            newline: String = "\n",
+                            separator: Char = csvDataDefaultSeparator,
+                            newline: String = csvDataDefaultNewline,
                             escape: EscapeMode = EscapeMode.Auto)(implicit
         F: RaiseThrowable[F],
         T: RowEncoder[T],
@@ -291,8 +303,8 @@ package object csv {
   @nowarn
   class PartiallyAppliedEncodeUsingFirstHeaders[T](val dummy: Boolean) extends AnyVal {
     def apply[F[_], Header](fullRows: Boolean = false,
-                            separator: Char = ',',
-                            newline: String = "\n",
+                            separator: Char = csvDataDefaultSeparator,
+                            newline: String = csvDataDefaultNewline,
                             escape: EscapeMode = EscapeMode.Auto)(implicit
         T: CsvRowEncoder[T, Header],
         H: WriteableHeader[Header]): Pipe[F, T, String] = {
@@ -311,8 +323,8 @@ package object csv {
   @nowarn
   class PartiallyAppliedEncodeUsingStaticHeaders[T](val dummy: Boolean) extends AnyVal {
     def apply[F[_]: RaiseThrowable, Header](fullRows: Boolean = false,
-                                            separator: Char = ',',
-                                            newline: String = "\n",
+                                            separator: Char = csvDataDefaultSeparator,
+                                            newline: String = csvDataDefaultNewline,
                                             escape: EscapeMode = EscapeMode.Auto)(implicit
         T: CsvRowEncoder[T, Header],
         SH: StaticHeaders[T, Header],
@@ -342,7 +354,8 @@ package object csv {
       *                      default) or [[QuoteHandling.Literal]] if quotation
       *                      marks should be treated literally
       */
-    def rows[F[_], T](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
+    def rows[F[_], T](separator: Char = csvDataDefaultSeparator,
+                      quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
         F: RaiseThrowable[F],
         T: CharLikeChunks[F, T]): Pipe[F, T, Row] =
       RowParser.pipe[F, T](separator, quoteHandling)
@@ -436,8 +449,8 @@ package object csv {
       _.map(_.values)
 
     /** Serialize a CSV row to Strings. No guarantees are given on how the resulting Strings are cut. */
-    def toStrings[F[_]](separator: Char = ',',
-                        newline: String = "\n",
+    def toStrings[F[_]](separator: Char = csvDataDefaultSeparator,
+                        newline: String = csvDataDefaultNewline,
                         escape: EscapeMode = EscapeMode.Auto): Pipe[F, NonEmptyList[String], String] = {
       _.flatMap(nel =>
         Stream
@@ -447,8 +460,8 @@ package object csv {
     }
 
     /** Serialize a CSV row to Strings. Guaranteed to emit one String per CSV row (= one line if no quoted newlines are contained in the value). */
-    def toRowStrings[F[_]](separator: Char = ',',
-                           newline: String = "\n",
+    def toRowStrings[F[_]](separator: Char = csvDataDefaultSeparator,
+                           newline: String = csvDataDefaultNewline,
                            escape: EscapeMode = EscapeMode.Auto): Pipe[F, NonEmptyList[String], String] = {
       // explicit Show avoids mapping the NEL before
       val showColumn: Show[String] =
@@ -496,7 +509,7 @@ package object csv {
     class PartiallyAppliedDecodeAttemptGivenHeaders[T](val dummy: Boolean) extends AnyVal {
       def apply[F[_], C, Header](headers: NonEmptyList[Header],
                                  skipHeaders: Boolean = false,
-                                 separator: Char = ',',
+                                 separator: Char = csvDataDefaultSeparator,
                                  quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
           F: RaiseThrowable[F],
           C: CharLikeChunks[F, C],
@@ -519,8 +532,8 @@ package object csv {
       new PartiallyAppliedDecodeAttemptUsingHeaders[T](dummy = true)
 
     class PartiallyAppliedDecodeAttemptUsingHeaders[T](val dummy: Boolean) extends AnyVal {
-      def apply[F[_], C, Header](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(
-          implicit
+      def apply[F[_], C, Header](separator: Char = csvDataDefaultSeparator,
+                                 quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
           F: RaiseThrowable[F],
           C: CharLikeChunks[F, C],
           T: CsvRowDecoder[T, Header],
@@ -539,7 +552,8 @@ package object csv {
       new PartiallyAppliedDecodeAttemptSkippingHeaders[T](dummy = true)
 
     class PartiallyAppliedDecodeAttemptSkippingHeaders[T](val dummy: Boolean) extends AnyVal {
-      def apply[F[_], C](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
+      def apply[F[_], C](separator: Char = csvDataDefaultSeparator,
+                         quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
           F: RaiseThrowable[F],
           C: CharLikeChunks[F, C],
           T: RowDecoder[T]): Pipe[F, C, Either[CsvException, T]] = {
@@ -556,7 +570,8 @@ package object csv {
       new PartiallyAppliedDecodeAttemptWithoutHeaders[T](dummy = true)
 
     class PartiallyAppliedDecodeAttemptWithoutHeaders[T](val dummy: Boolean) extends AnyVal {
-      def apply[F[_], C](separator: Char = ',', quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
+      def apply[F[_], C](separator: Char = csvDataDefaultSeparator,
+                         quoteHandling: QuoteHandling = QuoteHandling.RFCCompliant)(implicit
           F: RaiseThrowable[F],
           C: CharLikeChunks[F, C],
           T: RowDecoder[T]): Pipe[F, C, Either[CsvException, T]] =
