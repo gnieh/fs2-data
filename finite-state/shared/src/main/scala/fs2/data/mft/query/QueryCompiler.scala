@@ -124,13 +124,13 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
                   }
                 val pat: builder.Guardable = tagOf(pattern).fold(anyNode)(aNode(_))
                 if (!finalTgt) {
-                  q1(pat.when(guard)) -> q2(x1, copyArgs: _*) ~ q1(x2, copyArgs: _*)
+                  q1(pat.when(guard)) -> q2(x1, copyArgs*) ~ q1(x2, copyArgs*)
                 } else if (emitSelected) {
-                  q1(pat.when(guard)) -> end(x1, (copyArgs :+ copy(qcopy(x1))): _*) ~ q2(x1, copyArgs: _*) ~
-                    q1(x2, copyArgs: _*)
+                  q1(pat.when(guard)) -> end(x1, (copyArgs :+ copy(qcopy(x1)))*) ~ q2(x1, copyArgs*) ~
+                    q1(x2, copyArgs*)
                 } else {
-                  q1(pat.when(guard)) -> end(x1, (copyArgs :+ qcopy(x1)): _*) ~ q2(x1, copyArgs: _*) ~
-                    q1(x2, copyArgs: _*)
+                  q1(pat.when(guard)) -> end(x1, (copyArgs :+ qcopy(x1))*) ~ q2(x1, copyArgs*) ~
+                    q1(x2, copyArgs*)
                 }
                 states1
               }
@@ -165,7 +165,7 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
 
             // bind everything
             val copyArgs = List.tabulate(q.nargs)(y(_))
-            q(any) -> q1(x0, (copyArgs :+ qv(x0, copyArgs: _*)): _*)
+            q(any) -> q1(x0, (copyArgs :+ qv(x0, copyArgs*))*)
 
           case Query.Ordpath(path, None) =>
             val q1 = state(args = q.nargs + 1)
@@ -185,7 +185,7 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
 
             // emit the result
             val copyArgs = List.tabulate(q.nargs)(y(_))
-            q(any) -> default(dflt) ~ q0(Forest.Self, copyArgs: _*)
+            q(any) -> default(dflt) ~ q0(Forest.Self, copyArgs*)
             q1(any) -> y(q.nargs)
 
           case Query.Node(tag, child) =>
@@ -196,7 +196,7 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
 
             // bind it
             val copyArgs = List.tabulate(q.nargs)(y(_))
-            q(any) -> node(tag)(q1(x0, copyArgs: _*))
+            q(any) -> node(tag)(q1(x0, copyArgs*))
 
           case Query.Leaf(tag) =>
             // just emit it
@@ -217,7 +217,7 @@ private[fs2] abstract class QueryCompiler[InTag, OutTag, Path] {
                 // translate the query
                 translate(query, vars, q1)
 
-                acc ~ q1(x0, copyArgs: _*)
+                acc ~ q1(x0, copyArgs*)
               }
 
             // emit rhs for any input

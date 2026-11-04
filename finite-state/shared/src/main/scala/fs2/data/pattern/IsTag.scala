@@ -30,7 +30,7 @@ trait IsTag[Tag] extends Eq[Tag] {
     */
   def range(tag: Tag): Iterator[Tag]
 
-  final def hasUnmatchedConstructor(skel: Skeleton[_, Tag], matched: Set[Tag]): Boolean =
+  final def hasUnmatchedConstructor(skel: Skeleton[?, Tag], matched: Set[Tag]): Boolean =
     skel match {
       case Skeleton.Constructor(tag, _, _) => isOpen(tag) || range(tag).exists(!matched.contains(_))
       case Skeleton.Wildcard(_)            => false

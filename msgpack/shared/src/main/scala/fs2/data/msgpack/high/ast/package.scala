@@ -110,8 +110,8 @@ package object ast {
     case MsgpackValue.Double(x)                       => doubleSerializer(x)
     case MsgpackValue.Nil                             => right1(MsgpackItem.Nil)
     case MsgpackValue.Extension(tpe, bytes)           => right1(MsgpackItem.Extension(tpe, bytes))
-    case MsgpackValue.Array(x)                        => listSerializer(valueSerializer)(x)
-    case MsgpackValue.Map(x)                          => mapSerializer(valueSerializer, valueSerializer)(x)
+    case MsgpackValue.Array(x)                        => listSerializer(using valueSerializer)(x)
+    case MsgpackValue.Map(x)                          => mapSerializer(using valueSerializer, valueSerializer)(x)
     case MsgpackValue.Timestamp(nanoseconds, seconds) =>
       // TODO: DRY - similar pattern in Instant and js.Date serializers
       val secondsLow32: Long = seconds & 0xffffffff

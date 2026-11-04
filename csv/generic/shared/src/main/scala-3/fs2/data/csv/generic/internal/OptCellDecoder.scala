@@ -32,7 +32,7 @@ object OptCellDecoder extends LowPrioOptCellDecoders {
       value.toRight(new DecoderError(s"unknown column name '$name'")).flatMap(CellDecoder[A].apply)
   }
 
-  given makeNonOpt[A: CellDecoder](using NotGiven[A <:< Option[_]]): OptCellDecoder[A] = new OptCellDecoder[A] {
+  given makeNonOpt[A: CellDecoder](using NotGiven[A <:< Option[?]]): OptCellDecoder[A] = new OptCellDecoder[A] {
     override def apply(name: String, value: Option[String]): DecoderResult[A] =
       value.toRight(new DecoderError(s"unknown column name '$name'")).flatMap(CellDecoder[A].apply)
   }

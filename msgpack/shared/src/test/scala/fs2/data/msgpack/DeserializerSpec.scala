@@ -76,7 +76,7 @@ object DeserializerSpec extends SimpleIOSuite {
       l3 <- MsgpackDeserializer[List[Long]]
     } yield (m1, m2, m3, s1, s2, s3, s4, l1, l2, l3)
 
-    check(input, List(expected))(d)
+    check(input, List(expected))(using d)
   }
 
   test("option type") {

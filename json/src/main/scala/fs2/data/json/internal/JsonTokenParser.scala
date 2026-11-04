@@ -25,12 +25,13 @@ import scala.annotation.switch
 
 import TokenParser._
 
-private[json] class JsonTokenParser[F[_], T, Res](
-    s: Stream[F, T],
-    private[this] final val chunkAcc: ChunkAccumulator[Res])(implicit F: RaiseThrowable[F], T: AsCharBuffer[F, T]) {
-  private[this] var context = T.create(s)
+private[json] class JsonTokenParser[F[_], T, Res](s: Stream[F, T], private final val chunkAcc: ChunkAccumulator[Res])(
+    implicit
+    F: RaiseThrowable[F],
+    T: AsCharBuffer[F, T]) {
+  private var context = T.create(s)
 
-  private[this] def emitChunk() =
+  private def emitChunk() =
     Pull.output(chunkAcc.chunk())
 
   // the opening quote has already been read
@@ -271,9 +272,9 @@ private[json] class JsonTokenParser[F[_], T, Res](
           T.advance(context)
           chunkAcc.startArray()
           Pull.suspend(go_(State.BeforeArrayValue))
-        case 't' => keyword_("true", 0, 4, chunkAcc.trueValue _)
-        case 'f' => keyword_("false", 0, 5, chunkAcc.falseValue _)
-        case 'n' => keyword_("null", 0, 4, chunkAcc.nullValue _)
+        case 't' => keyword_("true", 0, 4, (() => chunkAcc.trueValue()))
+        case 'f' => keyword_("false", 0, 5, (() => chunkAcc.falseValue()))
+        case 'n' => keyword_("null", 0, 4, (() => chunkAcc.nullValue()))
         case '"' =>
           T.advance(context)
           T.mark(context)

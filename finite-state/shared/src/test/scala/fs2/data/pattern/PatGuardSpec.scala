@@ -45,8 +45,8 @@ object PatGuardSpec extends IOSuite {
       val dsl = new PatternDsl[Set[String], String]
       import dsl._
       val cases = List(
-        state(0, 0)(open when Set("a", "b")) -> 1,
-        state(0, 0)(open when Set("d", "e")) -> 2,
+        state(0, 0)(open `when` Set("a", "b")) -> 1,
+        state(0, 0)(open `when` Set("d", "e")) -> 2,
         any -> 0
       )
 

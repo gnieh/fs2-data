@@ -94,7 +94,7 @@ package object ast {
     T match {
       case asCharBuffer: AsCharBuffer[F, T] =>
         Stream.suspend(
-          new JsonTokenParser[F, T, Json](s, new BuilderChunkAccumulator(builder))(F, asCharBuffer)
+          new JsonTokenParser[F, T, Json](s, new BuilderChunkAccumulator(builder))(using F, asCharBuffer)
             .go_(State.BeforeValue)
             .stream)
       case _ =>

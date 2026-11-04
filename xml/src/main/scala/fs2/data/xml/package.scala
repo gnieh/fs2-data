@@ -193,11 +193,11 @@ package object xml {
 
     /** Creates a stream of XML token, dropping the comments. */
     def xml(args: Any*): Stream[Fallible, XmlEvent] =
-      Stream.emit(sc.s(args: _*)).covary[Fallible].through(events(includeComments = false))
+      Stream.emit(sc.s(args*)).covary[Fallible].through(events(includeComments = false))
 
     /** Creates a stream of XML token, keeping the comments. */
     def rawxml(args: Any*): Stream[Fallible, XmlEvent] =
-      Stream.emit(sc.s(args: _*)).covary[Fallible].through(events(includeComments = true))
+      Stream.emit(sc.s(args*)).covary[Fallible].through(events(includeComments = true))
   }
 
 }

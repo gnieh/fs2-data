@@ -48,10 +48,10 @@ object Pred {
 
   object syntax {
 
-    def always[P](implicit P: Pred[P, _]): P =
+    def always[P](implicit P: Pred[P, ?]): P =
       P.always
 
-    def never[P](implicit P: Pred[P, _]): P =
+    def never[P](implicit P: Pred[P, ?]): P =
       P.never
 
     implicit class PredOps[P](val p1: P) extends AnyVal {

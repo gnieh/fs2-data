@@ -31,7 +31,7 @@ import ast.Builder
   */
 private[json] final class BuilderChunkAccumulator[Json](builder: Builder[Json]) extends ChunkAccumulator[Json] {
 
-  private[this] final val chunkAcc: VectorBuilder[Json] = new VectorBuilder
+  private final val chunkAcc: VectorBuilder[Json] = new VectorBuilder
 
   private trait Context {
     def string(s: String): Unit
@@ -47,7 +47,7 @@ private[json] final class BuilderChunkAccumulator[Json](builder: Builder[Json]) 
     }
   private def arrayContext(): Context =
     new Context {
-      private[this] val vs = ListBuffer.empty[Json]
+      private val vs = ListBuffer.empty[Json]
       override def string(s: String): Unit = vs.addOne(builder.makeString(s))
       override def value(v: Json): Unit = vs.addOne(v)
       override def finish(): Json = builder.makeArray(vs)
@@ -55,8 +55,8 @@ private[json] final class BuilderChunkAccumulator[Json](builder: Builder[Json]) 
     }
   private def objectContext(): Context =
     new Context {
-      private[this] var key: String = null
-      private[this] var vs = TreeMap.empty[String, Json]
+      private var key: String = null
+      private var vs = TreeMap.empty[String, Json]
       override def string(s: String): Unit = key = s
       override def value(v: Json): Unit = {
         vs = vs.updated(key, v)
@@ -65,8 +65,8 @@ private[json] final class BuilderChunkAccumulator[Json](builder: Builder[Json]) 
       override def finish(): Json = builder.makeObject(vs)
     }
 
-  private[this] var context: Context = toplevelContext()
-  private[this] var stack: List[Context] = Nil
+  private var context: Context = toplevelContext()
+  private var stack: List[Context] = Nil
 
   override def startObject(): this.type = {
     stack = context :: stack

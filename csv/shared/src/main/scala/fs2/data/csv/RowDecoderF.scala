@@ -93,7 +93,7 @@ object RowDecoderF extends ExportedRowDecoderFs {
   implicit def identityRowDecoderF[H[+a] <: Option[a], Header]: RowDecoderF[H, RowF[H, Header], Header] = _.asRight
 
   implicit def RowDecoderFInstances[H[+a] <: Option[a], Header]
-      : MonadError[RowDecoderF[H, *, Header], DecoderError] with SemigroupK[RowDecoderF[H, *, Header]] =
+      : MonadError[RowDecoderF[H, *, Header], DecoderError] & SemigroupK[RowDecoderF[H, *, Header]] =
     new MonadError[RowDecoderF[H, *, Header], DecoderError] with SemigroupK[RowDecoderF[H, *, Header]] {
       override def map[A, B](fa: RowDecoderF[H, A, Header])(f: A => B): RowDecoderF[H, B, Header] =
         fa.map(f)
@@ -122,7 +122,7 @@ object RowDecoderF extends ExportedRowDecoderFs {
         row => step(row, a)
       }
 
-      def combineK[A](x: RowDecoderF[H, A, Header], y: RowDecoderF[H, A, Header]): RowDecoderF[H, A, Header] = x or y
+      def combineK[A](x: RowDecoderF[H, A, Header], y: RowDecoderF[H, A, Header]): RowDecoderF[H, A, Header] = x `or` y
     }
 
   implicit def toMapCsvRowDecoder[Header]: CsvRowDecoder[Map[Header, String], Header] =

@@ -26,10 +26,10 @@ import scala.annotation.switch
 private[json] class LegacyTokenParser[F[_], T, Res](s: Stream[F, T])(implicit
     F: RaiseThrowable[F],
     val T: CharLikeChunks[F, T]) {
-  private[this] final def empty = (T.create(Stream.empty), ChunkAccumulator.empty[Res])
-  private[this] final val keyAcc = new StringBuilder(TokenParser.keyBufferCapacity)
+  private final def empty = (T.create(Stream.empty), ChunkAccumulator.empty[Res])
+  private final val keyAcc = new StringBuilder(TokenParser.keyBufferCapacity)
 
-  private[this] def emitChunk(chunkAcc: ChunkAccumulator[Res]) =
+  private def emitChunk(chunkAcc: ChunkAccumulator[Res]) =
     Pull.output(chunkAcc.chunk())
 
   // the opening quote has already been read

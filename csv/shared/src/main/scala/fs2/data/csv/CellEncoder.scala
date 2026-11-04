@@ -104,22 +104,22 @@ trait CellEncoderInstances2 {
   implicit val periodEncoder: CellEncoder[Period] = _.toString
   implicit def localDateEncoder(implicit
       localDateEncodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE): CellEncoder[LocalDate] =
-    javaTimeEncoderWithFmt(_)(localDateEncodeFmt)
+    javaTimeEncoderWithFmt(_)(using localDateEncodeFmt)
   implicit def localDateTimeEncoder(implicit
       localDateTimeEncodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME): CellEncoder[LocalDateTime] =
-    javaTimeEncoderWithFmt(_)(localDateTimeEncodeFmt)
+    javaTimeEncoderWithFmt(_)(using localDateTimeEncodeFmt)
   implicit def localTimeEncoder(implicit
       localTimeEncodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_TIME): CellEncoder[LocalTime] =
-    javaTimeEncoderWithFmt(_)(localTimeEncodeFmt)
+    javaTimeEncoderWithFmt(_)(using localTimeEncodeFmt)
   implicit def offsetDateTimeEncoder(implicit
       offsetDateTimeEncodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-      : CellEncoder[OffsetDateTime] = javaTimeEncoderWithFmt(_)(offsetDateTimeEncodeFmt)
+      : CellEncoder[OffsetDateTime] = javaTimeEncoderWithFmt(_)(using offsetDateTimeEncodeFmt)
   implicit def offsetTimeEncoder(implicit
       offsetTimeEncodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_TIME): CellEncoder[OffsetTime] =
-    javaTimeEncoderWithFmt(_)(offsetTimeEncodeFmt)
+    javaTimeEncoderWithFmt(_)(using offsetTimeEncodeFmt)
   implicit def zonedDateTimeEncoder(implicit
       zonedDateTimeEncodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_ZONED_DATE_TIME): CellEncoder[ZonedDateTime] =
-    javaTimeEncoderWithFmt(_)(zonedDateTimeEncodeFmt)
+    javaTimeEncoderWithFmt(_)(using zonedDateTimeEncodeFmt)
   implicit val dayOfWeekEncoder: CellEncoder[DayOfWeek] = _.toString
   implicit val javaTimeDurationEncoder: CellEncoder[java.time.Duration] = _.toString
   implicit val monthEncoder: CellEncoder[Month] = _.toString
