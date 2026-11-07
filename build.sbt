@@ -29,7 +29,7 @@ val shapeless3Version = "3.6.0"
 val scalaJavaTimeVersion = "2.9.0"
 val diffsonVersion = "4.7.1"
 val literallyVersion = "1.2.0"
-val weaverVersion = "0.13.0"
+val weaverVersion = "0.13.1"
 
 ThisBuild / tlBaseVersion := "1.14"
 
