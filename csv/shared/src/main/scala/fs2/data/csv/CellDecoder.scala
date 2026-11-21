@@ -143,7 +143,7 @@ object CellDecoder
       s => step(s, a)
     }
 
-    override def combineK[A](x: CellDecoder[A], y: CellDecoder[A]): CellDecoder[A] = x or y
+    override def combineK[A](x: CellDecoder[A], y: CellDecoder[A]): CellDecoder[A] = x `or` y
   }
 
   def apply[T: CellDecoder]: CellDecoder[T] = implicitly[CellDecoder[T]]
@@ -228,23 +228,23 @@ trait CellDecoderInstances2 {
   implicit val periodDecoder: CellDecoder[Period] = javaTimeDecoder("Period", Period.parse)
   implicit def localDateDecoder(implicit
       localDateDecodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE): CellDecoder[LocalDate] =
-    javaTimeDecoderWithFmt("LocalDate", LocalDate.parse)(localDateDecodeFmt)
+    javaTimeDecoderWithFmt("LocalDate", LocalDate.parse)(using localDateDecodeFmt)
   implicit def localDateTimeDecoder(implicit
       localDateTimeDecodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME): CellDecoder[LocalDateTime] =
-    javaTimeDecoderWithFmt("LocalDateTime", LocalDateTime.parse)(localDateTimeDecodeFmt)
+    javaTimeDecoderWithFmt("LocalDateTime", LocalDateTime.parse)(using localDateTimeDecodeFmt)
   implicit def localTimeDecoder(implicit
       localTimeDecodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_TIME): CellDecoder[LocalTime] =
-    javaTimeDecoderWithFmt("LocalTime", LocalTime.parse)(localTimeDecodeFmt)
+    javaTimeDecoderWithFmt("LocalTime", LocalTime.parse)(using localTimeDecodeFmt)
   implicit def offsetDateTimeDecoder(implicit
       offsetDateTimeDecodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME)
       : CellDecoder[OffsetDateTime] =
-    javaTimeDecoderWithFmt("OffsetDateTime", OffsetDateTime.parse)(offsetDateTimeDecodeFmt)
+    javaTimeDecoderWithFmt("OffsetDateTime", OffsetDateTime.parse)(using offsetDateTimeDecodeFmt)
   implicit def offsetTimeDecoder(implicit
       offsetTimeDecodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_TIME): CellDecoder[OffsetTime] =
-    javaTimeDecoderWithFmt("OffsetTime", OffsetTime.parse)(offsetTimeDecodeFmt)
+    javaTimeDecoderWithFmt("OffsetTime", OffsetTime.parse)(using offsetTimeDecodeFmt)
   implicit def zonedDateTimeDecoder(implicit
       zonedDateTimeDecodeFmt: DateTimeFormatter = DateTimeFormatter.ISO_ZONED_DATE_TIME): CellDecoder[ZonedDateTime] =
-    javaTimeDecoderWithFmt("ZonedDateTime", ZonedDateTime.parse)(zonedDateTimeDecodeFmt)
+    javaTimeDecoderWithFmt("ZonedDateTime", ZonedDateTime.parse)(using zonedDateTimeDecodeFmt)
   implicit val dayOfWeekDecoder: CellDecoder[DayOfWeek] =
     javaTimeDecoder("DayOfWeek", t => DayOfWeek.valueOf(t.toUpperCase))
   implicit val javaTimeDurationDecoder: CellDecoder[java.time.Duration] =

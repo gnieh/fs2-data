@@ -28,7 +28,7 @@ import Pred.syntax._
   */
 sealed abstract class Regular[CharSet] {
 
-  def ~(that: Regular[CharSet])(implicit CharSet: Pred[CharSet, _], eq: Eq[CharSet]): Regular[CharSet] =
+  def ~(that: Regular[CharSet])(implicit CharSet: Pred[CharSet, ?], eq: Eq[CharSet]): Regular[CharSet] =
     (this, that) match {
       case (Regular.Epsilon(), _)               => that
       case (_, Regular.Epsilon())               => this
@@ -40,10 +40,10 @@ sealed abstract class Regular[CharSet] {
           Regular.empty
     }
 
-  def ?(implicit CharSet: Pred[CharSet, _], eq: Eq[CharSet]): Regular[CharSet] =
+  def ?(implicit CharSet: Pred[CharSet, ?], eq: Eq[CharSet]): Regular[CharSet] =
     this || Regular.empty
 
-  def &&(that: Regular[CharSet])(implicit CharSet: Pred[CharSet, _], eq: Eq[CharSet]): Regular[CharSet] =
+  def &&(that: Regular[CharSet])(implicit CharSet: Pred[CharSet, ?], eq: Eq[CharSet]): Regular[CharSet] =
     (this, that) match {
       case (Regular.And(re1, re2), _) => re1 && (re2 && that)
       case (_, _)                     =>
@@ -59,7 +59,7 @@ sealed abstract class Regular[CharSet] {
           Regular.empty
     }
 
-  def ||(that: Regular[CharSet])(implicit CharSet: Pred[CharSet, _], eq: Eq[CharSet]): Regular[CharSet] =
+  def ||(that: Regular[CharSet])(implicit CharSet: Pred[CharSet, ?], eq: Eq[CharSet]): Regular[CharSet] =
     (this, that) match {
       case (Regular.Or(re1, re2), _)                => re1 || (re2 || that)
       case (Regular.Chars(cs1), Regular.Chars(cs2)) => Regular.Chars(cs1 || cs2)
@@ -78,7 +78,7 @@ sealed abstract class Regular[CharSet] {
           Regular.Or(this, that)
     }
 
-  def unary_!(implicit CharSet: Pred[CharSet, _], eq: Eq[CharSet]): Regular[CharSet] =
+  def unary_!(implicit CharSet: Pred[CharSet, ?], eq: Eq[CharSet]): Regular[CharSet] =
     this match {
       case Regular.Not(re)   => re
       case Regular.Chars(cs) => Regular.Chars(!cs)
@@ -92,7 +92,7 @@ sealed abstract class Regular[CharSet] {
           Regular.Not(this)
     }
 
-  def rep(implicit CharSet: Pred[CharSet, _], eq: Eq[CharSet]): Regular[CharSet] =
+  def rep(implicit CharSet: Pred[CharSet, ?], eq: Eq[CharSet]): Regular[CharSet] =
     this match {
       case Regular.Star(_) => this
       case _               =>
@@ -230,9 +230,9 @@ object Regular {
   def chars[CharSet](cs: CharSet): Regular[CharSet] =
     Regular.Chars(cs)
 
-  def any[CharSet](implicit CharSet: Pred[CharSet, _]): Regular[CharSet] = Chars(CharSet.always)
+  def any[CharSet](implicit CharSet: Pred[CharSet, ?]): Regular[CharSet] = Chars(CharSet.always)
 
-  def empty[CharSet](implicit CharSet: Pred[CharSet, _]): Regular[CharSet] = Chars(CharSet.never)
+  def empty[CharSet](implicit CharSet: Pred[CharSet, ?]): Regular[CharSet] = Chars(CharSet.never)
 
   implicit def pred[CharSet: Eq, C](implicit CharSet: Pred[CharSet, C]): Pred[Regular[CharSet], C] =
     new Pred[Regular[CharSet], C] {
