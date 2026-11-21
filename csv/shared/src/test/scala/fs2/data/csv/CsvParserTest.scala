@@ -509,7 +509,7 @@ object CsvParserTest extends SimpleIOSuite {
   }
 
   test("empty CSV with headers should round-trip correctly") {
-    val content = "name,age,description\n"
+    val content = "name,age,description\r\n"
 
     case class Data(name: String, age: Int, description: String)
 
